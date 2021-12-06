@@ -1,21 +1,20 @@
-# A function that calculates the per cell activity of master regulons based on a regulon
-
-#scale.mat  a matrix of genes by cells. Rows represent genes and columns represent cells. Rownames (either gene symbols or geneID) must be consistent with the naming convention in the regulon.
-
-#regulon    a regulon in the form of a tall format matrix consisting of tf(regulator), target and a column indicating degree of association between TF and target
-#           such as "mor" or "corr".
-#           example regulon:
-#           tf      target  corr
-#           Esr1    Pgr     0.56
-
-#method	    method for calculating activity. Available methods are weightedMean or aucell. The parameter used for the weights in weightedMean is further specified by mode.
-
-#mode       a string indicating the mode of regulon such as "mor" or "corr" when weightedMean is the chosen method
-#Example
-
-#scale.mat=as.matrix(logcounts(sce))
-#score.combine=calculateActivity(scale.mat, regulon, "corr", method="weightedMean")
-
+#' A function that calculates the per cell activity of master regulons based on a regulon
+#'
+#' @param scale.mat a matrix of genes by cells. Rows represent genes and columns represent cells. Rownames (either gene symbols or geneID) must be consistent with the naming convention in the regulon.
+#' @param regulon a regulon in the form of a tall format matrix consisting of tf(regulator), target and a column indicating degree of association between TF and target such as "mor" or "corr".
+#'           example regulon:
+#'           tf      target  corr
+#'          Esr1    Pgr     0.56
+#' @param mode a string indicating the mode of regulon such as "mor" or "corr" when weightedMean is the chosen method
+#' @param method method for calculating activity. Available methods are weightedMean or aucell. The parameter used for the weights in weightedMean is further specified by mode.
+#' @param ncore number of cores to use
+#'
+#' @return a matrix of inferred transcription factor (row) activities in single cells (columns)
+#' @export
+#' @importFrom utils setTxtProgressBar txtProgressBar
+#' @importFrom magrittr %>%
+#'
+#' @examples 1+1
 calculateActivity=function(scale.mat, regulon, mode, method=NULL, ncore=NULL){
   method=tolower(method)
 
@@ -40,15 +39,15 @@ calculateActivity=function(scale.mat, regulon, mode, method=NULL, ncore=NULL){
     score.combine=dplyr::bind_cols(score) %>% t() %>% as.data.frame()
 
   } else if (method == "aucell"){
-    require(AUCell)
+    #requireNamespace(AUCell)
     message(paste("calculating TF activity from regulon using "), method)
 
     geneSets = split(regulon$target, regulon$tf)
     message("ranking cells...")
-    cells_rankings = AUCell_buildRankings(scale.mat, nCores=ncore, plotStats=F)
+    cells_rankings = AUCell::AUCell_buildRankings(scale.mat, nCores=ncore, plotStats=F)
     message("calculating AUC...")
-    cells_AUC = AUCell_calcAUC(geneSets, rankings=cells_rankings, nCores = ncore)
-    score.combine=data.frame(getAUC(cells_AUC))
+    cells_AUC = AUCell::AUCell_calcAUC(geneSets, rankings=cells_rankings, nCores = ncore)
+    score.combine=data.frame(AUCell::getAUC(cells_AUC))
   }
 
   return(score.combine)

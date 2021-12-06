@@ -1,15 +1,33 @@
+#' A function to calculate weights for regulons
+#'
+#' @param regulon a regulon in the form of a tall format matrix consisting of tf(regulator), target and a column indicating degree of association between TF and target such as "mor" or "corr".
+#'           example regulon:
+#'           tf      target  corr
+#' @param sce scater single cell object compute weights on
+#' @param cluster_factor cluster labels of the scater single cell object
+#' @param block_factor batch labels of the scater single cell object
+#' @param exprs_values name of the assay to be retrieved from scater object
+#' @param corr whether to calculate weights based on correlation
+#' @param MI whether to calculate weights based on mutual information
+#' @param multicore number of cores to use
+#'
+#' @return dataframe with three columns in the form of regulon input. The third column is replaced with the inferred weights
+#' @importFrom stats cor
+#' @importFrom SummarizedExperiment assays colData
+#' @export
+#'
+#' @examples 1+1
 addWeights=function(regulon, sce, cluster_factor, block_factor= NULL, exprs_values=NULL,  corr=TRUE, MI=TRUE, multicore=TRUE){
-  require(scater)
 
   if (is.null(exprs_values)){
     exprs_values="logcounts"
   }
 
   if (isTRUE(multicore)){
-    require(BiocParallel)
-    BPPARAM <- MulticoreParam()
+
+    BPPARAM <- BiocParallel::MulticoreParam()
   } else {
-    BPPARAM <- MulticoreParam(workers=1)
+    BPPARAM <- BiocParallel::MulticoreParam(workers=1)
   }
 
   #compute average expression across clusters and batches
@@ -18,7 +36,7 @@ addWeights=function(regulon, sce, cluster_factor, block_factor= NULL, exprs_valu
     averages.se <- scater::sumCountsAcrossCells(sce, exprs_values=exprs_values, ids=colData(sce)[cluster_factor], average=T, BPPARAM=BPPARAM)
 
   } else {
-    groupings = DataFrame(cluster=colData(sce)[cluster_factor], block=colData(sce)[block_factor])
+    groupings = data.frame(cluster=colData(sce)[cluster_factor], block=colData(sce)[block_factor])
     averages.se = scater::sumCountsAcrossCells(sce, exprs_values=exprs_values, groupings, average=T, BPPARAM=BPPARAM)
   }
 
@@ -46,7 +64,6 @@ addWeights=function(regulon, sce, cluster_factor, block_factor= NULL, exprs_valu
 
   if (isTRUE(MI)) {
     message("computing mutual information of the regulon...")
-    require(entropy)
     regulon$MI = 0
 
     pb = txtProgressBar(min = 0, max = nrow(regulon), style = 3)
@@ -56,8 +73,8 @@ addWeights=function(regulon, sce, cluster_factor, block_factor= NULL, exprs_valu
       if (length(unique(expr[tf_index,]))<10 | length(unique(expr[target_index,]))<10 ){
         regulon$MI[i] = NA}
       else{
-        y2d = discretize2d(expr[tf_index,], expr[target_index,], numBins1=10, numBins2=10)
-        mi = mi.empirical(y2d)
+        y2d = entropy::discretize2d(expr[tf_index,], expr[target_index,], numBins1=10, numBins2=10)
+        mi = entropy::mi.empirical(y2d)
         regulon$MI[i] = mi}
       Sys.sleep(1 / 100)
       setTxtProgressBar(pb, i)
