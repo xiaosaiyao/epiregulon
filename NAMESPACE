@@ -2,6 +2,8 @@
 
 export(addWeights)
 export(calculateActivity)
+export(getP2Glinks)
+export(pathwayscoreCoeffNorm)
 importFrom(SummarizedExperiment,assays)
 importFrom(SummarizedExperiment,colData)
 importFrom(magrittr,"%>%")

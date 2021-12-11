@@ -20,4 +20,7 @@ Imports:
     BiocParallel,
     entropy,
     stats,
-    SummarizedExperiment
+    SummarizedExperiment,
+    ArchR
+Depends: 
+    R (>= 2.10)

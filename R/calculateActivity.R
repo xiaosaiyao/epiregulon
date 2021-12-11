@@ -55,13 +55,25 @@ calculateActivity=function(scale.mat, regulon, mode, method=NULL, ncore=NULL){
 
 }
 
-pathwayscoreCoeffNorm=function(mat_scale, colnames, pathway, tf.name){
-  pathway_index=match(pathway[,1], colnames)
+#' A subfunction for calculateActivity for deriving individual
+#'
+#' @param mat_scale log2 normalized expression matrix from single cell data
+#' @param genenames vector of gene names in mat_scale
+#' @param pathway a dataframe containing gene names and weights of regulons belong to the TF
+#' @param tf_name name of the transcription factor being computed scores for
+#'
+#' @return A dataframe of a single column with inferred activity scores in single cells for the TF
+#' @export
+#'
+#' @examples 1+1
+pathwayscoreCoeffNorm=function(mat_scale, genenames, pathway, tf_name){
+
+  pathway_index=match(pathway[,1], genenames)
   if (length(pathway_index)==1){
     score=as.data.frame(mat_scale[pathway_index,] * pathway[,2],na.rm=T)
   } else {
     score=as.data.frame(colMeans(mat_scale[pathway_index,] * pathway[,2],na.rm=T))
   }
-  colnames(score) <- tf.name
+  colnames(score) <- tf_name
   return(score)
 }
