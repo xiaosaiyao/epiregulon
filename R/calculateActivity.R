@@ -12,7 +12,6 @@
 #' @return a matrix of inferred transcription factor (row) activities in single cells (columns)
 #' @export
 #' @importFrom utils setTxtProgressBar txtProgressBar
-#' @importFrom magrittr %>%
 #'
 #' @examples 1+1
 calculateActivity=function(scale.mat, regulon, mode, method=NULL, ncore=NULL){
@@ -36,7 +35,8 @@ calculateActivity=function(scale.mat, regulon, mode, method=NULL, ncore=NULL){
       setTxtProgressBar(pb, i)
     }
 
-    score.combine=dplyr::bind_cols(score) %>% t() %>% as.data.frame()
+    score.combine=do.call(cbind, score)
+    score.combine <- as.data.frame(t(score.combine))
 
   } else if (method == "aucell"){
     #requireNamespace(AUCell)

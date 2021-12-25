@@ -4,3 +4,5 @@
 .httr-oauth
 .DS_Store
 .rda
+.rds
+R/sysdata.rda

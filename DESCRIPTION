@@ -12,15 +12,16 @@ Encoding: UTF-8
 LazyData: true
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.1.1
-Imports: 
-    dplyr,
+Imports:
     scater,
-    magrittr,
     AUCell,
     BiocParallel,
     entropy,
     stats,
     SummarizedExperiment,
-    ArchR
+    S4Vectors,
+    rlang,
+    tidyr
 Depends: 
+    ArchR,
     R (>= 2.10)

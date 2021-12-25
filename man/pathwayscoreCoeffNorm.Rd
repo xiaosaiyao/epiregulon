@@ -4,16 +4,16 @@
 \alias{pathwayscoreCoeffNorm}
 \title{A subfunction for calculateActivity for deriving individual}
 \usage{
-pathwayscoreCoeffNorm(mat_scale, cellnames, pathway, tf_name)
+pathwayscoreCoeffNorm(mat_scale, genenames, pathway, tf_name)
 }
 \arguments{
 \item{mat_scale}{log2 normalized expression matrix from single cell data}
 
+\item{genenames}{vector of gene names in mat_scale}
+
 \item{pathway}{a dataframe containing gene names and weights of regulons belong to the TF}
 
 \item{tf_name}{name of the transcription factor being computed scores for}
-
-\item{genenames}{vector of gene names in mat_scale}
 }
 \value{
 A dataframe of a single column with inferred activity scores in single cells for the TF
