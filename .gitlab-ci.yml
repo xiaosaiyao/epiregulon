@@ -1,0 +1,3 @@
+compile:
+  image: "registry.code.roche.com/gp/execution-service-request/master:latest"
+  script: ping-execution-service.sh
