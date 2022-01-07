@@ -4,10 +4,12 @@
 \alias{addTFMotifInfo}
 \title{A function to add TF binding motif occupancy information to the peak2gene object}
 \usage{
-addTFMotifInfo(archr_path, organism = "human")
+addTFMotifInfo(archr_path, grl, organism = "human")
 }
 \arguments{
 \item{archr_path}{Path to a ArchR project that have performed LSI dimensionality reduction and scRNA-seq integration}
+
+\item{grl}{GRangeList object containing TF binding information}
 
 \item{organism}{human or mouse are currently supported}
 }

@@ -22,7 +22,7 @@ Imports:
     S4Vectors,
     rlang,
     tidyr,
-    sparseMatrixStats
+    genomitory
 Depends: 
     ArchR,
-    R (>= 2.10)
+    R (>= 3.30)

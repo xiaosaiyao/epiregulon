@@ -5,6 +5,7 @@
 #'
 #' @return A Peak2Gene object (DFrame)
 #' @import ArchR
+#' @import utils
 #' @export
 #'
 #' @examples 1+1
@@ -31,16 +32,34 @@ getP2Glinks <- function(archr_path, cor_cutoff = 0.5){
   return(p2g)
 }
 
+
+#' An accessor function to retrieve TF motif info from genomitory repository
+#'
+#' @return A GRangeList object containing binding site information of 1274 TFs
+#' @export
+#'
+#' @examples 1+1
+getTFMotifInfo <- function(){
+
+  id <- genomitory::packID("GMTY156", # project name
+               "motif_bed_granges.rds", # path within the project
+               "REVISION-1") # version
+  grl <- genomitory::getFeatures(id)
+
+  return(grl)
+}
+
 #' A function to add TF binding motif occupancy information to the peak2gene object
 #'
 #' @param archr_path Path to a ArchR project that have performed LSI dimensionality reduction and scRNA-seq integration
 #' @param organism human or mouse are currently supported
+#' @param grl GRangeList object containing TF binding information
 #'
 #' @return None, a motif binary matrix file will be created in the Annotations folder of supplied ArchR project path as ChIP-Matches-In-Peaks.rds
 #' @export
 #'
 #' @examples 1+1
-addTFMotifInfo <- function(archr_path, organism = "human"){
+addTFMotifInfo <- function(archr_path, grl, organism = "human"){
 
   proj <- ArchR::loadArchRProject(archr_path)
 
