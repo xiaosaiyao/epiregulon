@@ -21,7 +21,8 @@ Imports:
     SummarizedExperiment,
     S4Vectors,
     rlang,
-    tidyr
+    tidyr,
+    sparseMatrixStats
 Depends: 
     ArchR,
     R (>= 2.10)
