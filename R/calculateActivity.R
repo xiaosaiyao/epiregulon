@@ -16,7 +16,7 @@
 #' @examples 1+1
 calculateActivity=function(sce, regulon, mode, method=NULL, ncore=NULL){
   method=tolower(method)
-  scale.mat = SingleCellExperiment::logcounts(sce)
+  scale.mat = as.matrix(SingleCellExperiment::logcounts(sce))
 
   message(method)
   if (is.null(ncore)){
@@ -70,12 +70,11 @@ calculateActivity=function(sce, regulon, mode, method=NULL, ncore=NULL){
 pathwayscoreCoeffNorm=function(mat_scale, genenames, pathway, tf_name){
 
   pathway_index=match(pathway[,1], genenames)
-  pathway_index=na.omit(pathway_index)
 
   if (length(pathway_index)==1){
     score=as.data.frame(mat_scale[pathway_index,] * pathway[,2],na.rm=T)
   } else {
-    score=as.data.frame(colMeans(mat_scale[pathway_index,] %*% pathway[,2]), na.rm= T)
+    score=as.data.frame(colMeans(mat_scale[pathway_index,] * pathway[,2]), na.rm= T)
   }
   colnames(score) <- tf_name
   return(score)
