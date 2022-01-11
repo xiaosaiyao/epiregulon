@@ -39,12 +39,23 @@ getP2Glinks <- function(archr_path, cor_cutoff = 0.5){
 #' @export
 #'
 #' @examples 1+1
-getTFMotifInfo <- function(){
+getTFMotifInfo <- function(genome = "hg19"){
 
-  id <- genomitory::packID("GMTY156", # project name
-               "motif_bed_granges.rds", # path within the project
-               "REVISION-1") # version
-  grl <- genomitory::getFeatures(id)
+  if (genome == 'hg19'){
+
+    id <- genomitory::packID("GMTY156", # project name
+                             "hg19_motif_bed_granges.rds", # path within the project
+                             "REVISION-2") # version
+    grl <- genomitory::getFeatures(id)
+
+  } else if (genome == "hg38") {
+
+    id <- genomitory::packID("GMTY162", # project name
+                             "hg38_motif_bed_granges.rds", # path within the project
+                             "REVISION-1") # version
+    grl <- genomitory::getFeatures(id)
+
+  }
 
   return(grl)
 }
