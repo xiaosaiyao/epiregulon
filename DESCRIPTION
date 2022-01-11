@@ -22,7 +22,8 @@ Imports:
     S4Vectors,
     rlang,
     tidyr,
-    genomitory
+    genomitory,
+    SingleCellExperiment
 Depends: 
     ArchR,
     R (>= 3.30)

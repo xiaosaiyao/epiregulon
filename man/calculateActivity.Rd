@@ -4,10 +4,10 @@
 \alias{calculateActivity}
 \title{A function that calculates the per cell activity of master regulons based on a regulon}
 \usage{
-calculateActivity(scale.mat, regulon, mode, method = NULL, ncore = NULL)
+calculateActivity(sce, regulon, mode, method = NULL, ncore = NULL)
 }
 \arguments{
-\item{scale.mat}{a matrix of genes by cells. Rows represent genes and columns represent cells. Rownames (either gene symbols or geneID) must be consistent with the naming convention in the regulon.}
+\item{sce}{a matrix of genes by cells. Rows represent genes and columns represent cells. Rownames (either gene symbols or geneID) must be consistent with the naming convention in the regulon.}
 
 \item{regulon}{a regulon in the form of a tall format matrix consisting of tf(regulator), target and a column indicating degree of association between TF and target such as "mor" or "corr".
 example regulon:
