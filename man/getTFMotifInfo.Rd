@@ -4,7 +4,10 @@
 \alias{getTFMotifInfo}
 \title{An accessor function to retrieve TF motif info from genomitory repository}
 \usage{
-getTFMotifInfo()
+getTFMotifInfo(genome = "hg19")
+}
+\arguments{
+\item{genome}{a string specifying the genome for bed files}
 }
 \value{
 A GRangeList object containing binding site information of 1274 TFs

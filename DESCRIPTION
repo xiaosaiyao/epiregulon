@@ -27,3 +27,7 @@ Imports:
 Depends: 
     ArchR,
     R (>= 3.30)
+Suggests: 
+    rmarkdown,
+    knitr
+VignetteBuilder: knitr

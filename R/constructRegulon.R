@@ -35,6 +35,8 @@ getP2Glinks <- function(archr_path, cor_cutoff = 0.5){
 
 #' An accessor function to retrieve TF motif info from genomitory repository
 #'
+#' @param genome a string specifying the genome for bed files
+#'
 #' @return A GRangeList object containing binding site information of 1274 TFs
 #' @export
 #'

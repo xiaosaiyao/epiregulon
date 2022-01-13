@@ -6,3 +6,4 @@
 .rda
 .rds
 R/sysdata.rda
+inst/doc

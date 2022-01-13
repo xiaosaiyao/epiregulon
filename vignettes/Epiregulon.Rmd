@@ -1,0 +1,35 @@
+---
+title: "Epiregulon"
+author:
+- name: Shang-Yang Chen
+  email: CHENS179@gene.com
+- name: Xiaosai Yao
+  email: yaox19@gene.com
+date: "January 12th, 2022"
+output:
+  BiocStyle::html_document:
+    toc_float: true
+package: epiregulon
+vignette: >
+  %\VignetteIndexEntry{Epiregulon}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+```{r setup, message=FALSE}
+library(epiregulon)
+```
+
+
+```{r}
+
+```
+
+
