@@ -44,22 +44,43 @@ addWeights=function(regulon, sce, cluster_factor, block_factor= NULL, exprs_valu
 
   if (isTRUE(corr)){
     message("computing correlation of the regulon...")
-    # adding correlation
-    regulon$corr = 0
 
-    pb = txtProgressBar(min = 0, max = nrow(regulon), style = 3)
-    for (i in 1:nrow(regulon)){
-      tf_index = match(regulon$tf[i], rownames(expr))
-      target_index = match(regulon$target[i], rownames(expr))
-      if (is.na(tf_index) | is.na(target_index)){
-        regulon$corr[i] = NA}
-      else{
-        corr = cor(expr[tf_index,], expr[target_index,], use = "na.or.complete")
-        regulon$corr[i] = corr}
+    unique_tfs = unique(regulon$tf)
+
+    pb = txtProgressBar(min = 0, max = length(unique_tfs), style = 3)
+
+    regulon_list <- list()
+
+    for (i in 1:length(unique_tfs)){
+
+      tf_regulon = subset(regulon, tf==unique_tfs[i])
+      tf_index = match(tf_regulon$tf[1], rownames(expr))
+
+      weights = apply(tf_regulon, 1, function(tf_target_pair){
+
+        target_index = match(tf_target_pair[2], rownames(expr))
+
+        if (is.na(tf_index) | is.na(target_index)){
+
+          return(NA)
+
+        } else {
+
+          corr = cor(expr[tf_index,], expr[target_index,], use = "na.or.complete")
+          return(corr)
+
+        }
+      })
+
+      tf_regulon$weight = weights
+      regulon_list[[i]] <- tf_regulon
+
       Sys.sleep(1 / 100)
       setTxtProgressBar(pb, i)
+
     }
   }
+
   #adding mutual information
 
   if (isTRUE(MI)) {
@@ -80,5 +101,7 @@ addWeights=function(regulon, sce, cluster_factor, block_factor= NULL, exprs_valu
       setTxtProgressBar(pb, i)
     }
   }
+
+  regulon = do.call("rbind", regulon_list)
   return(regulon)
 }
