@@ -74,7 +74,7 @@ pathwayscoreCoeffNorm=function(mat_scale, genenames, pathway, tf_name){
   if (length(pathway_index)==1){
     score=as.data.frame(mat_scale[pathway_index,] * pathway[,2],na.rm=T)
   } else {
-    score=as.data.frame(colMeans(mat_scale[pathway_index,] * pathway[,2]), na.rm= T)
+    score=as.data.frame(colMeans(mat_scale[pathway_index,] * pathway[,2], na.rm= T))
   }
   colnames(score) <- tf_name
   return(score)
