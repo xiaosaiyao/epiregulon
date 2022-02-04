@@ -23,11 +23,13 @@ Imports:
     rlang,
     tidyr,
     genomitory,
-    SingleCellExperiment
+    SingleCellExperiment,
+    rmarkdown,
+    scran,
+    viridis
 Depends: 
     ArchR,
     R (>= 3.30)
 Suggests: 
-    rmarkdown,
     knitr
 VignetteBuilder: knitr
