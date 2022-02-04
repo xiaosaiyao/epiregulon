@@ -1,3 +1,15 @@
+#' A function to plot cell-level reduced dimension results stored in a SingleCellExperiment object, colored by activities for a specific TF
+#'
+#' @param sce A SingleCellExperiment object containing dimensional reduction coordinates (UMAP or tSNE)
+#' @param activity_matrix A matrix of TF activities inferred from calculateActivity
+#' @param tf The name of the transcription factor to be plotted
+#' @param dimtype Name of dimensional reduction to be plotted (UMAP or tSNE)
+#' @param label A boolean value to determine whether the cluser/group labels should be annotated on plot
+#'
+#' @return A ggplot object
+#' @export
+#'
+#' @examples 1+1 = 2
 plotActivityDim <- function(sce, activity_matrix, tf, dimtype="UMAP", label = NULL){
 
   tf.activity <- as.numeric(subset(activity_matrix, rownames(activity_matrix)==tf))
@@ -28,6 +40,16 @@ plotActivityDim <- function(sce, activity_matrix, tf, dimtype="UMAP", label = NU
 
 }
 
+#' A function to draw a violin plot of inferred activities for a specific TFs grouped by cluster/group labels
+#'
+#' @param activity_matrix A matrix of TF activities inferred from calculateActivity
+#' @param tf The name of the transcription factor to be plotted
+#' @param class A vector of cluster or group labels for single cells
+#'
+#' @return A ggplot object
+#' @export
+#'
+#' @examples 1+1 = 2
 plotActivityViolin <- function(activity_matrix, tf, class){
 
   tf.activity <- as.numeric(subset(activity_matrix, rownames(activity_matrix)==tf))
@@ -41,6 +63,16 @@ plotActivityViolin <- function(activity_matrix, tf, class){
 
 }
 
+#' A function to draw bubble plot of relative activities across cluster/group labels for a list of TFs
+#'
+#' @param activity_matrix The name of the transcription factor to be plotted
+#' @param tf.list The list of the transcription factors to be plotted
+#' @param class A vector of cluster or group labels for single cells
+#'
+#' @return A ggplot object
+#' @export
+#'
+#' @examples 1+1 = 2
 plotBubble <- function(activity_matrix, tf.list, class){
 
   tf.activity <- t(subset(activity_matrix, rownames(activity_matrix) %in% tf.list))

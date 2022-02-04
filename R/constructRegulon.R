@@ -10,7 +10,7 @@
 #'
 #' @examples 1+1
 #'
-getP2Glinks <- function(archr_path, cor_cutoff = 0.5){
+getP2Glinks <- function(archr_path, cor_cutoff = 0.5, reducedDims = "IterativeLSI", useMatrix = "GeneIntegrationMatrix", ...){
 
  ArchR::addArchRLogging(useLogs = FALSE)
 
@@ -18,8 +18,9 @@ getP2Glinks <- function(archr_path, cor_cutoff = 0.5){
 
   proj <- ArchR::addPeak2GeneLinks(
     ArchRProj = proj,
-    reducedDims = "IterativeLSI",
-    logFile = "x"
+    reducedDims = reducedDims,
+    useMatrix = useMatrix,
+    logFile = "x", ...
   )
 
   p2g <- ArchR::getPeak2GeneLinks(
