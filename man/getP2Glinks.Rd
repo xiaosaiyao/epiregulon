@@ -4,7 +4,13 @@
 \alias{getP2Glinks}
 \title{A function to compute correlations between ATAC-seq peaks and RNA-seq genes}
 \usage{
-getP2Glinks(archr_path, cor_cutoff = 0.5)
+getP2Glinks(
+  archr_path,
+  cor_cutoff = 0.5,
+  reducedDims = "IterativeLSI",
+  useMatrix = "GeneIntegrationMatrix",
+  ...
+)
 }
 \arguments{
 \item{archr_path}{Path to a ArchR project that have performed LSI dimensionality reduction and scRNA-seq integration}

@@ -14,9 +14,9 @@
 #' @importFrom utils setTxtProgressBar txtProgressBar
 #'
 #' @examples 1+1
-calculateActivity=function(sce, regulon, mode, method=NULL, ncore=NULL){
+calculateActivity=function(sce, regulon, mode, method=NULL, ncore=NULL, assay = "logcounts"){
   method=tolower(method)
-  scale.mat = as.matrix(SingleCellExperiment::logcounts(sce))
+  scale.mat = as.matrix(assay(sce, assay))
 
   message(method)
   if (is.null(ncore)){
