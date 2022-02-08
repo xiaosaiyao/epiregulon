@@ -13,6 +13,7 @@
 #' @examples 1+1 = 2
 findDifferentialActivity <- function(activity_matrix, groups, test.type= "t", pval.type="some", direction="up", ...){
 
+  activity_matrix=na.omit(activity_matrix)
   tf_markers <- scran::findMarkers(activity_matrix, groups, test.type= "t", pval.type="some", direction="up", ...)
   return(tf_markers)
 
@@ -26,18 +27,33 @@ findDifferentialActivity <- function(activity_matrix, groups, test.type= "t", pv
 #' @return A compiled dataframe of TFs with differential activities across clusters/groups
 #' @export
 #'
-#' @examples
-getSigGenes <- function(da_list, fdr_cutoff = 0.05){
+#' @examples 1+1 = 2
+getSigGenes=function(da_list, fdr_cutoff = 0.05, logFC_cutoff = NULL, order="FDR", topgenes = NULL, decreasing = FALSE){
 
   classes <- names(da_list)
 
   top.list <- lapply(seq_along(da_list), function(i){
     da_genes <- as.data.frame(da_list[[i]])
     da_genes <- da_genes[,c("p.value","FDR","summary.logFC")]
-    da_genes <- subset(da_genes, FDR < fdr_cutoff)
+
+    if (is.null(logFC_cutoff)){
+      logFC_cutoff = round(quantile(da_genes$summary.logFC, 0.95), digits = 1)
+    }else {
+      logFC_cutoff= logFC_cutoff
+    }
+    message ("Using a logFC cutoff of ", logFC_cutoff, " for class ", i)
+    da_genes <- da_genes[which(da_genes[,"FDR"] < fdr_cutoff & da_genes[, "summary.logFC"] > logFC_cutoff), ]
     da_genes$class <- classes[[i]]
     da_genes$tf <- rownames(da_genes); rownames(da_genes) <- NULL
-    da_genes <- da_genes[order(-da_genes$summary.logFC),]
+
+
+    if (is.null(topgenes)){
+      da_genes <- da_genes[order(da_genes[,order], decreasing = decreasing),]
+    } else {
+      da_genes <- da_genes[head(order(da_genes[,order], decreasing = decreasing), topgenes),]
+    }
+
+
     return(da_genes)
   })
 

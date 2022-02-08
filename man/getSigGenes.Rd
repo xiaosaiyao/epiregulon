@@ -4,7 +4,14 @@
 \alias{getSigGenes}
 \title{A function to compile and summarize the output from findDifferentialActivity function}
 \usage{
-getSigGenes(da_list, fdr_cutoff = 0.05)
+getSigGenes(
+  da_list,
+  fdr_cutoff = 0.05,
+  logFC_cutoff = NULL,
+  order = "FDR",
+  topgenes = NULL,
+  decreasing = FALSE
+)
 }
 \arguments{
 \item{da_list}{List of dataframes from running findDifferentialActivity}
@@ -16,4 +23,7 @@ A compiled dataframe of TFs with differential activities across clusters/groups
 }
 \description{
 A function to compile and summarize the output from findDifferentialActivity function
+}
+\examples{
+1+1 = 2
 }

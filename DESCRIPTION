@@ -31,5 +31,5 @@ Depends:
     ArchR,
     R (>= 3.30)
 Suggests: 
-    knitr
+    knitr, rmarkdown
 VignetteBuilder: knitr

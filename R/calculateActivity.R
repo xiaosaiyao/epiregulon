@@ -14,46 +14,47 @@
 #' @importFrom utils setTxtProgressBar txtProgressBar
 #'
 #' @examples 1+1
-calculateActivity=function(sce, regulon, mode, method=NULL, ncore=NULL, assay = "logcounts"){
-  method=tolower(method)
+calculateActivity=function (sce, regulon, mode, method = NULL, ncore = NULL, assay)
+{
+  method = tolower(method)
   scale.mat = as.matrix(assay(sce, assay))
-
   message(method)
-  if (is.null(ncore)){
-    ncore=1
+  if (is.null(ncore)) {
+    ncore = 1
   }
-  if (method == "weightedmean"){
-    message(paste("calculating TF activity from regulon using "), method)
-
+  if (method == "weightedmean") {
+    message(paste("calculating TF activity from regulon using "),
+            method)
     TFs.found = unique(regulon$tf)
-    pb = txtProgressBar(min = 0, max = length(TFs.found), style = 3)
-    score=list()
+    pb = txtProgressBar(min = 0, max = length(TFs.found),
+                        style = 3)
+    score = list()
     for (i in 1:length(TFs.found)) {
-      regulon.current=regulon[regulon$tf==TFs.found[i],]
-      geneset=data.frame(regulon.current$target,regulon.current[,mode])
-      score[[TFs.found[i]]]=pathwayscoreCoeffNorm(scale.mat, rownames(scale.mat), geneset, TFs.found[i])
-      Sys.sleep(1 / 100)
+      regulon.current = regulon[regulon$tf == TFs.found[i],
+      ]
+      geneset = data.frame(regulon.current$target, regulon.current[,
+                                                                   mode])
+      score[[TFs.found[i]]] = pathwayscoreCoeffNorm(scale.mat,
+                                                    rownames(scale.mat), geneset, TFs.found[i])
+      Sys.sleep(1/100)
       setTxtProgressBar(pb, i)
     }
-
-    score.combine=do.call(cbind, score)
+    score.combine = do.call(cbind, score)
     score.combine <- as.data.frame(t(score.combine))
-
-  } else if (method == "aucell"){
-    #requireNamespace(AUCell)
-    message(paste("calculating TF activity from regulon using "), method)
-
+  }
+  else if (method == "aucell") {
+    message(paste("calculating TF activity from regulon using "),
+            method)
     geneSets = split(regulon$target, regulon$tf)
     message("ranking cells...")
-    cells_rankings = AUCell::AUCell_buildRankings(scale.mat, nCores=ncore, plotStats=F)
+    cells_rankings = AUCell::AUCell_buildRankings(scale.mat,
+                                                  nCores = ncore, plotStats = F)
     message("calculating AUC...")
-    cells_AUC = AUCell::AUCell_calcAUC(geneSets, rankings=cells_rankings, nCores = ncore)
-    score.combine=data.frame(AUCell::getAUC(cells_AUC))
+    cells_AUC = AUCell::AUCell_calcAUC(geneSets, rankings = cells_rankings,
+                                       nCores = ncore)
+    score.combine = data.frame(AUCell::getAUC(cells_AUC))
   }
-
   return(score.combine)
-
-
 }
 
 #' A subfunction for calculateActivity for deriving individual

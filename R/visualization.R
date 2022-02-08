@@ -10,28 +10,22 @@
 #' @export
 #'
 #' @examples 1+1 = 2
-plotActivityDim <- function(sce, activity_matrix, tf, dimtype="UMAP", label = NULL){
+plotActivityDim <- function(sce, activity_matrix, tf, dimtype="UMAP", label = NULL,...){
 
   tf.activity <- as.numeric(subset(activity_matrix, rownames(activity_matrix)==tf))
   sce$activity <- tf.activity
 
   if (!is.null(label)){
 
-    if (dimtype == "UMAP") {
-      g <- scater::plotReducedDim(sce, dimred = "UMAP", point_size= 0.8, colour_by="activity",
-                                  text_by = label, text_size = 3, text_colour = "black")
-    } else if (dimtype=="TSNE"){
-      g <- scater::plotReducedDim(sce, dimred = "TSNE", point_size= 0.8, colour_by="activity",
-                                  text_by = label, text_size = 3, text_colour = "black")
-    }
+
+    g <- scater::plotReducedDim(sce, dimred = dimtype, colour_by="activity",
+                                text_by = label, text_size = 3, text_colour = "black",...)
+
 
   } else {
 
-    if (dimtype == "UMAP") {
-      g <- scater::plotReducedDim(sce, dimred = "UMAP", point_size= 0.8, colour_by="activity")
-    } else if (dimtype=="TSNE"){
-      g <- scater::plotReducedDim(sce, dimred = "TSNE", point_size= 0.8, colour_by="activity")
-    }
+    g <- scater::plotReducedDim(sce, dimred = dimtype, colour_by="activity",
+                                text_by = label, text_size = 3, text_colour = "black",...)
 
   }
 
@@ -57,7 +51,7 @@ plotActivityViolin <- function(activity_matrix, tf, class){
 
   g <- ggplot2::ggplot(df, aes(class, activity, fill=class)) + geom_violin() + theme_classic(base_size = 12) +
     ggtitle(tf) + theme(legend.position = "none", plot.title = element_text(hjust = 0.5),
-          axis.text.x=element_text(angle=45,hjust=1))
+                        axis.text.x=element_text(angle=45,hjust=1))
 
   return(g)
 
@@ -78,7 +72,7 @@ plotBubble <- function(activity_matrix, tf.list, class){
   tf.activity <- t(subset(activity_matrix, rownames(activity_matrix) %in% tf.list))
   df <- data.frame(class = class, tf.activity)
 
-  markers <- findDifferentialActivity(score.combine, sce$BioClassification, pval.type="some", direction="up", test.type= "t")
+  markers <- findDifferentialActivity(score.combine, class, pval.type="some", direction="up", test.type= "t")
   markers <- getSigGenes(markers, fdr_cutoff = 1.5)
   markers <- subset(markers, tf %in% tf.list)
 

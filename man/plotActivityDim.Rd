@@ -4,7 +4,7 @@
 \alias{plotActivityDim}
 \title{A function to plot cell-level reduced dimension results stored in a SingleCellExperiment object, colored by activities for a specific TF}
 \usage{
-plotActivityDim(sce, activity_matrix, tf, dimtype = "UMAP", label = NULL)
+plotActivityDim(sce, activity_matrix, tf, dimtype = "UMAP", label = NULL, ...)
 }
 \arguments{
 \item{sce}{A SingleCellExperiment object containing dimensional reduction coordinates (UMAP or tSNE)}

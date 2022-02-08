@@ -4,14 +4,7 @@
 \alias{calculateActivity}
 \title{A function that calculates the per cell activity of master regulons based on a regulon}
 \usage{
-calculateActivity(
-  sce,
-  regulon,
-  mode,
-  method = NULL,
-  ncore = NULL,
-  assay = "logcounts"
-)
+calculateActivity(sce, regulon, mode, method = NULL, ncore = NULL, assay)
 }
 \arguments{
 \item{sce}{a matrix of genes by cells. Rows represent genes and columns represent cells. Rownames (either gene symbols or geneID) must be consistent with the naming convention in the regulon.}

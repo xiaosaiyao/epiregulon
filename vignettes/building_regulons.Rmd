@@ -11,7 +11,7 @@ output:
     toc_float: true
 package: epiregulon
 vignette: >
-  %\VignetteIndexEntry{Epiregulon}
+  %\VignetteIndexEntry{BuildingRegulons}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
