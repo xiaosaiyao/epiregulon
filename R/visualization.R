@@ -67,14 +67,14 @@ plotActivityViolin <- function(activity_matrix, tf, class){
 #' @export
 #'
 #' @examples 1+1 = 2
-plotBubble <- function(activity_matrix, tf.list, class){
+plotBubble <- function(activity_matrix, tf.list, class, bubblesize="FDR"){
 
   tf.activity <- t(subset(activity_matrix, rownames(activity_matrix) %in% tf.list))
   df <- data.frame(class = class, tf.activity)
 
   markers <- findDifferentialActivity(score.combine, class, pval.type="some", direction="up", test.type= "t")
-  markers <- getSigGenes(markers, fdr_cutoff = 1.5)
-  markers <- subset(markers, tf %in% tf.list)
+  markers <- suppressMessages(getSigGenes(markers, fdr_cutoff = 1.5, logFC_cutoff =-100))
+  markers <- markers[which( markers$tf %in% tf.list),]
 
   ### aggregate by class and calculate z scores
   df.mean <- aggregate(.~class, df, mean)
@@ -83,10 +83,21 @@ plotBubble <- function(activity_matrix, tf.list, class){
 
   ### plot bubble
   df.plot <- tidyr::pivot_longer(df.mean, -c(.data$class), names_to = "tf", values_to = "relative_activity")
+  markers$tf=make.names(markers$tf)
   df.plot <- merge(df.plot, markers)
-  g <- ggplot2::ggplot(df.plot, aes(class, tf, color=relative_activity, size=summary.logFC)) +
-    geom_point() + scale_color_viridis_c()+ scale_size_continuous(range=c(0,7))+
-    theme_classic(base_size = 12) + theme(axis.text.x=element_text(angle=45,hjust=1))
+  df.plot$tf= factor(as.character(df.plot$tf), levels = unique(markers$tf))
+
+  if (bubblesize == "FDR"){
+    g <- ggplot2::ggplot(df.plot, aes_string("class", "tf", color="relative_activity")) +
+      geom_point(stat = 'identity', aes(size = (- log10(FDR))) ) + scale_color_viridis_c()+ scale_size_continuous(range=c(0,7)) +
+      theme_classic(base_size = 12) + theme(axis.text.x=element_text(angle=45,hjust=1))
+  } else if (bubblesize == "logFC.summary") {
+    g <- ggplot2::ggplot(df.plot, aes_string("class", "tf", color="relative_activity")) +
+      geom_point() + scale_color_viridis_c()+ scale_size_continuous(range=c(0,7))+
+      theme_classic(base_size = 12) + theme(axis.text.x=element_text(angle=45,hjust=1))
+  }
+
+
 
   return(g)
 
