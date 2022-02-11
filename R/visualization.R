@@ -10,7 +10,7 @@
 #' @export
 #'
 #' @examples 1+1 = 2
-plotActivityDim <- function(sce, activity_matrix, tf, dimtype="UMAP", label = NULL,...){
+plotActivityDim_ <- function(sce, activity_matrix, tf, dimtype="UMAP", label = NULL,...){
 
   tf.activity <- as.numeric(subset(activity_matrix, rownames(activity_matrix)==tf))
   sce$activity <- tf.activity
@@ -29,10 +29,24 @@ plotActivityDim <- function(sce, activity_matrix, tf, dimtype="UMAP", label = NU
 
   }
 
-  return(g + scale_color_gradient(low="blue", high="yellow") + ggtitle(tf) +
-           theme_classic(base_size = 12) + theme(plot.title = element_text(hjust = 0.5)))
+  g <- g + scale_color_gradient(low="blue", high="yellow") + ggtitle(tf) +
+    theme_classic(base_size = 12) + theme(plot.title = element_text(hjust = 0.5))
+
+  return(g)
 
 }
+
+plotActivityDim <- function(sce, activity_matrix, tf, dimtype="UMAP", label = NULL, ncol = NULL, combine = TRUE, ...){
+
+  gs <- lapply(tf, function(x) {
+    suppressMessages(return(plotActivityDim_(sce, activity_matrix, x, dimtype, label)))
+  })
+
+  return(gs)
+}
+
+
+
 
 #' A function to draw a violin plot of inferred activities for a specific TFs grouped by cluster/group labels
 #'
