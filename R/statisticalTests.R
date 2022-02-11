@@ -23,6 +23,10 @@ findDifferentialActivity <- function(activity_matrix, groups, test.type= "t", pv
 #'
 #' @param da_list List of dataframes from running findDifferentialActivity
 #' @param fdr_cutoff cutoff for FDR value, default is 0.05
+#' @param logFC_cutoff cutoff for log fold change
+#' @param order variable to order the differential TF results by, default is FDR
+#' @param topgenes number of top ordered genes to include in output
+#' @param decreasing direction of ordering for differential TF activity results, default is FALSE
 #'
 #' @return A compiled dataframe of TFs with differential activities across clusters/groups
 #' @export

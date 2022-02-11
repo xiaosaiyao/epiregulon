@@ -102,6 +102,7 @@ addTFMotifInfo <- function(archr_path, grl, organism = "human"){
 #'
 #' @param archr_path Path to a ArchR project that have performed LSI dimensionality reduction and scRNA-seq integration
 #' @param p2g_object A Peak2Gene object (DFrame) created by ArchR or getP2Glinks() function
+#' @param keep_id boolean value that specify whether peak and gene ids are kept in regulon output or not
 #'
 #' @return a tall format dataframe consisting of tf(regulator), target and a column indicating degree of association between TF and target such as "mor" or "corr".
 #'           example regulon:
@@ -111,7 +112,7 @@ addTFMotifInfo <- function(archr_path, grl, organism = "human"){
 #' @export
 #'
 #' @examples 1+1
-getRegulon <- function(archr_path, p2g_object){
+getRegulon <- function(archr_path, p2g_object, keep_id = FALSE){
 
   # Get metadata from p2g object and turn into df with peak indexes
   peak_metadata = as.data.frame(S4Vectors::metadata(p2g_object)[[1]]) # shows  chromosome, start, and end coordinates for each peak
@@ -137,11 +138,20 @@ getRegulon <- function(archr_path, p2g_object){
   regulon_wide <- merge(p2g_merged, tf.binary.matrix, by="idxATAC")
 
   ### convert into long, readable matrix format
-  regulon_df <- within(regulon_wide, rm("idxATAC","Chrom","idxRNA"))
-  regulon_df <- tidyr::pivot_longer(regulon_df, -c(.data$Gene, .data$Correlation), names_to = "TF")
+  #regulon_df <- within(regulon_wide, rm("idxATAC","Chrom","idxRNA"))
+  regulon_df <- tidyr::pivot_longer(regulon_wide, -c(.data$idxATAC, .data$idxRNA, .data$Chrom, .data$Gene, .data$Correlation), names_to = "TF")
   regulon_df <- regulon_df[regulon_df$value==TRUE, ]
-  regulon_df <- regulon_df[,c("TF","Gene","Correlation")]
-  colnames(regulon_df) <- c("tf", "target","corr")
+
+  if (keep_id){
+    regulon_df <- regulon_df[,c("idxATAC","idxRNA","TF","Gene","Correlation")]
+    colnames(regulon_df) <- c("idxATAC","idxRNA", "tf", "target","corr")
+
+  } else {
+    ### aggregate multiple tf-target rows by mean
+    regulon_df <- regulon_df[,c("TF","Gene","Correlation")]
+    colnames(regulon_df) <- c("tf", "target","corr")
+    regulon_df <- aggregate(corr ~ tf + target, data = regulon_df, FUN = mean, na.rm = TRUE)
+  }
 
   return (regulon_df)
 }

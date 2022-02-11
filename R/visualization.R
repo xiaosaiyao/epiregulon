@@ -59,9 +59,10 @@ plotActivityViolin <- function(activity_matrix, tf, class){
 
 #' A function to draw bubble plot of relative activities across cluster/group labels for a list of TFs
 #'
-#' @param activity_matrix The name of the transcription factor to be plotted
+#' @param activity_matrix A matrix of TF activities inferred from calculateActivity
 #' @param tf.list The list of the transcription factors to be plotted
 #' @param class A vector of cluster or group labels for single cells
+#' @param bubblesize A variable from findDifferentialActivity output to scale size of bubbles by, default is FDR
 #'
 #' @return A ggplot object
 #' @export

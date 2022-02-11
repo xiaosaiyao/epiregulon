@@ -17,6 +17,14 @@ getSigGenes(
 \item{da_list}{List of dataframes from running findDifferentialActivity}
 
 \item{fdr_cutoff}{cutoff for FDR value, default is 0.05}
+
+\item{logFC_cutoff}{cutoff for log fold change}
+
+\item{order}{variable to order the differential TF results by, default is FDR}
+
+\item{topgenes}{number of top ordered genes to include in output}
+
+\item{decreasing}{direction of ordering for differential TF activity results, default is FALSE}
 }
 \value{
 A compiled dataframe of TFs with differential activities across clusters/groups

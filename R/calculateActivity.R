@@ -8,7 +8,7 @@
 #' @param mode a string indicating the mode of regulon such as "mor" or "corr" when weightedMean is the chosen method
 #' @param method method for calculating activity. Available methods are weightedMean or aucell. The parameter used for the weights in weightedMean is further specified by mode.
 #' @param ncore number of cores to use
-#'
+#' @param assay name of assay from sce object to calculate TF activity on
 #' @return a matrix of inferred transcription factor (row) activities in single cells (columns)
 #' @export
 #' @importFrom utils setTxtProgressBar txtProgressBar
@@ -26,16 +26,12 @@ calculateActivity=function (sce, regulon, mode, method = NULL, ncore = NULL, ass
     message(paste("calculating TF activity from regulon using "),
             method)
     TFs.found = unique(regulon$tf)
-    pb = txtProgressBar(min = 0, max = length(TFs.found),
-                        style = 3)
+    pb = txtProgressBar(min = 0, max = length(TFs.found), style = 3)
     score = list()
     for (i in 1:length(TFs.found)) {
-      regulon.current = regulon[regulon$tf == TFs.found[i],
-      ]
-      geneset = data.frame(regulon.current$target, regulon.current[,
-                                                                   mode])
-      score[[TFs.found[i]]] = pathwayscoreCoeffNorm(scale.mat,
-                                                    rownames(scale.mat), geneset, TFs.found[i])
+      regulon.current = regulon[regulon$tf == TFs.found[i],]
+      geneset = data.frame(regulon.current$target, regulon.current[, mode])
+      score[[TFs.found[i]]] = pathwayscoreCoeffNorm(scale.mat,rownames(scale.mat), geneset, TFs.found[i])
       Sys.sleep(1/100)
       setTxtProgressBar(pb, i)
     }

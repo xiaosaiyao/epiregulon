@@ -19,6 +19,8 @@ Esr1    Pgr     0.56}
 \item{method}{method for calculating activity. Available methods are weightedMean or aucell. The parameter used for the weights in weightedMean is further specified by mode.}
 
 \item{ncore}{number of cores to use}
+
+\item{assay}{name of assay from sce object to calculate TF activity on}
 }
 \value{
 a matrix of inferred transcription factor (row) activities in single cells (columns)
