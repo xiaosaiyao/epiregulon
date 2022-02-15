@@ -59,7 +59,7 @@ getAvailableMatrices(proj)
 
 # Quick start
 
-1. Retrieve bulk TF ChIP-seq binding sites 
+## 1. Retrieve bulk TF ChIP-seq binding sites 
 
 First, we retrieve the information of TF binding sites collected from Cistrome and ENCODE ChIP-seq, which are hosted on Genomitory. Currently, human genomes HG19 and HG38 are available. We plan to add options for murine genomes and perhaps other model organisms in the near future. 
 ```{r}
@@ -68,7 +68,7 @@ head(grl)
 
 ```
 
-2. Link ATACseq peaks to target genes
+## 2. Link ATACseq peaks to target genes
 
 Next, we compute peak to gene correlations using the addPeak2GeneLinks function from ArchR package. The user would need to supply a path to an ArchR directory with a project contains peak and gene matrices, as well as already performed Latent semantic indexing (LSI) dimensionality reduction and integration with a scRNA-seq dataset. The example project shown here utilizes the [tutorial datasets](https://www.archrproject.com/articles/Articles/tutorial.html) provided by the ArchR development team. 
 ```{r}
@@ -77,14 +77,14 @@ p2g <- getP2Glinks(archR_project_path)
 head(p2g)
 ```
 
-3. Add TF motif binding to peaks
+## 3. Add TF motif binding to peaks
 
 The next step is to add the TF motif binding information retrieved previously to the ArchR object. This step calls the addPeakAnnotations function in ArchR to generate a binary matrix containing TF binding information for each peak to gene link. The file is stored as Annotations/ChIP-Matches-In-Peaks.rds in the ArchR project directory.
 ```{r}
 addTFMotifInfo(archr_path = archR_project_path, grl)
 ```
 
-4. Generate regulons
+## 4. Generate regulons
 
 A long format dataframe, representing the inferred regulons, is then generated. The dataframe consists of three columns:
 
@@ -106,10 +106,10 @@ load scRNA-seq data
 sce=readRDS("/gstore/project/lineage/sam/heme_GRN/scRNA-Granja-2019.rds")
 
 ```
-trim regulon to use 3 TFs only for demonstration purposes
+Trim regulon to use 4 TFs only for demonstration purposes
 
 ```{r}
-TFs <- c("FOXA1","GATA3","SOX9")
+TFs <- c("FOXA1","GATA3","SOX9", "SPI1")
 regulon <- regulon %>% dplyr::filter(tf %in% TFs)
 nrow(regulon)
 
@@ -123,7 +123,7 @@ regulon.w=addWeights(regulon=regulon,
 head(regulon.w)
 ```
 
-5. Calculate TF activity 
+## 5. Calculate TF activity 
 
 Finally, the activities for a specific TF in each cell are computed by averaging expressions of target genes linked to the TF weighted by the correlation variable of user's choice. 
 $$y=\frac{1}{n}\sum_{i=1}^{n} x_i * corr_i$$
@@ -137,6 +137,39 @@ score.combine <- calculateActivity(sce, regulon.w, "weight", method="weightedMea
 head(score.combine[,1:10])
 ```
 
+## 6 Differential TF activity test
+
+We can next determine which TFs exhibit differential activities across cell clusters/groups via the findDifferentialActivity function. This function depends on findMarkers function from scran package and allow the same parameters. 
+
+```{r}
+markers <- findDifferentialActivity(score.combine, sce$BioClassification, pval.type="some", direction="up", test.type= "t")
+```
+
+getSigGenes compiles the different test results into a single dataframe and enables user to supply their desired cutoffs for significance and variable to order by.
+
+```{r}
+markers <- getSigGenes(da_list, fdr_cutoff = 0.05, logFC_cutoff = NULL, order="FDR")
+head(markers)
+```
+
+## 7. Visualizing TF activities
+
+Epiregulon also provides multiple options for visualizing the inferred TF activities.
+
+tSNE or UMAP plots:
+```{r}
+plotActivityDim(sce, score.combine, c("FOXA1","GATA3","SOX9", "SPI1"), "TSNE", combine = T)
+```
+
+Violin plots:
+```{r}
+plotActivityViolin(score.combine, c("FOXA1","GATA3","SOX9", "SPI1"), sce$BioClassification)
+```
+
+Bubble plot:
+```{r}
+plotBubble(score.combine, c("FOXA1","GATA3","SOX9", "SPI1"), sce$BioClassification, bubblesize = "FDR")
+```
 
 # Session Info
 

@@ -4,7 +4,7 @@
 \alias{getRegulon}
 \title{A function to combine the TF binding motif info and peak to gene correlations to generate regulons}
 \usage{
-getRegulon(archr_path, p2g_object, keep_id = FALSE)
+getRegulon(archr_path, p2g_object, keep_id = TRUE)
 }
 \arguments{
 \item{archr_path}{Path to a ArchR project that have performed LSI dimensionality reduction and scRNA-seq integration}

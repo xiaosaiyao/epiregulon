@@ -112,7 +112,7 @@ addTFMotifInfo <- function(archr_path, grl, organism = "human"){
 #' @export
 #'
 #' @examples 1+1
-getRegulon <- function(archr_path, p2g_object, keep_id = FALSE){
+getRegulon <- function(archr_path, p2g_object, keep_id = TRUE){
 
   # Get metadata from p2g object and turn into df with peak indexes
   peak_metadata = as.data.frame(S4Vectors::metadata(p2g_object)[[1]]) # shows  chromosome, start, and end coordinates for each peak

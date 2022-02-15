@@ -2,23 +2,27 @@
 % Please edit documentation in R/visualization.R
 \name{plotActivityViolin}
 \alias{plotActivityViolin}
-\title{A function to draw a violin plot of inferred activities for a specific TFs grouped by cluster/group labels}
+\title{A function to draw violin plots of inferred activities for a list of TFs grouped by cluster/group labels}
 \usage{
-plotActivityViolin(activity_matrix, tf, class)
+plotActivityViolin(activity_matrix, tf, class, ncol = NULL, combine = TRUE)
 }
 \arguments{
 \item{activity_matrix}{A matrix of TF activities inferred from calculateActivity}
 
-\item{tf}{The name of the transcription factor to be plotted}
+\item{tf}{The names of the transcription factors to be plotted}
 
 \item{class}{A vector of cluster or group labels for single cells}
+
+\item{ncol}{number of columns in the combined plot, if combine == TRUE}
+
+\item{combine}{whether to combine and visualize the plots in one panel or not}
 }
 \value{
-A ggplot object
+a combined ggplot object or a list of ggplots if combine == FALSE
 }
 \description{
-A function to draw a violin plot of inferred activities for a specific TFs grouped by cluster/group labels
+A function to draw violin plots of inferred activities for a list of TFs grouped by cluster/group labels
 }
 \examples{
-1+1 = 2
+2+2 = 4
 }
