@@ -47,8 +47,11 @@ getSigGenes=function(da_list, fdr_cutoff = 0.05, logFC_cutoff = NULL, order="FDR
     }
     message ("Using a logFC cutoff of ", logFC_cutoff, " for class ", i)
     da_genes <- da_genes[which(da_genes[,"FDR"] < fdr_cutoff & da_genes[, "summary.logFC"] > logFC_cutoff), ]
-    da_genes$class <- classes[[i]]
-    da_genes$tf <- rownames(da_genes); rownames(da_genes) <- NULL
+
+    if (nrow(da_genes) != 0){
+      da_genes$class <- classes[[i]]
+      da_genes$tf <- rownames(da_genes); rownames(da_genes) <- NULL
+    }
 
 
     if (is.null(topgenes)){

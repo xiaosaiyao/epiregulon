@@ -4,14 +4,14 @@
 \alias{getRegulon}
 \title{A function to combine the TF binding motif info and peak to gene correlations to generate regulons}
 \usage{
-getRegulon(archr_path, p2g_object, keep_id = TRUE)
+getRegulon(archr_path, p2g_object, aggregate = TRUE)
 }
 \arguments{
 \item{archr_path}{Path to a ArchR project that have performed LSI dimensionality reduction and scRNA-seq integration}
 
 \item{p2g_object}{A Peak2Gene object (DFrame) created by ArchR or getP2Glinks() function}
 
-\item{keep_id}{boolean value that specify whether peak and gene ids are kept in regulon output or not}
+\item{aggregate}{boolean value that specify whether peak and gene ids are kept in regulon output or not}
 }
 \value{
 a tall format dataframe consisting of tf(regulator), target and a column indicating degree of association between TF and target such as "mor" or "corr".

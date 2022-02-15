@@ -155,15 +155,20 @@ plotBubble=function (activity_matrix, tf.list, class, bubblesize = "FDR")
   df.mean <- data.frame(class = df.mean[, 1], as.data.frame(zscores))
   df.plot <- tidyr::pivot_longer(df.mean, -c(.data$class),
                                  names_to = "tf", values_to = "relative_activity")
+
+  levels=make.names(unique(tf.list[tf.list %in% markers$tf]))
   markers$tf = make.names(markers$tf)
   df.plot <- merge(df.plot, markers)
-  levels=unique(tf.list[tf.list %in% markers$tf])
+
   message(levels)
   df.plot$tf = factor(as.character(df.plot$tf), levels = levels )
   if (bubblesize == "FDR") {
+    logpval <- -log10(df.plot$FDR)
+    min.logpval <- min(logpval[is.finite(logpval)])
+    logpval <- replace(logpval, is.infinite(logpval), min.logpval)
     g <- ggplot2::ggplot(df.plot, aes_string("class", "tf",
                                              color = "relative_activity")) + geom_point(stat = "identity",
-                                                                                        aes(size = (-log10(FDR)))) + scale_color_viridis_c() +
+                                                                                        aes(size = logpval)) + scale_color_viridis_c() +
       scale_size_continuous(range = c(0, 7)) + theme_classic(base_size = 12) +
       theme(axis.text.x = element_text(angle = 45, hjust = 1))
   }
