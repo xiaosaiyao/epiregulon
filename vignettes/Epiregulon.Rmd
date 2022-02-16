@@ -92,7 +92,7 @@ A long format dataframe, representing the inferred regulons, is then generated. 
 * target gene
 * peak to gene correlation between tf and target gene
 ```{r}
-regulon <- getRegulon(archr_path = archR_project_path, p2g, keep_id=FALSE)
+regulon <- getRegulon(archr_path = archR_project_path, p2g, aggregate=TRUE)
 head(regulon)
 ```
 
@@ -107,6 +107,7 @@ sce=readRDS("/gstore/project/lineage/sam/heme_GRN/scRNA-Granja-2019.rds")
 
 ```
 
+trim regulon for demonstration purposes
 ```{r}
 TFs <- c("FOXA1","GATA3","SOX9", "SPI1")
 regulon <- regulon %>% dplyr::filter(tf %in% TFs)
@@ -147,7 +148,7 @@ da_list <- findDifferentialActivity(score.combine, sce$BioClassification, pval.t
 getSigGenes compiles the different test results into a single dataframe and enables user to supply their desired cutoffs for significance and variable to order by.
 
 ```{r}
-markers <- getSigGenes(da_list, fdr_cutoff = 1.5, logFC_cutoff = -100, order = "summary.logFC", decreasing = T)
+markers <- getSigGenes(da_list, fdr_cutoff = 0.05, order = "summary.logFC", decreasing = T)
 head(markers)
 ```
 

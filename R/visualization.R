@@ -55,7 +55,7 @@ plotActivityDim_ <- function(sce, activity_matrix, tf, dimtype="UMAP", label = N
 plotActivityDim <- function(sce, activity_matrix, tf, dimtype="UMAP", label = NULL, ncol = NULL, combine = TRUE, ...){
 
   gs <- lapply(tf, function(x) {
-    suppressMessages(return(plotActivityDim_(sce, activity_matrix, x, dimtype, label)))
+    suppressMessages(return(plotActivityDim_(sce, activity_matrix, x, dimtype, label, ...)))
   })
 
   if (combine == TRUE) {

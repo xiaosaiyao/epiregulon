@@ -58,7 +58,7 @@ addWeights=function(regulon, sce, cluster_factor, block_factor= NULL, exprs_valu
 
       weights = apply(tf_regulon, 1, function(tf_target_pair){
 
-        target_index = match(tf_target_pair[2], rownames(expr))
+        target_index = match(tf_target_pair['target'], rownames(expr))
 
         if (is.na(tf_index) | is.na(target_index)){
 
