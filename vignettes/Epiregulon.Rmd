@@ -5,7 +5,7 @@ author:
   email: chens179@gene.com
 - name: Xiaosai Yao
   email: yaox19@gene.com
-date: "February 14th, 2022"
+date: "February 15th, 2022"
 output:
   BiocStyle::html_document:
     toc_float: true
@@ -157,12 +157,12 @@ head(markers)
 Epiregulon also provides multiple options for visualizing the inferred TF activities.
 
 tSNE or UMAP plots:
-```{r}
+```{r, fig.width=12, fig.height=10}
 plotActivityDim(sce, score.combine, c("FOXA1","GATA3","SOX9", "SPI1"), "TSNE", combine = T)
 ```
 
 Violin plots:
-```{r}
+```{r, fig.width=12, fig.height=10}
 plotActivityViolin(score.combine, c("FOXA1","GATA3","SOX9", "SPI1"), sce$BioClassification)
 ```
 

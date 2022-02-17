@@ -160,7 +160,7 @@ plotBubble=function (activity_matrix, tf.list, class, bubblesize = "FDR")
   markers$tf = make.names(markers$tf)
   df.plot <- merge(df.plot, markers)
 
-  message(levels)
+  #message(levels)
   df.plot$tf = factor(as.character(df.plot$tf), levels = levels )
   if (bubblesize == "FDR") {
     logpval <- -log10(df.plot$FDR)
