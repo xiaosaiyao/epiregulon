@@ -67,3 +67,51 @@ getSigGenes=function(da_list, fdr_cutoff = 0.05, logFC_cutoff = NULL, order="FDR
   return(do.call(rbind, top.list))
 
 }
+
+regulonEnrich_ <- function(TF, regulon, corr, corr_cutoff, genesets){
+
+  regulon.TF=unique(regulon$target[which(regulon$tf == TF & regulon[, corr] >corr_cutoff)])
+  enrichresults = clusterProfiler::enricher(regulon.TF, TERM2GENE = genesets)
+  results=enrichresults@result
+  results$GeneRatio=(as.numeric(lapply(strsplit(results$GeneRatio, split = "/"), "[",1)))/(as.numeric(lapply(strsplit(results$GeneRatio, split = "/"), "[",2)))
+  results$BgRatio=(as.numeric(lapply(strsplit(results$BgRatio, split = "/"), "[",1)))/(as.numeric(lapply(strsplit(results$BgRatio, split = "/"), "[",2)))
+  results$Odds.Ratio=results$GeneRatio/results$BgRatio
+  results=results[order(results$p.adjust),]
+  results$Description = factor(as.character(results$Description), level = unique(as.character(results$Description[nrow(results):1])))
+  return(results)
+}
+
+
+#' A function to perform geneset enrichment of user-defined regulons
+#'
+#' @param TF  A vector of TF names
+#' @param regulon a weighted regulon consisting of tf, targets, corr and weight
+#' @param corr name of column that is used to filter target genes for geneset enrichment. Default is "weight".
+#' @param corr_cutoff a cutoff to filter on the column specified by corr. Default is 0.5.
+#' @param genesets a dataframe with the first column being the name of the geneset and the second column being the name of the genes
+#'
+#' @return a combined ggplot object or a list of ggplots if combine == FALSE
+#' @export
+#'
+#' @examples #retrieve genesets
+#' H <- EnrichmentBrowser::getGenesets(org = "hsa", db = "msigdb", cat = "H", gene.id.type = "SYMBOL" )
+#' C6 <- EnrichmentBrowser::getGenesets(org = "hsa", db = "msigdb", cat = "C6", gene.id.type = "SYMBOL" )
+#' #combine genesets and convert genesets to be compatible with enricher
+#' gs <- c(H,C6)
+#' gs.list <- do.call(rbind,lapply(names(gs), function(x) {data.frame(gs=x, genes=gs[[x]])}))
+#'
+#' > head(gs.list)
+#' gs   genes
+#' 1 M5890_HALLMARK_TNFA_SIGNALING_VIA_NFKB   ABCA1
+#' 2 M5890_HALLMARK_TNFA_SIGNALING_VIA_NFKB   ACKR3
+#' 3 M5890_HALLMARK_TNFA_SIGNALING_VIA_NFKB    AREG
+#'
+#' enrichment_results <- regulonEnrich(c("NKX2-1","GATA6","AR"), regulon=regulon.w, genesets=gs.list)
+#'
+regulonEnrich <- function(TF, regulon, corr="weight", corr_cutoff=0.5, genesets){
+  regulonls <- lapply(TF, function(x) {
+    regulonEnrich_(x, regulon, corr, corr_cutoff, genesets)
+  })
+  names(regulonls)=TF
+  return(regulonls)
+}

@@ -4,12 +4,12 @@
 \alias{getRegulon}
 \title{A function to combine the TF binding motif info and peak to gene correlations to generate regulons}
 \usage{
-getRegulon(archr_path, p2g_object, aggregate = TRUE)
+getRegulon(p2g, overlap, aggregate = TRUE)
 }
 \arguments{
-\item{archr_path}{Path to a ArchR project that have performed LSI dimensionality reduction and scRNA-seq integration}
+\item{p2g}{A Peak2Gene dataframe created by ArchR or getP2Glinks() function}
 
-\item{p2g_object}{A Peak2Gene object (DFrame) created by ArchR or getP2Glinks() function}
+\item{overlap}{dataframe storing overlaps between the regions of the peak matrix with the bulk TF ChIP-seq binding sites}
 
 \item{aggregate}{boolean value that specify whether peak and gene ids are kept in regulon output or not}
 }

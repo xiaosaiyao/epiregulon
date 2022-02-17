@@ -81,43 +81,41 @@ getTFMotifInfo <- function(genome = "hg19"){
 
 #' A function to add TF binding motif occupancy information to the peak2gene object
 #'
-#' @param archr_path Path to a ArchR project that have performed LSI dimensionality reduction and scRNA-seq integration
-#' @param organism human or mouse are currently supported
-#' @param grl GRangeList object containing TF binding information
+#' @param p2g A Peak2Gene dataframe created by ArchR or getP2Glinks() function
+#' @param grl GRangeList object containing reference TF binding information
+#' @param peakMatrix A matrix of scATAC-seq peak regions with peak ids as rows
+#' @param archR_project_path Path to a ArchR project that have performed LSI dimensionality reduction and scRNA-seq integration
 #'
-#' @return None, a motif binary matrix file will be created in the Annotations folder of supplied ArchR project path as ChIP-Matches-In-Peaks.rds
+#' @return A dataframe containing overlapping ids of scATAC-seq peak regions and reference TF binding regions
 #' @export
 #'
 #' @examples 1+1
-addTFMotifInfo <- function(archr_path, grl, organism = "human"){
+addTFMotifInfo <- function(p2g, grl, peakMatrix=NULL, archR_project_path=NULL){
 
-  suppressMessages(proj <- ArchR::loadArchRProject(archr_path))
-
-  if (organism=="human"){
-    proj <- ArchR::addPeakAnnotations(ArchRProj = proj, regions = grl, name = "ChIP", force = TRUE,
-                                      logFile = "x")
-  } else{
-    proj <- ArchR::addPeakAnnotations(ArchRProj = proj, regions = grl, name = "ChIP", force = TRUE,
-                                      logFile = "x")
-  }
-
-  #### check if binary matrix is created
-  if (file.exists(paste0(archr_path,"/Annotations/ChIP-Matches-In-Peaks.rds"))) {
-
-    return ("Add TF motif info sucessful!")
-
+  if (!is.null(archR_project_path)) {
+    proj <- loadArchRProject(path = archR_project_path, showLogo = F)
+    peakSet= getPeakSet(ArchRProj = proj)
   } else {
-
-    stop("TF binary matrix file was not created.")
-
+    peakSet = rowRanges(peakMatrix)
   }
+
+  message("Computing overlap...")
+  overlap <- GenomicRanges::findOverlaps(peakSet, grl)
+  overlap <- data.frame(overlap)
+  colnames(overlap) <- c("idxATAC", "idxTF")
+  overlap <- overlap[which(overlap$idxATAC %in% p2g$idxATAC), ]
+  overlap$tf <- names(grl)[overlap$idxTF]
+  message("Sucess!")
+
+  return(overlap)
+
 }
 
 
 #'  A function to combine the TF binding motif info and peak to gene correlations to generate regulons
 #'
-#' @param archr_path Path to a ArchR project that have performed LSI dimensionality reduction and scRNA-seq integration
-#' @param p2g_object A Peak2Gene object (DFrame) created by ArchR or getP2Glinks() function
+#' @param p2g A Peak2Gene dataframe created by ArchR or getP2Glinks() function
+#' @param overlap dataframe storing overlaps between the regions of the peak matrix with the bulk TF ChIP-seq binding sites
 #' @param aggregate boolean value that specify whether peak and gene ids are kept in regulon output or not
 #'
 #' @return a tall format dataframe consisting of tf(regulator), target and a column indicating degree of association between TF and target such as "mor" or "corr".
@@ -128,31 +126,16 @@ addTFMotifInfo <- function(archr_path, grl, organism = "human"){
 #' @export
 #'
 #' @examples 1+1
-getRegulon <- function(archr_path, p2g_object, aggregate = TRUE){
+getRegulon <- function(p2g, overlap, aggregate = TRUE){
 
-  ## Append TF occupancy information to create regulon
-  tf.binary <- readRDS(paste0(archr_path,"/Annotations/ChIP-Matches-In-Peaks.rds"))
-  tf.binary.matrix <- as.matrix(tf.binary@assays@data$matches)
-  tf.binary.matrix <- as.data.frame(tf.binary.matrix)
-  tf.binary.matrix$idxATAC <- as.numeric(rownames(tf.binary.matrix))
-  regulon_wide <- merge(p2g_object, tf.binary.matrix, by="idxATAC")
+  regulon_df <- merge(overlap, p2g, by="idxATAC")
 
-  ### convert into long, readable matrix format
-  #regulon_df <- within(regulon_wide, rm("idxATAC","Chrom","idxRNA"))
-  regulon_df <- tidyr::pivot_longer(regulon_wide, -c(.data$idxATAC, .data$idxRNA, .data$Chrom, .data$Gene, .data$Correlation), names_to = "TF")
-  regulon_df <- regulon_df[regulon_df$value==TRUE, ]
-
-  if (aggregate){
-    ### aggregate multiple tf-target rows by mean
-    regulon_df <- regulon_df[,c("TF","Gene","Correlation")]
-    colnames(regulon_df) <- c("tf", "target","corr")
-    regulon_df <- aggregate(corr ~ tf + target, data = regulon_df, FUN = mean, na.rm = TRUE)
-  } else {
-
-    regulon_df <- regulon_df[,c("idxATAC","idxRNA","TF","Gene","Correlation")]
-    colnames(regulon_df) <- c("idxATAC","idxRNA", "tf", "target","corr")
-
+  if (aggregate) {
+    regulon_df <- regulon_df[, c("tf", "Gene", "Correlation")]
+    colnames(regulon_df) <- c("tf", "target", "corr")
+    regulon_df <- aggregate(corr ~ tf + target, data = regulon_df,
+                            FUN = mean, na.rm = TRUE)
   }
+  return(regulon_df)
 
-  return (regulon_df)
 }

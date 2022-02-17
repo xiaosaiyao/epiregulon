@@ -30,6 +30,7 @@ plotActivityDim_ <- function(sce, activity_matrix, tf, dimtype="UMAP", label = N
   }
 
   g <- g + scale_color_gradient(low="blue", high="yellow") + ggtitle(tf) +
+    labs(color='activity') +
     theme_classic(base_size = 12) + theme(plot.title = element_text(hjust = 0.5))
 
   return(g)
@@ -179,4 +180,54 @@ plotBubble=function (activity_matrix, tf.list, class, bubblesize = "FDR")
       theme(axis.text.x = element_text(angle = 45, hjust = 1))
   }
   return(g)
+}
+
+
+enrichPlot_ <- function(results, title, top) {
+  ggplot(results[1:top, ] , aes(y = p.adjust, x = Description, color = GeneRatio)) +
+    scale_colour_gradient(high = "red", low = "blue") +
+    geom_point(stat = 'identity', aes(size = Odds.Ratio)) +
+    coord_flip() +
+    theme_bw() + ggtitle (title) +
+    theme(
+      text = element_text(size = 8),
+      axis.text = element_text(size = 8),
+      axis.text.x = element_text(angle = 45, hjust = 1),
+      plot.title = element_text(hjust = 0.5),
+      panel.grid.major = element_blank(),
+      panel.grid.minor = element_blank(),
+      panel.margin = unit(0.5, "lines")
+    )
+}
+
+#' A function to plot results of regulonEnrich
+#'
+#' @param results  regulonEnrich
+#' @param top the number of pathways to plot ranked by significance. Default is 15.
+#' @param ncol number of columns in the combined plot, if combine == TRUE. Default ncol is 3.
+#' @param combine whether to combine and visualize the plots in one panel or not
+#'
+#' @return a combined ggplot object or a list of ggplots if combine == FALSE
+#' @export
+#'
+#' @examples enrichplot(results=enrichment_results )
+#
+enrichPlot <- function(results, top = 15, ncol=3, combine=TRUE) {
+
+  gs <- lapply(names(results), function(x) {
+    enrichPlot_(results[[x]], x, top)
+  })
+
+  if (combine == TRUE) {
+
+    gs <- patchwork::wrap_plots(gs, ncol = ncol)
+
+    return(gs)
+
+  } else {
+
+    return(gs)
+
+  }
+
 }

@@ -7,8 +7,7 @@ author:
   email: yaox19@gene.com
 date: "February 15th, 2022"
 output:
-  BiocStyle::html_document:
-    toc_float: true
+  pdf_document
 package: epiregulon
 vignette: >
   %\VignetteIndexEntry{Epiregulon}

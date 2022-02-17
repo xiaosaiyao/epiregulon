@@ -21,13 +21,14 @@ Imports:
     SummarizedExperiment,
     S4Vectors,
     rlang,
-    tidyr,
     genomitory,
     SingleCellExperiment,
     rmarkdown,
     scran,
     viridis,
-    patchwork
+    patchwork,
+    clusterProfiler,
+    GenomicRanges
 Depends: 
     ArchR,
     R (>= 3.30)
