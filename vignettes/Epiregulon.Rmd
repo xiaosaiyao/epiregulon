@@ -78,9 +78,10 @@ head(p2g)
 
 ## Add TF motif binding to peaks
 
-The next step is to add the TF motif binding information retrieved previously to the ArchR object. This step calls the addPeakAnnotations function in ArchR to generate a binary matrix containing TF binding information for each peak to gene link. The file is stored as Annotations/ChIP-Matches-In-Peaks.rds in the ArchR project directory.
+The next step is to add the TF motif binding information by overlapping the regions of the peak matrix with the bulk chip-seq database loaded in 2. The user can supply either an archR project path and this function will retrieve the peak matrix, or a peakMatrix in the form of a Granges object or RangedSummarizedExperiment.
 ```{r}
-addTFMotifInfo(archr_path = archR_project_path, grl)
+overlap <- addTFMotifInfo(p2g, grl, archR_project_path = archR_project_path)
+head(overlap)
 ```
 
 ## Generate regulons
@@ -91,7 +92,7 @@ A long format dataframe, representing the inferred regulons, is then generated. 
 * target gene
 * peak to gene correlation between tf and target gene
 ```{r}
-regulon <- getRegulon(archr_path = archR_project_path, p2g, aggregate=TRUE)
+regulon <- getRegulon(p2g, overlap, aggregate=TRUE)
 head(regulon)
 ```
 
