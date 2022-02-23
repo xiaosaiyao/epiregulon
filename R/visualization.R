@@ -10,7 +10,7 @@
 #' @export
 #'
 #' @examples 1+1 = 2
-plotActivityDim_ <- function(sce, activity_matrix, tf, dimtype="UMAP", label = NULL,...){
+plotActivityDim_ <- function(sce, activity_matrix, tf, dimtype, label, legend.label,...){
 
   tf.activity <- as.numeric(subset(activity_matrix, rownames(activity_matrix)==tf))
   sce$activity <- tf.activity
@@ -30,7 +30,7 @@ plotActivityDim_ <- function(sce, activity_matrix, tf, dimtype="UMAP", label = N
   }
 
   g <- g + scale_color_gradient(low="blue", high="yellow") + ggtitle(tf) +
-    labs(color='activity') +
+    labs(color=legend.label) +
     theme_classic(base_size = 12) + theme(plot.title = element_text(hjust = 0.5))
 
   return(g)
@@ -53,10 +53,10 @@ plotActivityDim_ <- function(sce, activity_matrix, tf, dimtype="UMAP", label = N
 #' @export
 #'
 #' @examples 1+1 = 2
-plotActivityDim <- function(sce, activity_matrix, tf, dimtype="UMAP", label = NULL, ncol = NULL, combine = TRUE, ...){
+plotActivityDim <- function(sce, activity_matrix, tf, dimtype="UMAP", label = NULL, ncol = NULL, combine = TRUE, legend.label = "activity", ...){
 
   gs <- lapply(tf, function(x) {
-    suppressMessages(return(plotActivityDim_(sce, activity_matrix, x, dimtype, label, ...)))
+    suppressMessages(return(plotActivityDim_(sce, activity_matrix, x, dimtype, label, legend.label, ...)))
   })
 
   if (combine == TRUE) {
@@ -165,8 +165,8 @@ plotBubble=function (activity_matrix, tf.list, class, bubblesize = "FDR")
   df.plot$tf = factor(as.character(df.plot$tf), levels = levels )
   if (bubblesize == "FDR") {
     logpval <- -log10(df.plot$FDR)
-    min.logpval <- min(logpval[is.finite(logpval)])
-    logpval <- replace(logpval, is.infinite(logpval), min.logpval)
+    max.logpval <- max(logpval[is.finite(logpval)])
+    logpval <- replace(logpval, is.infinite(logpval), max.logpval)
     g <- ggplot2::ggplot(df.plot, aes_string("class", "tf",
                                              color = "relative_activity")) + geom_point(stat = "identity",
                                                                                         aes(size = logpval)) + scale_color_viridis_c() +
@@ -184,7 +184,7 @@ plotBubble=function (activity_matrix, tf.list, class, bubblesize = "FDR")
 
 
 enrichPlot_ <- function(results, title, top) {
-  ggplot(results[1:top, ] , aes(y = p.adjust, x = Description, color = GeneRatio)) +
+  ggplot(results[1:top, ] , aes(y = -log10(p.adjust), x = Description, color = GeneRatio)) +
     scale_colour_gradient(high = "red", low = "blue") +
     geom_point(stat = 'identity', aes(size = Odds.Ratio)) +
     coord_flip() +

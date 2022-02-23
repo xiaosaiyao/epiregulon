@@ -74,6 +74,11 @@ getTFMotifInfo <- function(genome = "hg19"){
                              "REVISION-1") # version
     grl <- genomitory::getFeatures(id)
 
+  } else if (genome == "mm10"){
+    id <- genomitory::packID("GMTY181", # project name
+                             "mm10_motif_bed_granges.rds", # path within the project
+                             "REVISION-1") # version
+    grl <- genomitory::getFeatures(id)
   }
 
   return(grl)
@@ -105,7 +110,7 @@ addTFMotifInfo <- function(p2g, grl, peakMatrix=NULL, archR_project_path=NULL){
   colnames(overlap) <- c("idxATAC", "idxTF")
   overlap <- overlap[which(overlap$idxATAC %in% p2g$idxATAC), ]
   overlap$tf <- names(grl)[overlap$idxTF]
-  message("Sucess!")
+  message("Success!")
 
   return(overlap)
 
