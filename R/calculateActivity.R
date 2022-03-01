@@ -13,7 +13,10 @@
 #' @export
 #' @importFrom utils setTxtProgressBar txtProgressBar
 #'
-#' @examples 1+1
+#' @examples
+#' # regulon matrix from addRegulon or addWeights functinos
+#' score.combine <- calculateActivity(sce, regulon.w, "weight", method="weightedMean", assay="logcounts")
+
 calculateActivity=function (sce, regulon, mode, method = NULL, ncore = NULL, assay)
 {
   method = tolower(method)
@@ -62,8 +65,6 @@ calculateActivity=function (sce, regulon, mode, method = NULL, ncore = NULL, ass
 #'
 #' @return A dataframe of a single column with inferred activity scores in single cells for the TF
 #' @export
-#'
-#' @examples 1+1
 pathwayscoreCoeffNorm=function(mat_scale, genenames, pathway, tf_name){
 
   pathway_index=match(pathway[,1], genenames)

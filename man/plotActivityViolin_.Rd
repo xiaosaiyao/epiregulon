@@ -19,6 +19,3 @@ A ggplot object
 \description{
 A function to draw a violin plot of inferred activities for a specific TF grouped by cluster/group labels
 }
-\examples{
-1+1 = 2
-}

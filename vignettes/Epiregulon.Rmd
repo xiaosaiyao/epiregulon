@@ -5,7 +5,7 @@ author:
   email: chens179@gene.com
 - name: Xiaosai Yao
   email: yaox19@gene.com
-date: "February 15th, 2022"
+date: "February 22th, 2022"
 output:
   pdf_document
 package: epiregulon

@@ -12,6 +12,7 @@ plotActivityDim(
   label = NULL,
   ncol = NULL,
   combine = TRUE,
+  legend.label = "activity",
   ...
 )
 }
@@ -39,5 +40,5 @@ a combined ggplot object or a list of ggplots if combine == FALSE
 A function to plot cell-level reduced dimension results stored in a SingleCellExperiment object, colored by activities for a list of TFs
 }
 \examples{
-1+1 = 2
+plotActivityDim(sce, score.combine, c("FOXA1","GATA3","SOX9","SPI1"), "TSNE", point_size = 0.25)
 }

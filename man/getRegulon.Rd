@@ -22,5 +22,9 @@ tf      target  corr
 A function to combine the TF binding motif info and peak to gene correlations to generate regulons
 }
 \examples{
-1+1
+p2g <- getP2Glinks("/gstore/project/lineage/sam/heme_GRN/OUTPUT")
+grl <- getTFMotifInfo(genome="mm10")
+overlap <- addTFMotifInfo(p2g, grl, archR_project_path = "/gstore/project/lineage/sam/heme_GRN/OUTPUT")
+regulon <- getRegulon(p2g, overlap, aggregate = T)
+head(regulon)
 }

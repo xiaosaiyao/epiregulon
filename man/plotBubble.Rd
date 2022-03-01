@@ -22,5 +22,5 @@ A ggplot object
 A function to draw bubble plot of relative activities across cluster/group labels for a list of TFs
 }
 \examples{
-1+1 = 2
+plotBubble(score.combine, c("SPI1", "ZNF623", "IRF4","SOX4"), sce$BioClassification)
 }

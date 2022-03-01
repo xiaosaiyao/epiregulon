@@ -24,6 +24,7 @@ A Peak2Gene object (DFrame)
 A function to compute correlations between ATAC-seq peaks and RNA-seq genes
 }
 \examples{
-1+1
+p2g <- getP2Glinks("/gstore/project/lineage/sam/heme_GRN/OUTPUT")
+head(p2g)
 
 }

@@ -24,5 +24,5 @@ a combined ggplot object or a list of ggplots if combine == FALSE
 A function to draw violin plots of inferred activities for a list of TFs grouped by cluster/group labels
 }
 \examples{
-2+2 = 4
+plotActivityViolin(score.combine, c("FOXA1","GATA3","SOX9","SPI1"), sce$BioClassification)
 }

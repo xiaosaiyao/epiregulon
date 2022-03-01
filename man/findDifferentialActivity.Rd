@@ -33,5 +33,6 @@ A named list of dataframes containing differential TF activity test results for 
 A function to test for differential TF activity between pairs of single cell clusters/groups
 }
 \examples{
-1+1 = 2
+# score.combine is TF activity score matrix from calculateActivity function
+markers <- findDifferentialActivity(score.combine, sce$BioClassification, pval.type="some", direction="up", test.type= "t")
 }

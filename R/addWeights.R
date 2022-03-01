@@ -16,7 +16,12 @@
 #' @importFrom SummarizedExperiment assays colData
 #' @export
 #'
-#' @examples 1+1
+#' @examples
+#' # load scRNA-seq data to infer activity on
+#' sce <- readRDS("/gstore/project/lineage/sam/heme_GRN/scRNA-Granja-2019.rds")
+#' # regulon matrix from getRegulon function
+#' regulon.w=addWeights(regulon=regulon, sce=sce, cluster_factor="BioClassification", block_factor=NULL, corr=TRUE, MI=FALSE, multicore=TRUE)
+
 addWeights=function(regulon, sce, cluster_factor, block_factor= NULL, exprs_values=NULL,  corr=TRUE, MI=TRUE, multicore=TRUE){
 
   if (is.null(exprs_values)){

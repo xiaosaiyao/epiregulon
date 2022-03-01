@@ -33,5 +33,6 @@ A compiled dataframe of TFs with differential activities across clusters/groups
 A function to compile and summarize the output from findDifferentialActivity function
 }
 \examples{
-1+1 = 2
+sig.genes <- getSigGenes(markers, fdr_cutoff = 0.05, order = "summary.logFC", decreasing = T)
+head(sig.genes)
 }

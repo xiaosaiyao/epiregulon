@@ -10,7 +10,9 @@
 #' @return A named list of dataframes containing differential TF activity test results for each cluster/group
 #' @export
 #'
-#' @examples 1+1 = 2
+#' @examples
+#' # score.combine is TF activity score matrix from calculateActivity function
+#' markers <- findDifferentialActivity(score.combine, sce$BioClassification, pval.type="some", direction="up", test.type= "t")
 findDifferentialActivity <- function(activity_matrix, groups, test.type= "t", pval.type="some", direction="up", ...){
 
   activity_matrix=na.omit(activity_matrix)
@@ -31,7 +33,9 @@ findDifferentialActivity <- function(activity_matrix, groups, test.type= "t", pv
 #' @return A compiled dataframe of TFs with differential activities across clusters/groups
 #' @export
 #'
-#' @examples 1+1 = 2
+#' @examples
+#' sig.genes <- getSigGenes(markers, fdr_cutoff = 0.05, order = "summary.logFC", decreasing = T)
+#' head(sig.genes)
 getSigGenes=function(da_list, fdr_cutoff = 0.05, logFC_cutoff = NULL, order="FDR", topgenes = NULL, decreasing = FALSE){
 
   classes <- names(da_list)

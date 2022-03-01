@@ -21,6 +21,3 @@ A dataframe of a single column with inferred activity scores in single cells for
 \description{
 A subfunction for calculateActivity for deriving individual
 }
-\examples{
-1+1
-}

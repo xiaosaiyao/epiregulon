@@ -41,5 +41,8 @@ dataframe with three columns in the form of regulon input. The third column is r
 A function to calculate weights for regulons
 }
 \examples{
-1+1
+# load scRNA-seq data to infer activity on
+sce <- readRDS("/gstore/project/lineage/sam/heme_GRN/scRNA-Granja-2019.rds")
+# regulon matrix from getRegulon function
+regulon.w=addWeights(regulon=regulon, sce=sce, cluster_factor="BioClassification", block_factor=NULL, corr=TRUE, MI=FALSE, multicore=TRUE)
 }

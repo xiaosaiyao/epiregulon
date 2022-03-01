@@ -8,7 +8,9 @@
 #' @import utils
 #' @export
 #'
-#' @examples 1+1
+#' @examples
+#' p2g <- getP2Glinks("/gstore/project/lineage/sam/heme_GRN/OUTPUT")
+#' head(p2g)
 #'
 getP2Glinks <- function(archr_path, cor_cutoff = 0.5, reducedDims = "IterativeLSI", useMatrix = "GeneIntegrationMatrix", ...){
 
@@ -57,7 +59,10 @@ getP2Glinks <- function(archr_path, cor_cutoff = 0.5, reducedDims = "IterativeLS
 #' @return A GRangeList object containing binding site information of 1274 TFs
 #' @export
 #'
-#' @examples 1+1
+#' @examples
+#' grl <- getTFMotifInfo(genome="mm10")
+#' head(grl)
+#'
 getTFMotifInfo <- function(genome = "hg19"){
 
   if (genome == 'hg19'){
@@ -94,7 +99,11 @@ getTFMotifInfo <- function(genome = "hg19"){
 #' @return A dataframe containing overlapping ids of scATAC-seq peak regions and reference TF binding regions
 #' @export
 #'
-#' @examples 1+1
+#' @examples
+#' p2g <- getP2Glinks("/gstore/project/lineage/sam/heme_GRN/OUTPUT")
+#' grl <- getTFMotifInfo(genome="mm10")
+#' overlap <- addTFMotifInfo(p2g, grl, archR_project_path = "/gstore/project/lineage/sam/heme_GRN/OUTPUT")
+#' head(overlap)
 addTFMotifInfo <- function(p2g, grl, peakMatrix=NULL, archR_project_path=NULL){
 
   if (!is.null(archR_project_path)) {
@@ -130,7 +139,12 @@ addTFMotifInfo <- function(p2g, grl, peakMatrix=NULL, archR_project_path=NULL){
 #'
 #' @export
 #'
-#' @examples 1+1
+#' @examples
+#' p2g <- getP2Glinks("/gstore/project/lineage/sam/heme_GRN/OUTPUT")
+#' grl <- getTFMotifInfo(genome="mm10")
+#' overlap <- addTFMotifInfo(p2g, grl, archR_project_path = "/gstore/project/lineage/sam/heme_GRN/OUTPUT")
+#' regulon <- getRegulon(p2g, overlap, aggregate = T)
+#' head(regulon)
 getRegulon <- function(p2g, overlap, aggregate = TRUE){
 
   regulon_df <- merge(overlap, p2g, by="idxATAC")

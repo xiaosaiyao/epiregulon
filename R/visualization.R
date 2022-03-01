@@ -8,8 +8,6 @@
 #'
 #' @return A ggplot object
 #' @export
-#'
-#' @examples 1+1 = 2
 plotActivityDim_ <- function(sce, activity_matrix, tf, dimtype, label, legend.label,...){
 
   tf.activity <- as.numeric(subset(activity_matrix, rownames(activity_matrix)==tf))
@@ -52,7 +50,7 @@ plotActivityDim_ <- function(sce, activity_matrix, tf, dimtype, label, legend.la
 #' @return a combined ggplot object or a list of ggplots if combine == FALSE
 #' @export
 #'
-#' @examples 1+1 = 2
+#' @examples plotActivityDim(sce, score.combine, c("FOXA1","GATA3","SOX9","SPI1"), "TSNE", point_size = 0.25)
 plotActivityDim <- function(sce, activity_matrix, tf, dimtype="UMAP", label = NULL, ncol = NULL, combine = TRUE, legend.label = "activity", ...){
 
   gs <- lapply(tf, function(x) {
@@ -82,8 +80,6 @@ plotActivityDim <- function(sce, activity_matrix, tf, dimtype="UMAP", label = NU
 #'
 #' @return A ggplot object
 #' @export
-#'
-#' @examples 1+1 = 2
 plotActivityViolin_ <- function(activity_matrix, tf, class){
 
   tf.activity <- as.numeric(subset(activity_matrix, rownames(activity_matrix)==tf))
@@ -108,7 +104,7 @@ plotActivityViolin_ <- function(activity_matrix, tf, class){
 #' @return a combined ggplot object or a list of ggplots if combine == FALSE
 #' @export
 #'
-#' @examples 2+2 = 4
+#' @examples plotActivityViolin(score.combine, c("FOXA1","GATA3","SOX9","SPI1"), sce$BioClassification)
 plotActivityViolin <- function(activity_matrix, tf, class, ncol = NULL, combine = TRUE){
 
   gs <- lapply(tf, function(x) {
@@ -139,7 +135,7 @@ plotActivityViolin <- function(activity_matrix, tf, class, ncol = NULL, combine 
 #' @return A ggplot object
 #' @export
 #'
-#' @examples 1+1 = 2
+#' @examples plotBubble(score.combine, c("SPI1", "ZNF623", "IRF4","SOX4"), sce$BioClassification)
 plotBubble=function (activity_matrix, tf.list, class, bubblesize = "FDR")
 {
   tf.activity = t(activity_matrix[tf.list,])

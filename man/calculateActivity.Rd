@@ -29,5 +29,6 @@ a matrix of inferred transcription factor (row) activities in single cells (colu
 A function that calculates the per cell activity of master regulons based on a regulon
 }
 \examples{
-1+1
+# regulon matrix from addRegulon or addWeights functinos
+score.combine <- calculateActivity(sce, regulon.w, "weight", method="weightedMean", assay="logcounts")
 }

@@ -16,5 +16,7 @@ A GRangeList object containing binding site information of 1274 TFs
 An accessor function to retrieve TF motif info from genomitory repository
 }
 \examples{
-1+1
+grl <- getTFMotifInfo(genome="mm10")
+head(grl)
+
 }
