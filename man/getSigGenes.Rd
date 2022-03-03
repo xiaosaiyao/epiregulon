@@ -4,14 +4,7 @@
 \alias{getSigGenes}
 \title{A function to compile and summarize the output from findDifferentialActivity function}
 \usage{
-getSigGenes(
-  da_list,
-  fdr_cutoff = 0.05,
-  logFC_cutoff = NULL,
-  order = "FDR",
-  topgenes = NULL,
-  decreasing = FALSE
-)
+getSigGenes(da_list, fdr_cutoff = 0.05, logFC_cutoff = NULL, topgenes = NULL)
 }
 \arguments{
 \item{da_list}{List of dataframes from running findDifferentialActivity}
@@ -20,11 +13,7 @@ getSigGenes(
 
 \item{logFC_cutoff}{cutoff for log fold change}
 
-\item{order}{variable to order the differential TF results by, default is FDR}
-
 \item{topgenes}{number of top ordered genes to include in output}
-
-\item{decreasing}{direction of ordering for differential TF activity results, default is FALSE}
 }
 \value{
 A compiled dataframe of TFs with differential activities across clusters/groups
@@ -33,6 +22,6 @@ A compiled dataframe of TFs with differential activities across clusters/groups
 A function to compile and summarize the output from findDifferentialActivity function
 }
 \examples{
-sig.genes <- getSigGenes(markers, fdr_cutoff = 0.05, order = "summary.logFC", decreasing = T)
+sig.genes <- getSigGenes(markers, fdr_cutoff = 0.05)
 head(sig.genes)
 }

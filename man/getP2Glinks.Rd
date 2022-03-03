@@ -16,9 +16,15 @@ getP2Glinks(
 \item{archr_path}{Path to a ArchR project that have performed LSI dimensionality reduction and scRNA-seq integration}
 
 \item{cor_cutoff}{Cutoff for correlations between ATAC-seq peaks and RNA-seq genes}
+
+\item{reducedDims}{String specifying which dimensional reduction representation in the ArchR project to use}
+
+\item{useMatrix}{String specifying which data matrix in the ArchR project to use}
+
+\item{...}{other parameters to pass to addPeak2GeneLinks from ArchR package}
 }
 \value{
-A Peak2Gene object (DFrame)
+A Peak2Gene correlation datafrane
 }
 \description{
 A function to compute correlations between ATAC-seq peaks and RNA-seq genes

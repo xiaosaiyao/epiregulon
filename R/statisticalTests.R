@@ -26,17 +26,15 @@ findDifferentialActivity <- function(activity_matrix, groups, test.type= "t", pv
 #' @param da_list List of dataframes from running findDifferentialActivity
 #' @param fdr_cutoff cutoff for FDR value, default is 0.05
 #' @param logFC_cutoff cutoff for log fold change
-#' @param order variable to order the differential TF results by, default is FDR
 #' @param topgenes number of top ordered genes to include in output
-#' @param decreasing direction of ordering for differential TF activity results, default is FALSE
 #'
 #' @return A compiled dataframe of TFs with differential activities across clusters/groups
 #' @export
 #'
 #' @examples
-#' sig.genes <- getSigGenes(markers, fdr_cutoff = 0.05, order = "summary.logFC", decreasing = T)
+#' sig.genes <- getSigGenes(markers, fdr_cutoff = 0.05)
 #' head(sig.genes)
-getSigGenes=function(da_list, fdr_cutoff = 0.05, logFC_cutoff = NULL, order="FDR", topgenes = NULL, decreasing = FALSE){
+getSigGenes=function(da_list, fdr_cutoff = 0.05, logFC_cutoff = NULL, topgenes = NULL){
 
   classes <- names(da_list)
 
@@ -57,16 +55,18 @@ getSigGenes=function(da_list, fdr_cutoff = 0.05, logFC_cutoff = NULL, order="FDR
       da_genes$tf <- rownames(da_genes); rownames(da_genes) <- NULL
     }
 
-
     if (is.null(topgenes)){
-      da_genes <- da_genes[order(da_genes[,order], decreasing = decreasing),]
+      da_genes <- da_genes[with(da_genes, order(FDR,-summary.logFC)),]
     } else {
-      da_genes <- da_genes[head(order(da_genes[,order], decreasing = decreasing), topgenes),]
+      da_genes <- da_genes[head(with(da_genes, order(FDR, -summary.logFC)), topgenes),]
     }
+    #print(da_genes)
 
 
     return(da_genes)
   })
+
+  #print(top.list)
 
   return(do.call(rbind, top.list))
 

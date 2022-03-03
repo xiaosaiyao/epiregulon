@@ -10,7 +10,7 @@
 #' @export
 plotActivityDim_ <- function(sce, activity_matrix, tf, dimtype, label, legend.label,...){
 
-  tf.activity <- as.numeric(subset(activity_matrix, rownames(activity_matrix)==tf))
+  tf.activity <- as.numeric(activity_matrix[tf,])
   sce$activity <- tf.activity
 
   if (!is.null(label)){
@@ -82,7 +82,7 @@ plotActivityDim <- function(sce, activity_matrix, tf, dimtype="UMAP", label = NU
 #' @export
 plotActivityViolin_ <- function(activity_matrix, tf, class){
 
-  tf.activity <- as.numeric(subset(activity_matrix, rownames(activity_matrix)==tf))
+  tf.activity <- as.numeric(activity_matrix[tf,])
   df <- data.frame(activity = tf.activity, class = class)
 
   g <- ggplot2::ggplot(df, aes(class, activity, fill=class)) + geom_violin() + theme_classic(base_size = 12) +
@@ -169,7 +169,7 @@ plotBubble=function (activity_matrix, tf.list, class, bubblesize = "FDR")
       scale_size_continuous(range = c(0, 7)) + theme_classic(base_size = 12) +
       theme(axis.text.x = element_text(angle = 45, hjust = 1))
   }
-  else if (bubblesize == "logFC.summary") {
+  else if (bubblesize == "summary.logFC") {
     g <- ggplot2::ggplot(df.plot, aes_string("class", "tf",
                                              color = "relative_activity")) + geom_point() + scale_color_viridis_c() +
       scale_size_continuous(range = c(0, 7)) + theme_classic(base_size = 12) +

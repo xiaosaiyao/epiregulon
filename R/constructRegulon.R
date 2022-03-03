@@ -2,8 +2,11 @@
 #'
 #' @param archr_path Path to a ArchR project that have performed LSI dimensionality reduction and scRNA-seq integration
 #' @param cor_cutoff Cutoff for correlations between ATAC-seq peaks and RNA-seq genes
+#' @param reducedDims String specifying which dimensional reduction representation in the ArchR project to use
+#' @param useMatrix String specifying which data matrix in the ArchR project to use
+#' @param ... other parameters to pass to addPeak2GeneLinks from ArchR package
 #'
-#' @return A Peak2Gene object (DFrame)
+#' @return A Peak2Gene correlation datafrane
 #' @import ArchR
 #' @import utils
 #' @export
