@@ -85,7 +85,7 @@ getTFMotifInfo <- function(genome = "hg19"){
   } else if (genome == "mm10"){
     id <- genomitory::packID("GMTY181", # project name
                              "mm10_motif_bed_granges.rds", # path within the project
-                             "REVISION-1") # version
+                             "REVISION-2") # version
     grl <- genomitory::getFeatures(id)
   }
 
@@ -157,6 +157,8 @@ getRegulon <- function(p2g, overlap, aggregate = TRUE){
     colnames(regulon_df) <- c("tf", "target", "corr")
     regulon_df <- aggregate(corr ~ tf + target, data = regulon_df,
                             FUN = mean, na.rm = TRUE)
+  } else {
+    colnames(regulon_df) <- c("idxATAC","idxTF", "tf", "Chrom", "idxRNA", "target","corr")
   }
   return(regulon_df)
 
