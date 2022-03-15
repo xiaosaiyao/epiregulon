@@ -13,4 +13,4 @@ performed. The scATAC-seq experiment can be either paired or unpaired with the s
 long as they were already integrated by ArchR. The final output of epiregulon is a matrix of TF activities
 where rows are individual TFs and columns are single cell indexes.
 
-![plot] (vignettes/overview.jpg)
+![plot](vignettes/overview.jpg)
