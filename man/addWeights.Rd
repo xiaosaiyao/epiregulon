@@ -2,47 +2,46 @@
 % Please edit documentation in R/addWeights.R
 \name{addWeights}
 \alias{addWeights}
-\title{A function to calculate weights for regulons}
+\title{A function to calculate weights for the regulons by computing co-association between TF and target gene expression}
 \usage{
 addWeights(
   regulon,
   sce,
   cluster_factor,
   block_factor = NULL,
-  exprs_values = NULL,
+  exprs_values = "logcounts",
   corr = TRUE,
-  MI = TRUE,
-  multicore = TRUE
+  MI = FALSE,
+  min_targets = 10,
+  BPPARAM = BiocParallel::SerialParam()
 )
 }
 \arguments{
-\item{regulon}{a regulon in the form of a tall format matrix consisting of tf(regulator), target and a column indicating degree of association between TF and target such as "mor" or "corr".
-example regulon:
-tf      target  corr}
+\item{regulon}{A data frame consisting of tf (regulator) and target in the column names. Additional columns indicating degree of association between tf and target such as "mor" or "corr" are optional.}
 
-\item{sce}{scater single cell object compute weights on}
+\item{sce}{A SingleCellExperiment object containing gene expression information}
 
-\item{cluster_factor}{cluster labels of the scater single cell object}
+\item{cluster_factor}{String specifying the field in the colData of the SingleCellExperiment object to be averaged as pseudobulk (such as cluster)}
 
-\item{block_factor}{batch labels of the scater single cell object}
+\item{block_factor}{String specifying the field in the colData of the SingleCellExperiment object to be used as blocking factor (such as batch)}
 
-\item{exprs_values}{name of the assay to be retrieved from scater object}
+\item{exprs_values}{String specifying the name of the assay to be retrieved from the SingleCellExperiment object}
 
-\item{corr}{whether to calculate weights based on correlation}
+\item{corr}{Logical scalar indicating whether to calculate weights based on correlation}
 
-\item{MI}{whether to calculate weights based on mutual information}
+\item{MI}{Logical scalar indicating whether to calculate weights based on mutual information}
 
-\item{multicore}{number of cores to use}
+\item{min_targets}{Integer specifying the minimum number of targets for each tf in the regulon with 10 targets as the default}
+
+\item{BPPARAM}{A BiocParallelParam object specifying whether summation should be parallelized. Use BiocParallel::SerialParam() for serial evaluation and use BiocParallel::MulticoreParam() for parallel evaluation}
 }
 \value{
-dataframe with three columns in the form of regulon input. The third column is replaced with the inferred weights
+A data frame with columns of corr and/or MI added to the regulon. TFs not found in the expression matrix and regulons not meeting the minimal number of targets were filtered out.
 }
 \description{
-A function to calculate weights for regulons
+A function to calculate weights for the regulons by computing co-association between TF and target gene expression
 }
 \examples{
-# load scRNA-seq data to infer activity on
-sce <- readRDS("/gstore/project/lineage/sam/heme_GRN/scRNA-Granja-2019.rds")
-# regulon matrix from getRegulon function
-regulon.w=addWeights(regulon=regulon, sce=sce, cluster_factor="BioClassification", block_factor=NULL, corr=TRUE, MI=FALSE, multicore=TRUE)
+# Not run
+regulon.w = addWeights(regulon = regulon, sce = sce, cluster_factor = "BioClassification", block_factor = NULL, corr=TRUE, MI=FALSE, BPPARAM = BiocParallel::SerialParam())
 }

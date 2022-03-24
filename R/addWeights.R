@@ -63,6 +63,8 @@ addWeights = function(regulon,
                        table(regulon$tf) >= min_targets
                      ))))
 
+  #remove targets not found in expression matrix
+  regulon = subset(regulon, (target %in% rownames(expr)))
 
   tf_indexes = split(seq_len(nrow(regulon)), regulon$tf)
   unique_tfs = names(tf_indexes)
@@ -116,8 +118,8 @@ addWeights = function(regulon,
 
         MI = sapply(rownames(target_expr_matrix), function(target) {
 
-          if (length(unique(expr[tf,])) <  n_pseudobulk |
-              length(unique(expr[target,])) <  n_pseudobulk) {
+          if (length(unique(expr[tf,])) <  5 |
+              length(unique(expr[target,])) <  5) {
             mi = NA
           } else{
             y2d = entropy::discretize2d(expr[tf,],

@@ -2,22 +2,22 @@
 % Please edit documentation in R/calculateActivity.R
 \name{pathwayscoreCoeffNorm}
 \alias{pathwayscoreCoeffNorm}
-\title{A subfunction for calculateActivity for deriving individual}
+\title{A function to aggregate the weighted gene expression of genes belonging to a given pathway or a regulon}
 \usage{
-pathwayscoreCoeffNorm(mat_scale, genenames, pathway, tf_name)
+pathwayscoreCoeffNorm(mat_scale, genenames, pathway, geneset_name)
 }
 \arguments{
-\item{mat_scale}{log2 normalized expression matrix from single cell data}
+\item{mat_scale}{A matrix of normalized gene expression with genes as the rows and cells as the columns}
 
-\item{genenames}{vector of gene names in mat_scale}
+\item{genenames}{A vector of characters corresponding to the gene names of mat_scale. It usually corresponds to the row names of the mat_matrix}
 
-\item{pathway}{a dataframe containing gene names and weights of regulons belong to the TF}
+\item{pathway}{A data frame with the first column indicating the name of the genes in the pathway and the second column indicating the weights of genes contributing to the pathway or regulon}
 
-\item{tf_name}{name of the transcription factor being computed scores for}
+\item{geneset_name}{String indicating the name of the pathway or the regulon}
 }
 \value{
-A dataframe of a single column with inferred activity scores in single cells for the TF
+A vector of inferred activity scores for every single cell
 }
 \description{
-A subfunction for calculateActivity for deriving individual
+A function to aggregate the weighted gene expression of genes belonging to a given pathway or a regulon
 }

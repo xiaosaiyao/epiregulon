@@ -2,31 +2,35 @@
 % Please edit documentation in R/calculateActivity.R
 \name{calculateActivity}
 \alias{calculateActivity}
-\title{A function that calculates the per cell activity of master regulons based on a regulon}
+\title{A function that calculates the per cell activity of master regulators based on a regulon}
 \usage{
-calculateActivity(sce, regulon, mode, method = NULL, ncore = NULL, assay)
+calculateActivity(
+  sce,
+  regulon,
+  mode = "weight",
+  method = "weightedmean",
+  ncore = 1,
+  assay = "logcounts"
+)
 }
 \arguments{
-\item{sce}{a matrix of genes by cells. Rows represent genes and columns represent cells. Rownames (either gene symbols or geneID) must be consistent with the naming convention in the regulon.}
+\item{sce}{A SingleCellExperiment object with rows representing genes and columns represent cells. Rownames (either gene symbols or geneID) must be consistent with the naming convention in the regulon.}
 
-\item{regulon}{a regulon in the form of a tall format matrix consisting of tf(regulator), target and a column indicating degree of association between TF and target such as "mor" or "corr".
-example regulon:
-tf      target  corr
-Esr1    Pgr     0.56}
+\item{regulon}{A data frame consisting of tf (regulator) and target in the column names, with additional columns indicating degree of association between tf and target such as "mor" or "corr" obtained from addWeights.}
 
-\item{mode}{a string indicating the mode of regulon such as "mor" or "corr" when weightedMean is the chosen method}
+\item{mode}{String indicating the name of column to be used as the weights}
 
-\item{method}{method for calculating activity. Available methods are weightedMean or aucell. The parameter used for the weights in weightedMean is further specified by mode.}
+\item{method}{String indicating the method for calculating activity. Available methods are weightedMean or aucell}
 
-\item{ncore}{number of cores to use}
+\item{ncore}{Integer specifying the number of cores to be used in AUCell}
 
-\item{assay}{name of assay from sce object to calculate TF activity on}
+\item{assay}{String specifying the name of the assay to be retrieved from the SingleCellExperiment object. Set to "logcounts" as the default}
 }
 \value{
 a matrix of inferred transcription factor (row) activities in single cells (columns)
 }
 \description{
-A function that calculates the per cell activity of master regulons based on a regulon
+A function that calculates the per cell activity of master regulators based on a regulon
 }
 \examples{
 # regulon matrix from addRegulon or addWeights functinos
