@@ -17,6 +17,8 @@
 #'
 getP2Glinks <- function(archr_path, cor_cutoff = 0.5, reducedDims = "IterativeLSI", useMatrix = "GeneIntegrationMatrix", ...){
 
+ .Deprecated("calculateP2G")
+
  ArchR::addArchRLogging(useLogs = FALSE)
 
   suppressMessages(proj <- ArchR::loadArchRProject(archr_path))

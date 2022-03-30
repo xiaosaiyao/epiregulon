@@ -3,6 +3,7 @@
 export(addTFMotifInfo)
 export(addWeights)
 export(calculateActivity)
+export(calculateP2G)
 export(enrichPlot)
 export(findDifferentialActivity)
 export(getP2Glinks)
