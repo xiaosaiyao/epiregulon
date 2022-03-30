@@ -9,6 +9,8 @@ calculateP2G(
   expMatrix = NULL,
   reducedDim = NULL,
   ArchR_path = NULL,
+  useDim = "IterativeLSI",
+  useMatrix = "GeneIntegrationMatrix",
   cor_cutoff = 0.5,
   cellNum = 200,
   seed = 1,
@@ -23,6 +25,10 @@ calculateP2G(
 \item{reducedDim}{matrix of dimensional reduced values, can be derived from IterativeLSI algorithm of ArchR}
 
 \item{ArchR_path}{string specifying optional path to a ArchR project if ArchR's implementation of addPeak2GeneLinks is desired}
+
+\item{useDim}{String specifying which dimensional reduction representation in the ArchR project to use}
+
+\item{useMatrix}{String specifying which data matrix in the ArchR project to use}
 
 \item{cor_cutoff}{cutoff for correlations between ATAC-seq peaks and RNA-seq genes}
 
