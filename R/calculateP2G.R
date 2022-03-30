@@ -5,6 +5,8 @@
 #' @param reducedDim matrix of dimensional reduced values, can be derived from IterativeLSI algorithm of ArchR
 #' @param ArchR_path string specifying optional path to a ArchR project if ArchR's implementation of addPeak2GeneLinks is desired
 #' @param cor_cutoff cutoff for correlations between ATAC-seq peaks and RNA-seq genes
+#' @param useDim String specifying which dimensional reduction representation in the ArchR project to use
+#' @param useMatrix String specifying which data matrix in the ArchR project to use
 #' @param cellNum number of cells to include in each K-means cluster, to control number of k
 #' @param seed number of random seed to use for K-means clustering
 #' @param ... other parameters to pass to addPeak2GeneLinks from ArchR package
@@ -16,7 +18,8 @@
 #' p2g <- calculateP2G(peakmatrix, expmatrix, reducedDim)
 #' head(p2g)
 #'
-calculateP2G = function(peakMatrix = NULL, expMatrix = NULL, reducedDim = NULL, ArchR_path = NULL, cor_cutoff = 0.5, cellNum = 200, seed = 1, ...){
+calculateP2G = function(peakMatrix = NULL, expMatrix = NULL, reducedDim = NULL, ArchR_path = NULL,
+                        useDim = "IterativeLSI", useMatrix = "GeneIntegrationMatrix", cor_cutoff = 0.5, cellNum = 200, seed = 1, ...){
 
   set.seed(seed)
 
@@ -28,7 +31,7 @@ calculateP2G = function(peakMatrix = NULL, expMatrix = NULL, reducedDim = NULL, 
 
     obj <- ArchR::addPeak2GeneLinks(
       ArchRProj = obj,
-      reducedDims = reducedDims,
+      reducedDims = useDim,
       useMatrix = useMatrix,
       logFile = "x", ...
     )
