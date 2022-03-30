@@ -24,6 +24,8 @@ calculateP2G = function(peakMatrix = NULL, expMatrix = NULL, reducedDim = NULL, 
 
     ArchR::addArchRLogging(useLogs = FALSE)
 
+    suppressMessages(obj <- ArchR::loadArchRProject(archr_path))
+
     obj <- ArchR::addPeak2GeneLinks(
       ArchRProj = obj,
       reducedDims = reducedDims,

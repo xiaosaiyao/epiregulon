@@ -5,7 +5,7 @@ author:
   email: chens179@gene.com
 - name: Xiaosai Yao
   email: yaox19@gene.com
-date: "February 22th, 2022"
+date: "March 29th, 2022"
 output:
   pdf_document
 package: epiregulon
@@ -69,11 +69,27 @@ head(grl)
 
 ## Link ATACseq peaks to target genes
 
-Next, we compute peak to gene correlations using the addPeak2GeneLinks function from ArchR package. The user would need to supply a path to an ArchR directory with a project contains peak and gene matrices, as well as already performed Latent semantic indexing (LSI) dimensionality reduction and integration with a scRNA-seq dataset. The example project shown here utilizes the [tutorial datasets](https://www.archrproject.com/articles/Articles/tutorial.html) provided by the ArchR development team. 
+Next, we compute peak to gene correlations using the calculateP2G function from ArchR package. The user would need to supply a path to an ArchR directory with a project contains peak and gene matrices, as well as already performed Latent semantic indexing (LSI) dimensionality reduction and integration with a scRNA-seq dataset. The example project shown here utilizes the [tutorial datasets](https://www.archrproject.com/articles/Articles/tutorial.html) provided by the ArchR development team. 
 ```{r}
 # path to ArchR project
-p2g <- getP2Glinks(archR_project_path)
+p2g <- calculateP2G(ArchR_path = archR_project_path)
 head(p2g)
+```
+
+Alternatively, users can now also supply peak, gene, and dimensional reduction matrices derived from a MultiAssayExperiment object. Epiregulon implements a custom algorithm to derive a more strigent set of P2G correlations compared to ArchR. 
+
+```{r}
+# load the MAE object
+heme <- readRDS("/gstore/project/archr_importer/heme_grn_unpaired_data/mae.rds")
+# peak matrix
+peakmatrix = heme[["PeakMatrix"]]
+# expression matrix
+expmatrix = heme[["GeneIntegrationMatrix"]]
+rownames(expmatrix) <- rowData(expmatrix)$name
+# dimesnional reduction matrix
+reducedDim <- SingleCellExperiment::reducedDims(heme[['TileMatrix500']])[["IterativeLSI"]]
+
+p2g <- calculateP2G(peakmatrix, expmatrix, reducedDim)
 ```
 
 ## Add TF motif binding to peaks
