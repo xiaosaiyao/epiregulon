@@ -7,20 +7,22 @@
 enrichPlot(results, top = 15, ncol = 3, combine = TRUE)
 }
 \arguments{
-\item{results}{regulonEnrich}
+\item{results}{Output from regulonEnrich}
 
-\item{top}{the number of pathways to plot ranked by significance. Default is 15.}
+\item{top}{An integer to indicate the number of pathways to plot ranked by significance. Default is 15.}
 
-\item{ncol}{number of columns in the combined plot, if combine == TRUE. Default ncol is 3.}
+\item{ncol}{An integer to indciate the number of columns in the combined plot, if combine == TRUE. Default is 3.}
 
-\item{combine}{whether to combine and visualize the plots in one panel or not}
+\item{combine}{A Boolean value to indicate whether to combine and visualize the plots in one panel}
 }
 \value{
-a combined ggplot object or a list of ggplots if combine == FALSE
+A combined ggplot object or a list of ggplots if combine == FALSE
 }
 \description{
 A function to plot results of regulonEnrich
 }
 \examples{
+\dontrun{
 enrichplot(results=enrichment_results )
+}
 }

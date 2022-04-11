@@ -42,6 +42,8 @@ A data frame with columns of corr and/or MI added to the regulon. TFs not found 
 A function to calculate weights for the regulons by computing co-association between TF and target gene expression
 }
 \examples{
-# Not run
+ \dontrun{
 regulon.w = addWeights(regulon = regulon, sce = sce, cluster_factor = "BioClassification", block_factor = NULL, corr=TRUE, MI=FALSE, BPPARAM = BiocParallel::SerialParam())
+}
+
 }

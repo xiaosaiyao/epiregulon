@@ -4,14 +4,12 @@
 \alias{pathwayscoreCoeffNorm}
 \title{A function to aggregate the weighted gene expression of genes belonging to a given pathway or a regulon}
 \usage{
-pathwayscoreCoeffNorm(mat_scale, genenames, pathway, geneset_name)
+pathwayscoreCoeffNorm(scale.mat, geneset, geneset_name)
 }
 \arguments{
-\item{mat_scale}{A matrix of normalized gene expression with genes as the rows and cells as the columns}
+\item{scale.mat}{A matrix of normalized gene expression with genes as the rows and cells as the columns}
 
-\item{genenames}{A vector of characters corresponding to the gene names of mat_scale. It usually corresponds to the row names of the mat_matrix}
-
-\item{pathway}{A data frame with the first column indicating the name of the genes in the pathway and the second column indicating the weights of genes contributing to the pathway or regulon}
+\item{geneset}{A data frame with the first column indicating the name of the genes in the pathway and the second column indicating the weights of genes contributing to the pathway or regulon}
 
 \item{geneset_name}{String indicating the name of the pathway or the regulon}
 }

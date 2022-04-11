@@ -16,13 +16,13 @@ findDifferentialActivity(
 \arguments{
 \item{activity_matrix}{A matrix of TF activities inferred from calculateActivity}
 
-\item{groups}{A vector of cluster or group labels for single cells}
+\item{groups}{A character or integer vector of cluster or group labels for single cells}
 
-\item{test.type}{The type of statistical tests to be passed to scran::findMarkers, can be "t", "wilcox". or "binom"}
+\item{test.type}{String indicating the type of statistical tests to be passed to scran::findMarkers, can be "t", "wilcox". or "binom"}
 
 \item{pval.type}{A string specifying how p-values are to be combined across pairwise comparisons for a given group/cluster.}
 
-\item{direction}{A string specifying direction of differential TF activitie, can be "up" or "down"}
+\item{direction}{A string specifying direction of differential TF activity, can be "up" or "down"}
 
 \item{...}{Further arguments to pass to scran::findMarkers}
 }
@@ -33,6 +33,8 @@ A named list of dataframes containing differential TF activity test results for 
 A function to test for differential TF activity between pairs of single cell clusters/groups
 }
 \examples{
+\dontrun{
 # score.combine is TF activity score matrix from calculateActivity function
 markers <- findDifferentialActivity(score.combine, sce$BioClassification, pval.type="some", direction="up", test.type= "t")
+}
 }

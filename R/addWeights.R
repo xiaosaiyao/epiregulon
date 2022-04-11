@@ -16,18 +16,19 @@
 #' @export
 #'
 #' @examples
-#' # Not run
+#'  \dontrun{
 #' regulon.w = addWeights(regulon = regulon, sce = sce, cluster_factor = "BioClassification", block_factor = NULL, corr=TRUE, MI=FALSE, BPPARAM = BiocParallel::SerialParam())
-
+#' }
+#'
 addWeights = function(regulon,
-                       sce,
-                       cluster_factor,
-                       block_factor = NULL,
-                       exprs_values = "logcounts",
-                       corr = TRUE,
-                       MI = FALSE,
-                       min_targets = 10,
-                       BPPARAM = BiocParallel::SerialParam()){
+                      sce,
+                      cluster_factor,
+                      block_factor = NULL,
+                      exprs_values = "logcounts",
+                      corr = TRUE,
+                      MI = FALSE,
+                      min_targets = 10,
+                      BPPARAM = BiocParallel::SerialParam()){
 
 
   # define groupings
@@ -47,7 +48,7 @@ addWeights = function(regulon,
     BPPARAM = BPPARAM
   )
 
-  # averaged expression across pseudobulk clusters
+  # average expression across pseudobulk clusters
   expr = assays(averages.se)$average
 
   # remove genes whose expressions are NA for all pseudobulks
@@ -77,19 +78,22 @@ addWeights = function(regulon,
                         max = length(unique_tfs),
                         style = 3)
     counter = 0
-    regulon_weights = c()
+
+    regulon_weight_list = vector("list", length(unique_tfs))
+    names(regulon_weight_list) = unique_tfs
+
 
     for (tf in unique_tfs) {
-      tf_expr = expr[tf, ]
-      target_expr_matrix = expr[regulon$target[tf_indexes[[tf]]], ]
-      weights = as.numeric(cor(tf_expr, t(target_expr_matrix), use = "everything"))
-      regulon_weights = c(regulon_weights, weights)
+      tf_expr = expr[tf, ,drop = FALSE ]
+      target_expr_matrix = expr[regulon$target[tf_indexes[[tf]]], ,drop = FALSE ]
+      weights = as.numeric(cor(t(tf_expr), t(target_expr_matrix), use = "everything"))
+      regulon_weight_list[[tf]] = weights
       Sys.sleep(1 / 100)
       counter = counter + 1
       setTxtProgressBar(pb, counter)
 
     }
-
+    regulon_weights = unlist(regulon_weight_list)
     regulon$weight = regulon_weights
 
   }
@@ -111,32 +115,47 @@ addWeights = function(regulon,
                           max = length(unique_tfs),
                           style = 3)
 
+      regulon_MI_list = vector("list", length(unique_tfs))
+      names(regulon_MI_list) = unique_tfs
+
       for (tf in unique_tfs) {
 
         tf_expr = expr[tf, ]
         target_expr_matrix = expr[regulon$target[tf_indexes[[tf]]], ]
 
-        MI = sapply(rownames(target_expr_matrix), function(target) {
 
-          if (length(unique(expr[tf,])) <  5 |
-              length(unique(expr[target,])) <  5) {
-            mi = NA
-          } else{
-            y2d = entropy::discretize2d(expr[tf,],
-                                        expr[target,],
-                                        numBins1 =  n_pseudobulk,
-                                        numBins2 =  n_pseudobulk)
-            mi = entropy::mi.empirical(y2d)
+        if (length(unique(expr[tf,])) <  5) {
+          MI = rep(NA,nrow(target_expr_matrix))
+
+        }else{
+          MI = numeric(nrow(target_expr_matrix))
+
+          for (i in seq_len(nrow(target_expr_matrix))) {
+            target = rownames(target_expr_matrix)[i]
+            if (length(unique(expr[target,])) <  5) {
+              MI[i] = NA
+            } else{
+              y2d = entropy::discretize2d(expr[tf,],
+                                          expr[target,],
+                                          numBins1 =  n_pseudobulk,
+                                          numBins2 =  n_pseudobulk)
+              MI[i] = entropy::mi.empirical(y2d)
+
+            }
           }
-        })
 
-        regulon_MI = c(regulon_MI, MI)
+
+        }
+
+        regulon_MI_list[[tf]] = MI
+
 
         Sys.sleep(1 / 100)
         counter = counter + 1
         setTxtProgressBar(pb, counter)
 
       }
+      regulon_MI = unlist(regulon_MI_list)
       regulon$MI = regulon_MI
     }
 

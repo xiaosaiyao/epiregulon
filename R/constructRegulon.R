@@ -1,7 +1,7 @@
 #' A function to compute correlations between ATAC-seq peaks and RNA-seq genes
 #'
-#' @param archr_path Path to a ArchR project that have performed LSI dimensionality reduction and scRNA-seq integration
-#' @param cor_cutoff Cutoff for correlations between ATAC-seq peaks and RNA-seq genes
+#' @param archr_path String indicating the path to a ArchR project that has already performed LSI dimensionality reduction and scRNA-seq integration
+#' @param cor_cutoff A numeric scalar to indicate the cutoff for correlations between ATAC-seq peaks and RNA-seq genes
 #' @param reducedDims String specifying which dimensional reduction representation in the ArchR project to use
 #' @param useMatrix String specifying which data matrix in the ArchR project to use
 #' @param ... other parameters to pass to addPeak2GeneLinks from ArchR package
@@ -12,9 +12,11 @@
 #' @export
 #'
 #' @examples
+#' \dontrun{
 #' p2g <- getP2Glinks("/gstore/project/lineage/sam/heme_GRN/OUTPUT")
 #' head(p2g)
-#'
+#' }
+
 getP2Glinks <- function(archr_path, cor_cutoff = 0.5, reducedDims = "IterativeLSI", useMatrix = "GeneIntegrationMatrix", ...){
 
  .Deprecated("calculateP2G")
@@ -59,14 +61,16 @@ getP2Glinks <- function(archr_path, cor_cutoff = 0.5, reducedDims = "IterativeLS
 
 #' An accessor function to retrieve TF motif info from genomitory repository
 #'
-#' @param genome a string specifying the genome for bed files
+#' @param genome String specifying the genomic build for bed files. Currently supporting hg19, hg38 and mm10
 #'
-#' @return A GRangeList object containing binding site information of 1274 TFs
+#' @return A GRangeList object containing binding site information of transcription factor chipseq combined from Cistrome database and ENCODE
 #' @export
 #'
 #' @examples
+#' \dontrun{
 #' grl <- getTFMotifInfo(genome="mm10")
 #' head(grl)
+#' }
 #'
 getTFMotifInfo <- function(genome = "hg19"){
 
@@ -105,10 +109,12 @@ getTFMotifInfo <- function(genome = "hg19"){
 #' @export
 #'
 #' @examples
+#' \dontrun{
 #' p2g <- getP2Glinks("/gstore/project/lineage/sam/heme_GRN/OUTPUT")
 #' grl <- getTFMotifInfo(genome="mm10")
 #' overlap <- addTFMotifInfo(p2g, grl, archR_project_path = "/gstore/project/lineage/sam/heme_GRN/OUTPUT")
 #' head(overlap)
+#' }
 addTFMotifInfo <- function(p2g, grl, peakMatrix=NULL, archR_project_path=NULL){
 
   if (!is.null(archR_project_path)) {
@@ -134,10 +140,10 @@ addTFMotifInfo <- function(p2g, grl, peakMatrix=NULL, archR_project_path=NULL){
 #'  A function to combine the TF binding motif info and peak to gene correlations to generate regulons
 #'
 #' @param p2g A Peak2Gene dataframe created by ArchR or getP2Glinks() function
-#' @param overlap dataframe storing overlaps between the regions of the peak matrix with the bulk TF ChIP-seq binding sites
-#' @param aggregate boolean value that specify whether peak and gene ids are kept in regulon output or not
+#' @param overlap A dataframe storing overlaps between the regions of the peak matrix with the bulk TF ChIP-seq binding sites computed from addTFMotifInfo
+#' @param aggregate A Boolean value that specifies whether peak and gene ids are kept in regulon output or not
 #'
-#' @return a tall format dataframe consisting of tf(regulator), target and a column indicating degree of association between TF and target such as "mor" or "corr".
+#' @return A tall format dataframe consisting of tf(regulator), target and a column indicating degree of association between TF and target such as "mor" or "corr".
 #'           example regulon:
 #'           tf      target  corr
 #' @importFrom rlang .data
@@ -145,11 +151,14 @@ addTFMotifInfo <- function(p2g, grl, peakMatrix=NULL, archR_project_path=NULL){
 #' @export
 #'
 #' @examples
+#' \dontrun{
 #' p2g <- getP2Glinks("/gstore/project/lineage/sam/heme_GRN/OUTPUT")
 #' grl <- getTFMotifInfo(genome="mm10")
 #' overlap <- addTFMotifInfo(p2g, grl, archR_project_path = "/gstore/project/lineage/sam/heme_GRN/OUTPUT")
 #' regulon <- getRegulon(p2g, overlap, aggregate = T)
 #' head(regulon)
+#' }
+
 getRegulon <- function(p2g, overlap, aggregate = TRUE){
 
   regulon_df <- merge(overlap, p2g, by="idxATAC")

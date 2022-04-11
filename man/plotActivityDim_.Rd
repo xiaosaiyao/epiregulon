@@ -7,15 +7,17 @@
 plotActivityDim_(sce, activity_matrix, tf, dimtype, label, legend.label, ...)
 }
 \arguments{
-\item{sce}{A SingleCellExperiment object containing dimensional reduction coordinates (UMAP or tSNE)}
+\item{sce}{A SingleCellExperiment object containing dimensionality reduction coordinates}
 
 \item{activity_matrix}{A matrix of TF activities inferred from calculateActivity}
 
-\item{tf}{The name of the transcription factor to be plotted}
+\item{tf}{A character vector indicating the names of the transcription factors to be plotted}
 
-\item{dimtype}{Name of dimensional reduction to be plotted (UMAP or tSNE)}
+\item{dimtype}{String indicating the name of dimensionality reduction matrix to be extracted from the SingleCellExperiment}
 
-\item{label}{A boolean value to determine whether the cluser/group labels should be annotated on plot}
+\item{label}{A Boolean value to determine whether the cluser/group labels should be annotated on plot}
+
+\item{legend.label}{String indicating legend label}
 }
 \value{
 A ggplot object

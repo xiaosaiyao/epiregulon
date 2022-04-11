@@ -1,24 +1,26 @@
-#' A function to compute correlations between ATAC-seq peaks and RNA-seq genes
+#' A function to establish peak to gene links based on correlations between ATAC-seq peaks and RNA-seq genes
 #'
-#' @param peakMatrix SingleCellExperiment object containing counts of scATAC-seq peaks
-#' @param expMatrix SingleCellExperiment object containing counts of scRNA-seq expressions
-#' @param reducedDim matrix of dimensional reduced values, can be derived from IterativeLSI algorithm of ArchR
-#' @param ArchR_path string specifying optional path to a ArchR project if ArchR's implementation of addPeak2GeneLinks is desired
-#' @param cor_cutoff cutoff for correlations between ATAC-seq peaks and RNA-seq genes
+#' @param peakMatrix A SingleCellExperiment object containing counts of chromatin accessibility at each peak region or genomic bin from scATAC-seq
+#' @param expMatrix A SingleCellExperiment object containing gene expression counts from scRNA-seq
+#' @param reducedDim A matrix of dimension reduced values, for example derived from IterativeLSI algorithm of ArchR
+#' @param ArchR_path String specifying the path to an ArchR project if ArchR's implementation of addPeak2GeneLinks is desired
+#' @param reducedDimName String specifying the name of the reduced dimension matrix
+#' @param cor_cutoff A numeric scalar to specify the correlation cutoff between ATAC-seq peaks and RNA-seq genes to assign peak to gene links. Default correlation cutoff is 0.5.
 #' @param useDim String specifying which dimensional reduction representation in the ArchR project to use
 #' @param useMatrix String specifying which data matrix in the ArchR project to use
-#' @param cellNum number of cells to include in each K-means cluster, to control number of k
-#' @param seed number of random seed to use for K-means clustering
+#' @param cellNum An integer to specify the number of cells to include in each K-means cluster. Default is 200 cells.
+#' @param seed An integer scalar to specify the seed for K-means clustering
 #' @param ... other parameters to pass to addPeak2GeneLinks from ArchR package
 #'
 #' @return A Peak2Gene correlation datafrane
 #' @export
 #'
 #' @examples
+#' \dontrun{
 #' p2g <- calculateP2G(peakmatrix, expmatrix, reducedDim)
 #' head(p2g)
-#'
-calculateP2G = function(peakMatrix = NULL, expMatrix = NULL, reducedDim = NULL, ArchR_path = NULL,
+#'}
+calculateP2G = function(peakMatrix = NULL, expMatrix = NULL, reducedDim = NULL, ArchR_path = NULL, reducedDimName = "LSI",
                         useDim = "IterativeLSI", useMatrix = "GeneIntegrationMatrix", cor_cutoff = 0.5, cellNum = 200, seed = 1, ...){
 
   set.seed(seed)
@@ -58,11 +60,11 @@ calculateP2G = function(peakMatrix = NULL, expMatrix = NULL, reducedDim = NULL, 
     # create sce object from expression matrix
     sce <- SingleCellExperiment::SingleCellExperiment(list(counts=assay(expMatrix)), altExps = list(peakMatrix=peakMatrix))
     # add reduced dimension information to sce object
-    SingleCellExperiment::reducedDim(sce, "LSI") <- reducedDim
+    SingleCellExperiment::reducedDim(sce, reducedDimName ) <- reducedDim
 
     # K-means clustering
     kNum <- trunc(ncol(sce)/cellNum)
-    kclusters <- scran::clusterCells(sce, use.dimred="LSI", BLUSPARAM=bluster::KmeansParam(centers=kNum, iter.max = 5000))
+    kclusters <- scran::clusterCells(sce, use.dimred=reducedDimName, BLUSPARAM=bluster::KmeansParam(centers=kNum, iter.max = 5000))
     kclusters <- as.character(kclusters)
 
     # aggregate matrix by k-means clusters

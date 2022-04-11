@@ -22,8 +22,10 @@ A dataframe containing overlapping ids of scATAC-seq peak regions and reference 
 A function to add TF binding motif occupancy information to the peak2gene object
 }
 \examples{
+\dontrun{
 p2g <- getP2Glinks("/gstore/project/lineage/sam/heme_GRN/OUTPUT")
 grl <- getTFMotifInfo(genome="mm10")
 overlap <- addTFMotifInfo(p2g, grl, archR_project_path = "/gstore/project/lineage/sam/heme_GRN/OUTPUT")
 head(overlap)
+}
 }

@@ -13,9 +13,9 @@ getP2Glinks(
 )
 }
 \arguments{
-\item{archr_path}{Path to a ArchR project that have performed LSI dimensionality reduction and scRNA-seq integration}
+\item{archr_path}{String indicating the path to a ArchR project that has already performed LSI dimensionality reduction and scRNA-seq integration}
 
-\item{cor_cutoff}{Cutoff for correlations between ATAC-seq peaks and RNA-seq genes}
+\item{cor_cutoff}{A numeric scalar to indicate the cutoff for correlations between ATAC-seq peaks and RNA-seq genes}
 
 \item{reducedDims}{String specifying which dimensional reduction representation in the ArchR project to use}
 
@@ -30,7 +30,8 @@ A Peak2Gene correlation datafrane
 A function to compute correlations between ATAC-seq peaks and RNA-seq genes
 }
 \examples{
+\dontrun{
 p2g <- getP2Glinks("/gstore/project/lineage/sam/heme_GRN/OUTPUT")
 head(p2g)
-
+}
 }

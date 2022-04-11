@@ -11,8 +11,9 @@
 #' @importFrom utils setTxtProgressBar txtProgressBar
 #'
 #' @examples
+#' \dontrun{
 #' # regulon matrix from addRegulon or addWeights functinos
-#' score.combine <- calculateActivity(sce, regulon.w, "weight", method="weightedMean", assay="logcounts")
+#' score.combine <- calculateActivity(sce, regulon.w, "weight", method="weightedMean", assay="logcounts")}
 
 calculateActivity = function (sce,
                               regulon,
@@ -21,30 +22,35 @@ calculateActivity = function (sce,
                               ncore=1,
                               assay = "logcounts") {
   method = tolower(method)
-  scale.mat = as.matrix(assay(sce, assay))
+  scale.mat = assay(sce, assay)
 
   if (method == "weightedmean") {
     message(paste("calculating TF activity from regulon using "),
             method)
-    unique_tfs = unique(regulon$tf)
+
+    tf_indexes = split(seq_len(nrow(regulon)), regulon$tf)
+    unique_tfs = names(tf_indexes)
+
     pb = txtProgressBar(min = 0,
                         max = length(unique_tfs),
                         style = 3)
-    score = list()
+
+    score = vector("list", length(unique_tfs))
     counter = 0
-    for (tf in unique_tfs) {
-      regulon.current = regulon[regulon$tf ==  tf, ]
+
+    for (i in seq_along(unique_tfs)) {
+      tf = unique_tfs[i]
+      regulon.current = regulon[ tf_indexes[[tf]], ]
       geneset = data.frame(regulon.current$target, regulon.current[, mode])
-      score[[tf]] = pathwayscoreCoeffNorm(scale.mat,
-                                          rownames(scale.mat),
-                                          geneset,
-                                          tf)
+      score[[i]] = pathwayscoreCoeffNorm(scale.mat,
+                                         geneset,
+                                         tf)
       Sys.sleep(1 / 100)
       counter = counter + 1
       setTxtProgressBar(pb, counter)
     }
     score.combine = do.call(cbind, score)
-    score.combine = as.data.frame(t(score.combine))
+    score.combine = Matrix::t(score.combine)
   }
   else if (method == "aucell") {
     message(paste("calculating TF activity from regulon using "),
@@ -63,21 +69,15 @@ calculateActivity = function (sce,
 
 #' A function to aggregate the weighted gene expression of genes belonging to a given pathway or a regulon
 #'
-#' @param mat_scale A matrix of normalized gene expression with genes as the rows and cells as the columns
-#' @param genenames A vector of characters corresponding to the gene names of mat_scale. It usually corresponds to the row names of the mat_matrix
-#' @param pathway A data frame with the first column indicating the name of the genes in the pathway and the second column indicating the weights of genes contributing to the pathway or regulon
+#' @param scale.mat A matrix of normalized gene expression with genes as the rows and cells as the columns
+#' @param geneset A data frame with the first column indicating the name of the genes in the pathway and the second column indicating the weights of genes contributing to the pathway or regulon
 #' @param geneset_name String indicating the name of the pathway or the regulon
 #'
 #' @return A vector of inferred activity scores for every single cell
 #' @export
-pathwayscoreCoeffNorm = function(mat_scale, genenames, pathway, geneset_name) {
-  pathway_index = match(pathway[, 1], genenames)
+pathwayscoreCoeffNorm = function(scale.mat, geneset, geneset_name) {
 
-  if (length(pathway_index) == 1) {
-    score = as.data.frame(mat_scale[pathway_index, ] * pathway[, 2], na.rm = T)
-  } else {
-    score = as.data.frame(colMeans(mat_scale[pathway_index, ] * pathway[, 2], na.rm = T))
-  }
+  score = Matrix::crossprod(scale.mat[geneset[,1],], geneset[,2])/nrow(geneset)
   colnames(score) <- geneset_name
   return(score)
 }

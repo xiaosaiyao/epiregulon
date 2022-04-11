@@ -1,10 +1,11 @@
 #' A function to plot cell-level reduced dimension results stored in a SingleCellExperiment object, colored by activities for a specific TF
 #'
-#' @param sce A SingleCellExperiment object containing dimensional reduction coordinates (UMAP or tSNE)
+#' @param sce A SingleCellExperiment object containing dimensionality reduction coordinates
 #' @param activity_matrix A matrix of TF activities inferred from calculateActivity
-#' @param tf The name of the transcription factor to be plotted
-#' @param dimtype Name of dimensional reduction to be plotted (UMAP or tSNE)
-#' @param label A boolean value to determine whether the cluser/group labels should be annotated on plot
+#' @param tf A character vector indicating the names of the transcription factors to be plotted
+#' @param dimtype String indicating the name of dimensionality reduction matrix to be extracted from the SingleCellExperiment
+#' @param label A Boolean value to determine whether the cluser/group labels should be annotated on plot
+#' @param legend.label String indicating legend label
 #'
 #' @return A ggplot object
 #' @export
@@ -38,19 +39,24 @@ plotActivityDim_ <- function(sce, activity_matrix, tf, dimtype, label, legend.la
 
 #' A function to plot cell-level reduced dimension results stored in a SingleCellExperiment object, colored by activities for a list of TFs
 #'
-#' @param sce  A SingleCellExperiment object containing dimensional reduction coordinates (UMAP or tSNE)
+#' @param sce  A SingleCellExperiment object containing dimensionality reduction coordinates
 #' @param activity_matrix A matrix of TF activities inferred from calculateActivity
-#' @param tf The names of the transcription factors to be plotted
-#' @param dimtype Name of dimensional reduction to be plotted (UMAP or tSNE)
-#' @param label A boolean value to determine whether the cluser/group labels should be annotated on plot
-#' @param ncol number of columns in the combined plot, if combine == TRUE
-#' @param combine whether to combine and visualize the plots in one panel or not
+#' @param tf A character vector indicating the names of the transcription factors to be plotted
+#' @param dimtype String indicating the name of dimensionality reduction matrix to be extracted from the SingleCellExperiment
+#' @param label A Boolean value to determine whether the cluster/group labels should be annotated on plot
+#' @param ncol A integer to specify the number of columns in the combined plot, if combine == TRUE
+#' @param combine A Boolean value to indicate whether to combine and visualize the plots in one panel
+#' @param legend.label String indicating legend label
 #' @param ...
 #'
-#' @return a combined ggplot object or a list of ggplots if combine == FALSE
+#' @return A combined ggplot object or a list of ggplots if combine == FALSE
 #' @export
 #'
-#' @examples plotActivityDim(sce, score.combine, c("FOXA1","GATA3","SOX9","SPI1"), "TSNE", point_size = 0.25)
+#' @examples
+#' \dontrun{
+#' plotActivityDim(sce, score.combine, c("FOXA1","GATA3","SOX9","SPI1"), "TSNE", point_size = 0.25)
+#' }
+#'
 plotActivityDim <- function(sce, activity_matrix, tf, dimtype="UMAP", label = NULL, ncol = NULL, combine = TRUE, legend.label = "activity", ...){
 
   gs <- lapply(tf, function(x) {
@@ -75,8 +81,8 @@ plotActivityDim <- function(sce, activity_matrix, tf, dimtype="UMAP", label = NU
 #' A function to draw a violin plot of inferred activities for a specific TF grouped by cluster/group labels
 #'
 #' @param activity_matrix A matrix of TF activities inferred from calculateActivity
-#' @param tf The name of the transcription factor to be plotted
-#' @param class A vector of cluster or group labels for single cells
+#' @param tf A character vector indicating the names of the transcription factors to be plotted
+#' @param class A character or integer vector of cluster or group labels for single cells
 #'
 #' @return A ggplot object
 #' @export
@@ -96,15 +102,18 @@ plotActivityViolin_ <- function(activity_matrix, tf, class){
 #' A function to draw violin plots of inferred activities for a list of TFs grouped by cluster/group labels
 #'
 #' @param activity_matrix A matrix of TF activities inferred from calculateActivity
-#' @param tf The names of the transcription factors to be plotted
+#' @param tf A character vector indicating the names of the transcription factors to be plotted
 #' @param class A vector of cluster or group labels for single cells
-#' @param ncol number of columns in the combined plot, if combine == TRUE
-#' @param combine whether to combine and visualize the plots in one panel or not
+#' @param ncol A integer to indicate the number of columns in the combined plot, if combine == TRUE
+#' @param combine A Boolean value to indicate whether to combine and visualize the plots in one panel
 #'
-#' @return a combined ggplot object or a list of ggplots if combine == FALSE
+#' @return A combined ggplot object or a list of ggplots if combine == FALSE
 #' @export
 #'
-#' @examples plotActivityViolin(score.combine, c("FOXA1","GATA3","SOX9","SPI1"), sce$BioClassification)
+#' @examples
+#' \dontrun{
+#' plotActivityViolin(score.combine, c("FOXA1","GATA3","SOX9","SPI1"), sce$BioClassification)
+#' }
 plotActivityViolin <- function(activity_matrix, tf, class, ncol = NULL, combine = TRUE){
 
   gs <- lapply(tf, function(x) {
@@ -128,17 +137,21 @@ plotActivityViolin <- function(activity_matrix, tf, class, ncol = NULL, combine 
 #' A function to draw bubble plot of relative activities across cluster/group labels for a list of TFs
 #'
 #' @param activity_matrix A matrix of TF activities inferred from calculateActivity
-#' @param tf.list The list of the transcription factors to be plotted
-#' @param class A vector of cluster or group labels for single cells
-#' @param bubblesize A variable from findDifferentialActivity output to scale size of bubbles by, default is FDR
+#' @param tf A character vector indicating the names of the transcription factors to be plotted
+#' @param class A character or integer vector of cluster or group labels for single cells
+#' @param bubblesize String indicating the variable from findDifferentialActivity output to scale size of bubbles by. Default is FDR
 #'
 #' @return A ggplot object
 #' @export
 #'
-#' @examples plotBubble(score.combine, c("SPI1", "ZNF623", "IRF4","SOX4"), sce$BioClassification)
-plotBubble=function (activity_matrix, tf.list, class, bubblesize = "FDR")
-{
-  tf.activity = t(activity_matrix[tf.list,])
+#' @examples
+#' \dontrun{
+#' plotBubble(score.combine, c("SPI1", "ZNF623", "IRF4","SOX4"), sce$BioClassification)
+#' }
+#'
+
+plotBubble=function (activity_matrix, tf, class, bubblesize = "FDR"){
+  tf.activity = t(activity_matrix[tf,])
   df <- data.frame(class = class, tf.activity)
   markers <- findDifferentialActivity(activity_matrix, class,
                                       pval.type = "some", direction = "up", test.type = "t")
@@ -146,14 +159,14 @@ plotBubble=function (activity_matrix, tf.list, class, bubblesize = "FDR")
                                           logFC_cutoff = -100))
 
 
-  markers <- markers[which(markers$tf %in% tf.list), ]
+  markers <- markers[which(markers$tf %in% tf), ]
   df.mean <- aggregate(. ~ class, df, mean)
   zscores <- apply(df.mean[, -1], 2, scale)
   df.mean <- data.frame(class = df.mean[, 1], as.data.frame(zscores))
   df.plot <- tidyr::pivot_longer(df.mean, -c(.data$class),
                                  names_to = "tf", values_to = "relative_activity")
 
-  levels=make.names(unique(tf.list[tf.list %in% markers$tf]))
+  levels=make.names(unique(tf[tf %in% markers$tf]))
   markers$tf = make.names(markers$tf)
   df.plot <- merge(df.plot, markers)
 
@@ -198,15 +211,18 @@ enrichPlot_ <- function(results, title, top) {
 
 #' A function to plot results of regulonEnrich
 #'
-#' @param results  regulonEnrich
-#' @param top the number of pathways to plot ranked by significance. Default is 15.
-#' @param ncol number of columns in the combined plot, if combine == TRUE. Default ncol is 3.
-#' @param combine whether to combine and visualize the plots in one panel or not
+#' @param results  Output from regulonEnrich
+#' @param top An integer to indicate the number of pathways to plot ranked by significance. Default is 15.
+#' @param ncol An integer to indciate the number of columns in the combined plot, if combine == TRUE. Default is 3.
+#' @param combine A Boolean value to indicate whether to combine and visualize the plots in one panel
 #'
-#' @return a combined ggplot object or a list of ggplots if combine == FALSE
+#' @return A combined ggplot object or a list of ggplots if combine == FALSE
 #' @export
 #'
-#' @examples enrichplot(results=enrichment_results )
+#' @examples
+#' \dontrun{
+#' enrichplot(results=enrichment_results )
+#' }
 #
 enrichPlot <- function(results, top = 15, ncol=3, combine=TRUE) {
 

@@ -7,16 +7,18 @@
 getTFMotifInfo(genome = "hg19")
 }
 \arguments{
-\item{genome}{a string specifying the genome for bed files}
+\item{genome}{String specifying the genomic build for bed files. Currently supporting hg19, hg38 and mm10}
 }
 \value{
-A GRangeList object containing binding site information of 1274 TFs
+A GRangeList object containing binding site information of transcription factor chipseq combined from Cistrome database and ENCODE
 }
 \description{
 An accessor function to retrieve TF motif info from genomitory repository
 }
 \examples{
+\dontrun{
 grl <- getTFMotifInfo(genome="mm10")
 head(grl)
+}
 
 }

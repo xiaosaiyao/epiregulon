@@ -9,11 +9,11 @@ getSigGenes(da_list, fdr_cutoff = 0.05, logFC_cutoff = NULL, topgenes = NULL)
 \arguments{
 \item{da_list}{List of dataframes from running findDifferentialActivity}
 
-\item{fdr_cutoff}{cutoff for FDR value, default is 0.05}
+\item{fdr_cutoff}{A numeric scalar to specify the cutoff for FDR value. Default is 0.05}
 
-\item{logFC_cutoff}{cutoff for log fold change}
+\item{logFC_cutoff}{A numeric scalar to specify the cutoff for log fold change.}
 
-\item{topgenes}{number of top ordered genes to include in output}
+\item{topgenes}{A integer scalar to indicate the number of top ordered genes to include in output}
 }
 \value{
 A compiled dataframe of TFs with differential activities across clusters/groups
@@ -22,6 +22,8 @@ A compiled dataframe of TFs with differential activities across clusters/groups
 A function to compile and summarize the output from findDifferentialActivity function
 }
 \examples{
+\dontrun{
 sig.genes <- getSigGenes(markers, fdr_cutoff = 0.05)
 head(sig.genes)
+}
 }

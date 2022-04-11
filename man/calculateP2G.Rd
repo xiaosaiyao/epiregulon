@@ -2,13 +2,14 @@
 % Please edit documentation in R/calculateP2G.R
 \name{calculateP2G}
 \alias{calculateP2G}
-\title{A function to compute correlations between ATAC-seq peaks and RNA-seq genes}
+\title{A function to establish peak to gene links based on correlations between ATAC-seq peaks and RNA-seq genes}
 \usage{
 calculateP2G(
   peakMatrix = NULL,
   expMatrix = NULL,
   reducedDim = NULL,
   ArchR_path = NULL,
+  reducedDimName = "LSI",
   useDim = "IterativeLSI",
   useMatrix = "GeneIntegrationMatrix",
   cor_cutoff = 0.5,
@@ -18,23 +19,25 @@ calculateP2G(
 )
 }
 \arguments{
-\item{peakMatrix}{SingleCellExperiment object containing counts of scATAC-seq peaks}
+\item{peakMatrix}{A SingleCellExperiment object containing counts of chromatin accessibility at each peak region or genomic bin from scATAC-seq}
 
-\item{expMatrix}{SingleCellExperiment object containing counts of scRNA-seq expressions}
+\item{expMatrix}{A SingleCellExperiment object containing gene expression counts from scRNA-seq}
 
-\item{reducedDim}{matrix of dimensional reduced values, can be derived from IterativeLSI algorithm of ArchR}
+\item{reducedDim}{A matrix of dimension reduced values, for example derived from IterativeLSI algorithm of ArchR}
 
-\item{ArchR_path}{string specifying optional path to a ArchR project if ArchR's implementation of addPeak2GeneLinks is desired}
+\item{ArchR_path}{String specifying the path to an ArchR project if ArchR's implementation of addPeak2GeneLinks is desired}
+
+\item{reducedDimName}{String specifying the name of the reduced dimension matrix}
 
 \item{useDim}{String specifying which dimensional reduction representation in the ArchR project to use}
 
 \item{useMatrix}{String specifying which data matrix in the ArchR project to use}
 
-\item{cor_cutoff}{cutoff for correlations between ATAC-seq peaks and RNA-seq genes}
+\item{cor_cutoff}{A numeric scalar to specify the correlation cutoff between ATAC-seq peaks and RNA-seq genes to assign peak to gene links. Default correlation cutoff is 0.5.}
 
-\item{cellNum}{number of cells to include in each K-means cluster, to control number of k}
+\item{cellNum}{An integer to specify the number of cells to include in each K-means cluster. Default is 200 cells.}
 
-\item{seed}{number of random seed to use for K-means clustering}
+\item{seed}{An integer scalar to specify the seed for K-means clustering}
 
 \item{...}{other parameters to pass to addPeak2GeneLinks from ArchR package}
 }
@@ -42,10 +45,11 @@ calculateP2G(
 A Peak2Gene correlation datafrane
 }
 \description{
-A function to compute correlations between ATAC-seq peaks and RNA-seq genes
+A function to establish peak to gene links based on correlations between ATAC-seq peaks and RNA-seq genes
 }
 \examples{
+\dontrun{
 p2g <- calculateP2G(peakmatrix, expmatrix, reducedDim)
 head(p2g)
-
+}
 }

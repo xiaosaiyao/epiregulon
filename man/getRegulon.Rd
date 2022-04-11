@@ -9,12 +9,12 @@ getRegulon(p2g, overlap, aggregate = TRUE)
 \arguments{
 \item{p2g}{A Peak2Gene dataframe created by ArchR or getP2Glinks() function}
 
-\item{overlap}{dataframe storing overlaps between the regions of the peak matrix with the bulk TF ChIP-seq binding sites}
+\item{overlap}{A dataframe storing overlaps between the regions of the peak matrix with the bulk TF ChIP-seq binding sites computed from addTFMotifInfo}
 
-\item{aggregate}{boolean value that specify whether peak and gene ids are kept in regulon output or not}
+\item{aggregate}{A Boolean value that specifies whether peak and gene ids are kept in regulon output or not}
 }
 \value{
-a tall format dataframe consisting of tf(regulator), target and a column indicating degree of association between TF and target such as "mor" or "corr".
+A tall format dataframe consisting of tf(regulator), target and a column indicating degree of association between TF and target such as "mor" or "corr".
 example regulon:
 tf      target  corr
 }
@@ -22,9 +22,11 @@ tf      target  corr
 A function to combine the TF binding motif info and peak to gene correlations to generate regulons
 }
 \examples{
+\dontrun{
 p2g <- getP2Glinks("/gstore/project/lineage/sam/heme_GRN/OUTPUT")
 grl <- getTFMotifInfo(genome="mm10")
 overlap <- addTFMotifInfo(p2g, grl, archR_project_path = "/gstore/project/lineage/sam/heme_GRN/OUTPUT")
 regulon <- getRegulon(p2g, overlap, aggregate = T)
 head(regulon)
+}
 }

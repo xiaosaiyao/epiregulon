@@ -7,26 +7,28 @@
 regulonEnrich(TF, regulon, corr = "weight", corr_cutoff = 0.5, genesets)
 }
 \arguments{
-\item{TF}{A vector of TF names}
+\item{TF}{A character vector of TF names}
 
-\item{regulon}{a weighted regulon consisting of tf, targets, corr and weight}
+\item{regulon}{A matrix of weighted regulon consisting of tf, targets, corr and weight}
 
-\item{corr}{name of column that is used to filter target genes for geneset enrichment. Default is "weight".}
+\item{corr}{String indicating the column name that should be used to filter target genes for geneset enrichment. Default is "weight".}
 
-\item{corr_cutoff}{a cutoff to filter on the column specified by corr. Default is 0.5.}
+\item{corr_cutoff}{A numeric scalar to indicate the cutoff to filter on the column specified by corr. Default is 0.5.}
 
-\item{genesets}{a dataframe with the first column being the name of the geneset and the second column being the name of the genes}
+\item{genesets}{A dataframe with the first column being the name of the geneset and the second column being the name of the genes}
 }
 \value{
-a combined ggplot object or a list of ggplots if combine == FALSE
+A dataframe showing the significantly enriched pathways
 }
 \description{
 A function to perform geneset enrichment of user-defined regulons
 }
 \examples{
+\dontrun{
 #retrieve genesets
 H <- EnrichmentBrowser::getGenesets(org = "hsa", db = "msigdb", cat = "H", gene.id.type = "SYMBOL" )
 C6 <- EnrichmentBrowser::getGenesets(org = "hsa", db = "msigdb", cat = "C6", gene.id.type = "SYMBOL" )
+
 #combine genesets and convert genesets to be compatible with enricher
 gs <- c(H,C6)
 gs.list <- do.call(rbind,lapply(names(gs), function(x) {data.frame(gs=x, genes=gs[[x]])}))
@@ -38,5 +40,6 @@ gs   genes
 3 M5890_HALLMARK_TNFA_SIGNALING_VIA_NFKB    AREG
 
 enrichment_results <- regulonEnrich(c("NKX2-1","GATA6","AR"), regulon=regulon.w, genesets=gs.list)
+}
 
 }

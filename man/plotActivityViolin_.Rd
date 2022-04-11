@@ -9,9 +9,9 @@ plotActivityViolin_(activity_matrix, tf, class)
 \arguments{
 \item{activity_matrix}{A matrix of TF activities inferred from calculateActivity}
 
-\item{tf}{The name of the transcription factor to be plotted}
+\item{tf}{A character vector indicating the names of the transcription factors to be plotted}
 
-\item{class}{A vector of cluster or group labels for single cells}
+\item{class}{A character or integer vector of cluster or group labels for single cells}
 }
 \value{
 A ggplot object
