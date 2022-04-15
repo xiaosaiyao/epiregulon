@@ -25,10 +25,11 @@ This tutorial walks through an example of TF activity inference in single cell m
 
 # Installation
 ```{r setup, message=FALSE}
-devtools::install_github("OncoBioinfo-MO/Epiregulon", host = "https://github.roche.com/api/v3")
+devtools::install_gitlab(repo='scwg/gene-transcriptional-network/activity-inference/Epiregulon', 
+                         auth_token = "<gitlab token>", 
+                         host = "https://code.roche.com/" )
+
 library(epiregulon)
-library(SingleCellExperiment)
-library(scater)
 
 ```
 
