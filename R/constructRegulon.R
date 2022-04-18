@@ -101,16 +101,16 @@ getTFMotifInfo <- function(genome = "hg19"){
 #'
 #' @examples
 #' set.seed(1)
-#' # mock up p2g matrix
+#' # create a mock peak-to-gene matrix
 #' p2g <- data.frame(idxATAC=c(rep(1,5), rep(2,5)), Chrom="chr1", idxRNA=1:10, Gene=paste0("Gene_",1:10),
-#'  Correlation = runif(10, 0,1))
+#'                   Correlation = runif(10, 0,1))
 #'
-#' # mock up TF binding sites
+#' # create mock a GRanges list of TF binding sites
 #' grl <- GRangesList("TF1" = GRanges(seqnames = "chr1", ranges = IRanges(start = c(50,1050), width = 100)),
 #' "TF2" = GRanges(seqnames = "chr1", ranges = IRanges(start = c(1050), width = 100))
 #' )
 #'
-#' # mock up peak matrix
+#' # create a mock singleCellExperiment object for peak matrix
 #' peak_gr <- GRanges(seqnames = "chr1",
 #'              ranges = IRanges(start = seq(from = 1, to = 10000, by = 1000), width = 100))
 #' peak_counts <- matrix(sample(x = 0:4, size = 100*length(peak_gr), replace = TRUE), nrow = length(peak_gr), ncol=100)
@@ -118,6 +118,7 @@ getTFMotifInfo <- function(genome = "hg19"){
 #' rowRanges(peak_sce) <- peak_gr
 #' rownames(peak_sce) <- paste0("peak",1:10)
 #'
+#' # create overlaps between p2g matrix, TF binding sites and peak matrix
 #' overlap <- addTFMotifInfo(p2g, grl, peakMatrix = peak_sce)
 #' head(overlap)
 
@@ -159,16 +160,16 @@ addTFMotifInfo <- function(p2g, grl, peakMatrix=NULL, archR_project_path=NULL){
 #'
 #' @examples
 #' set.seed(1)
-#' # mock up p2g matrix
+#' # create a mock peak-to-gene matrix
 #' p2g <- data.frame(idxATAC=c(rep(1,5), rep(2,5)), Chrom="chr1", idxRNA=1:10, Gene=paste0("Gene_",1:10),
 #'  Correlation = runif(10, 0,1))
 #'
-#' # mock up TF binding sites
+#' # create a Granges list of TF binding sites
 #' grl <- GRangesList("TF1" = GRanges(seqnames = "chr1", ranges = IRanges(start = c(50,1050), width = 100)),
 #' "TF2" = GRanges(seqnames = "chr1", ranges = IRanges(start = c(1050), width = 100))
 #' )
 #'
-#' # mock up peak matrix
+#' # Create a mock peak matrix
 #' peak_gr <- GRanges(seqnames = "chr1",
 #'              ranges = IRanges(start = seq(from = 1, to = 10000, by = 1000), width = 100))
 #'
@@ -178,8 +179,11 @@ addTFMotifInfo <- function(p2g, grl, peakMatrix=NULL, archR_project_path=NULL){
 #' rowRanges(peak_sce) <- peak_gr
 #' rownames(peak_sce) <- paste0("peak",1:10)
 #'
+#' # create overlaps between p2g matrix, TF binding sites and peak matrix
 #' overlap <- addTFMotifInfo(p2g, grl, peakMatrix = peak_sce)
 #' head(overlap)
+#'
+#' # aggregate gene expression if the gene is bound by the same TF at regulatory elements
 #' regulon <- getRegulon(p2g, overlap, aggregate = TRUE)
 
 
