@@ -49,25 +49,26 @@ A Peak2Gene correlation datafrane
 A function to establish peak to gene links based on correlations between ATAC-seq peaks and RNA-seq genes
 }
 \examples{
-# mock up expression matrix
+# create a mock singleCellExperiment object for gene expression matrix
 set.seed(1000)
 gene_sce <- scuttle::mockSCE()
 gene_sce <- scuttle::logNormCounts(gene_sce)
 gene_gr <- GRanges(seqnames = Rle(c("chr1", "chr2", "chr3","chr4"), nrow(gene_sce)/4),
-             ranges = IRanges(start = seq(from = 1, length.out=nrow(gene_sce), by = 1000), width = 100))
+                   ranges = IRanges(start = seq(from = 1, length.out=nrow(gene_sce), by = 1000), width = 100))
 rownames(gene_sce) <- rownames(gene_sce)
 gene_gr$name <- rownames(gene_sce)
 rowRanges(gene_sce) <- gene_gr
 
-# mock up peak matrix
+# create a mock singleCellExperiment object for peak matrix
 peak_gr <- GRanges(seqnames = "chr1",
-             ranges = IRanges(start = seq(from = 1, to = 10000, by = 1000), width = 100))
+                   ranges = IRanges(start = seq(from = 1, to = 10000, by = 1000), width = 100))
 peak_counts <- matrix(sample(x = 0:4, size = ncol(gene_sce)*length(peak_gr), replace = TRUE),
- nrow = length(peak_gr), ncol=ncol(gene_sce))
+                      nrow = length(peak_gr), ncol=ncol(gene_sce))
 peak_sce <- SingleCellExperiment(list(counts = peak_counts), colData = colData(gene_sce))
 rowRanges(peak_sce) <- peak_gr
 rownames(peak_sce) <- paste0("peak",1:10)
-# mock up reducedDim
+# create a mock reducedDim matrix
 reducedDim_mat <- matrix(runif(ncol(gene_sce)*50, min = 0, max = 1), nrow = ncol(gene_sce), 50)
-p2g <- calculateP2G(peakMatrix = peak_sce, expMatrix = gene_sce, reducedDim = reducedDim_mat, cellNum = 20)
+p2g <- calculateP2G(peakMatrix = peak_sce, expMatrix = gene_sce, reducedDim = reducedDim_mat,
+                    cellNum = 20)
 }
