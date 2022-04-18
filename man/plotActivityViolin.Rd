@@ -15,7 +15,7 @@ plotActivityViolin(activity_matrix, tf, class, ncol = NULL, combine = TRUE)
 
 \item{ncol}{A integer to indicate the number of columns in the combined plot, if combine == TRUE}
 
-\item{combine}{A Boolean value to indicate whether to combine and visualize the plots in one panel}
+\item{combine}{logical to indicate whether to combine and visualize the plots in one panel}
 }
 \value{
 A combined ggplot object or a list of ggplots if combine == FALSE

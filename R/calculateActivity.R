@@ -11,9 +11,15 @@
 #' @importFrom utils setTxtProgressBar txtProgressBar
 #'
 #' @examples
-#' \dontrun{
-#' # regulon matrix from addRegulon or addWeights functinos
-#' score.combine <- calculateActivity(sce, regulon.w, "weight", method="weightedMean", assay="logcounts")}
+#' example_sce <- scuttle::mockSCE()
+#' example_sce <- scuttle::logNormCounts(example_sce)
+#' example_sce$cluster <- sample(LETTERS[1:5], ncol(example_sce), replace = TRUE)
+#' regulon <- data.frame(tf = c(rep("Gene_0001",5), rep("Gene_0002",10)),
+#'  target = c(paste0("Gene_000",2:6), paste0("Gene_00",11:20)))
+#' regulon.w <- addWeights(regulon, example_sce, cluster_factor = "cluster",
+#'  exprs_values = "counts", min_targets = 5)
+#' activity <- calculateActivity(example_sce, regulon.w, assay = "logcounts")
+
 
 calculateActivity = function (sce,
                               regulon,

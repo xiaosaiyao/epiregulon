@@ -25,15 +25,15 @@ plotActivityDim(
 
 \item{dimtype}{String indicating the name of dimensionality reduction matrix to be extracted from the SingleCellExperiment}
 
-\item{label}{A Boolean value to determine whether the cluster/group labels should be annotated on plot}
+\item{label}{logical to determine whether the cluster/group labels should be annotated on plot}
 
 \item{ncol}{A integer to specify the number of columns in the combined plot, if combine == TRUE}
 
-\item{combine}{A Boolean value to indicate whether to combine and visualize the plots in one panel}
+\item{combine}{logical to indicate whether to combine and visualize the plots in one panel}
 
 \item{legend.label}{String indicating legend label}
 
-\item{...}{}
+\item{...}{Additional arguments from scater::plotReducedDim}
 }
 \value{
 A combined ggplot object or a list of ggplots if combine == FALSE
@@ -45,5 +45,6 @@ A function to plot cell-level reduced dimension results stored in a SingleCellEx
 \dontrun{
 plotActivityDim(sce, score.combine, c("FOXA1","GATA3","SOX9","SPI1"), "TSNE", point_size = 0.25)
 }
+
 
 }

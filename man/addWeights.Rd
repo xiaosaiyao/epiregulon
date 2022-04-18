@@ -42,8 +42,10 @@ A data frame with columns of corr and/or MI added to the regulon. TFs not found 
 A function to calculate weights for the regulons by computing co-association between TF and target gene expression
 }
 \examples{
- \dontrun{
-regulon.w = addWeights(regulon = regulon, sce = sce, cluster_factor = "BioClassification", block_factor = NULL, corr=TRUE, MI=FALSE, BPPARAM = BiocParallel::SerialParam())
-}
-
+example_sce <- scuttle::mockSCE()
+example_sce <- scuttle::logNormCounts(example_sce)
+example_sce$cluster <- sample(LETTERS[1:5], ncol(example_sce), replace = TRUE)
+ regulon = data.frame(tf = c(rep("Gene_0001",5), rep("Gene_0002",10)),
+ target = c(paste0("Gene_000",2:6), paste0("Gene_00",11:20)))
+regulon.w <- addWeights(regulon, example_sce, cluster_factor="cluster", exprs_values = "logcounts", min_targets = 5)
 }

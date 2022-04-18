@@ -15,10 +15,3 @@ A GRangeList object containing binding site information of transcription factor 
 \description{
 An accessor function to retrieve TF motif info from genomitory repository
 }
-\examples{
-\dontrun{
-grl <- getTFMotifInfo(genome="mm10")
-head(grl)
-}
-
-}

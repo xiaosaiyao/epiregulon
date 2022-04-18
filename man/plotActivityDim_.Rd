@@ -15,9 +15,11 @@ plotActivityDim_(sce, activity_matrix, tf, dimtype, label, legend.label, ...)
 
 \item{dimtype}{String indicating the name of dimensionality reduction matrix to be extracted from the SingleCellExperiment}
 
-\item{label}{A Boolean value to determine whether the cluser/group labels should be annotated on plot}
+\item{label}{logical to determine whether the cluster/group labels should be annotated on plot}
 
 \item{legend.label}{String indicating legend label}
+
+\item{...}{Additional arguments from scater::plotReducedDim}
 }
 \value{
 A ggplot object

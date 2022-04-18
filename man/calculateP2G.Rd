@@ -33,7 +33,8 @@ calculateP2G(
 
 \item{useMatrix}{String specifying which data matrix in the ArchR project to use}
 
-\item{cor_cutoff}{A numeric scalar to specify the correlation cutoff between ATAC-seq peaks and RNA-seq genes to assign peak to gene links. Default correlation cutoff is 0.5.}
+\item{cor_cutoff}{A numeric scalar to specify the correlation cutoff between ATAC-seq peaks and RNA-seq genes to assign peak to gene links.
+Default correlation cutoff is 0.5.}
 
 \item{cellNum}{An integer to specify the number of cells to include in each K-means cluster. Default is 200 cells.}
 
@@ -48,8 +49,25 @@ A Peak2Gene correlation datafrane
 A function to establish peak to gene links based on correlations between ATAC-seq peaks and RNA-seq genes
 }
 \examples{
-\dontrun{
-p2g <- calculateP2G(peakmatrix, expmatrix, reducedDim)
-head(p2g)
-}
+# mock up expression matrix
+set.seed(1000)
+gene_sce <- scuttle::mockSCE()
+gene_sce <- scuttle::logNormCounts(gene_sce)
+gene_gr <- GRanges(seqnames = Rle(c("chr1", "chr2", "chr3","chr4"), nrow(gene_sce)/4),
+             ranges = IRanges(start = seq(from = 1, length.out=nrow(gene_sce), by = 1000), width = 100))
+rownames(gene_sce) <- rownames(gene_sce)
+gene_gr$name <- rownames(gene_sce)
+rowRanges(gene_sce) <- gene_gr
+
+# mock up peak matrix
+peak_gr <- GRanges(seqnames = "chr1",
+             ranges = IRanges(start = seq(from = 1, to = 10000, by = 1000), width = 100))
+peak_counts <- matrix(sample(x = 0:4, size = ncol(gene_sce)*length(peak_gr), replace = TRUE),
+ nrow = length(peak_gr), ncol=ncol(gene_sce))
+peak_sce <- SingleCellExperiment(list(counts = peak_counts), colData = colData(gene_sce))
+rowRanges(peak_sce) <- peak_gr
+rownames(peak_sce) <- paste0("peak",1:10)
+# mock up reducedDim
+reducedDim_mat <- matrix(runif(ncol(gene_sce)*50, min = 0, max = 1), nrow = ncol(gene_sce), 50)
+p2g <- calculateP2G(peakMatrix = peak_sce, expMatrix = gene_sce, reducedDim = reducedDim_mat, cellNum = 20)
 }

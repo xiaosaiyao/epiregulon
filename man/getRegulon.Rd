@@ -11,7 +11,7 @@ getRegulon(p2g, overlap, aggregate = TRUE)
 
 \item{overlap}{A dataframe storing overlaps between the regions of the peak matrix with the bulk TF ChIP-seq binding sites computed from addTFMotifInfo}
 
-\item{aggregate}{A Boolean value that specifies whether peak and gene ids are kept in regulon output or not}
+\item{aggregate}{logical to specify whether peak and gene ids are kept in regulon output or not}
 }
 \value{
 A tall format dataframe consisting of tf(regulator), target and a column indicating degree of association between TF and target such as "mor" or "corr".
@@ -22,11 +22,27 @@ tf      target  corr
 A function to combine the TF binding motif info and peak to gene correlations to generate regulons
 }
 \examples{
-\dontrun{
-p2g <- getP2Glinks("/gstore/project/lineage/sam/heme_GRN/OUTPUT")
-grl <- getTFMotifInfo(genome="mm10")
-overlap <- addTFMotifInfo(p2g, grl, archR_project_path = "/gstore/project/lineage/sam/heme_GRN/OUTPUT")
-regulon <- getRegulon(p2g, overlap, aggregate = T)
-head(regulon)
-}
+set.seed(1)
+# mock up p2g matrix
+p2g <- data.frame(idxATAC=c(rep(1,5), rep(2,5)), Chrom="chr1", idxRNA=1:10, Gene=paste0("Gene_",1:10),
+ Correlation = runif(10, 0,1))
+
+# mock up TF binding sites
+grl <- GRangesList("TF1" = GRanges(seqnames = "chr1", ranges = IRanges(start = c(50,1050), width = 100)),
+"TF2" = GRanges(seqnames = "chr1", ranges = IRanges(start = c(1050), width = 100))
+)
+
+# mock up peak matrix
+peak_gr <- GRanges(seqnames = "chr1",
+             ranges = IRanges(start = seq(from = 1, to = 10000, by = 1000), width = 100))
+
+peak_counts <- matrix(sample(x = 0:4, size = 100*length(peak_gr), replace = TRUE), nrow=length(peak_gr),
+ ncol=100)
+peak_sce <- SingleCellExperiment(list(counts=peak_counts))
+rowRanges(peak_sce) <- peak_gr
+rownames(peak_sce) <- paste0("peak",1:10)
+
+overlap <- addTFMotifInfo(p2g, grl, peakMatrix = peak_sce)
+head(overlap)
+regulon <- getRegulon(p2g, overlap, aggregate = TRUE)
 }

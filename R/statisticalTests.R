@@ -11,10 +11,13 @@
 #' @export
 #'
 #' @examples
-#' \dontrun{
-#' # score.combine is TF activity score matrix from calculateActivity function
-#' markers <- findDifferentialActivity(score.combine, sce$BioClassification, pval.type="some", direction="up", test.type= "t")
-#' }
+#' set.seed(1)
+#' score.combine=cbind(matrix(runif(2000,0,2), 20,100), matrix(runif(2000,0,10), 20,100))
+#' rownames(score.combine)=paste0("TF",1:20)
+#' colnames(score.combine)=paste0("cell",1:200)
+#' cluster=c(rep(1,100),rep(2,100))
+#' markers <- findDifferentialActivity(score.combine, cluster, pval.type="some", direction="up", test.type= "t")
+#' sig.genes <- getSigGenes(markers, fdr_cutoff = 1, logFC_cutoff=0.1)
 
 findDifferentialActivity <- function(activity_matrix, groups, test.type= "t", pval.type="some", direction="up", ...){
 
@@ -35,10 +38,15 @@ findDifferentialActivity <- function(activity_matrix, groups, test.type= "t", pv
 #' @export
 #'
 #' @examples
-#' \dontrun{
-#' sig.genes <- getSigGenes(markers, fdr_cutoff = 0.05)
+#' set.seed(1)
+#' score.combine=cbind(matrix(runif(2000,0,2), 20,100), matrix(runif(2000,0,10), 20,100))
+#' rownames(score.combine)=paste0("TF",1:20)
+#' colnames(score.combine)=paste0("cell",1:200)
+#' cluster=c(rep(1,100),rep(2,100))
+#' markers <- findDifferentialActivity(score.combine, cluster, pval.type="some", direction="up", test.type= "t")
+#' sig.genes <- getSigGenes(markers, fdr_cutoff = 1, logFC_cutoff=0.1)
 #' head(sig.genes)
-#' }
+
 getSigGenes=function(da_list, fdr_cutoff = 0.05, logFC_cutoff = NULL, topgenes = NULL){
 
   classes <- names(da_list)

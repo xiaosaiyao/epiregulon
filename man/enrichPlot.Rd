@@ -13,7 +13,7 @@ enrichPlot(results, top = 15, ncol = 3, combine = TRUE)
 
 \item{ncol}{An integer to indciate the number of columns in the combined plot, if combine == TRUE. Default is 3.}
 
-\item{combine}{A Boolean value to indicate whether to combine and visualize the plots in one panel}
+\item{combine}{logical to indicate whether to combine and visualize the plots in one panel}
 }
 \value{
 A combined ggplot object or a list of ggplots if combine == FALSE
@@ -25,4 +25,5 @@ A function to plot results of regulonEnrich
 \dontrun{
 enrichplot(results=enrichment_results )
 }
+
 }

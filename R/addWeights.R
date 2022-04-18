@@ -12,14 +12,16 @@
 #'
 #' @return A data frame with columns of corr and/or MI added to the regulon. TFs not found in the expression matrix and regulons not meeting the minimal number of targets were filtered out.
 #' @importFrom stats cor
-#' @importFrom SummarizedExperiment assays colData
 #' @export
 #'
 #' @examples
-#'  \dontrun{
-#' regulon.w = addWeights(regulon = regulon, sce = sce, cluster_factor = "BioClassification", block_factor = NULL, corr=TRUE, MI=FALSE, BPPARAM = BiocParallel::SerialParam())
-#' }
-#'
+#' example_sce <- scuttle::mockSCE()
+#' example_sce <- scuttle::logNormCounts(example_sce)
+#' example_sce$cluster <- sample(LETTERS[1:5], ncol(example_sce), replace = TRUE)
+#'  regulon = data.frame(tf = c(rep("Gene_0001",5), rep("Gene_0002",10)),
+#'  target = c(paste0("Gene_000",2:6), paste0("Gene_00",11:20)))
+#' regulon.w <- addWeights(regulon, example_sce, cluster_factor="cluster", exprs_values = "logcounts", min_targets = 5)
+
 addWeights = function(regulon,
                       sce,
                       cluster_factor,

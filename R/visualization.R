@@ -4,8 +4,9 @@
 #' @param activity_matrix A matrix of TF activities inferred from calculateActivity
 #' @param tf A character vector indicating the names of the transcription factors to be plotted
 #' @param dimtype String indicating the name of dimensionality reduction matrix to be extracted from the SingleCellExperiment
-#' @param label A Boolean value to determine whether the cluser/group labels should be annotated on plot
+#' @param label logical to determine whether the cluster/group labels should be annotated on plot
 #' @param legend.label String indicating legend label
+#' @param ... Additional arguments from scater::plotReducedDim
 #'
 #' @return A ggplot object
 #' @export
@@ -43,11 +44,11 @@ plotActivityDim_ <- function(sce, activity_matrix, tf, dimtype, label, legend.la
 #' @param activity_matrix A matrix of TF activities inferred from calculateActivity
 #' @param tf A character vector indicating the names of the transcription factors to be plotted
 #' @param dimtype String indicating the name of dimensionality reduction matrix to be extracted from the SingleCellExperiment
-#' @param label A Boolean value to determine whether the cluster/group labels should be annotated on plot
+#' @param label logical to determine whether the cluster/group labels should be annotated on plot
 #' @param ncol A integer to specify the number of columns in the combined plot, if combine == TRUE
-#' @param combine A Boolean value to indicate whether to combine and visualize the plots in one panel
+#' @param combine logical to indicate whether to combine and visualize the plots in one panel
 #' @param legend.label String indicating legend label
-#' @param ...
+#' @param ... Additional arguments from scater::plotReducedDim
 #'
 #' @return A combined ggplot object or a list of ggplots if combine == FALSE
 #' @export
@@ -55,7 +56,8 @@ plotActivityDim_ <- function(sce, activity_matrix, tf, dimtype, label, legend.la
 #' @examples
 #' \dontrun{
 #' plotActivityDim(sce, score.combine, c("FOXA1","GATA3","SOX9","SPI1"), "TSNE", point_size = 0.25)
-#' }
+#'}
+#'
 #'
 plotActivityDim <- function(sce, activity_matrix, tf, dimtype="UMAP", label = NULL, ncol = NULL, combine = TRUE, legend.label = "activity", ...){
 
@@ -105,7 +107,7 @@ plotActivityViolin_ <- function(activity_matrix, tf, class){
 #' @param tf A character vector indicating the names of the transcription factors to be plotted
 #' @param class A vector of cluster or group labels for single cells
 #' @param ncol A integer to indicate the number of columns in the combined plot, if combine == TRUE
-#' @param combine A Boolean value to indicate whether to combine and visualize the plots in one panel
+#' @param combine logical to indicate whether to combine and visualize the plots in one panel
 #'
 #' @return A combined ggplot object or a list of ggplots if combine == FALSE
 #' @export
@@ -114,6 +116,7 @@ plotActivityViolin_ <- function(activity_matrix, tf, class){
 #' \dontrun{
 #' plotActivityViolin(score.combine, c("FOXA1","GATA3","SOX9","SPI1"), sce$BioClassification)
 #' }
+
 plotActivityViolin <- function(activity_matrix, tf, class, ncol = NULL, combine = TRUE){
 
   gs <- lapply(tf, function(x) {
@@ -147,8 +150,7 @@ plotActivityViolin <- function(activity_matrix, tf, class, ncol = NULL, combine 
 #' @examples
 #' \dontrun{
 #' plotBubble(score.combine, c("SPI1", "ZNF623", "IRF4","SOX4"), sce$BioClassification)
-#' }
-#'
+#'}
 
 plotBubble=function (activity_matrix, tf, class, bubblesize = "FDR"){
   tf.activity = t(activity_matrix[tf,])
@@ -214,7 +216,7 @@ enrichPlot_ <- function(results, title, top) {
 #' @param results  Output from regulonEnrich
 #' @param top An integer to indicate the number of pathways to plot ranked by significance. Default is 15.
 #' @param ncol An integer to indciate the number of columns in the combined plot, if combine == TRUE. Default is 3.
-#' @param combine A Boolean value to indicate whether to combine and visualize the plots in one panel
+#' @param combine logical to indicate whether to combine and visualize the plots in one panel
 #'
 #' @return A combined ggplot object or a list of ggplots if combine == FALSE
 #' @export
@@ -223,7 +225,8 @@ enrichPlot_ <- function(results, title, top) {
 #' \dontrun{
 #' enrichplot(results=enrichment_results )
 #' }
-#
+#'
+
 enrichPlot <- function(results, top = 15, ncol=3, combine=TRUE) {
 
   gs <- lapply(names(results), function(x) {

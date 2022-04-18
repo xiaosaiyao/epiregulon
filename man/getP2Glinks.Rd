@@ -29,9 +29,3 @@ A Peak2Gene correlation datafrane
 \description{
 A function to compute correlations between ATAC-seq peaks and RNA-seq genes
 }
-\examples{
-\dontrun{
-p2g <- getP2Glinks("/gstore/project/lineage/sam/heme_GRN/OUTPUT")
-head(p2g)
-}
-}

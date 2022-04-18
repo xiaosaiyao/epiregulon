@@ -16,14 +16,13 @@ Imports:
     scater,
     AUCell,
     BiocParallel,
+    SummarizedExperiment,
     entropy,
     stats,
-    SummarizedExperiment,
+    utils,
     S4Vectors,
     rlang,
     genomitory,
-    SingleCellExperiment,
-    rmarkdown,
     scran,
     viridis,
     patchwork,
@@ -38,7 +37,8 @@ Imports:
 Depends: 
     ArchR,
     parallel,
-    R (>= 3.30)
+    R (>= 4.0),
+    SingleCellExperiment
 Suggests: 
     knitr, rmarkdown
 VignetteBuilder: knitr
