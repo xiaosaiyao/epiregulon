@@ -64,7 +64,7 @@ getAvailableMatrices(proj)
 
 ## Retrieve bulk TF ChIP-seq binding sites 
 
-First, we retrieve the information of TF binding sites collected from Cistrome and ENCODE ChIP-seq, which are hosted on Genomitory. Currently, human genomes HG19 and HG38 are available. We plan to add options for murine genomes and perhaps other model organisms in the near future. 
+First, we retrieve the information of TF binding sites collected from Cistrome and ENCODE ChIP-seq, which are hosted on Genomitory. Currently, human genomes hg19 and hg38 and mouse genome mm10 are available
 ```{r}
 grl <- getTFMotifInfo(genome="hg19")
 head(grl)
