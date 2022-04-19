@@ -68,21 +68,21 @@ getTFMotifInfo <- function(genome = "hg19"){
   if (genome == 'hg19'){
 
     id <- genomitory::packID("GMTY156", # project name
-                             "hg19_motif_bed_granges.rds", # path within the project
-                             "REVISION-2") # version
+                             "hg19_motif_bed_granges", # path within the project
+                             "REVISION-4") # version
     grl <- genomitory::getFeatures(id)
 
   } else if (genome == "hg38") {
 
     id <- genomitory::packID("GMTY162", # project name
-                             "hg38_motif_bed_granges.rds", # path within the project
-                             "REVISION-1") # version
+                             "hg38_motif_bed_granges", # path within the project
+                             "REVISION-3") # version
     grl <- genomitory::getFeatures(id)
 
   } else if (genome == "mm10"){
     id <- genomitory::packID("GMTY181", # project name
-                             "mm10_motif_bed_granges.rds", # path within the project
-                             "REVISION-2") # version
+                             "mm10_motif_bed_granges", # path within the project
+                             "REVISION-4") # version
     grl <- genomitory::getFeatures(id)
   }
 
