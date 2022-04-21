@@ -153,27 +153,29 @@ plotActivityViolin <- function(activity_matrix, tf, class, ncol = NULL, combine 
 #'}
 
 plotBubble=function (activity_matrix, tf, class, bubblesize = "FDR"){
-  tf.activity = t(as.matrix(activity_matrix[tf,]))
-  df <- data.frame(class = class, tf.activity)
+
+  #find logFC and FDR of TFs
   markers <- findDifferentialActivity(activity_matrix, class,
                                       pval.type = "some", direction = "up", test.type = "t")
   markers <- suppressMessages(getSigGenes(markers, fdr_cutoff = 1.5,
                                           logFC_cutoff = -100))
-
-
   markers <- markers[which(markers$tf %in% tf), ]
+  levels=make.names(unique(tf[tf %in% markers$tf]))
+  markers$tf = make.names(markers$tf)
+
+  # z normalize activity and compute mean by cluster
+  tf.activity <- activity_matrix[tf, ,drop=FALSE]
+  df <- data.frame(class = class, t(as.matrix(tf.activity)))
   df.mean <- aggregate(. ~ class, df, mean)
   zscores <- apply(df.mean[, -1], 2, scale)
   df.mean <- data.frame(class = df.mean[, 1], as.data.frame(zscores))
-  df.plot <- tidyr::pivot_longer(df.mean, -c(.data$class),
-                                 names_to = "tf", values_to = "relative_activity")
+  df.plot <- suppressMessages(reshape2::melt(df.mean, id.variable="class", variable.name = "tf", value.name = "relative_activity"))
 
-  levels=make.names(unique(tf[tf %in% markers$tf]))
-  markers$tf = make.names(markers$tf)
+  # merge logFC, FDR and mean activity
   df.plot <- merge(df.plot, markers)
-
-  #message(levels)
   df.plot$tf = factor(as.character(df.plot$tf), levels = levels )
+
+  # generate bubble plots
   if (bubblesize == "FDR") {
     logpval <- -log10(df.plot$FDR)
     max.logpval <- max(logpval[is.finite(logpval)])

@@ -17,7 +17,7 @@ vignette: >
 knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>",
-  eval = FALSE
+  eval = TRUE
 )
 ```
 
@@ -25,6 +25,8 @@ knitr::opts_chunk$set(
 Gene regulatory networks model the underlying gene regulation hierarchies that drive gene expression and observed phenotypes. The main function of the epiregulon R package is to infer TF activity in single cells by constructing a gene regulatory network (regulons). This is achieved through integration of scATAC-seq and scRNA-seq data and incorporation of public bulk TF ChIP-seq data. Links between regulatory elements and their target genes are established by computing correlations between chromatin accessibility and gene expressions. 
 
 Current prerequisite for running epiregulon is a ArchR project with pre-computed peak and gene matrices. It is also expected that LSI dimensionality reduction and integration with an scRNA-seq dataset has been performed. The scATAC-seq experiment can be either paired or unpaired with the scRNA-seq dataset as long as they were already integrated by ArchR. The final output of epiregulon is a matrix of TF activities where rows are individual TFs and columns are single cell indexes.
+
+Alternatively, users can now supply peak, gene, and dimensional reduction matrices derived from a MultiAssayExperiment object. This is to be compatible with future GPSA multiome workflow. Epiregulon implements a custom algorithm to derive a more stringent set of P2G correlations compared to ArchR. 
 
 In this vignette we demonstrate the workflow of epiregulon along with some visualization functionalities using the [tutorial datasets](https://www.archrproject.com/articles/Articles/tutorial.html) from ArchR development team. In this dataset, scRNAseq and scATACseq were unpaired and integrated by the ```addGeneIntegrationMatrix``` function.
 
@@ -48,21 +50,21 @@ library(epiregulon)
 
 # Data preparation
 
-Please refer to the full ArchR [manual] (https://www.archrproject.com/bookdown/index.html) for instructions 
+Please refer to the full ArchR [manual](https://www.archrproject.com/bookdown/index.html) for instructions 
 
 Before running Epiregulon, the following analyses need to be completed:
-1. Obtain a peak matrix on scATACseq by using addGroupCoverages > addReproduciblePeakSet > addPeakMatrix. See chapter [10](https://www.archrproject.com/bookdown/calling-peaks-with-archr.html) from ArchR manual
-2. RNAseq integration. 
-a. For unpaired scATACseq, use addGeneIntegrationMatrix. See chapter [8] (https://www.archrproject.com/bookdown/defining-cluster-identity-with-scrna-seq.html) from ArchR manual
+1. Obtain a peak matrix on scATAC-seq by using addGroupCoverages > addReproduciblePeakSet > addPeakMatrix. See chapter [10](https://www.archrproject.com/bookdown/calling-peaks-with-archr.html) from ArchR manual
+2. RNA-seq integration. 
+a. For unpaired scATAC-seq, use addGeneIntegrationMatrix. See chapter [8](https://www.archrproject.com/bookdown/defining-cluster-identity-with-scrna-seq.html) from ArchR manual
 b. For multiome data, use addGeneExpressionMatrix. See [multiome](https://greenleaflab.github.io/ArchR_2020/Ex-Analyze-Multiome.html) tutorial
-3. Perform dimensionality reduction from with either single modalities or joint scRNAseq and scATACseq using [addCombinedDims](https://www.archrproject.com/reference/addCombinedDims.html)
+3. Perform dimensionality reduction from with either single modalities or joint scRNA-seq and scATAC-seq using [addCombinedDims](https://www.archrproject.com/reference/addCombinedDims.html)
 
 To verify that all the necessary matrices are present,
 
-```{r, include = FALSE}
+```{r}
 library(ArchR)
 archR_project_path="/gstore/project/lineage/sam/heme_GRN/OUTPUT"
-proj<- loadArchRProject(path = archR_project_path, showLogo = TRUE)
+proj<- loadArchRProject(path = archR_project_path, showLogo = FALSE)
 getAvailableMatrices(proj)
 ```
 
@@ -79,14 +81,15 @@ head(grl)
 
 ## Link ATACseq peaks to target genes
 
-Next, we compute peak to gene correlations using the calculateP2G function from ArchR package. The user would need to supply a path to an ArchR directory with a project contains peak and gene matrices, as well as already performed Latent semantic indexing (LSI) dimensionality reduction and integration with a scRNA-seq dataset. The example project shown here utilizes the [tutorial datasets](https://www.archrproject.com/articles/Articles/tutorial.html) provided by the ArchR development team. 
+Next, we compute peak to gene correlations using the calculateP2G function from ArchR package. The user would need to supply a path to an ArchR project that already contains the peak matrix, gene expression matrix and Latent semantic indexing (LSI) dimensionality reduction. The example project shown here utilizes the [tutorial datasets](https://www.archrproject.com/articles/Articles/tutorial.html) provided by the ArchR development team. 
+
 ```{r}
 # path to ArchR project
 p2g <- calculateP2G(ArchR_path = archR_project_path)
 head(p2g)
 ```
 
-Alternatively, users can now also supply peak, gene, and dimensional reduction matrices derived from a MultiAssayExperiment object to be compatible with future GPSA multiome workflow. Epiregulon implements a custom algorithm to derive a more stringent set of P2G correlations compared to ArchR. 
+Alternatively, users can now also supply peak, gene, and dimensional reduction matrices derived from a MultiAssayExperiment object. This is compatible with future GPSA multiome workflow. Epiregulon implements a custom algorithm to derive a more stringent set of P2G correlations compared to ArchR. 
 
 ```{r, eval=FALSE}
 # load the MAE object
@@ -161,7 +164,8 @@ $x_i$ is the log count expression of target i where i in {1,2,...,n}
 $corr_i$ is the weight of TF and target i
 
 ```{r}
-score.combine <- calculateActivity(sce, regulon.w, "weight", method="weightedMean", assay = "logcounts")
+score.combine <- calculateActivity(sce, regulon.w, "weight", method="weightedMean", 
+                                   assay = "logcounts")
 head(score.combine[,1:10])
 ```
 
@@ -170,7 +174,8 @@ head(score.combine[,1:10])
 We can next determine which TFs exhibit differential activities across cell clusters/groups via the findDifferentialActivity function. This function depends on findMarkers function from scran package and allow the same parameters. 
 
 ```{r}
-da_list <- findDifferentialActivity(score.combine, sce$BioClassification, pval.type="some", direction="up", test.type= "t")
+da_list <- findDifferentialActivity(score.combine, sce$BioClassification, pval.type="some", 
+                                    direction="up", test.type= "t")
 ```
 
 getSigGenes compiles the different test results into a single dataframe and enables user to supply their desired cutoffs for significance and variable to order by.
@@ -196,7 +201,8 @@ plotActivityViolin(score.combine, c("FOXA1","GATA3","SOX9", "SPI1"), sce$BioClas
 
 Bubble plot:
 ```{r}
-plotBubble(as.matrix(score.combine), c("FOXA1","GATA3","SOX9", "SPI1"), sce$BioClassification, bubblesize = "FDR")
+plotBubble(as.matrix(score.combine), c("FOXA1","GATA3","SOX9", "SPI1"), 
+           sce$BioClassification, bubblesize = "FDR")
 ```
 
 # Session Info
