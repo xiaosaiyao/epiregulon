@@ -1,10 +1,8 @@
 ---
 title: "Epiregulon"
 author:
-- name: Shang-Yang Chen
-  email: chens179@gene.com
-- name: Xiaosai Yao
-  email: yaox19@gene.com
+- Shang-Yang Chen^[chens179@gene.com]
+- Xiaosai Yao^[yaox19@gene.com]
 date: "March 29th, 2022"
 output:
   pdf_document
@@ -32,11 +30,19 @@ In this vignette we demonstrate the workflow of epiregulon along with some visua
 
 
 # Installation
-```{r setup, message=FALSE}
+
+Epiregulon is currently available on R/dev
+
+```{r, message=FALSE}
+library(epiregulon)
+```
+
+If you would like to install from gitlab, 
+
+```{r setup, message=FALSE, eval=FALSE}
 devtools::install_gitlab(repo='scwg/gene-transcriptional-network/activity-inference/Epiregulon', 
                          auth_token = "<gitlab token>", 
                          host = "https://code.roche.com/" )
-
 library(epiregulon)
 ```
 
@@ -66,7 +72,7 @@ getAvailableMatrices(proj)
 
 First, we retrieve the information of TF binding sites collected from Cistrome and ENCODE ChIP-seq, which are hosted on Genomitory. Currently, human genomes hg19 and hg38 and mouse genome mm10 are available
 ```{r}
-grl <- getTFMotifInfo(genome="hg19")
+grl <- getTFMotifInfo(genome = "hg19")
 head(grl)
 
 ```
@@ -80,20 +86,22 @@ p2g <- calculateP2G(ArchR_path = archR_project_path)
 head(p2g)
 ```
 
-Alternatively, users can now also supply peak, gene, and dimensional reduction matrices derived from a MultiAssayExperiment object. Epiregulon implements a custom algorithm to derive a more strigent set of P2G correlations compared to ArchR. 
+Alternatively, users can now also supply peak, gene, and dimensional reduction matrices derived from a MultiAssayExperiment object to be compatible with future GPSA multiome workflow. Epiregulon implements a custom algorithm to derive a more stringent set of P2G correlations compared to ArchR. 
 
-```{r}
+```{r, eval=FALSE}
 # load the MAE object
 heme <- readRDS("/gstore/project/archr_importer/heme_grn_unpaired_data/mae.rds")
 # peak matrix
-peakmatrix = heme[["PeakMatrix"]]
+peakmatrix <- heme[["PeakMatrix"]]
 # expression matrix
-expmatrix = heme[["GeneIntegrationMatrix"]]
+expmatrix <- heme[["GeneIntegrationMatrix"]]
 rownames(expmatrix) <- rowData(expmatrix)$name
-# dimesnional reduction matrix
+# dimensional reduction matrix
 reducedDim <- SingleCellExperiment::reducedDims(heme[['TileMatrix500']])[["IterativeLSI"]]
 
 p2g <- calculateP2G(peakmatrix, expmatrix, reducedDim)
+
+head(p2g)
 ```
 
 ## Add TF motif binding to peaks
@@ -127,19 +135,19 @@ sce=readRDS("/gstore/project/lineage/sam/heme_GRN/scRNA-Granja-2019.rds")
 
 ```
 
-trim regulon for demonstration purposes
+Trim regulon for demonstration purposes
 ```{r}
 TFs <- c("FOXA1","GATA3","SOX9", "SPI1")
 regulon <- regulon %>% dplyr::filter(tf %in% TFs)
 nrow(regulon)
 
-regulon.w=addWeights(regulon=regulon,
+regulon.w <- addWeights(regulon=regulon,
                      sce=sce,
                      cluster_factor="BioClassification",
                      block_factor=NULL,
                      corr=TRUE,
                      MI=FALSE,
-                     multicore=TRUE)
+                     BPPARAM=BiocParallel::MulticoreParam())
 head(regulon.w)
 ```
 
@@ -168,7 +176,7 @@ da_list <- findDifferentialActivity(score.combine, sce$BioClassification, pval.t
 getSigGenes compiles the different test results into a single dataframe and enables user to supply their desired cutoffs for significance and variable to order by.
 
 ```{r}
-markers <- getSigGenes(da_list, fdr_cutoff = 0.05, order = "summary.logFC", decreasing = T)
+markers <- getSigGenes(da_list, fdr_cutoff = 0.05)
 head(markers)
 ```
 
@@ -188,7 +196,7 @@ plotActivityViolin(score.combine, c("FOXA1","GATA3","SOX9", "SPI1"), sce$BioClas
 
 Bubble plot:
 ```{r}
-plotBubble(score.combine, c("FOXA1","GATA3","SOX9", "SPI1"), sce$BioClassification, bubblesize = "FDR")
+plotBubble(as.matrix(score.combine), c("FOXA1","GATA3","SOX9", "SPI1"), sce$BioClassification, bubblesize = "FDR")
 ```
 
 # Session Info

@@ -21,7 +21,7 @@
 
 findDifferentialActivity <- function(activity_matrix, groups, test.type= "t", pval.type="some", direction="up", ...){
 
-  activity_matrix=na.omit(activity_matrix)
+  activity_matrix=na.omit(as.matrix(activity_matrix))
   tf_markers <- scran::findMarkers(activity_matrix, groups, test.type= "t", pval.type="some", direction="up", ...)
   return(tf_markers)
 
@@ -88,6 +88,9 @@ getSigGenes=function(da_list, fdr_cutoff = 0.05, logFC_cutoff = NULL, topgenes =
 regulonEnrich_ <- function(TF, regulon, corr, corr_cutoff, genesets){
 
   regulon.TF=unique(regulon$target[which(regulon$tf == TF & regulon[, corr] >corr_cutoff)])
+  if (is.null(regulon.TF)) {
+    results=data.frame(p.adjust=NA, Description=NA, GeneRatio=0, Odds.Ratio=NA)
+  } else {
   enrichresults = clusterProfiler::enricher(regulon.TF, TERM2GENE = genesets)
   results=enrichresults@result
   results$GeneRatio=(as.numeric(lapply(strsplit(results$GeneRatio, split = "/"), "[",1)))/(as.numeric(lapply(strsplit(results$GeneRatio, split = "/"), "[",2)))
@@ -95,6 +98,7 @@ regulonEnrich_ <- function(TF, regulon, corr, corr_cutoff, genesets){
   results$Odds.Ratio=results$GeneRatio/results$BgRatio
   results=results[order(results$p.adjust),]
   results$Description = factor(as.character(results$Description), level = unique(as.character(results$Description[nrow(results):1])))
+  }
   return(results)
 }
 

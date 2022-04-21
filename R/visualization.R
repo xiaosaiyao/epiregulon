@@ -153,7 +153,7 @@ plotActivityViolin <- function(activity_matrix, tf, class, ncol = NULL, combine 
 #'}
 
 plotBubble=function (activity_matrix, tf, class, bubblesize = "FDR"){
-  tf.activity = t(activity_matrix[tf,])
+  tf.activity = t(as.matrix(activity_matrix[tf,]))
   df <- data.frame(class = class, tf.activity)
   markers <- findDifferentialActivity(activity_matrix, class,
                                       pval.type = "some", direction = "up", test.type = "t")
