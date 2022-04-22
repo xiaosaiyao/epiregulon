@@ -34,7 +34,7 @@ Imports:
     ggplot2,
     matrixStats,
     scuttle,
-    tidyr
+    reshape2
 Depends: 
     ArchR,
     parallel,
