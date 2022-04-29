@@ -60,7 +60,7 @@ getSigGenes=function(da_list, fdr_cutoff = 0.05, logFC_cutoff = NULL, topgenes =
     }else {
       logFC_cutoff= logFC_cutoff
     }
-    message ("Using a logFC cutoff of ", logFC_cutoff, " for class ", i)
+    message ("Using a logFC cutoff of ", logFC_cutoff, " for class ", classes[i])
     da_genes <- da_genes[which(da_genes[,"FDR"] < fdr_cutoff & da_genes[, "summary.logFC"] > logFC_cutoff), ]
 
     if (nrow(da_genes) != 0){

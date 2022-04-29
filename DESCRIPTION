@@ -1,12 +1,10 @@
 Package: epiregulon
 Title: Building regulons by integrating scRNA-seq and scATAC-seq data
-Version: 1.0.2
+Version: 1.0.3
 Date: 2022-04-20
 Authors@R: 
-    person(given = c("Shang-Yang","Xiaosai"),
-           family = c("Chen","Yao"),
-           role = c("aut", "cre"),
-           email = c("chens179@gene.com","yaox19@gene.com"))
+    c(person(given = "Xiaosai", family = "Yao", role = c("aut", "cre"), email = "yaox19@gene.com"),
+    person(given = "Shang-Yang", family = "Chen", role = "aut", email = "sychen9584@gmail.com"))
 Description: Construct gene regulatory network and infer transcription factor activity from single cell multiome data.
 License: MIT + file LICENSE
 Encoding: UTF-8

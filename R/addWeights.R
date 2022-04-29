@@ -46,7 +46,7 @@ addWeights = function(regulon,
   }
 
   # compute average expression across clusters and batches
-  message("calculating average expression across clusters...")
+  writeLines("calculating average expression across clusters...")
 
   averages.se = scater::sumCountsAcrossCells(
     sce,
@@ -80,8 +80,7 @@ addWeights = function(regulon,
 
   # compute correlation
   if (corr) {
-    message("computing correlation of the regulon...")
-    message("if the standard deviation for TF expression is zero, the derived weight will be NA...")
+    writeLines("computing correlation of the regulon...")
     pb = txtProgressBar(min = 0,
                         max = length(unique_tfs),
                         style = 3)
@@ -107,7 +106,7 @@ addWeights = function(regulon,
   }
   # compute mutual information
   if (MI) {
-    message("\n computing mutual information of the regulon...")
+    writeLines("computing mutual information of the regulon...")
 
     n_pseudobulk =  length(unique(colData(sce)[,cluster_factor]))
 

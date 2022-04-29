@@ -15,19 +15,8 @@ plotActivityDim_ <- function(sce, activity_matrix, tf, dimtype, label, legend.la
   tf.activity <- as.numeric(activity_matrix[tf,])
   sce$activity <- tf.activity
 
-  if (!is.null(label)){
-
-
-    g <- scater::plotReducedDim(sce, dimred = dimtype, colour_by="activity",
+  g <- scater::plotReducedDim(sce, dimred = dimtype, colour_by="activity",
                                 text_by = label, text_size = 3, text_colour = "black",...)
-
-
-  } else {
-
-    g <- scater::plotReducedDim(sce, dimred = dimtype, colour_by="activity",
-                                text_by = label, text_size = 3, text_colour = "black",...)
-
-  }
 
   g <- g + scale_color_gradient(low="blue", high="yellow") + ggtitle(tf) +
     labs(color=legend.label) +
@@ -60,6 +49,15 @@ plotActivityDim_ <- function(sce, activity_matrix, tf, dimtype, label, legend.la
 #'
 #'
 plotActivityDim <- function(sce, activity_matrix, tf, dimtype="UMAP", label = NULL, ncol = NULL, combine = TRUE, legend.label = "activity", ...){
+
+  # give warning for genes absent in tf list
+  missing = tf[which(! tf %in% rownames(activity_matrix))]
+  if (!identical(missing, character(0))) {
+    message(paste0(missing, " not found in activity matrix. Excluded from plots"))
+  }
+
+  tf = tf[which(tf %in% rownames(activity_matrix))]
+
 
   gs <- lapply(tf, function(x) {
     suppressMessages(return(plotActivityDim_(sce, activity_matrix, x, dimtype, label, legend.label, ...)))
@@ -118,6 +116,12 @@ plotActivityViolin_ <- function(activity_matrix, tf, class){
 #' }
 
 plotActivityViolin <- function(activity_matrix, tf, class, ncol = NULL, combine = TRUE){
+  # give warning for genes absent in tf list
+  missing = tf[which(! tf %in% rownames(activity_matrix))]
+  if (!identical(missing, character(0))) {
+    message(paste0(missing, " not found in activity matrix. Excluded from plots"))
+  }
+  tf = tf[which(tf %in% rownames(activity_matrix))]
 
   gs <- lapply(tf, function(x) {
     return(plotActivityViolin_(activity_matrix, x, class))
@@ -153,6 +157,12 @@ plotActivityViolin <- function(activity_matrix, tf, class, ncol = NULL, combine 
 #'}
 
 plotBubble=function (activity_matrix, tf, class, bubblesize = "FDR"){
+  # give warning for genes absent in tf list
+  missing = tf[which(! tf %in% rownames(activity_matrix))]
+  if (!identical(missing, character(0))) {
+    message(paste0(missing, " not found in activity matrix. Excluded from plots"))
+  }
+  tf = tf[which(tf %in% rownames(activity_matrix))]
 
   #find logFC and FDR of TFs
   markers <- findDifferentialActivity(activity_matrix, class,

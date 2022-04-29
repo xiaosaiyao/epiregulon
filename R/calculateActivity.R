@@ -30,11 +30,21 @@ calculateActivity = function (sce,
                               regulon,
                               mode = "weight",
                               method = "weightedmean",
-                              ncore=1,
+                              ncore = 1,
                               assay = "logcounts") {
   method = tolower(method)
   scale.mat = assay(sce, assay)
 
+  #convert delayedMatrix to dgCMatrix
+  if (class(scale.mat)[1] == "DelayedMatrix") {
+    writeLines("converting DelayedMatrix to dgCMatrix")
+    scale.mat = as(scale.mat, Class = "dgCMatrix")
+  }
+
+  #remove genes in regulon not found in sce
+  regulon = regulon[which(regulon$target %in% rownames(scale.mat)),]
+
+  #calculate activity
   if (method == "weightedmean") {
     message(paste("calculating TF activity from regulon using "),
             method)
@@ -67,10 +77,10 @@ calculateActivity = function (sce,
     message(paste("calculating TF activity from regulon using "),
             method)
     geneSets = split(regulon$target, regulon$tf)
-    message("ranking cells...")
+    writeLines("ranking cells...")
     cells_rankings = AUCell::AUCell_buildRankings(scale.mat,
                                                   nCores = ncore, plotStats = F)
-    message("calculating AUC...")
+    writeLines("calculating AUC...")
     cells_AUC = AUCell::AUCell_calcAUC(geneSets, rankings = cells_rankings,
                                        nCores = ncore)
     score.combine = data.frame(AUCell::getAUC(cells_AUC))
