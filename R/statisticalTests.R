@@ -16,7 +16,8 @@
 #' rownames(score.combine)=paste0("TF",1:20)
 #' colnames(score.combine)=paste0("cell",1:200)
 #' cluster=c(rep(1,100),rep(2,100))
-#' markers <- findDifferentialActivity(score.combine, cluster, pval.type="some", direction="up", test.type= "t")
+#' markers <- findDifferentialActivity(score.combine, cluster, pval.type="some", direction="up",
+#' test.type= "t")
 #' sig.genes <- getSigGenes(markers, fdr_cutoff = 1, logFC_cutoff=0.1)
 
 findDifferentialActivity <- function(activity_matrix, groups, test.type= "t", pval.type="some", direction="up", ...){
@@ -43,7 +44,8 @@ findDifferentialActivity <- function(activity_matrix, groups, test.type= "t", pv
 #' rownames(score.combine)=paste0("TF",1:20)
 #' colnames(score.combine)=paste0("cell",1:200)
 #' cluster=c(rep(1,100),rep(2,100))
-#' markers <- findDifferentialActivity(score.combine, cluster, pval.type="some", direction="up", test.type= "t")
+#' markers <- findDifferentialActivity(score.combine, cluster, pval.type="some", direction="up",
+#' test.type= "t")
 #' sig.genes <- getSigGenes(markers, fdr_cutoff = 1, logFC_cutoff=0.1)
 #' head(sig.genes)
 
@@ -130,7 +132,8 @@ regulonEnrich_ <- function(TF, regulon, corr, corr_cutoff, genesets){
 #' 2 M5890_HALLMARK_TNFA_SIGNALING_VIA_NFKB   ACKR3
 #' 3 M5890_HALLMARK_TNFA_SIGNALING_VIA_NFKB    AREG
 #'
-#' enrichment_results <- regulonEnrich(c("NKX2-1","GATA6","AR"), regulon=regulon.w, genesets=gs.list)
+#' enrichment_results <- regulonEnrich(c("NKX2-1","GATA6","AR"), regulon=regulon.w,
+#' genesets=gs.list)
 #'}
 #'
 regulonEnrich <- function(TF, regulon, corr="weight", corr_cutoff=0.5, genesets){

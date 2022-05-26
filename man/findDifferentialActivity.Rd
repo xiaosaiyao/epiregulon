@@ -38,6 +38,7 @@ score.combine=cbind(matrix(runif(2000,0,2), 20,100), matrix(runif(2000,0,10), 20
 rownames(score.combine)=paste0("TF",1:20)
 colnames(score.combine)=paste0("cell",1:200)
 cluster=c(rep(1,100),rep(2,100))
-markers <- findDifferentialActivity(score.combine, cluster, pval.type="some", direction="up", test.type= "t")
+markers <- findDifferentialActivity(score.combine, cluster, pval.type="some", direction="up",
+test.type= "t")
 sig.genes <- getSigGenes(markers, fdr_cutoff = 1, logFC_cutoff=0.1)
 }

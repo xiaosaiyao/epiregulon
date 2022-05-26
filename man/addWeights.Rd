@@ -13,11 +13,14 @@ addWeights(
   corr = TRUE,
   MI = FALSE,
   min_targets = 10,
-  BPPARAM = BiocParallel::SerialParam()
+  BPPARAM = BiocParallel::SerialParam(),
+  alt.exp = NULL,
+  alt.exp.merge = FALSE
 )
 }
 \arguments{
-\item{regulon}{A data frame consisting of tf (regulator) and target in the column names. Additional columns indicating degree of association between tf and target such as "mor" or "corr" are optional.}
+\item{regulon}{A data frame consisting of tf (regulator) and target in the column names. Additional columns indicating degree
+of association between tf and target such as "mor" or "corr" are optional.}
 
 \item{sce}{A SingleCellExperiment object containing gene expression information}
 
@@ -33,13 +36,26 @@ addWeights(
 
 \item{min_targets}{Integer specifying the minimum number of targets for each tf in the regulon with 10 targets as the default}
 
-\item{BPPARAM}{A BiocParallelParam object specifying whether summation should be parallelized. Use BiocParallel::SerialParam() for serial evaluation and use BiocParallel::MulticoreParam() for parallel evaluation}
+\item{BPPARAM}{A BiocParallelParam object specifying whether summation should be parallelized. Use BiocParallel::SerialParam() for
+serial evaluation and use BiocParallel::MulticoreParam() for parallel evaluation}
+
+\item{alt.exp}{A matrix that is used in place of gene expression to correlate with target gene expression. See details.}
+
+\item{alt.exp.merge}{A logical to indicate whether to consider both TF expression and alt.exp matrix. See details.}
 }
 \value{
-A data frame with columns of corr and/or MI added to the regulon. TFs not found in the expression matrix and regulons not meeting the minimal number of targets were filtered out.
+A data frame with columns of corr and/or MI added to the regulon. TFs not found in the expression matrix and regulons not
+meeting the minimal number of targets were filtered out.
 }
 \description{
 A function to calculate weights for the regulons by computing co-association between TF and target gene expression
+}
+\details{
+The default mode is to compute weights by correlating the pseudobulk target gene expression vs the pseudobulk TF gene expression.
+However, often times, an inhibitor of TF does not alter the gene expression of the TF. In rare cases, cells may even compensate
+by increasing the expression of the TF. In this case, the activity of the TF, if computed by gene expression correlation, may show a
+spuriously increase. As an alternative to gene expression, we may use accessibility associated with TF, such as those computed by
+chromVar. When alt.exp.merge is true, we take the product of the gene expression and the values in the alt.exp matrix.
 }
 \examples{
 # create a mock singleCellExperiment object for gene expression matrix
@@ -54,4 +70,31 @@ regulon <- data.frame(tf = c(rep("Gene_0001",5), rep("Gene_0002",10)),
 # add weights to regulon
 regulon.w <- addWeights(regulon, example_sce, cluster_factor="cluster", exprs_values = "logcounts",
                         min_targets = 5)
+
+# Alternatively, add a matrix of chromVar values in place of TF expression
+\dontrun{
+#create chromVar values from archR
+library(ArchR)
+library(parallel)
+proj <- addBgdPeaks(proj)
+proj <- addDeviationsMatrix(ArchRProj = proj,
+peakAnnotation = "motif", force = TRUE,logFile = "addDeviation")
+
+#retrieve chromVar matrix
+#chromVar
+motifMatrix= getMatrixFromProject(
+ArchRProj = proj,
+useMatrix = "motifMatrix",
+useSeqnames = NULL,
+verbose = TRUE,
+binarize = FALSE,
+threads = getArchRThreads(),
+logFile = createLogFile("getMatrixFromProject")
+)
+
+# calculate weights using alt.exp
+regulon.w.2 <- addWeights(regulon, example_sce, cluster_factor = "cluster",
+exprs_values = "logcounts", min_targets = 5, alt.exp = assay(motifMatrix, "z"),
+alt.exp.merge = TRUE)
+}
 }

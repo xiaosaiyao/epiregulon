@@ -4,7 +4,17 @@
 \alias{plotActivityDim_}
 \title{A function to plot cell-level reduced dimension results stored in a SingleCellExperiment object, colored by activities for a specific TF}
 \usage{
-plotActivityDim_(sce, activity_matrix, tf, dimtype, label, legend.label, ...)
+plotActivityDim_(
+  sce,
+  activity_matrix,
+  tf,
+  dimtype,
+  label,
+  legend.label,
+  colors,
+  limit,
+  ...
+)
 }
 \arguments{
 \item{sce}{A SingleCellExperiment object containing dimensionality reduction coordinates}
@@ -17,7 +27,13 @@ plotActivityDim_(sce, activity_matrix, tf, dimtype, label, legend.label, ...)
 
 \item{label}{logical to determine whether the cluster/group labels should be annotated on plot}
 
-\item{legend.label}{String indicating legend label}
+\item{legend.label}{String indicating the name of variable to be plotted on the legend}
+
+\item{colors}{A vector of 2 colors for the intensity, with the first element refering to the lower value and
+the second elment refering to the higher value. Default is c("blue","yellow").}
+
+\item{limit}{A vector of lower and upper bounds for the color scale. The default option is NULL and will adjust
+to minimal and maximal values}
 
 \item{...}{Additional arguments from scater::plotReducedDim}
 }

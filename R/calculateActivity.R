@@ -6,9 +6,19 @@
 #' @param method String indicating the method for calculating activity. Available methods are weightedMean or aucell
 #' @param ncore Integer specifying the number of cores to be used in AUCell
 #' @param assay String specifying the name of the assay to be retrieved from the SingleCellExperiment object. Set to "logcounts" as the default
+#' @param genesets A feature set collection in the form of CompressedSplitDataFrameList that contains genes in the
+#' first column and weights in the second column. See [genomitory](
+#' http://cedar.gene.com/gran/dev/PkgDocumentation/genomitory/uploads.html#from-compressedsplitdataframelists)
+#' for more information on compressedSplitDataFramelists. See details
 #' @return a matrix of inferred transcription factor (row) activities in single cells (columns)
 #' @export
 #' @importFrom utils setTxtProgressBar txtProgressBar
+#' @details
+#' This function calculates activity score from a regulon that is a data frame consisting of a tf column,
+#' a target column and a weight column. Alternatively, instead of a regulon, this function also accepts weighted
+#' signature sets that are stored in Genomitory as CompressedSplitDataFrameList where each gene set or signature
+#' is a DataFrame. The user has the option of computing signature score by weighted mean of target gene expression or
+#' the relative ranking of the target genes computed by AUCell.
 #'
 #' @examples
 #' # create create a mock singleCellExperiment object for gene expression matrix
@@ -24,14 +34,24 @@
 #'
 #' # calculate activity
 #' activity <- calculateActivity(example_sce, regulon.w, assay = "logcounts")
+#'
+#' @examples
+#' \dontrun{
+#' # Compute signature scores
+#' library(genomitory)
+#' breast = getFeatureSetCollection("GMTY194:analysis/breast.gmt.bz2@REVISION-1")
+#' names(breast) = breast@elementMetadata@listData[["name"]]
+#' activity=calculateActivity(GeneExpressionMatrix, genesets = breast)
+#'}
 
 
 calculateActivity = function (sce,
-                              regulon,
+                              regulon = NULL,
                               mode = "weight",
                               method = "weightedmean",
                               ncore = 1,
-                              assay = "logcounts") {
+                              assay = "logcounts",
+                              genesets = NULL) {
   method = tolower(method)
   scale.mat = assay(sce, assay)
 
@@ -40,6 +60,14 @@ calculateActivity = function (sce,
     writeLines("converting DelayedMatrix to dgCMatrix")
     scale.mat = as(scale.mat, Class = "dgCMatrix")
   }
+
+
+  #convert genesets to regulon
+  if (!is.null(genesets)){
+    regulon=do.call(rbind,lapply(names(genesets), function(x) {data.frame(tf=x, target=genesets[[x]][,"gene_id"], weight=genesets[[x]][,"weights"])}))
+
+  }
+
 
   #remove genes in regulon not found in sce
   regulon = regulon[which(regulon$target %in% rownames(scale.mat)),]
@@ -60,6 +88,7 @@ calculateActivity = function (sce,
     counter = 0
 
     for (i in seq_along(unique_tfs)) {
+
       tf = unique_tfs[i]
       regulon.current = regulon[ tf_indexes[[tf]], ]
       geneset = data.frame(regulon.current$target, regulon.current[, mode])
@@ -98,7 +127,7 @@ calculateActivity = function (sce,
 #' @export
 pathwayscoreCoeffNorm = function(scale.mat, geneset, geneset_name) {
 
-  score = Matrix::crossprod(scale.mat[geneset[,1],], geneset[,2])/nrow(geneset)
+  score = Matrix::crossprod(scale.mat[geneset[,1], , drop=FALSE], geneset[,2])/nrow(geneset)
   colnames(score) <- geneset_name
   return(score)
 }

@@ -22,7 +22,8 @@
 #' gene_sce <- scuttle::mockSCE()
 #' gene_sce <- scuttle::logNormCounts(gene_sce)
 #' gene_gr <- GRanges(seqnames = Rle(c("chr1", "chr2", "chr3","chr4"), nrow(gene_sce)/4),
-#'                    ranges = IRanges(start = seq(from = 1, length.out=nrow(gene_sce), by = 1000), width = 100))
+#'                    ranges = IRanges(start = seq(from = 1, length.out=nrow(gene_sce), by = 1000),
+#'                    width = 100))
 #' rownames(gene_sce) <- rownames(gene_sce)
 #' gene_gr$name <- rownames(gene_sce)
 #' rowRanges(gene_sce) <- gene_gr

@@ -39,7 +39,8 @@ gs   genes
 2 M5890_HALLMARK_TNFA_SIGNALING_VIA_NFKB   ACKR3
 3 M5890_HALLMARK_TNFA_SIGNALING_VIA_NFKB    AREG
 
-enrichment_results <- regulonEnrich(c("NKX2-1","GATA6","AR"), regulon=regulon.w, genesets=gs.list)
+enrichment_results <- regulonEnrich(c("NKX2-1","GATA6","AR"), regulon=regulon.w,
+genesets=gs.list)
 }
 
 }

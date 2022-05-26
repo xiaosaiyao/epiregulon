@@ -105,7 +105,7 @@ Transfer cell and gene information and embeddings from ArchR project to singleCe
 ```{r}
 reducedDim(GeneExpressionMatrix, "UMAP_Combined") <- getEmbedding(ArchRProj = proj, 
                                                                   embedding = "UMAP_Combined", 
-                                                                  returnDF =TRUE)[colnames(GeneExpressionMatrix),]
+                                                                  returnDF = TRUE)[colnames(GeneExpressionMatrix),]
 colData(GeneExpressionMatrix)=getCellColData(proj)[colnames(GeneExpressionMatrix),]
 rownames(GeneExpressionMatrix)=rowData(GeneExpressionMatrix)$name
 
@@ -154,7 +154,7 @@ rownames(expmatrix) <- rowData(expmatrix)$name
 # dimensional reduction matrix
 reducedDim <- SingleCellExperiment::reducedDims(mae[['TileMatrix500']])[["IterativeLSI"]]
 
-p2g <- calculateP2G(peakmatrix, expmatrix, reducedDim)
+p2g <- calculateP2G(peakmatrix = peakmatrix, peakmatrix = expmatrix, reducedDim = reducedDim)
 
 head(p2g)
 ```
@@ -165,7 +165,7 @@ The next step is to add the TF motif binding information by overlapping the regi
 
 ```{r addTFMotifInfo}
 
-overlap <- addTFMotifInfo(archR_project_path=myarchR_project_path, grl=grl, p2g=p2g)
+overlap <- addTFMotifInfo(archR_project_path = myarchR_project_path, grl = grl, p2g = p2g)
 
 ```
 
@@ -179,7 +179,7 @@ A long format dataframe, representing the inferred regulons, is then generated. 
 
 ```{r getRegulon}
 
-regulon <- getRegulon(p2g, overlap, aggregate=TRUE)
+regulon <- getRegulon(p2g = p2g, overlap = overlap, aggregate=TRUE)
 head(regulon)
 ```
 
@@ -188,14 +188,14 @@ Epiregulon outputs two different correlations. The first, termed "corr", is the 
 ```{r addWeights, warning=FALSE}
 
 
-regulon.w <- addWeights(regulon=regulon,
-                     sce=GeneExpressionMatrix,
-                     cluster_factor="Clusters",
-                     exprs_values="GeneExpressionMatrix",
-                     block_factor=NULL,
-                     corr=TRUE,
-                     MI=FALSE,
-                     BPPARAM=BiocParallel::MulticoreParam())
+regulon.w <- addWeights(regulon = regulon,
+                        sce = GeneExpressionMatrix,
+                        cluster_factor = "Clusters",
+                        exprs_values = "GeneExpressionMatrix",
+                        block_factor = NULL,
+                        corr = TRUE,
+                        MI = FALSE,
+                        BPPARAM = BiocParallel::MulticoreParam())
 head(regulon.w)
 
 ```
@@ -210,16 +210,21 @@ $x_i$ is the log count expression of target i where i in {1,2,...,n}
 $corr_i$ is the weight of TF and target i
 
 ```{r calculateActivity}
-score.combine <- calculateActivity(GeneExpressionMatrix, regulon.w, "weight", 
-                                   method="weightedMean", assay="GeneExpressionMatrix")
-
+score.combine <- calculateActivity(sce = GeneExpressionMatrix, 
+                                   regulon = regulon.w, 
+                                   mode = "weight", 
+                                   method = "weightedMean", 
+                                   assay = "GeneExpressionMatrix")
 ```
 
 6. Perform differential activity
 ```{r differential}
 
-markers <- findDifferentialActivity(score.combine, GeneExpressionMatrix$Clusters, 
-                                    pval.type="some", direction="up", test.type= "t")
+markers <- findDifferentialActivity(activity_matrix = score.combine, 
+                                    groups = GeneExpressionMatrix$Clusters, 
+                                    pval.type = "some", 
+                                    direction = "up", 
+                                    test.type = "t")
 ```
 
 Take the top TFs
@@ -231,29 +236,36 @@ markers.sig <- getSigGenes(markers, topgenes = 5 )
 
 First visualize the known differential TFs by bubble plot
 ```{r visualization}
-plotBubble(activity_matrix = score.combine, tf = c("NKX2-1","GATA6","FOXA1","FOXA2", "AR"), class=GeneExpressionMatrix$Clusters)
+plotBubble(activity_matrix = score.combine, 
+           tf = c("NKX2-1","GATA6","FOXA1","FOXA2", "AR"), 
+           class = GeneExpressionMatrix$Clusters)
 ```
 
 Then visualize the most differential TFs by clusters
 ```{r}
-plotBubble(activity_matrix = score.combine, tf = markers.sig$tf, 
-           class=GeneExpressionMatrix$Clusters)
+plotBubble(activity_matrix = score.combine, 
+           tf = markers.sig$tf, 
+           class = GeneExpressionMatrix$Clusters)
 
 ```
 
 Visualize the known differential TFs by violin plot. Note there is no activity calculated for SOX2 because the expression of SOX2 is 0 in all cells.
 
 ```{r}
-plotActivityViolin(score.combine, c("NKX2-1","GATA6","FOXA1","FOXA2", "AR", "SOX2"), 
-                   GeneExpressionMatrix$Clusters)
+plotActivityViolin(activity_matrix = score.combine, 
+                   tf = c("NKX2-1","GATA6","FOXA1","FOXA2", "AR", "SOX2"), 
+                   class = GeneExpressionMatrix$Clusters)
 ```
 
 Visualize the known differential TFs by UMAP
 ```{r, fig.height = 8, fig.width = 12}
 
-plotActivityDim(sce=GeneExpressionMatrix, activity_matrix=score.combine, 
-                tf=c("NKX2-1","GATA6","FOXA1","FOXA2", "AR", "SOX2"), 
-                dimtype="UMAP_Combined", label = "Clusters", point_size=0.1, ncol = 3)
+plotActivityDim(sce = GeneExpressionMatrix, activity_matrix=score.combine, 
+                tf = c("NKX2-1","GATA6","FOXA1","FOXA2", "AR", "SOX2"), 
+                dimtype = "UMAP_Combined", 
+                label = "Clusters", 
+                point_size=0.1, 
+                ncol = 3)
 ```
 
 8. Geneset enrichment
@@ -261,18 +273,21 @@ Sometimes we are interested to know what pathways are enriched in the regulon of
 
 ```{r enrichment, fig.height = 10, fig.width = 12}
 #retrieve genesets
-H = EnrichmentBrowser::getGenesets(org = "hsa", db = "msigdb", cat = "H", gene.id.type = "SYMBOL" )
-C6 = EnrichmentBrowser::getGenesets(org = "hsa", db = "msigdb", cat = "C6", gene.id.type = "SYMBOL" )
+H <- EnrichmentBrowser::getGenesets(org = "hsa", db = "msigdb", cat = "H", gene.id.type = "SYMBOL" )
+C6 <- EnrichmentBrowser::getGenesets(org = "hsa", db = "msigdb", cat = "C6", gene.id.type = "SYMBOL" )
 
 #combine genesets and convert genesets to be compatible with enricher
-gs=c(H,C6)
-gs.list=do.call(rbind,lapply(names(gs), function(x) {data.frame(gs=x, genes=gs[[x]])}))
+gs <- c(H,C6)
+gs.list <- do.call(rbind,lapply(names(gs), function(x) {data.frame(gs=x, genes=gs[[x]])}))
 
-enrichresults=regulonEnrich(c("GATA6","AR"), regulon=regulon.w, corr="weight", 
-                            corr_cutoff=0.5, genesets=gs.list)
+enrichresults <- regulonEnrich(TF = c("GATA6","AR"), 
+                               regulon = regulon.w, 
+                               corr = "weight",
+                               corr_cutoff = 0.5, 
+                               genesets = gs.list)
 
 #plot results
-enrichPlot(results=enrichresults)
+enrichPlot(results = enrichresults)
 ```
 
 # Session Info

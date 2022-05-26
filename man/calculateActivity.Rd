@@ -6,11 +6,12 @@
 \usage{
 calculateActivity(
   sce,
-  regulon,
+  regulon = NULL,
   mode = "weight",
   method = "weightedmean",
   ncore = 1,
-  assay = "logcounts"
+  assay = "logcounts",
+  genesets = NULL
 )
 }
 \arguments{
@@ -25,12 +26,23 @@ calculateActivity(
 \item{ncore}{Integer specifying the number of cores to be used in AUCell}
 
 \item{assay}{String specifying the name of the assay to be retrieved from the SingleCellExperiment object. Set to "logcounts" as the default}
+
+\item{genesets}{A feature set collection in the form of CompressedSplitDataFrameList that contains genes in the
+first column and weights in the second column. See \href{http://cedar.gene.com/gran/dev/PkgDocumentation/genomitory/uploads.html#from-compressedsplitdataframelists}{genomitory}
+for more information on compressedSplitDataFramelists. See details}
 }
 \value{
 a matrix of inferred transcription factor (row) activities in single cells (columns)
 }
 \description{
 A function that calculates the per cell activity of master regulators based on a regulon
+}
+\details{
+This function calculates activity score from a regulon that is a data frame consisting of a tf column,
+a target column and a weight column. Alternatively, instead of a regulon, this function also accepts weighted
+signature sets that are stored in Genomitory as CompressedSplitDataFrameList where each gene set or signature
+is a DataFrame. The user has the option of computing signature score by weighted mean of target gene expression or
+the relative ranking of the target genes computed by AUCell.
 }
 \examples{
 # create create a mock singleCellExperiment object for gene expression matrix
@@ -46,4 +58,12 @@ regulon.w <- addWeights(regulon, example_sce, cluster_factor = "cluster",
 
 # calculate activity
 activity <- calculateActivity(example_sce, regulon.w, assay = "logcounts")
+
+\dontrun{
+# Compute signature scores
+library(genomitory)
+breast = getFeatureSetCollection("GMTY194:analysis/breast.gmt.bz2@REVISION-1")
+names(breast) = breast@elementMetadata@listData[["name"]]
+activity=calculateActivity(GeneExpressionMatrix, genesets = breast)
+}
 }

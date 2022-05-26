@@ -4,7 +4,7 @@
 \alias{plotActivityViolin_}
 \title{A function to draw a violin plot of inferred activities for a specific TF grouped by cluster/group labels}
 \usage{
-plotActivityViolin_(activity_matrix, tf, class)
+plotActivityViolin_(activity_matrix, tf, class, legend.label)
 }
 \arguments{
 \item{activity_matrix}{A matrix of TF activities inferred from calculateActivity}
@@ -12,6 +12,8 @@ plotActivityViolin_(activity_matrix, tf, class)
 \item{tf}{A character vector indicating the names of the transcription factors to be plotted}
 
 \item{class}{A character or integer vector of cluster or group labels for single cells}
+
+\item{legend.label}{String indicating the name of variable to be plotted on the legend}
 }
 \value{
 A ggplot object

@@ -5,12 +5,16 @@
 #' @param tf A character vector indicating the names of the transcription factors to be plotted
 #' @param dimtype String indicating the name of dimensionality reduction matrix to be extracted from the SingleCellExperiment
 #' @param label logical to determine whether the cluster/group labels should be annotated on plot
-#' @param legend.label String indicating legend label
+#' @param legend.label String indicating the name of variable to be plotted on the legend
+#' @param colors A vector of 2 colors for the intensity, with the first element refering to the lower value and
+#' the second elment refering to the higher value. Default is c("blue","yellow").
+#' @param limit A vector of lower and upper bounds for the color scale. The default option is NULL and will adjust
+#' to minimal and maximal values
 #' @param ... Additional arguments from scater::plotReducedDim
 #'
 #' @return A ggplot object
 #' @export
-plotActivityDim_ <- function(sce, activity_matrix, tf, dimtype, label, legend.label,...){
+plotActivityDim_ <- function(sce, activity_matrix, tf, dimtype, label, legend.label, colors, limit, ...){
 
   tf.activity <- as.numeric(activity_matrix[tf,])
   sce$activity <- tf.activity
@@ -18,7 +22,7 @@ plotActivityDim_ <- function(sce, activity_matrix, tf, dimtype, label, legend.la
   g <- scater::plotReducedDim(sce, dimred = dimtype, colour_by="activity",
                                 text_by = label, text_size = 3, text_colour = "black",...)
 
-  g <- g + scale_color_gradient(low="blue", high="yellow") + ggtitle(tf) +
+  g <- g + scale_color_gradient(low=colors[1], high=colors[2], limit = limit, oob=scales::squish) + ggtitle(tf) +
     labs(color=legend.label) +
     theme_classic(base_size = 12) + theme(plot.title = element_text(hjust = 0.5))
 
@@ -36,7 +40,11 @@ plotActivityDim_ <- function(sce, activity_matrix, tf, dimtype, label, legend.la
 #' @param label logical to determine whether the cluster/group labels should be annotated on plot
 #' @param ncol A integer to specify the number of columns in the combined plot, if combine == TRUE
 #' @param combine logical to indicate whether to combine and visualize the plots in one panel
-#' @param legend.label String indicating legend label
+#' @param legend.label String indicating the name of variable to be plotted on the legend
+#' @param colors A vector of 2 colors for the intensity, with the first element refering to the lower value and
+#' the second elment refering to the higher value. Default is c("blue","yellow").
+#' @param limit A vector of lower and upper bounds for the color scale. The default option is NULL and will adjust
+#' to minimal and maximal values
 #' @param ... Additional arguments from scater::plotReducedDim
 #'
 #' @return A combined ggplot object or a list of ggplots if combine == FALSE
@@ -48,7 +56,8 @@ plotActivityDim_ <- function(sce, activity_matrix, tf, dimtype, label, legend.la
 #'}
 #'
 #'
-plotActivityDim <- function(sce, activity_matrix, tf, dimtype="UMAP", label = NULL, ncol = NULL, combine = TRUE, legend.label = "activity", ...){
+plotActivityDim <- function(sce, activity_matrix, tf, dimtype="UMAP", label = NULL, ncol = NULL, combine = TRUE,
+                            legend.label = "activity", colors = c("blue","yellow"), limit=NULL, ...){
 
   # give warning for genes absent in tf list
   missing = tf[which(! tf %in% rownames(activity_matrix))]
@@ -60,7 +69,7 @@ plotActivityDim <- function(sce, activity_matrix, tf, dimtype="UMAP", label = NU
 
 
   gs <- lapply(tf, function(x) {
-    suppressMessages(return(plotActivityDim_(sce, activity_matrix, x, dimtype, label, legend.label, ...)))
+    suppressMessages(return(plotActivityDim_(sce, activity_matrix, x, dimtype, label, legend.label, colors, limit, ...)))
   })
 
   if (combine == TRUE) {
@@ -83,16 +92,17 @@ plotActivityDim <- function(sce, activity_matrix, tf, dimtype="UMAP", label = NU
 #' @param activity_matrix A matrix of TF activities inferred from calculateActivity
 #' @param tf A character vector indicating the names of the transcription factors to be plotted
 #' @param class A character or integer vector of cluster or group labels for single cells
+#' @param legend.label String indicating the name of variable to be plotted on the legend
 #'
 #' @return A ggplot object
 #' @export
-plotActivityViolin_ <- function(activity_matrix, tf, class){
+plotActivityViolin_ <- function(activity_matrix, tf, class, legend.label){
 
   tf.activity <- as.numeric(activity_matrix[tf,])
   df <- data.frame(activity = tf.activity, class = class)
 
   g <- ggplot2::ggplot(df, aes(class, activity, fill=class)) + geom_violin() + theme_classic(base_size = 12) +
-    ggtitle(tf) + theme(legend.position = "none", plot.title = element_text(hjust = 0.5),
+    ggtitle(tf) + ylab(legend.label) + theme(legend.position = "none", plot.title = element_text(hjust = 0.5),
                         axis.text.x=element_text(angle=45,hjust=1))
 
   return(g)
@@ -106,6 +116,7 @@ plotActivityViolin_ <- function(activity_matrix, tf, class){
 #' @param class A vector of cluster or group labels for single cells
 #' @param ncol A integer to indicate the number of columns in the combined plot, if combine == TRUE
 #' @param combine logical to indicate whether to combine and visualize the plots in one panel
+#' @param legend.label String indicating the name of variable to be plotted on the legend
 #'
 #' @return A combined ggplot object or a list of ggplots if combine == FALSE
 #' @export
@@ -115,7 +126,7 @@ plotActivityViolin_ <- function(activity_matrix, tf, class){
 #' plotActivityViolin(score.combine, c("FOXA1","GATA3","SOX9","SPI1"), sce$BioClassification)
 #' }
 
-plotActivityViolin <- function(activity_matrix, tf, class, ncol = NULL, combine = TRUE){
+plotActivityViolin <- function(activity_matrix, tf, class, ncol = NULL, combine = TRUE, legend.label = "activity"){
   # give warning for genes absent in tf list
   missing = tf[which(! tf %in% rownames(activity_matrix))]
   if (!identical(missing, character(0))) {
@@ -124,7 +135,7 @@ plotActivityViolin <- function(activity_matrix, tf, class, ncol = NULL, combine 
   tf = tf[which(tf %in% rownames(activity_matrix))]
 
   gs <- lapply(tf, function(x) {
-    return(plotActivityViolin_(activity_matrix, x, class))
+    return(plotActivityViolin_(activity_matrix, x, class, legend.label))
   })
 
   if (combine == TRUE) {
@@ -156,7 +167,7 @@ plotActivityViolin <- function(activity_matrix, tf, class, ncol = NULL, combine 
 #' plotBubble(score.combine, c("SPI1", "ZNF623", "IRF4","SOX4"), sce$BioClassification)
 #'}
 
-plotBubble=function (activity_matrix, tf, class, bubblesize = "FDR"){
+plotBubble <- function (activity_matrix, tf, class, bubblesize = "FDR"){
   # give warning for genes absent in tf list
   missing = tf[which(! tf %in% rownames(activity_matrix))]
   if (!identical(missing, character(0))) {

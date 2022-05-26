@@ -4,7 +4,14 @@
 \alias{plotActivityViolin}
 \title{A function to draw violin plots of inferred activities for a list of TFs grouped by cluster/group labels}
 \usage{
-plotActivityViolin(activity_matrix, tf, class, ncol = NULL, combine = TRUE)
+plotActivityViolin(
+  activity_matrix,
+  tf,
+  class,
+  ncol = NULL,
+  combine = TRUE,
+  legend.label = "activity"
+)
 }
 \arguments{
 \item{activity_matrix}{A matrix of TF activities inferred from calculateActivity}
@@ -16,6 +23,8 @@ plotActivityViolin(activity_matrix, tf, class, ncol = NULL, combine = TRUE)
 \item{ncol}{A integer to indicate the number of columns in the combined plot, if combine == TRUE}
 
 \item{combine}{logical to indicate whether to combine and visualize the plots in one panel}
+
+\item{legend.label}{String indicating the name of variable to be plotted on the legend}
 }
 \value{
 A combined ggplot object or a list of ggplots if combine == FALSE

@@ -1,6 +1,7 @@
 #' A function to calculate weights for the regulons by computing co-association between TF and target gene expression
 #'
-#' @param regulon A data frame consisting of tf (regulator) and target in the column names. Additional columns indicating degree of association between tf and target such as "mor" or "corr" are optional.
+#' @param regulon A data frame consisting of tf (regulator) and target in the column names. Additional columns indicating degree
+#' of association between tf and target such as "mor" or "corr" are optional.
 #' @param sce A SingleCellExperiment object containing gene expression information
 #' @param cluster_factor String specifying the field in the colData of the SingleCellExperiment object to be averaged as pseudobulk (such as cluster)
 #' @param block_factor String specifying the field in the colData of the SingleCellExperiment object to be used as blocking factor (such as batch)
@@ -8,10 +9,22 @@
 #' @param corr Logical scalar indicating whether to calculate weights based on correlation
 #' @param MI Logical scalar indicating whether to calculate weights based on mutual information
 #' @param min_targets Integer specifying the minimum number of targets for each tf in the regulon with 10 targets as the default
-#' @param BPPARAM A BiocParallelParam object specifying whether summation should be parallelized. Use BiocParallel::SerialParam() for serial evaluation and use BiocParallel::MulticoreParam() for parallel evaluation
+#' @param BPPARAM A BiocParallelParam object specifying whether summation should be parallelized. Use BiocParallel::SerialParam() for
+#' serial evaluation and use BiocParallel::MulticoreParam() for parallel evaluation
+#' @param alt.exp A matrix that is used in place of gene expression to correlate with target gene expression. See details.
+#' @param alt.exp.merge A logical to indicate whether to consider both TF expression and alt.exp matrix. See details.
 #'
-#' @return A data frame with columns of corr and/or MI added to the regulon. TFs not found in the expression matrix and regulons not meeting the minimal number of targets were filtered out.
+#' @return A data frame with columns of corr and/or MI added to the regulon. TFs not found in the expression matrix and regulons not
+#' meeting the minimal number of targets were filtered out.
 #' @importFrom stats cor
+#' @details
+#' The default mode is to compute weights by correlating the pseudobulk target gene expression vs the pseudobulk TF gene expression.
+#' However, often times, an inhibitor of TF does not alter the gene expression of the TF. In rare cases, cells may even compensate
+#' by increasing the expression of the TF. In this case, the activity of the TF, if computed by gene expression correlation, may show a
+#' spuriously increase. As an alternative to gene expression, we may use accessibility associated with TF, such as those computed by
+#' chromVar. When alt.exp.merge is true, we take the product of the gene expression and the values in the alt.exp matrix.
+#'
+#'
 #' @export
 #'
 #' @examples
@@ -27,6 +40,33 @@
 #' # add weights to regulon
 #' regulon.w <- addWeights(regulon, example_sce, cluster_factor="cluster", exprs_values = "logcounts",
 #'                         min_targets = 5)
+#'
+#' # Alternatively, add a matrix of chromVar values in place of TF expression
+#' \dontrun{
+#' #create chromVar values from archR
+#' library(ArchR)
+#' library(parallel)
+#' proj <- addBgdPeaks(proj)
+#' proj <- addDeviationsMatrix(ArchRProj = proj,
+#' peakAnnotation = "motif", force = TRUE,logFile = "addDeviation")
+#'
+#' #retrieve chromVar matrix
+#' #chromVar
+#' motifMatrix= getMatrixFromProject(
+#' ArchRProj = proj,
+#' useMatrix = "motifMatrix",
+#' useSeqnames = NULL,
+#' verbose = TRUE,
+#' binarize = FALSE,
+#' threads = getArchRThreads(),
+#' logFile = createLogFile("getMatrixFromProject")
+#' )
+#'
+#' # calculate weights using alt.exp
+#' regulon.w.2 <- addWeights(regulon, example_sce, cluster_factor = "cluster",
+#' exprs_values = "logcounts", min_targets = 5, alt.exp = assay(motifMatrix, "z"),
+#' alt.exp.merge = TRUE)
+#'}
 
 addWeights = function(regulon,
                       sce,
@@ -36,7 +76,9 @@ addWeights = function(regulon,
                       corr = TRUE,
                       MI = FALSE,
                       min_targets = 10,
-                      BPPARAM = BiocParallel::SerialParam()){
+                      BPPARAM = BiocParallel::SerialParam(),
+                      alt.exp = NULL,
+                      alt.exp.merge = FALSE){
 
 
   # define groupings
@@ -56,27 +98,45 @@ addWeights = function(regulon,
     BPPARAM = BPPARAM
   )
 
+
+  if (!is.null(alt.exp)) {
+    alt.avg.se = scater::sumCountsAcrossCells(
+      alt.exp,
+      ids = groupings,
+      average = T,
+      BPPARAM = BPPARAM
+    )
+    alt.avg = assays(alt.avg.se)$average
+  }
   # average expression across pseudobulk clusters
   expr = assays(averages.se)$average
 
   # remove genes whose expressions are NA for all pseudobulks
   expr = expr[!rowSums(is.na(expr)) == ncol(expr), ]
 
-
   # order regulon
   regulon = regulon[order(regulon$tf, regulon$target),]
 
-  # remove tfs not found in expression matrix and those that have < min_targets parameter
-  regulon = subset(regulon, (tf %in% rownames(expr)) &
-                     (tf %in% names(which(
-                       table(regulon$tf) >= min_targets
-                     ))))
+  # remove tfs not found in expression matrix or alt.exp matrix
+  if (is.null(alt.exp)){
+    regulon = regulon[(regulon$tf %in% rownames(expr)),]
+  } else {
+    regulon = regulon[(regulon$tf %in% rownames(alt.exp)),]
+  }
+
+  if (alt.exp.merge) {
+    regulon = regulon[(regulon$tf %in% intersect(rownames(expr), rownames(alt.exp))),]
+  }
+
+  # remove tfs with less than min_targets
+  regulon = regulon[regulon$tf %in% names(which(table(regulon$tf) >= min_targets)),]
 
   #remove targets not found in expression matrix
   regulon = subset(regulon, (target %in% rownames(expr)))
 
   tf_indexes = split(seq_len(nrow(regulon)), regulon$tf)
   unique_tfs = names(tf_indexes)
+
 
   # compute correlation
   if (corr) {
@@ -91,7 +151,17 @@ addWeights = function(regulon,
 
 
     for (tf in unique_tfs) {
-      tf_expr = expr[tf, ,drop = FALSE ]
+      if (is.null(alt.exp)) {
+        tf_expr = expr[tf, ,drop = FALSE ]
+      } else {
+        tf_expr = alt.avg[tf, , drop=FALSE]
+      }
+
+      if (alt.exp.merge){
+        tf_expr = expr[tf, ,drop = FALSE ]
+        tf_alt = alt.avg[tf, , drop=FALSE]
+        tf_expr = tf_expr * tf_alt
+      }
       target_expr_matrix = expr[regulon$target[tf_indexes[[tf]]], ,drop = FALSE ]
       weights = as.numeric(cor(t(tf_expr), t(target_expr_matrix), use = "everything"))
       regulon_weight_list[[tf]] = weights
@@ -127,7 +197,12 @@ addWeights = function(regulon,
 
       for (tf in unique_tfs) {
 
-        tf_expr = expr[tf, ]
+        if (is.null(alt.exp)) {
+          tf_expr = expr[tf, ,drop = FALSE ]
+        } else {
+          tf_expr = alt.avg[tf, , drop=FALSE]
+        }
+
         target_expr_matrix = expr[regulon$target[tf_indexes[[tf]]], ]
 
 
