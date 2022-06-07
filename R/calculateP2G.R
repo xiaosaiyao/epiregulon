@@ -7,8 +7,9 @@
 #' @param reducedDimName String specifying the name of the reduced dimension matrix
 #' @param cor_cutoff A numeric scalar to specify the correlation cutoff between ATAC-seq peaks and RNA-seq genes to assign peak to gene links.
 #'  Default correlation cutoff is 0.5.
-#' @param useDim String specifying which dimensional reduction representation in the ArchR project to use
-#' @param useMatrix String specifying which data matrix in the ArchR project to use
+#' @param useDim String specifying the dimensional reduction representation in the ArchR project to use
+#' @param useMatrix String specifying which the name of the gene expression matrix in the ArchR project to use.
+#' It is often called the "GeneExpressionMatrix" for multiome and "GeneIntegrationMatrix" for unpaired data in ArchR project.
 #' @param cellNum An integer to specify the number of cells to include in each K-means cluster. Default is 200 cells.
 #' @param seed An integer scalar to specify the seed for K-means clustering
 #' @param ... other parameters to pass to addPeak2GeneLinks from ArchR package
