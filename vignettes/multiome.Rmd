@@ -16,7 +16,7 @@ vignette: >
 knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>",
-  eval = FALSE
+  eval = TRUE
 )
 ```
 
@@ -289,7 +289,16 @@ enrichresults <- regulonEnrich(TF = c("GATA6","AR"),
 #plot results
 enrichPlot(results = enrichresults)
 ```
+9. Network analysis
 
+We can visualize the genesets as a network
+```{f}
+plotGseaNetwork(tf = names(enrichresults), 
+                enrichresults = enrichresults, 
+                p.adj_cutoff = 0.1, 
+                ntop_pathways = 10)
+}
+```
 # Session Info
 
 ```{r}
