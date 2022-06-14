@@ -11,6 +11,8 @@ plotActivityDim(
   dimtype = "UMAP",
   label = NULL,
   ncol = NULL,
+  nrow = NULL,
+  title = NULL,
   combine = TRUE,
   legend.label = "activity",
   colors = c("blue", "yellow"),
@@ -30,6 +32,10 @@ plotActivityDim(
 \item{label}{logical to determine whether the cluster/group labels should be annotated on plot}
 
 \item{ncol}{A integer to specify the number of columns in the combined plot, if combine == TRUE}
+
+\item{nrow}{A integer to specify the number of rows in the combined plot, if combine == TRUE}
+
+\item{title}{A string to specify the name of the combined plot}
 
 \item{combine}{logical to indicate whether to combine and visualize the plots in one panel}
 

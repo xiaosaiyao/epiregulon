@@ -29,9 +29,10 @@ calculateP2G(
 
 \item{reducedDimName}{String specifying the name of the reduced dimension matrix}
 
-\item{useDim}{String specifying which dimensional reduction representation in the ArchR project to use}
+\item{useDim}{String specifying the dimensional reduction representation in the ArchR project to use}
 
-\item{useMatrix}{String specifying which data matrix in the ArchR project to use}
+\item{useMatrix}{String specifying which the name of the gene expression matrix in the ArchR project to use.
+It is often called the "GeneExpressionMatrix" for multiome and "GeneIntegrationMatrix" for unpaired data in ArchR project.}
 
 \item{cor_cutoff}{A numeric scalar to specify the correlation cutoff between ATAC-seq peaks and RNA-seq genes to assign peak to gene links.
 Default correlation cutoff is 0.5.}

@@ -39,6 +39,8 @@ plotActivityDim_ <- function(sce, activity_matrix, tf, dimtype, label, legend.la
 #' @param dimtype String indicating the name of dimensionality reduction matrix to be extracted from the SingleCellExperiment
 #' @param label logical to determine whether the cluster/group labels should be annotated on plot
 #' @param ncol A integer to specify the number of columns in the combined plot, if combine == TRUE
+#' @param nrow A integer to specify the number of rows in the combined plot, if combine == TRUE
+#' @param title A string to specify the name of the combined plot
 #' @param combine logical to indicate whether to combine and visualize the plots in one panel
 #' @param legend.label String indicating the name of variable to be plotted on the legend
 #' @param colors A vector of 2 colors for the intensity, with the first element refering to the lower value and
@@ -56,8 +58,9 @@ plotActivityDim_ <- function(sce, activity_matrix, tf, dimtype, label, legend.la
 #'}
 #'
 #'
-plotActivityDim <- function(sce, activity_matrix, tf, dimtype="UMAP", label = NULL, ncol = NULL, combine = TRUE,
-                            legend.label = "activity", colors = c("blue","yellow"), limit=NULL, ...){
+plotActivityDim <- function(sce, activity_matrix, tf, dimtype="UMAP", label = NULL, ncol = NULL, nrow = NULL,
+                            title = NULL, combine = TRUE, legend.label = "activity", colors = c("blue","yellow"),
+                            limit=NULL, ...){
 
   # give warning for genes absent in tf list
   missing = tf[which(! tf %in% rownames(activity_matrix))]
@@ -74,7 +77,8 @@ plotActivityDim <- function(sce, activity_matrix, tf, dimtype="UMAP", label = NU
 
   if (combine == TRUE) {
 
-    gs <- patchwork::wrap_plots(gs, ncol = ncol)
+    gs <- patchwork::wrap_plots(gs, ncol = ncol, nrow=nrow) +
+      patchwork::plot_annotation(title = title)
 
     return(gs)
 

@@ -64,7 +64,11 @@ calculateActivity = function (sce,
 
   #convert genesets to regulon
   if (!is.null(genesets)){
-    regulon=do.call(rbind,lapply(names(genesets), function(x) {data.frame(tf=x, target=genesets[[x]][,"gene_id"], weight=genesets[[x]][,"weights"])}))
+    if ( class(genesets)[1] == "CompressedSplitDFrameList") {
+      regulon=do.call(rbind,lapply(names(genesets), function(x) {data.frame(tf=x, target=genesets[[x]][,"gene_id"], weight=genesets[[x]][,"weights"])}))
+    } else if (class(genesets)[1] == "CompressedCharacterList"){
+      regulon=do.call(rbind,lapply(names(genesets), function(x) {data.frame(tf=x, target=genesets[[x]], weight=1)}))
+    }
 
   }
 
