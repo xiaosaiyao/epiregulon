@@ -7,7 +7,7 @@
 #' @param label logical to determine whether the cluster/group labels should be annotated on plot
 #' @param legend.label String indicating the name of variable to be plotted on the legend
 #' @param colors A vector of 2 colors for the intensity, with the first element refering to the lower value and
-#' the second elment refering to the higher value. Default is c("blue","yellow").
+#' the second element refering to the higher value. Default is c("blue","yellow").
 #' @param limit A vector of lower and upper bounds for the color scale. The default option is NULL and will adjust
 #' to minimal and maximal values
 #' @param ... Additional arguments from scater::plotReducedDim
@@ -20,7 +20,7 @@ plotActivityDim_ <- function(sce, activity_matrix, tf, dimtype, label, legend.la
   sce$activity <- tf.activity
 
   g <- scater::plotReducedDim(sce, dimred = dimtype, colour_by="activity",
-                                text_by = label, text_size = 3, text_colour = "black",...)
+                                text_by = label,...)
 
   g <- g + scale_color_gradient(low=colors[1], high=colors[2], limit = limit, oob=scales::squish) + ggtitle(tf) +
     labs(color=legend.label) +

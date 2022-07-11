@@ -154,7 +154,7 @@ rownames(expmatrix) <- rowData(expmatrix)$name
 # dimensional reduction matrix
 reducedDim <- SingleCellExperiment::reducedDims(mae[['TileMatrix500']])[["IterativeLSI"]]
 
-p2g <- calculateP2G(peakmatrix = peakmatrix, peakmatrix = expmatrix, reducedDim = reducedDim)
+p2g <- calculateP2G(peakmatrix = peakmatrix, expmatrix = expmatrix, reducedDim = reducedDim)
 
 head(p2g)
 ```
@@ -179,7 +179,7 @@ A long format dataframe, representing the inferred regulons, is then generated. 
 
 ```{r getRegulon}
 
-regulon <- getRegulon(p2g = p2g, overlap = overlap, aggregate=TRUE)
+regulon <- getRegulon(p2g = p2g, overlap = overlap, aggregate = TRUE)
 head(regulon)
 ```
 
