@@ -9,8 +9,10 @@ output:
   html_document:
     df_print: paged
 package: epiregulon
-vignette: |
-  %\VignetteIndexEntry{Multiome tutorial} %\VignetteEngine{knitr::rmarkdown} %\VignetteEncoding{UTF-8}
+vignette: >
+  %\VignetteIndexEntry{Multiome tutorial}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
 ---
 
 ```{r, include = FALSE}

@@ -32,7 +32,7 @@ first column and weights in the second column. See \href{http://cedar.gene.com/g
 for more information on compressedSplitDataFramelists. See details}
 }
 \value{
-a matrix of inferred transcription factor (row) activities in single cells (columns)
+A matrix of inferred transcription factor (row) activities in single cells (columns)
 }
 \description{
 A function that calculates the per cell activity of master regulators based on a regulon

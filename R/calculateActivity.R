@@ -10,7 +10,7 @@
 #' first column and weights in the second column. See [genomitory](
 #' http://cedar.gene.com/gran/dev/PkgDocumentation/genomitory/uploads.html#from-compressedsplitdataframelists)
 #' for more information on compressedSplitDataFramelists. See details
-#' @return a matrix of inferred transcription factor (row) activities in single cells (columns)
+#' @return A matrix of inferred transcription factor (row) activities in single cells (columns)
 #' @export
 #' @importFrom utils setTxtProgressBar txtProgressBar
 #' @details

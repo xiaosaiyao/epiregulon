@@ -30,7 +30,7 @@ plotActivityDim_(
 \item{legend.label}{String indicating the name of variable to be plotted on the legend}
 
 \item{colors}{A vector of 2 colors for the intensity, with the first element refering to the lower value and
-the second elment refering to the higher value. Default is c("blue","yellow").}
+the second element refering to the higher value. Default is c("blue","yellow").}
 
 \item{limit}{A vector of lower and upper bounds for the color scale. The default option is NULL and will adjust
 to minimal and maximal values}

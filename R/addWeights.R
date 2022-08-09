@@ -21,7 +21,7 @@
 #' The default mode is to compute weights by correlating the pseudobulk target gene expression vs the pseudobulk TF gene expression.
 #' However, often times, an inhibitor of TF does not alter the gene expression of the TF. In rare cases, cells may even compensate
 #' by increasing the expression of the TF. In this case, the activity of the TF, if computed by gene expression correlation, may show a
-#' spuriously increase. As an alternative to gene expression, we may use accessibility associated with TF, such as those computed by
+#' spurious increase. As an alternative to gene expression, we may use accessibility associated with TF, such as those computed by
 #' chromVar. When alt.exp.merge is true, we take the product of the gene expression and the values in the alt.exp matrix.
 #'
 #'
