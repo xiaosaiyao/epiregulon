@@ -5,6 +5,7 @@ author:
 - Xiaosai Yao^[yaox19@gene.com]
 date: "February 4th, 2022"
 output:
+  pdf_document: default
   html_document:
     df_print: paged
 package: epiregulon
@@ -56,11 +57,11 @@ b. For multiome data, use addGeneExpressionMatrix. See [multiome](https://greenl
 
 Copy this ArchR project into your own directory
 ```{r, message = FALSE}
-archR_project_path="/gstore/project/ar_ligands/NE/reprogram_seq/multiome_arrayed/OUTPUT/doubletremoved/"
+archR_project_path <- "/gstore/project/ar_ligands/NE/reprogram_seq/multiome_arrayed/OUTPUT/doubletremoved/"
 tutorial <- loadArchRProject(path = archR_project_path, showLogo = F)
 
 # save tutorial data into your new directory and load it
-myarchR_project_path = "/gstore/scratch/u/yaox19/multiome"
+myarchR_project_path <- "/gstore/scratch/u/yaox19/multiome"
 saveArchRProject(ArchRProj = tutorial, outputDirectory = myarchR_project_path, load = F )
 proj <- loadArchRProject(path = myarchR_project_path, showLogo = F)
 
@@ -82,7 +83,7 @@ proj@embeddings
 
 Retrieve gene expression matrix from the ArchR project
 ```{r}
-GeneExpressionMatrix= getMatrixFromProject(
+GeneExpressionMatrix <- getMatrixFromProject(
     ArchRProj = proj,
     useMatrix = "GeneExpressionMatrix",
     useSeqnames = NULL,
@@ -93,23 +94,25 @@ GeneExpressionMatrix= getMatrixFromProject(
 )
 ```
 
-Change to gene expression matrix to SingleCellExperiment object
+Change gene expression matrix to SingleCellExperiment object
 ```{r}
 
-GeneExpressionMatrix=as(GeneExpressionMatrix, "SingleCellExperiment")
-assay(GeneExpressionMatrix, "logcounts") = assay(GeneExpressionMatrix, "GeneExpressionMatrix")
+GeneExpressionMatrix <- as(GeneExpressionMatrix, "SingleCellExperiment")
+assay(GeneExpressionMatrix, "logcounts") <- assay(GeneExpressionMatrix, "GeneExpressionMatrix")
 
 ```
+
 Transfer cell and gene information and embeddings from ArchR project to singleCellExperiment
 
 ```{r}
 reducedDim(GeneExpressionMatrix, "UMAP_Combined") <- getEmbedding(ArchRProj = proj, 
                                                                   embedding = "UMAP_Combined", 
                                                                   returnDF = TRUE)[colnames(GeneExpressionMatrix),]
-colData(GeneExpressionMatrix)=getCellColData(proj)[colnames(GeneExpressionMatrix),]
-rownames(GeneExpressionMatrix)=rowData(GeneExpressionMatrix)$name
+colData(GeneExpressionMatrix) <- getCellColData(proj)[colnames(GeneExpressionMatrix),]
+rownames(GeneExpressionMatrix) <- rowData(GeneExpressionMatrix)$name
 
 ```
+
 Visualize singleCellExperiment by UMAP
 ```{r}
 scater::plotReducedDim(GeneExpressionMatrix, dimred = "UMAP_Combined", 
@@ -124,7 +127,7 @@ scater::plotReducedDim(GeneExpressionMatrix, dimred = "UMAP_Combined",
 First, we retrieve the information of TF binding sites collected from Cistrome and ENCODE ChIP-seq, which are hosted on Genomitory. Currently, human genomes HG19 and HG38 and mouse mm10 are available. 
 
 ```{r getTFMotifInfo}
-grl <- getTFMotifInfo(genome="hg38")
+grl <- getTFMotifInfo(genome = "hg38")
 head(grl)
 
 ```
@@ -141,6 +144,7 @@ p2g <- calculateP2G(ArchR_path = myarchR_project_path, useDim = "LSI_Combined",
 head(p2g)
 
 ```
+
 Alternatively, users can now supply peak, gene, and dimensional reduction matrices derived from a MultiAssayExperiment object. This is to be compatible with future GPSA multiome workflow. Epiregulon implements a custom algorithm that has similar performance to ArchR's P2G function. 
 
 ```{r, eval=FALSE}
