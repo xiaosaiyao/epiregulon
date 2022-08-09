@@ -61,6 +61,9 @@ calculateActivityBulk <- function(expr,
     # remove tfs not found in expression matrix
     regulon <- regulon[(regulon$tf %in% rownames(expr)), ]
 
+    # remove targets not found in expression matrix
+    regulon <- regulon[(regulon$target %in% rownames(expr)), ]
+
     # split regulon by TF
     tf_indexes <- split(seq_len(nrow(regulon)), regulon$tf)
     unique_tfs <- names(tf_indexes)
