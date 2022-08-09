@@ -96,8 +96,8 @@ calculateActivityBulk <- function(expr,
             Sys.sleep(1 / 100)
 
         }
-        regulon_weights = unlist(regulon_weight_list)
-        regulon$corr = regulon_weights
+        regulon_weights <- unlist(regulon_weight_list)
+        regulon$corr <- regulon_weights
 
         if (!is.null(save.regulon)){
             saveRDS(regulon, file = save.regulon)
@@ -138,7 +138,7 @@ calculateActivityBulk <- function(expr,
     #merge positive and negative matrices
     all_genes <- union(rownames(gsvaMatrix.pos), rownames(gsvaMatrix.neg))
 
-    TFactivity.total <-matrix(0, ncol = ncol(gsvaMatrix.pos), nrow = length(all_genes))
+    TFactivity.total <- matrix(0, ncol = ncol(gsvaMatrix.pos), nrow = length(all_genes))
     colnames(TFactivity.total) <- colnames(gsvaMatrix.pos)
     rownames(TFactivity.total) <- all_genes
 
