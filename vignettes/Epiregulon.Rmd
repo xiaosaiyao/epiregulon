@@ -4,8 +4,7 @@ author:
 - Shang-Yang Chen^[chens179@gene.com]
 - Xiaosai Yao^[yaox19@gene.com]
 date: "March 29th, 2022"
-output:
-  pdf_document
+output: html_document
 package: epiregulon
 vignette: >
   %\VignetteIndexEntry{Epiregulon}

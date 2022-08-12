@@ -4,10 +4,7 @@ author:
 - Shang-Yang Chen^[chens179@gene.com]
 - Xiaosai Yao^[yaox19@gene.com]
 date: "February 4th, 2022"
-output:
-  pdf_document: default
-  html_document:
-    df_print: paged
+output: html_document
 package: epiregulon
 vignette: >
   %\VignetteIndexEntry{Multiome tutorial}

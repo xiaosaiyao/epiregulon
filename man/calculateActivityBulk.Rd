@@ -11,11 +11,13 @@ calculateActivityBulk(
   mode = c("mor", "corr"),
   corr_calculate = NULL,
   save.regulon = NULL,
-  sample_n = NULL
+  sample_n = NULL,
+  assay_name = "rpkm",
+  rowData_name = "symbol"
 )
 }
 \arguments{
-\item{expr}{Matrix of gene expression with gene names matching those of the regulon}
+\item{expr}{Matrix of gene expression with gene names matching those of the regulon or a SummarizedExperiment object}
 
 \item{regulon}{Matrix consisting of tf(regulator), target and a column indicating degree of association between TF and target}
 
@@ -29,6 +31,12 @@ Correlation can either be supplied or computed from expr using (corr_calculate =
 \item{save.regulon}{String indicating the path to save the new regulon with updated correlation}
 
 \item{sample_n}{An integer indicating the number of samples to subsample if the original expression matrix is large}
+
+\item{assay_name}{String indicating the name of the assay corresponding to gene expression
+if expr is a SummarizedExperiment object}
+
+\item{rowData_name}{String indicating the column name in the rowData that matches the gene names in the regulon
+if expr is a SummarizedExperiment object}
 }
 \value{
 A matrix of inferred transcription factor (row) activities in samples (columns)

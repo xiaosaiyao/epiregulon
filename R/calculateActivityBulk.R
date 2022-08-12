@@ -1,6 +1,6 @@
 #' A function to calculate transcriptional activity from a matrix of gene expression and regulon
 #'
-#' @param expr Matrix of gene expression with gene names matching those of the regulon
+#' @param expr Matrix of gene expression with gene names matching those of the regulon or a SummarizedExperiment object
 #' @param regulon Matrix consisting of tf(regulator), target and a column indicating degree of association between TF and target
 #                 such as "mor" or "corr".
 #                 example regulon:
@@ -11,12 +11,18 @@
 #' Correlation can either be supplied or computed from expr using (corr_calculate = FALSE). Mor is supplied by the Dorothea regulon.
 #' @param corr_calculate Logical indicating whether correlation needs to be calculated
 #' @param save.regulon String indicating the path to save the new regulon with updated correlation
+#' @param assay_name String indicating the name of the assay corresponding to gene expression
+#' if expr is a SummarizedExperiment object
+#' @param rowData_name String indicating the column name in the rowData that matches the gene names in the regulon
+#' if expr is a SummarizedExperiment object
 #' @param sample_n An integer indicating the number of samples to subsample if the original expression matrix is large
+#'
 #'
 #' @return A matrix of inferred transcription factor (row) activities in samples (columns)
 #' @export
 #' @importFrom utils setTxtProgressBar txtProgressBar
 #' @importFrom GSVA gsva
+#' @importFrom SummarizedExperiment assay rowData
 #' @examples
 #' # Load regulon from dorothea
 #' library(dorothea)
@@ -56,7 +62,21 @@ calculateActivityBulk <- function(expr,
                                   mode = c("mor", "corr"),
                                   corr_calculate = NULL,
                                   save.regulon = NULL,
-                                  sample_n = NULL) {
+                                  sample_n = NULL,
+                                  assay_name = "rpkm",
+                                  rowData_name = "symbol") {
+
+  # convert expr to matrix
+    if (class(expr)[1] %in% c("SummarizedExperiment", "RangedSummarizedExperiment", "SingleCellExperiment")){
+      expr_assay <- assay(expr, assay_name)
+      if (!is.null(rowData_name)){
+        rownames(expr_assay) <- rowData(expr)[,rowData_name]
+      }
+      expr <- as.matrix(expr_assay)
+
+    } else {
+      expr <- as.matrix(expr)
+    }
 
     # remove tfs not found in expression matrix
     regulon <- regulon[(regulon$tf %in% rownames(expr)), ]

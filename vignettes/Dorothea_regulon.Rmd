@@ -3,7 +3,7 @@ title: "Dorothea regulon"
 author: Xiaosai Yao
 email: yaox19@gene.com
 date: "April 29, 2022"
-output: pdf_document
+output: html_document
 package: epiregulon
 vignette: >
   %\VignetteIndexEntry{Dorothea tutorial}
