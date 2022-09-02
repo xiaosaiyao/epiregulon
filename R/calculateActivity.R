@@ -103,7 +103,6 @@ calculateActivity = function (sce,
       counter = counter + 1
       setTxtProgressBar(pb, counter)
     }
-    score.combine = do.call(cbind, score)
     score.combine = Matrix::t(score.combine)
   }
   else if (method == "aucell") {
@@ -112,11 +111,15 @@ calculateActivity = function (sce,
     geneSets = split(regulon$target, regulon$tf)
     writeLines("ranking cells...")
     cells_rankings = AUCell::AUCell_buildRankings(scale.mat,
-                                                  nCores = ncore, plotStats = F)
+                                                  splitByBlocks=TRUE,
+                                                  nCores = ncore,
+                                                  plotStats = F)
     writeLines("calculating AUC...")
-    cells_AUC = AUCell::AUCell_calcAUC(geneSets, rankings = cells_rankings,
+    cells_AUC = AUCell::AUCell_calcAUC(geneSets,
+                                       rankings = cells_rankings,
                                        nCores = ncore)
-    score.combine = data.frame(AUCell::getAUC(cells_AUC))
+    #score.combine = data.frame(AUCell::getAUC(cells_AUC))
+    score.combine = AUCell::getAUC(cells_AUC)
   }
   return(score.combine)
 }

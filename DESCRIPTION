@@ -1,6 +1,6 @@
 Package: epiregulon
 Title: Building regulons by integrating scRNA-seq and scATAC-seq data
-Version: 1.0.9
+Version: 1.0.10
 Date: 2022-08-11
 Authors@R: 
     c(person(given = "Xiaosai", family = "Yao", role = c("aut", "cre"), email = "yaox19@gene.com"),
