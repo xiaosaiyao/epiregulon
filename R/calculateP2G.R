@@ -14,7 +14,8 @@
 #' @param seed An integer scalar to specify the seed for K-means clustering
 #' @param ... other parameters to pass to addPeak2GeneLinks from ArchR package
 #'
-#' @return A Peak2Gene correlation datafrane
+#' @return A Peak2Gene correlation dataframe
+#' @import SummarizedExperiment S4Vectors stats
 #' @export
 #'
 #' @examples
@@ -43,7 +44,7 @@
 #' p2g <- calculateP2G(peakMatrix = peak_sce, expMatrix = gene_sce, reducedDim = reducedDim_mat,
 #'                     cellNum = 20)
 
-calculateP2G = function(peakMatrix = NULL,
+calculateP2G <- function(peakMatrix = NULL,
                         expMatrix = NULL,
                         reducedDim = NULL,
                         ArchR_path = NULL,
@@ -176,11 +177,11 @@ calculateP2G = function(peakMatrix = NULL,
   }
 
   # Get metadata from p2g object and turn into df with peak indexes
-  peak_metadata = as.data.frame(S4Vectors::metadata(p2g)[[1]]) # shows  chromosome, start, and end coordinates for each peak
+  peak_metadata <- as.data.frame(S4Vectors::metadata(p2g)[[1]]) # shows  chromosome, start, and end coordinates for each peak
   peak_metadata$idxATAC <- seq_along(rownames(peak_metadata))
 
-  gene_metadata = as.data.frame(S4Vectors::metadata(p2g)[[2]]) # shows gene name and RNA index of genomic ranges
-  gene_metadata$idxRNA = seq_along(rownames(gene_metadata))
+  gene_metadata <- as.data.frame(S4Vectors::metadata(p2g)[[2]]) # shows gene name and RNA index of genomic ranges
+  gene_metadata$idxRNA <- seq_along(rownames(gene_metadata))
 
   # Add gene names, chromosome num, chrom start, and chrom end to dataframe
   p2g <- as.data.frame(p2g)
@@ -194,8 +195,8 @@ calculateP2G = function(peakMatrix = NULL,
   colnames(p2g_merged) <-
     c("idxATAC", "Chrom", "idxRNA", "Gene", "Correlation")
   p2g_merged <-
-    p2g_merged[order(p2g_merged$idxATAC, p2g_merged$idxRNA), ]
-  p2g_merged <- subset(p2g_merged, Correlation > 0.5)
+    p2g_merged[order(p2g_merged$idxATAC, p2g_merged$idxRNA),,drop=FALSE]
+  p2g_merged <- p2g_merged[p2g_merged$Correlation > 0.5,,drop=FALSE]
 
   return(p2g_merged)
 }

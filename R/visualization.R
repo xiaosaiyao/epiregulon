@@ -14,6 +14,7 @@
 #'
 #' @return A ggplot object
 #' @export
+#' @import ggplot2
 plotActivityDim_ <- function(sce, activity_matrix, tf, dimtype, label, legend.label, colors, limit, ...){
 
   tf.activity <- as.numeric(activity_matrix[tf,])
@@ -100,14 +101,19 @@ plotActivityDim <- function(sce, activity_matrix, tf, dimtype="UMAP", label = NU
 #'
 #' @return A ggplot object
 #' @export
+#' @import ggplot2
 plotActivityViolin_ <- function(activity_matrix, tf, class, legend.label){
 
   tf.activity <- as.numeric(activity_matrix[tf,])
   df <- data.frame(activity = tf.activity, class = class)
 
-  g <- ggplot2::ggplot(df, aes(class, activity, fill=class)) + geom_violin() + theme_classic(base_size = 12) +
-    ggtitle(tf) + ylab(legend.label) + theme(legend.position = "none", plot.title = element_text(hjust = 0.5),
-                        axis.text.x=element_text(angle=45,hjust=1))
+  g <- ggplot2::ggplot(df, aes_string(x = "class",
+                                      y = "activity",
+                                      fill = "class")) +
+    geom_violin() + theme_classic(base_size = 12) +
+    ggtitle(tf) + ylab(legend.label) + theme(legend.position = "none",
+                                             plot.title = element_text(hjust = 0.5),
+                                             axis.text.x = element_text(angle = 45,hjust = 1))
 
   return(g)
 
@@ -124,6 +130,7 @@ plotActivityViolin_ <- function(activity_matrix, tf, class, legend.label){
 #'
 #' @return A combined ggplot object or a list of ggplots if combine == FALSE
 #' @export
+#' @import ggplot2
 #'
 #' @examples
 #' \dontrun{
@@ -165,6 +172,7 @@ plotActivityViolin <- function(activity_matrix, tf, class, ncol = NULL, combine 
 #'
 #' @return A ggplot object
 #' @export
+#' @import ggplot2
 #'
 #' @examples
 #' \dontrun{
@@ -222,9 +230,11 @@ plotBubble <- function (activity_matrix, tf, class, bubblesize = "FDR"){
 
 
 enrichPlot_ <- function(results, title, top) {
-  ggplot(results[1:top, ] , aes(y = -log10(p.adjust), x = Description, color = GeneRatio)) +
+  ggplot(results[1:top, ] , aes_string(y = -log10("p.adjust"),
+                                       x = "Description",
+                                       color = "GeneRatio")) +
     scale_colour_gradient(high = "red", low = "blue") +
-    geom_point(stat = 'identity', aes(size = Odds.Ratio)) +
+    geom_point(stat = 'identity', aes_string(size = "Odds.Ratio")) +
     coord_flip() +
     theme_bw() + ggtitle (title) +
     theme(
@@ -247,14 +257,15 @@ enrichPlot_ <- function(results, title, top) {
 #'
 #' @return A combined ggplot object or a list of ggplots if combine == FALSE
 #' @export
-#'
+#' @import ggplot2
+
 #' @examples
 #' \dontrun{
 #' enrichplot(results=enrichment_results )
 #' }
 #'
 
-enrichPlot <- function(results, top = 15, ncol=3, combine=TRUE) {
+enrichPlot <- function(results, top = 15, ncol = 3, combine = TRUE) {
 
   gs <- lapply(names(results), function(x) {
     enrichPlot_(results[[x]], x, top)

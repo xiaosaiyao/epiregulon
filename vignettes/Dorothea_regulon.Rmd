@@ -13,7 +13,7 @@ vignette: >
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE,
-                      eval = FALSE)
+                      eval = TRUE)
 
   
 ```
@@ -28,8 +28,7 @@ of evidence) and E being the least confident. For this demo, we further trim the
 ```{r load_regulon}
 library(dorothea)
 data(dorothea_mm, package = "dorothea")
-regulon <- dorothea_mm %>% dplyr::filter(confidence %in% c("A", "B", "C", "D","E"))
-
+regulon <- dorothea_mm 
 #trim regulon
 genes_to_plot <- c("Foxa1", "Nkx3-1","Trp63","Sox2")
 regulon <- regulon[regulon$tf %in% genes_to_plot, ]

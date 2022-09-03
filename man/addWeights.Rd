@@ -82,7 +82,7 @@ peakAnnotation = "motif", force = TRUE,logFile = "addDeviation")
 
 #retrieve chromVar matrix
 #chromVar
-motifMatrix= getMatrixFromProject(
+motifMatrix <- getMatrixFromProject(
 ArchRProj = proj,
 useMatrix = "motifMatrix",
 useSeqnames = NULL,

@@ -16,7 +16,7 @@ vignette: >
 knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>",
-  eval = FALSE
+  eval = TRUE
 )
 ```
 
@@ -140,7 +140,7 @@ sce=readRDS("/gstore/project/lineage/sam/heme_GRN/scRNA-Granja-2019.rds")
 Trim regulon for demonstration purposes
 ```{r}
 TFs <- c("FOXA1","GATA3","SOX9", "SPI1")
-regulon <- regulon %>% dplyr::filter(tf %in% TFs)
+regulon <- regulon[which(regulon$tf %in% TFs),]
 nrow(regulon)
 
 regulon.w <- addWeights(regulon=regulon,

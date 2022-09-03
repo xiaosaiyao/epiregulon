@@ -26,12 +26,15 @@ A function to perform geneset enrichment of user-defined regulons
 \examples{
 \dontrun{
 #retrieve genesets
-H <- EnrichmentBrowser::getGenesets(org = "hsa", db = "msigdb", cat = "H", gene.id.type = "SYMBOL" )
-C6 <- EnrichmentBrowser::getGenesets(org = "hsa", db = "msigdb", cat = "C6", gene.id.type = "SYMBOL" )
+H <- EnrichmentBrowser::getGenesets(org = "hsa", db = "msigdb",
+cat = "H", gene.id.type = "SYMBOL" )
+C6 <- EnrichmentBrowser::getGenesets(org = "hsa", db = "msigdb",
+cat = "C6", gene.id.type = "SYMBOL" )
 
 #combine genesets and convert genesets to be compatible with enricher
 gs <- c(H,C6)
-gs.list <- do.call(rbind,lapply(names(gs), function(x) {data.frame(gs=x, genes=gs[[x]])}))
+gs.list <- do.call(rbind,lapply(names(gs), function(x) {
+data.frame(gs=x, genes=gs[[x]])}))
 
 > head(gs.list)
 gs   genes
@@ -39,8 +42,8 @@ gs   genes
 2 M5890_HALLMARK_TNFA_SIGNALING_VIA_NFKB   ACKR3
 3 M5890_HALLMARK_TNFA_SIGNALING_VIA_NFKB    AREG
 
-enrichment_results <- regulonEnrich(c("NKX2-1","GATA6","AR"), regulon=regulon.w,
-genesets=gs.list)
+enrichment_results <- regulonEnrich(c("NKX2-1","GATA6","AR"), regulon = regulon.w,
+genesets = gs.list)
 }
 
 }

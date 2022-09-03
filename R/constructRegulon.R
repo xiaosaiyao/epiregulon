@@ -58,7 +58,7 @@ getP2Glinks <- function(archr_path, cor_cutoff = 0.5, reducedDims = "IterativeLS
 #' An accessor function to retrieve TF motif info from genomitory repository
 #'
 #' @param genome String specifying the genomic build for bed files. Currently supporting hg19, hg38 and mm10
-#'
+#' @importFrom SummarizedExperiment rowRanges
 #' @return A GRangeList object containing binding site information of transcription factor chipseq combined from Cistrome database and ENCODE
 #' @export
 #'
@@ -106,13 +106,16 @@ getTFMotifInfo <- function(genome = "hg19"){
 #' Gene = paste0("Gene_",1:10),Correlation = runif(10, 0,1))
 #'
 #' # create mock a GRanges list of TF binding sites
-#' grl <- GRangesList("TF1" = GRanges(seqnames = "chr1", ranges = IRanges(start = c(50,1050), width = 100)),
-#'                    "TF2" = GRanges(seqnames = "chr1", ranges = IRanges(start = c(1050), width = 100))
+#' grl <- GRangesList("TF1" = GRanges(seqnames = "chr1",
+#' ranges = IRanges(start = c(50,1050), width = 100)),
+#' "TF2" = GRanges(seqnames = "chr1",
+#' ranges = IRanges(start = c(1050), width = 100))
 #' )
 #'
 #' # create a mock singleCellExperiment object for peak matrix
 #' peak_gr <- GRanges(seqnames = "chr1",
-#'              ranges = IRanges(start = seq(from = 1, to = 10000, by = 1000), width = 100))
+#'              ranges = IRanges(start = seq(from = 1, to = 10000, by = 1000),
+#'              width = 100))
 #' peak_counts <- matrix(sample(x = 0:4, size = 100*length(peak_gr), replace = TRUE),
 #' nrow = length(peak_gr), ncol = 100)
 #' peak_sce <- SingleCellExperiment(list(counts = peak_counts))
@@ -162,20 +165,22 @@ addTFMotifInfo <- function(p2g, grl, peakMatrix=NULL, archR_project_path=NULL){
 #' @examples
 #' set.seed(1)
 #' # create a mock peak-to-gene matrix
-#' p2g <- data.frame(idxATAC = c(rep(1,5), rep(2,5)), Chrom = "chr1", idxRNA = 1:10, Gene = paste0("Gene_", 1:10),
-#'                   Correlation = runif(10, 0, 1))
+#' p2g <- data.frame(idxATAC = c(rep(1,5), rep(2,5)), Chrom = "chr1", idxRNA = 1:10,
+#' Gene = paste0("Gene_", 1:10), Correlation = runif(10, 0, 1))
 #'
 #' # create a Granges list of TF binding sites
-#' grl <- GRangesList("TF1" = GRanges(seqnames = "chr1", ranges = IRanges(start = c(50,1050), width = 100)),
-#'                    "TF2" = GRanges(seqnames = "chr1", ranges = IRanges(start = c(1050), width = 100))
+#' grl <- GRangesList("TF1" = GRanges(seqnames = "chr1",
+#' ranges = IRanges(start = c(50,1050), width = 100)),
+#' "TF2" = GRanges(seqnames = "chr1",
+#' ranges = IRanges(start = c(1050), width = 100))
 #' )
 #'
 #' # Create a mock peak matrix
 #' peak_gr <- GRanges(seqnames = "chr1",
 #'                    ranges = IRanges(start = seq(from = 1, to = 10000, by = 1000), width = 100))
 #'
-#' peak_counts <- matrix(sample(x = 0:4, size = 100*length(peak_gr), replace = TRUE), nrow = length(peak_gr),
-#'                       ncol = 100)
+#' peak_counts <- matrix(sample(x = 0:4, size = 100*length(peak_gr), replace = TRUE),
+#' nrow = length(peak_gr),ncol = 100)
 #' peak_sce <- SingleCellExperiment(list(counts = peak_counts))
 #' rowRanges(peak_sce) <- peak_gr
 #' rownames(peak_sce) <- paste0("peak", 1:10)

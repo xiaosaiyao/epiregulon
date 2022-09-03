@@ -9,21 +9,26 @@
 #'
 #' @return A named list of dataframes containing differential TF activity test results for each cluster/group
 #' @export
+#' @import stats
 #'
 #' @examples
 #' set.seed(1)
-#' score.combine=cbind(matrix(runif(2000,0,2), 20,100), matrix(runif(2000,0,10), 20,100))
-#' rownames(score.combine)=paste0("TF",1:20)
-#' colnames(score.combine)=paste0("cell",1:200)
-#' cluster=c(rep(1,100),rep(2,100))
-#' markers <- findDifferentialActivity(score.combine, cluster, pval.type="some", direction="up",
-#' test.type= "t")
-#' sig.genes <- getSigGenes(markers, fdr_cutoff = 1, logFC_cutoff=0.1)
+#' score.combine <- cbind(matrix(runif(2000,0,2), 20,100), matrix(runif(2000,0,10), 20,100))
+#' rownames(score.combine) <- paste0("TF",1:20)
+#' colnames(score.combine) <- paste0("cell",1:200)
+#' cluster <- c(rep(1,100),rep(2,100))
+#' markers <- findDifferentialActivity(
+#' activity_matrix = score.combine,
+#' groups = cluster,
+#' pval.type = "some",
+#' direction = "up",
+#' test.type = "t")
+#' sig.genes <- getSigGenes(markers, fdr_cutoff = 1, logFC_cutoff = 0.1)
 
-findDifferentialActivity <- function(activity_matrix, groups, test.type= "t", pval.type="some", direction="up", ...){
+findDifferentialActivity <- function(activity_matrix, groups, test.type = "t", pval.type = "some", direction="up", ...){
 
-  activity_matrix=na.omit(as.matrix(activity_matrix))
-  tf_markers <- scran::findMarkers(activity_matrix, groups, test.type= "t", pval.type="some", direction="up", ...)
+  activity_matrix <- na.omit(as.matrix(activity_matrix))
+  tf_markers <- scran::findMarkers(activity_matrix, groups, test.type = "t", pval.type = "some", direction="up", ...)
   return(tf_markers)
 
 }
@@ -37,19 +42,20 @@ findDifferentialActivity <- function(activity_matrix, groups, test.type= "t", pv
 #'
 #' @return A compiled dataframe of TFs with differential activities across clusters/groups
 #' @export
+#' @import stats
 #'
 #' @examples
 #' set.seed(1)
-#' score.combine=cbind(matrix(runif(2000,0,2), 20,100), matrix(runif(2000,0,10), 20,100))
-#' rownames(score.combine)=paste0("TF",1:20)
-#' colnames(score.combine)=paste0("cell",1:200)
-#' cluster=c(rep(1,100),rep(2,100))
-#' markers <- findDifferentialActivity(score.combine, cluster, pval.type="some", direction="up",
-#' test.type= "t")
-#' sig.genes <- getSigGenes(markers, fdr_cutoff = 1, logFC_cutoff=0.1)
+#' score.combine <- cbind(matrix(runif(2000,0,2), 20,100), matrix(runif(2000,0,10), 20,100))
+#' rownames(score.combine) <- paste0("TF",1:20)
+#' colnames(score.combine) <- paste0("cell",1:200)
+#' cluster <- c(rep(1,100),rep(2,100))
+#' markers <- findDifferentialActivity(score.combine, cluster, pval.type = "some", direction = "up",
+#' test.type = "t")
+#' sig.genes <- getSigGenes(markers, fdr_cutoff = 1, logFC_cutoff = 0.1)
 #' head(sig.genes)
 
-getSigGenes=function(da_list, fdr_cutoff = 0.05, logFC_cutoff = NULL, topgenes = NULL){
+getSigGenes <- function(da_list, fdr_cutoff = 0.05, logFC_cutoff = NULL, topgenes = NULL){
 
   classes <- names(da_list)
 
@@ -58,9 +64,9 @@ getSigGenes=function(da_list, fdr_cutoff = 0.05, logFC_cutoff = NULL, topgenes =
     da_genes <- da_genes[,c("p.value","FDR","summary.logFC")]
 
     if (is.null(logFC_cutoff)){
-      logFC_cutoff = round(quantile(da_genes$summary.logFC, 0.95), digits = 1)
+      logFC_cutoff <- round(quantile(da_genes$summary.logFC, 0.95), digits = 1)
     }else {
-      logFC_cutoff= logFC_cutoff
+      logFC_cutoff <- logFC_cutoff
     }
     message ("Using a logFC cutoff of ", logFC_cutoff, " for class ", classes[i])
     da_genes <- da_genes[which(da_genes[,"FDR"] < fdr_cutoff & da_genes[, "summary.logFC"] > logFC_cutoff), ]
@@ -71,9 +77,10 @@ getSigGenes=function(da_list, fdr_cutoff = 0.05, logFC_cutoff = NULL, topgenes =
     }
 
     if (is.null(topgenes)){
-      da_genes <- da_genes[with(da_genes, order(FDR,-summary.logFC)),]
+
+      da_genes <- da_genes[order(da_genes$FDR, -(da_genes$summary.logFC)),]
     } else {
-      da_genes <- da_genes[head(with(da_genes, order(FDR, -summary.logFC)), topgenes),]
+      da_genes <- da_genes[head(order(da_genes$FDR, -(da_genes$summary.logFC)), topgenes),]
     }
     #print(da_genes)
 
@@ -89,17 +96,17 @@ getSigGenes=function(da_list, fdr_cutoff = 0.05, logFC_cutoff = NULL, topgenes =
 
 regulonEnrich_ <- function(TF, regulon, corr, corr_cutoff, genesets){
 
-  regulon.TF=unique(regulon$target[which(regulon$tf == TF & regulon[, corr] >corr_cutoff)])
+  regulon.TF <- unique(regulon$target[which(regulon$tf == TF & regulon[, corr] >corr_cutoff)])
   if (is.null(regulon.TF)) {
-    results=data.frame(p.adjust=NA, Description=NA, GeneRatio=0, Odds.Ratio=NA)
+    results <- data.frame(p.adjust=NA, Description=NA, GeneRatio=0, Odds.Ratio=NA)
   } else {
-  enrichresults = clusterProfiler::enricher(regulon.TF, TERM2GENE = genesets)
-  results=enrichresults@result
-  results$GeneRatio=(as.numeric(lapply(strsplit(results$GeneRatio, split = "/"), "[",1)))/(as.numeric(lapply(strsplit(results$GeneRatio, split = "/"), "[",2)))
-  results$BgRatio=(as.numeric(lapply(strsplit(results$BgRatio, split = "/"), "[",1)))/(as.numeric(lapply(strsplit(results$BgRatio, split = "/"), "[",2)))
-  results$Odds.Ratio=results$GeneRatio/results$BgRatio
-  results=results[order(results$p.adjust),]
-  results$Description = factor(as.character(results$Description), level = unique(as.character(results$Description[nrow(results):1])))
+  enrichresults <- clusterProfiler::enricher(regulon.TF, TERM2GENE = genesets)
+  results <- enrichresults@result
+  results$GeneRatio <-(as.numeric(lapply(strsplit(results$GeneRatio, split = "/"), "[",1)))/(as.numeric(lapply(strsplit(results$GeneRatio, split = "/"), "[",2)))
+  results$BgRatio <- (as.numeric(lapply(strsplit(results$BgRatio, split = "/"), "[",1)))/(as.numeric(lapply(strsplit(results$BgRatio, split = "/"), "[",2)))
+  results$Odds.Ratio <- results$GeneRatio/results$BgRatio
+  results <- results[order(results$p.adjust),]
+  results$Description <- factor(as.character(results$Description), levels = unique(as.character(results$Description[nrow(results):1])))
   }
   return(results)
 }
@@ -119,12 +126,15 @@ regulonEnrich_ <- function(TF, regulon, corr, corr_cutoff, genesets){
 #' @examples
 #' \dontrun{
 #' #retrieve genesets
-#' H <- EnrichmentBrowser::getGenesets(org = "hsa", db = "msigdb", cat = "H", gene.id.type = "SYMBOL" )
-#' C6 <- EnrichmentBrowser::getGenesets(org = "hsa", db = "msigdb", cat = "C6", gene.id.type = "SYMBOL" )
+#' H <- EnrichmentBrowser::getGenesets(org = "hsa", db = "msigdb",
+#' cat = "H", gene.id.type = "SYMBOL" )
+#' C6 <- EnrichmentBrowser::getGenesets(org = "hsa", db = "msigdb",
+#' cat = "C6", gene.id.type = "SYMBOL" )
 #'
 #' #combine genesets and convert genesets to be compatible with enricher
 #' gs <- c(H,C6)
-#' gs.list <- do.call(rbind,lapply(names(gs), function(x) {data.frame(gs=x, genes=gs[[x]])}))
+#' gs.list <- do.call(rbind,lapply(names(gs), function(x) {
+#' data.frame(gs=x, genes=gs[[x]])}))
 #'
 #' > head(gs.list)
 #' gs   genes
@@ -132,14 +142,18 @@ regulonEnrich_ <- function(TF, regulon, corr, corr_cutoff, genesets){
 #' 2 M5890_HALLMARK_TNFA_SIGNALING_VIA_NFKB   ACKR3
 #' 3 M5890_HALLMARK_TNFA_SIGNALING_VIA_NFKB    AREG
 #'
-#' enrichment_results <- regulonEnrich(c("NKX2-1","GATA6","AR"), regulon=regulon.w,
-#' genesets=gs.list)
+#' enrichment_results <- regulonEnrich(c("NKX2-1","GATA6","AR"), regulon = regulon.w,
+#' genesets = gs.list)
 #'}
 #'
-regulonEnrich <- function(TF, regulon, corr="weight", corr_cutoff=0.5, genesets){
-  regulonls <- lapply(TF, function(x) {
-    regulonEnrich_(x, regulon, corr, corr_cutoff, genesets)
-  })
-  names(regulonls)=TF
-  return(regulonls)
-}
+regulonEnrich <- function(TF,
+                          regulon,
+                          corr = "weight",
+                          corr_cutoff = 0.5,
+                          genesets) {
+    regulonls <- lapply(TF, function(x) {
+      regulonEnrich_(x, regulon, corr, corr_cutoff, genesets)
+    })
+    names(regulonls) <- TF
+    return(regulonls)
+  }

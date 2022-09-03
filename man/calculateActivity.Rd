@@ -62,8 +62,8 @@ activity <- calculateActivity(example_sce, regulon.w, assay = "logcounts")
 \dontrun{
 # Compute signature scores
 library(genomitory)
-breast = getFeatureSetCollection("GMTY194:analysis/breast.gmt.bz2@REVISION-1")
-names(breast) = breast@elementMetadata@listData[["name"]]
-activity=calculateActivity(GeneExpressionMatrix, genesets = breast)
+breast <- getFeatureSetCollection("GMTY194:analysis/breast.gmt.bz2@REVISION-1")
+names(breast) <- breast@elementMetadata@listData[["name"]]
+activity <- calculateActivity(GeneExpressionMatrix, genesets = breast)
 }
 }

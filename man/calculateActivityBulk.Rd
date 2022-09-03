@@ -50,7 +50,7 @@ included in the regulon or calculated based on the correlation between the expre
 # Load regulon from dorothea
 library(dorothea)
 data(dorothea_hs, package = "dorothea")
-regulon <- dorothea_hs \%>\% dplyr::filter(confidence \%in\% c("A"))
+regulon <- dorothea_hs[which(dorothea_hs$confidence \%in\% c("A")),]
 
 # Create a mock expression matrix
 genes <- unique(c(regulon$tf, regulon$target))
@@ -62,10 +62,12 @@ colnames(expr) <- paste("sample", 1:20)
 activity.mor <- calculateActivityBulk(expr, regulon, mode = "mor", method = "ssgsea")
 
 # Add correlation of Dorothea from user supplied gene matrix
-activity.corr <- calculateActivityBulk(expr, regulon, mode = "corr", method ="ssgsea", corr_calculate = TRUE)
+activity.corr <- calculateActivityBulk(expr, regulon, mode = "corr",
+method ="ssgsea", corr_calculate = TRUE)
 
 # Subsample
-activity.corr <- calculateActivityBulk(expr, regulon, mode = "corr", method ="ssgsea", corr_calculate = TRUE, sample_n = 10)
+activity.corr <- calculateActivityBulk(expr, regulon, mode = "corr",
+method ="ssgsea", corr_calculate = TRUE, sample_n = 10)
 
 # Use Dorothea regulon with pre-calculated calculation
 \dontrun{

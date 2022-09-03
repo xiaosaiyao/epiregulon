@@ -12,7 +12,7 @@
 #' for more information on compressedSplitDataFramelists. See details
 #' @return A matrix of inferred transcription factor (row) activities in single cells (columns)
 #' @export
-#' @importFrom utils setTxtProgressBar txtProgressBar
+#' @import methods utils
 #' @details
 #' This function calculates activity score from a regulon that is a data frame consisting of a tf column,
 #' a target column and a weight column. Alternatively, instead of a regulon, this function also accepts weighted
@@ -39,87 +39,88 @@
 #' \dontrun{
 #' # Compute signature scores
 #' library(genomitory)
-#' breast = getFeatureSetCollection("GMTY194:analysis/breast.gmt.bz2@REVISION-1")
-#' names(breast) = breast@elementMetadata@listData[["name"]]
-#' activity=calculateActivity(GeneExpressionMatrix, genesets = breast)
+#' breast <- getFeatureSetCollection("GMTY194:analysis/breast.gmt.bz2@REVISION-1")
+#' names(breast) <- breast@elementMetadata@listData[["name"]]
+#' activity <- calculateActivity(GeneExpressionMatrix, genesets = breast)
 #'}
 
 
-calculateActivity = function (sce,
+calculateActivity <- function (sce,
                               regulon = NULL,
                               mode = "weight",
                               method = "weightedmean",
                               ncore = 1,
                               assay = "logcounts",
                               genesets = NULL) {
-  method = tolower(method)
-  scale.mat = assay(sce, assay)
+  method <- tolower(method)
+  scale.mat <- assay(sce, assay)
 
   #convert delayedMatrix to dgCMatrix
   if (class(scale.mat)[1] == "DelayedMatrix") {
     writeLines("converting DelayedMatrix to dgCMatrix")
-    scale.mat = as(scale.mat, Class = "dgCMatrix")
+    scale.mat <- as(scale.mat, Class = "dgCMatrix")
   }
 
 
   #convert genesets to regulon
   if (!is.null(genesets)){
     if ( class(genesets)[1] == "CompressedSplitDFrameList") {
-      regulon=do.call(rbind,lapply(names(genesets), function(x) {data.frame(tf=x, target=genesets[[x]][,"gene_id"], weight=genesets[[x]][,"weights"])}))
+      regulon <- do.call(rbind,lapply(names(genesets), function(x) {data.frame(tf=x, target=genesets[[x]][,"gene_id"], weight=genesets[[x]][,"weights"])}))
     } else if (class(genesets)[1] == "CompressedCharacterList"){
-      regulon=do.call(rbind,lapply(names(genesets), function(x) {data.frame(tf=x, target=genesets[[x]], weight=1)}))
+      regulon <- do.call(rbind,lapply(names(genesets), function(x) {data.frame(tf=x, target=genesets[[x]], weight=1)}))
     }
 
   }
 
 
   #remove genes in regulon not found in sce
-  regulon = regulon[which(regulon$target %in% rownames(scale.mat)),]
+  regulon <- regulon[which(regulon$target %in% rownames(scale.mat)),]
 
   #calculate activity
   if (method == "weightedmean") {
     message(paste("calculating TF activity from regulon using "),
             method)
 
-    tf_indexes = split(seq_len(nrow(regulon)), regulon$tf)
-    unique_tfs = names(tf_indexes)
+    tf_indexes <- split(seq_len(nrow(regulon)), regulon$tf)
+    unique_tfs <- names(tf_indexes)
 
-    pb = txtProgressBar(min = 0,
+    pb <- txtProgressBar(min = 0,
                         max = length(unique_tfs),
                         style = 3)
 
-    score = vector("list", length(unique_tfs))
-    counter = 0
+    score <- vector("list", length(unique_tfs))
+    counter <- 0
 
     for (i in seq_along(unique_tfs)) {
 
-      tf = unique_tfs[i]
-      regulon.current = regulon[ tf_indexes[[tf]], ]
-      geneset = data.frame(regulon.current$target, regulon.current[, mode])
-      score[[i]] = pathwayscoreCoeffNorm(scale.mat,
+      tf <- unique_tfs[i]
+      regulon.current <- regulon[ tf_indexes[[tf]], ]
+      geneset <- data.frame(regulon.current$target, regulon.current[, mode])
+      score[[i]] <- pathwayscoreCoeffNorm(scale.mat,
                                          geneset,
                                          tf)
       Sys.sleep(1 / 100)
-      counter = counter + 1
+      counter <- counter + 1
       setTxtProgressBar(pb, counter)
     }
-    score.combine = Matrix::t(score.combine)
+    score.combine <- do.call(cbind, score)
+    score.combine <- Matrix::t(score.combine)
   }
   else if (method == "aucell") {
     message(paste("calculating TF activity from regulon using "),
             method)
-    geneSets = split(regulon$target, regulon$tf)
+    geneSets <- split(regulon$target, regulon$tf)
     writeLines("ranking cells...")
-    cells_rankings = AUCell::AUCell_buildRankings(scale.mat,
+    cells_rankings <- AUCell::AUCell_buildRankings(scale.mat,
                                                   splitByBlocks=TRUE,
                                                   nCores = ncore,
                                                   plotStats = F)
     writeLines("calculating AUC...")
-    cells_AUC = AUCell::AUCell_calcAUC(geneSets,
+    cells_AUC <- AUCell::AUCell_calcAUC(geneSets,
                                        rankings = cells_rankings,
                                        nCores = ncore)
     #score.combine = data.frame(AUCell::getAUC(cells_AUC))
-    score.combine = AUCell::getAUC(cells_AUC)
+    score.combine <- AUCell::getAUC(cells_AUC)
   }
   return(score.combine)
 }
@@ -132,9 +133,9 @@ calculateActivity = function (sce,
 #'
 #' @return A vector of inferred activity scores for every single cell
 #' @export
-pathwayscoreCoeffNorm = function(scale.mat, geneset, geneset_name) {
+pathwayscoreCoeffNorm <- function(scale.mat, geneset, geneset_name) {
 
-  score = Matrix::crossprod(scale.mat[geneset[,1], , drop=FALSE], geneset[,2])/nrow(geneset)
+  score <- Matrix::crossprod(scale.mat[geneset[,1], , drop=FALSE], geneset[,2])/nrow(geneset)
   colnames(score) <- geneset_name
   return(score)
 }

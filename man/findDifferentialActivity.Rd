@@ -34,11 +34,15 @@ A function to test for differential TF activity between pairs of single cell clu
 }
 \examples{
 set.seed(1)
-score.combine=cbind(matrix(runif(2000,0,2), 20,100), matrix(runif(2000,0,10), 20,100))
-rownames(score.combine)=paste0("TF",1:20)
-colnames(score.combine)=paste0("cell",1:200)
-cluster=c(rep(1,100),rep(2,100))
-markers <- findDifferentialActivity(score.combine, cluster, pval.type="some", direction="up",
-test.type= "t")
-sig.genes <- getSigGenes(markers, fdr_cutoff = 1, logFC_cutoff=0.1)
+score.combine <- cbind(matrix(runif(2000,0,2), 20,100), matrix(runif(2000,0,10), 20,100))
+rownames(score.combine) <- paste0("TF",1:20)
+colnames(score.combine) <- paste0("cell",1:200)
+cluster <- c(rep(1,100),rep(2,100))
+markers <- findDifferentialActivity(
+activity_matrix = score.combine,
+groups = cluster,
+pval.type = "some",
+direction = "up",
+test.type = "t")
+sig.genes <- getSigGenes(markers, fdr_cutoff = 1, logFC_cutoff = 0.1)
 }
