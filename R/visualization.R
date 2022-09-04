@@ -4,7 +4,7 @@
 #' @param activity_matrix A matrix of TF activities inferred from calculateActivity
 #' @param tf A character vector indicating the names of the transcription factors to be plotted
 #' @param dimtype String indicating the name of dimensionality reduction matrix to be extracted from the SingleCellExperiment
-#' @param label logical to determine whether the cluster/group labels should be annotated on plot
+#' @param label String corresponding to the field in the colData of sce for annotation on plot
 #' @param legend.label String indicating the name of variable to be plotted on the legend
 #' @param colors A vector of 2 colors for the intensity, with the first element refering to the lower value and
 #' the second element refering to the higher value. Default is c("blue","yellow").
@@ -38,7 +38,7 @@ plotActivityDim_ <- function(sce, activity_matrix, tf, dimtype, label, legend.la
 #' @param activity_matrix A matrix of TF activities inferred from calculateActivity
 #' @param tf A character vector indicating the names of the transcription factors to be plotted
 #' @param dimtype String indicating the name of dimensionality reduction matrix to be extracted from the SingleCellExperiment
-#' @param label logical to determine whether the cluster/group labels should be annotated on plot
+#' @param label String corresponding to the field in the colData of sce for annotation on plot
 #' @param ncol A integer to specify the number of columns in the combined plot, if combine == TRUE
 #' @param nrow A integer to specify the number of rows in the combined plot, if combine == TRUE
 #' @param title A string to specify the name of the combined plot
