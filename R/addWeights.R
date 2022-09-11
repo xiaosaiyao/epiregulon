@@ -67,7 +67,7 @@
 #' exprs_values = "logcounts", min_targets = 5, alt.exp = assay(motifMatrix, "z"),
 #' alt.exp.merge = TRUE)
 #'}
-
+#' @author Xiaosai Yao, Shang-yang Chen
 addWeights <- function(regulon,
                       sce,
                       cluster_factor,

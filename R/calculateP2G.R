@@ -43,6 +43,7 @@
 #' reducedDim_mat <- matrix(runif(ncol(gene_sce)*50, min = 0, max = 1), nrow = ncol(gene_sce), 50)
 #' p2g <- calculateP2G(peakMatrix = peak_sce, expMatrix = gene_sce, reducedDim = reducedDim_mat,
 #'                     cellNum = 20)
+#' @author Xiaosai Yao, Shang-yang Chen
 
 calculateP2G <- function(peakMatrix = NULL,
                         expMatrix = NULL,

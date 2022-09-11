@@ -24,7 +24,7 @@
 #' direction = "up",
 #' test.type = "t")
 #' sig.genes <- getSigGenes(markers, fdr_cutoff = 1, logFC_cutoff = 0.1)
-
+#' @author Xiaosai Yao, Shang-yang Chen
 findDifferentialActivity <- function(activity_matrix, groups, test.type = "t", pval.type = "some", direction="up", ...){
 
   activity_matrix <- na.omit(as.matrix(activity_matrix))
@@ -54,7 +54,7 @@ findDifferentialActivity <- function(activity_matrix, groups, test.type = "t", p
 #' test.type = "t")
 #' sig.genes <- getSigGenes(markers, fdr_cutoff = 1, logFC_cutoff = 0.1)
 #' head(sig.genes)
-
+#' @author Xiaosai Yao, Shang-yang Chen
 getSigGenes <- function(da_list, fdr_cutoff = 0.05, logFC_cutoff = NULL, topgenes = NULL){
 
   classes <- names(da_list)
@@ -146,6 +146,7 @@ regulonEnrich_ <- function(TF, regulon, corr, corr_cutoff, genesets){
 #' genesets = gs.list)
 #'}
 #'
+#' @author Xiaosai Yao
 regulonEnrich <- function(TF,
                           regulon,
                           corr = "weight",

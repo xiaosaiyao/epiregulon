@@ -43,7 +43,7 @@
 #' names(breast) <- breast@elementMetadata@listData[["name"]]
 #' activity <- calculateActivity(GeneExpressionMatrix, genesets = breast)
 #'}
-
+#' @author Xiaosai Yao, Shang-yang Chen
 
 calculateActivity <- function (sce,
                               regulon = NULL,
@@ -133,6 +133,8 @@ calculateActivity <- function (sce,
 #'
 #' @return A vector of inferred activity scores for every single cell
 #' @export
+#' @author Xiaosai Yao
+
 pathwayscoreCoeffNorm <- function(scale.mat, geneset, geneset_name) {
 
   score <- Matrix::crossprod(scale.mat[geneset[,1], , drop=FALSE], geneset[,2])/nrow(geneset)

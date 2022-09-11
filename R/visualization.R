@@ -15,6 +15,8 @@
 #' @return A ggplot object
 #' @export
 #' @import ggplot2
+#' @author Xiaosai Yao, Shang-yang Chen
+
 plotActivityDim_ <- function(sce, activity_matrix, tf, dimtype, label, legend.label, colors, limit, ...){
 
   tf.activity <- as.numeric(activity_matrix[tf,])
@@ -58,6 +60,7 @@ plotActivityDim_ <- function(sce, activity_matrix, tf, dimtype, label, legend.la
 #' plotActivityDim(sce, score.combine, c("FOXA1","GATA3","SOX9","SPI1"), "TSNE", point_size = 0.25)
 #'}
 #'
+#' @author Xiaosai Yao, Shang-yang Chen
 #'
 plotActivityDim <- function(sce, activity_matrix, tf, dimtype="UMAP", label = NULL, ncol = NULL, nrow = NULL,
                             title = NULL, combine = TRUE, legend.label = "activity", colors = c("blue","yellow"),
@@ -102,6 +105,7 @@ plotActivityDim <- function(sce, activity_matrix, tf, dimtype="UMAP", label = NU
 #' @return A ggplot object
 #' @export
 #' @import ggplot2
+#' @author Xiaosai Yao, Shang-yang Chen
 plotActivityViolin_ <- function(activity_matrix, tf, class, legend.label){
 
   tf.activity <- as.numeric(activity_matrix[tf,])
@@ -136,7 +140,7 @@ plotActivityViolin_ <- function(activity_matrix, tf, class, legend.label){
 #' \dontrun{
 #' plotActivityViolin(score.combine, c("FOXA1","GATA3","SOX9","SPI1"), sce$BioClassification)
 #' }
-
+#' @author Xiaosai Yao, Shang-yang Chen
 plotActivityViolin <- function(activity_matrix, tf, class, ncol = NULL, combine = TRUE, legend.label = "activity"){
   # give warning for genes absent in tf list
   missing = tf[which(! tf %in% rownames(activity_matrix))]
@@ -178,7 +182,7 @@ plotActivityViolin <- function(activity_matrix, tf, class, ncol = NULL, combine 
 #' \dontrun{
 #' plotBubble(score.combine, c("SPI1", "ZNF623", "IRF4","SOX4"), sce$BioClassification)
 #'}
-
+#' @author Shang-yang Chen
 plotBubble <- function (activity_matrix, tf, class, bubblesize = "FDR"){
   # give warning for genes absent in tf list
   missing = tf[which(! tf %in% rownames(activity_matrix))]
@@ -264,7 +268,7 @@ enrichPlot_ <- function(results, title, top) {
 #' enrichplot(results=enrichment_results )
 #' }
 #'
-
+#' @author Xiaosai Yao
 enrichPlot <- function(results, top = 15, ncol = 3, combine = TRUE) {
 
   gs <- lapply(names(results), function(x) {

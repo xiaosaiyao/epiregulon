@@ -7,10 +7,9 @@
 #' @param ... other parameters to pass to addPeak2GeneLinks from ArchR package
 #'
 #' @return A Peak2Gene correlation datafrane
-#' @import ArchR
-#' @import utils
+#' @import ArchR utils
 #' @export
-#'
+#' @author Shang-yang Chen
 
 
 getP2Glinks <- function(archr_path, cor_cutoff = 0.5, reducedDims = "IterativeLSI", useMatrix = "GeneIntegrationMatrix", ...){
@@ -62,7 +61,8 @@ getP2Glinks <- function(archr_path, cor_cutoff = 0.5, reducedDims = "IterativeLS
 #' @return A GRangeList object containing binding site information of transcription factor chipseq combined from Cistrome database and ENCODE
 #' @export
 #'
-#'
+#' @author Shang-yang Chen
+
 getTFMotifInfo <- function(genome = "hg19"){
 
   if (genome == 'hg19'){
@@ -125,7 +125,7 @@ getTFMotifInfo <- function(genome = "hg19"){
 #' # create overlaps between p2g matrix, TF binding sites and peak matrix
 #' overlap <- addTFMotifInfo(p2g, grl, peakMatrix = peak_sce)
 #' head(overlap)
-
+#' @author Xiaosai Yao, Shang-yang Chen
 addTFMotifInfo <- function(p2g, grl, peakMatrix=NULL, archR_project_path=NULL){
 
   if (!is.null(archR_project_path)) {
@@ -191,7 +191,7 @@ addTFMotifInfo <- function(p2g, grl, peakMatrix=NULL, archR_project_path=NULL){
 #'
 #' # aggregate gene expression if the gene is bound by the same TF at regulatory elements
 #' regulon <- getRegulon(p2g, overlap, aggregate = TRUE)
-
+#' @author Xiaosai Yao, Shang-yang Chen
 
 getRegulon <- function(p2g, overlap, aggregate = TRUE){
 
