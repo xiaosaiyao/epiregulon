@@ -25,7 +25,7 @@ plotActivityDim_(
 
 \item{dimtype}{String indicating the name of dimensionality reduction matrix to be extracted from the SingleCellExperiment}
 
-\item{label}{logical to determine whether the cluster/group labels should be annotated on plot}
+\item{label}{String corresponding to the field in the colData of sce for annotation on plot}
 
 \item{legend.label}{String indicating the name of variable to be plotted on the legend}
 
@@ -42,4 +42,7 @@ A ggplot object
 }
 \description{
 A function to plot cell-level reduced dimension results stored in a SingleCellExperiment object, colored by activities for a specific TF
+}
+\author{
+Xiaosai Yao, Shang-yang Chen
 }

@@ -26,3 +26,6 @@ A function to draw bubble plot of relative activities across cluster/group label
 plotBubble(score.combine, c("SPI1", "ZNF623", "IRF4","SOX4"), sce$BioClassification)
 }
 }
+\author{
+Shang-yang Chen
+}

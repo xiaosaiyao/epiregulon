@@ -76,3 +76,6 @@ activity.corr <- calculateActivityBulk(expr, regulon, mode = "corr", method ="ss
 }
 
 }
+\author{
+Xiaosai Yaon
+}

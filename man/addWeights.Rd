@@ -73,7 +73,7 @@ regulon.w <- addWeights(regulon, example_sce, cluster_factor="cluster", exprs_va
 
 # Alternatively, add a matrix of chromVar values in place of TF expression
 \dontrun{
-#create chromVar values from archR
+# create chromVar values from archR
 library(ArchR)
 library(parallel)
 proj <- addBgdPeaks(proj)
@@ -97,4 +97,7 @@ regulon.w.2 <- addWeights(regulon, example_sce, cluster_factor = "cluster",
 exprs_values = "logcounts", min_targets = 5, alt.exp = assay(motifMatrix, "z"),
 alt.exp.merge = TRUE)
 }
+}
+\author{
+Xiaosai Yao, Shang-yang Chen
 }

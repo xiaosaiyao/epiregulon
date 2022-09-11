@@ -19,3 +19,6 @@ A vector of inferred activity scores for every single cell
 \description{
 A function to aggregate the weighted gene expression of genes belonging to a given pathway or a regulon
 }
+\author{
+Xiaosai Yao
+}

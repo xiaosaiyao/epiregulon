@@ -15,3 +15,6 @@ A GRangeList object containing binding site information of transcription factor 
 \description{
 An accessor function to retrieve TF motif info from genomitory repository
 }
+\author{
+Shang-yang Chen
+}

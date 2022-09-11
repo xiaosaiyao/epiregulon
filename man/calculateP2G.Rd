@@ -9,9 +9,9 @@ calculateP2G(
   expMatrix = NULL,
   reducedDim = NULL,
   ArchR_path = NULL,
-  reducedDimName = "LSI",
   useDim = "IterativeLSI",
   useMatrix = "GeneIntegrationMatrix",
+  maxDist = 250000,
   cor_cutoff = 0.5,
   cellNum = 200,
   seed = 1,
@@ -27,12 +27,12 @@ calculateP2G(
 
 \item{ArchR_path}{String specifying the path to an ArchR project if ArchR's implementation of addPeak2GeneLinks is desired}
 
-\item{reducedDimName}{String specifying the name of the reduced dimension matrix}
-
-\item{useDim}{String specifying the dimensional reduction representation in the ArchR project to use}
+\item{useDim}{String specifying the dimensional reduction representation in the ArchR project to use or the name of the reduced dimension matrix supplied by the user}
 
 \item{useMatrix}{String specifying which the name of the gene expression matrix in the ArchR project to use.
 It is often called the "GeneExpressionMatrix" for multiome and "GeneIntegrationMatrix" for unpaired data in ArchR project.}
+
+\item{maxDist}{An integer to specify the base pair extension from transcription start start for overlap with peak regions}
 
 \item{cor_cutoff}{A numeric scalar to specify the correlation cutoff between ATAC-seq peaks and RNA-seq genes to assign peak to gene links.
 Default correlation cutoff is 0.5.}
@@ -73,4 +73,7 @@ rownames(peak_sce) <- paste0("peak",1:10)
 reducedDim_mat <- matrix(runif(ncol(gene_sce)*50, min = 0, max = 1), nrow = ncol(gene_sce), 50)
 p2g <- calculateP2G(peakMatrix = peak_sce, expMatrix = gene_sce, reducedDim = reducedDim_mat,
                     cellNum = 20)
+}
+\author{
+Xiaosai Yao, Shang-yang Chen
 }

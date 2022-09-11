@@ -30,5 +30,8 @@ cluster <- c(rep(1,100),rep(2,100))
 markers <- findDifferentialActivity(score.combine, cluster, pval.type = "some", direction = "up",
 test.type = "t")
 sig.genes <- getSigGenes(markers, fdr_cutoff = 1, logFC_cutoff = 0.1)
-head(sig.genes)
+utils::head(sig.genes)
+}
+\author{
+Xiaosai Yao, Shang-yang Chen
 }

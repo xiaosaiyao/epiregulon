@@ -29,7 +29,7 @@ plotActivityDim(
 
 \item{dimtype}{String indicating the name of dimensionality reduction matrix to be extracted from the SingleCellExperiment}
 
-\item{label}{logical to determine whether the cluster/group labels should be annotated on plot}
+\item{label}{String corresponding to the field in the colData of sce for annotation on plot}
 
 \item{ncol}{A integer to specify the number of columns in the combined plot, if combine == TRUE}
 
@@ -60,5 +60,7 @@ A function to plot cell-level reduced dimension results stored in a SingleCellEx
 plotActivityDim(sce, score.combine, c("FOXA1","GATA3","SOX9","SPI1"), "TSNE", point_size = 0.25)
 }
 
-
+}
+\author{
+Xiaosai Yao, Shang-yang Chen
 }

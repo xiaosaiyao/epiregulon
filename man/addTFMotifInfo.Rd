@@ -46,5 +46,8 @@ rownames(peak_sce) <- paste0("peak",1:10)
 
 # create overlaps between p2g matrix, TF binding sites and peak matrix
 overlap <- addTFMotifInfo(p2g, grl, peakMatrix = peak_sce)
-head(overlap)
+utils::head(overlap)
+}
+\author{
+Xiaosai Yao, Shang-yang Chen
 }

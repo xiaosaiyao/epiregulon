@@ -46,3 +46,6 @@ direction = "up",
 test.type = "t")
 sig.genes <- getSigGenes(markers, fdr_cutoff = 1, logFC_cutoff = 0.1)
 }
+\author{
+Xiaosai Yao, Shang-yang Chen
+}

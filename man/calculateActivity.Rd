@@ -45,7 +45,7 @@ is a DataFrame. The user has the option of computing signature score by weighted
 the relative ranking of the target genes computed by AUCell.
 }
 \examples{
-# create create a mock singleCellExperiment object for gene expression matrix
+# create a mock singleCellExperiment object for gene expression matrix
 example_sce <- scuttle::mockSCE()
 example_sce <- scuttle::logNormCounts(example_sce)
 example_sce$cluster <- sample(LETTERS[1:5], ncol(example_sce), replace = TRUE)
@@ -66,4 +66,7 @@ breast <- getFeatureSetCollection("GMTY194:analysis/breast.gmt.bz2@REVISION-1")
 names(breast) <- breast@elementMetadata@listData[["name"]]
 activity <- calculateActivity(GeneExpressionMatrix, genesets = breast)
 }
+}
+\author{
+Xiaosai Yao, Shang-yang Chen
 }

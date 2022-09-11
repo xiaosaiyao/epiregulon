@@ -29,3 +29,6 @@ A Peak2Gene correlation datafrane
 \description{
 A function to compute correlations between ATAC-seq peaks and RNA-seq genes
 }
+\author{
+Shang-yang Chen
+}

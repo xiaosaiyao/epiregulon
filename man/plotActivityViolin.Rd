@@ -37,3 +37,6 @@ A function to draw violin plots of inferred activities for a list of TFs grouped
 plotActivityViolin(score.combine, c("FOXA1","GATA3","SOX9","SPI1"), sce$BioClassification)
 }
 }
+\author{
+Xiaosai Yao, Shang-yang Chen
+}
