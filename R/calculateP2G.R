@@ -11,6 +11,7 @@
 #' It is often called the "GeneExpressionMatrix" for multiome and "GeneIntegrationMatrix" for unpaired data in ArchR project.
 #' @param cellNum An integer to specify the number of cells to include in each K-means cluster. Default is 200 cells.
 #' @param seed An integer scalar to specify the seed for K-means clustering
+#' @param maxDist An integer to specify the base pair extension from transcription start start for overlap with peak regions
 #' @param ... other parameters to pass to addPeak2GeneLinks from ArchR package
 #'
 #' @return A Peak2Gene correlation dataframe
