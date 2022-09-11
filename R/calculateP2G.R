@@ -4,10 +4,9 @@
 #' @param expMatrix A SingleCellExperiment object containing gene expression counts from scRNA-seq
 #' @param reducedDim A matrix of dimension reduced values, for example derived from IterativeLSI algorithm of ArchR
 #' @param ArchR_path String specifying the path to an ArchR project if ArchR's implementation of addPeak2GeneLinks is desired
-#' @param reducedDimName String specifying the name of the reduced dimension matrix
 #' @param cor_cutoff A numeric scalar to specify the correlation cutoff between ATAC-seq peaks and RNA-seq genes to assign peak to gene links.
 #'  Default correlation cutoff is 0.5.
-#' @param useDim String specifying the dimensional reduction representation in the ArchR project to use
+#' @param useDim String specifying the dimensional reduction representation in the ArchR project to use or the name of the reduced dimension matrix supplied by the user
 #' @param useMatrix String specifying which the name of the gene expression matrix in the ArchR project to use.
 #' It is often called the "GeneExpressionMatrix" for multiome and "GeneIntegrationMatrix" for unpaired data in ArchR project.
 #' @param cellNum An integer to specify the number of cells to include in each K-means cluster. Default is 200 cells.
@@ -15,7 +14,7 @@
 #' @param ... other parameters to pass to addPeak2GeneLinks from ArchR package
 #'
 #' @return A Peak2Gene correlation dataframe
-#' @import SummarizedExperiment S4Vectors stats
+#' @import SummarizedExperiment S4Vectors stats SingleCellExperiment GenomicRanges
 #' @export
 #'
 #' @examples
@@ -48,9 +47,9 @@ calculateP2G <- function(peakMatrix = NULL,
                         expMatrix = NULL,
                         reducedDim = NULL,
                         ArchR_path = NULL,
-                        reducedDimName = "LSI",
                         useDim = "IterativeLSI",
                         useMatrix = "GeneIntegrationMatrix",
+                        maxDist = 250000,
                         cor_cutoff = 0.5,
                         cellNum = 200,
                         seed = 1,
@@ -60,6 +59,7 @@ calculateP2G <- function(peakMatrix = NULL,
   if (!is.null(ArchR_path)) {
     ArchR::addArchRLogging(useLogs = FALSE)
 
+    writeLines("Using ArchR to compute peak to gene links...")
     suppressMessages(obj <- ArchR::loadArchRProject(ArchR_path))
 
     obj <- ArchR::addPeak2GeneLinks(
@@ -77,97 +77,126 @@ calculateP2G <- function(peakMatrix = NULL,
       returnLoops = FALSE
     )
 
+    # Get metadata from p2g object and turn into df with peak indexes
+    peak_metadata <- as.data.frame(S4Vectors::metadata(p2g)[[1]]) # shows  chromosome, start, and end coordinates for each peak
+    peak_metadata$idxATAC <- seq_along(rownames(peak_metadata))
+
+    gene_metadata <- as.data.frame(S4Vectors::metadata(p2g)[[2]]) # shows gene name and RNA index of genomic ranges
+    gene_metadata$idxRNA <- seq_along(rownames(gene_metadata))
+
+    # Add gene names and peak positions to dataframe
+    p2g <- as.data.frame(p2g)
+    p2g_merged <- merge(p2g, gene_metadata, by = "idxRNA") # merge by gene ID
+    p2g_merged <- merge(p2g_merged, peak_metadata, by = "idxATAC") # merge by peak ID
+
+    # Extract relevant columns
+    p2g_merged <- p2g_merged[, c("idxATAC", "seqnames.x", "start.x","start.y", "idxRNA", "name", "Correlation","FDR")]
+    colnames(p2g_merged) <- c("idxATAC", "chr", "start","end", "idxRNA", "target", "Correlation","FDR")
+
+
+
+
   } else if (!is.null(peakMatrix) &
              !is.null(expMatrix) & !is.null(reducedDim)) {
-    # retrieve peak matrix
-    #peakMatrix = obj[["PeakMatrix"]]
 
-    # retrieve expression matrix
-    #expMatrix = obj[[useMatrix]]
-    #rownames(expMatrix) <- rowData(expMatrix)$name
+    writeLines("Using epiregulon to compute peak to gene links...")
 
-    # retrieve dimensionality reduction
-    #reducedDim <- SingleCellExperiment::reducedDims(obj[['TileMatrix500']])[[reducedDims]]
+    # Package expression matrix and peak matrix into a single sce
+    sce <- SingleCellExperiment(list(counts = assay(expMatrix)),
+                                altExps = list(peakMatrix = peakMatrix))
 
-    # create sce object from expression matrix
-    sce <-
-      SingleCellExperiment::SingleCellExperiment(list(counts = assay(expMatrix)), altExps = list(peakMatrix =
-                                                                                                   peakMatrix))
     # add reduced dimension information to sce object
-    SingleCellExperiment::reducedDim(sce, reducedDimName) <-
-      reducedDim
+    reducedDim(sce,useDim) <- reducedDim
 
+
+    writeLines("performing k means clustering to form metacells")
     # K-means clustering
     kNum <- trunc(ncol(sce) / cellNum)
-    kclusters <-
-      scran::clusterCells(
-        sce,
-        use.dimred = reducedDimName,
-        BLUSPARAM = bluster::KmeansParam(centers = kNum, iter.max = 5000)
-      )
+    kclusters <- scran::clusterCells(sce,
+                                     use.dimred =useDim,
+                                     BLUSPARAM = bluster::KmeansParam
+                                     (centers = kNum, iter.max = 5000))
     kclusters <- as.character(kclusters)
 
-    # aggregate matrix by k-means clusters
-    sce_grouped <-
-      SingleCellExperiment::applySCE(sce,
-                                     scuttle::aggregateAcrossCells,
-                                     ids = kclusters,
-                                     statistics = "sum")
-    expGroupMatrix <- SummarizedExperiment::assay(sce_grouped)
-    peakGroupMatrix <-
-      SummarizedExperiment::assay(SingleCellExperiment::altExp(sce_grouped))
+    # aggregate sce by k-means clusters
+    sce_grouped <- applySCE(sce,
+                            scuttle::aggregateAcrossCells,
+                            ids = kclusters,
+                            statistics = "mean")
 
-    # normalize group matrix
-    expGroupMatrix <-
-      t(t(expGroupMatrix) / colSums(expGroupMatrix)) * 10 ^ 4
-    peakGroupMatrix <-
-      t(t(peakGroupMatrix) / colSums(peakGroupMatrix)) * 10 ^ 4
+    # some sces has strand information in metadata that conflicts with genomic ranges
+    mcols(expMatrix)$strand <- NULL
+
+    # transfer rowRanges(expMatrix) to rowranges(sce_grouped)
+    rowRanges(sce_grouped) <- rowRanges(expMatrix)
+
+    # rowRanges(altExp(sce_grouped)) already preserved
+
+    # keep track of original ATAC and expression indices
+    rowData(sce_grouped)$old.idxRNA <- 1:nrow(sce_grouped)
+    rowData(altExp(sce_grouped))$old.idxATAC <- 1:nrow(altExp(sce_grouped))
+
+    # remove genes and peaks that are equal to 0
+    sce_grouped <- sce_grouped[which(rowSums(assay(sce_grouped)) != 0),]
+    altExp(sce_grouped) <- altExp(sce_grouped)[which(rowSums(assay(altExp(sce_grouped))) != 0),]
+
+    # extract gene expression and peak matrix
+    expGroupMatrix <- assay(sce_grouped)
+    peakGroupMatrix <- assay(altExp(sce_grouped))
+
 
     # get gene information
-    geneSet <- rowRanges(expMatrix)
-    geneStart <- GenomicRanges::resize(geneSet, 1, "start")
+    geneSet <- rowRanges(sce_grouped)
+    geneStart <- promoters(geneSet)
 
     # get peak range information
-    peakSet <- rowRanges(peakMatrix)
+    peakSet <- rowRanges(altExp(sce_grouped))
 
-    # find overlap after resizeing
-    o <- DataFrame(
-      GenomicRanges::findOverlaps(
-        GenomicRanges::resize(geneStart, 2 * 100000 + 1, "center"),
-        GenomicRanges::resize(peakSet, 1, "center"),
-        ignore.strand = TRUE
-      )
-    )
+    # find overlap after resizing
+    o <- DataFrame(findOverlaps(resize(geneStart, maxDist, "center"),
+                                peakSet,
+                                ignore.strand = TRUE))
+
 
     #Get Distance from Fixed point A B
-    o$distance <-
-      GenomicRanges::distance(geneStart[o[, 1]] , peakSet[o[, 2]])
+    o$distance <- distance(geneStart[o[, 1]] , peakSet[o[, 2]])
     colnames(o) <- c("RNA", "ATAC", "distance")
+
+
+    # add old idxRNA and idxATAC
+    o$old.idxRNA <- rowData(sce_grouped)[o[,1],"old.idxRNA"]
+    o$old.idxATAC <- rowData(altExp(sce_grouped))[o[,2],"old.idxATAC"]
 
     # Calculate correlation
     expCorMatrix <- expGroupMatrix[as.integer(o$RNA), ]
     peakCorMatrix <- peakGroupMatrix[as.integer(o$ATAC), ]
-    o$Correlation <-
-      mapply(cor, as.data.frame(t(expCorMatrix)), as.data.frame(t(peakCorMatrix)))
+
+    writeLines("Computing correlation")
+    o$Correlation <- mapply(cor,
+                            as.data.frame(t(expCorMatrix)),
+                            as.data.frame(t(peakCorMatrix)))
+
     o$VarATAC <- matrixStats::rowVars(peakCorMatrix)
     o$VarRNA <- matrixStats::rowVars(expCorMatrix)
-    o$TStat <-
-      (o$Correlation / sqrt((
-        pmax(1 - o$Correlation ^ 2, 0.00000000000000001, na.rm = TRUE)
-      ) / (ncol(peakCorMatrix) - 2))) #T-statistic P-value
+    o$TStat <- (o$Correlation /
+                  sqrt((pmax(1 - o$Correlation ^ 2, 0.00000000000000001, na.rm = TRUE))
+                       / (ncol(peakCorMatrix) - 2))) #T-statistic P-value
     o$Pval <- 2 * pt(-abs(o$TStat), ncol(peakCorMatrix) - 2)
     o$FDR <- p.adjust(o$Pval, method = "fdr")
-    p2g <-
-      o[, c("RNA", "ATAC", "Correlation", "FDR", "VarATAC", "VarRNA")]
-    colnames(p2g) <-
-      c("idxRNA",
-        "idxATAC",
-        "Correlation",
-        "FDR",
-        "VarATAC",
-        "VarRNA")
-    metadata(p2g)$peakSet <- peakSet
-    metadata(p2g)$geneSet <- geneStart
+
+    #add metadata to o
+    o$Gene <-  rowData(sce_grouped)[o[,1],"name"]
+    o$chr <- as.character(seqnames(rowRanges(altExp(sce_grouped))[o[,2]]))
+    o$start <- start(rowRanges(altExp(sce_grouped))[o[,2],])
+    o$end <- end(rowRanges(altExp(sce_grouped))[o[,2],])
+
+    o <- data.frame(o)
+
+    p2g_merged <- o[, c("old.idxATAC", "chr","start","end", "old.idxRNA", "Gene", "Correlation", "FDR")]
+    colnames(p2g_merged) <- c("idxATAC", "chr", "start","end", "idxRNA", "target", "Correlation","FDR")
+    p2g_merged <- p2g_merged[p2g_merged$Correlation > cor_cutoff,,drop=FALSE]
+
+
 
   } else {
     stop(
@@ -175,28 +204,7 @@ calculateP2G <- function(peakMatrix = NULL,
     )
 
   }
-
-  # Get metadata from p2g object and turn into df with peak indexes
-  peak_metadata <- as.data.frame(S4Vectors::metadata(p2g)[[1]]) # shows  chromosome, start, and end coordinates for each peak
-  peak_metadata$idxATAC <- seq_along(rownames(peak_metadata))
-
-  gene_metadata <- as.data.frame(S4Vectors::metadata(p2g)[[2]]) # shows gene name and RNA index of genomic ranges
-  gene_metadata$idxRNA <- seq_along(rownames(gene_metadata))
-
-  # Add gene names, chromosome num, chrom start, and chrom end to dataframe
-  p2g <- as.data.frame(p2g)
-  p2g_merged <-
-    merge(p2g, gene_metadata, by = "idxRNA") # merge by gene ID
-  p2g_merged <-
-    merge(p2g_merged, peak_metadata, by = "idxATAC") # merge by peak ID
-
-  p2g_merged <-
-    p2g_merged[, c("idxATAC", "seqnames.x", "idxRNA", "name", "Correlation")]
-  colnames(p2g_merged) <-
-    c("idxATAC", "Chrom", "idxRNA", "Gene", "Correlation")
-  p2g_merged <-
-    p2g_merged[order(p2g_merged$idxATAC, p2g_merged$idxRNA),,drop=FALSE]
-  p2g_merged <- p2g_merged[p2g_merged$Correlation > 0.5,,drop=FALSE]
-
+  p2g_merged <- p2g_merged[order(p2g_merged$idxATAC, p2g_merged$idxRNA),,drop=FALSE]
   return(p2g_merged)
+
 }
