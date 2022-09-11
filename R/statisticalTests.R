@@ -27,7 +27,7 @@
 #' @author Xiaosai Yao, Shang-yang Chen
 findDifferentialActivity <- function(activity_matrix, groups, test.type = "t", pval.type = "some", direction="up", ...){
 
-  activity_matrix <- na.omit(as.matrix(activity_matrix))
+  activity_matrix <- stats::na.omit(as.matrix(activity_matrix))
   tf_markers <- scran::findMarkers(activity_matrix, groups, test.type = "t", pval.type = "some", direction="up", ...)
   return(tf_markers)
 
@@ -53,7 +53,7 @@ findDifferentialActivity <- function(activity_matrix, groups, test.type = "t", p
 #' markers <- findDifferentialActivity(score.combine, cluster, pval.type = "some", direction = "up",
 #' test.type = "t")
 #' sig.genes <- getSigGenes(markers, fdr_cutoff = 1, logFC_cutoff = 0.1)
-#' head(sig.genes)
+#' utils::head(sig.genes)
 #' @author Xiaosai Yao, Shang-yang Chen
 getSigGenes <- function(da_list, fdr_cutoff = 0.05, logFC_cutoff = NULL, topgenes = NULL){
 

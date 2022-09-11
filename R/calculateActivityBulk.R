@@ -159,7 +159,7 @@ calculateActivityBulk <- function(expr,
         )
 
     #merge positive and negative matrices
-    all_genes <- union(rownames(gsvaMatrix.pos), rownames(gsvaMatrix.neg))
+    all_genes <- S4Vectors::union(rownames(gsvaMatrix.pos), rownames(gsvaMatrix.neg))
 
     TFactivity.total <- matrix(0, ncol = ncol(gsvaMatrix.pos), nrow = length(all_genes))
     colnames(TFactivity.total) <- colnames(gsvaMatrix.pos)

@@ -203,7 +203,7 @@ plotBubble <- function (activity_matrix, tf, class, bubblesize = "FDR"){
   # z normalize activity and compute mean by cluster
   tf.activity <- activity_matrix[tf, ,drop=FALSE]
   df <- data.frame(class = class, t(as.matrix(tf.activity)))
-  df.mean <- aggregate(. ~ class, df, mean)
+  df.mean <- stats::aggregate(. ~ class, df, mean)
   zscores <- apply(df.mean[, -1], 2, scale)
   df.mean <- data.frame(class = df.mean[, 1], as.data.frame(zscores))
   df.plot <- suppressMessages(reshape2::melt(df.mean, id.variable="class", variable.name = "tf", value.name = "relative_activity"))

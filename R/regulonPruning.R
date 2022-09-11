@@ -25,24 +25,24 @@
 #'
 #' @return A dataframe of a pruned regulon containing joint probabilities for tf-idxATAC-target trios
 #' either for all cells or in a cluster-specific manner
-#'
-#' @export utils SingleCellExperiment stats
+#' @export
+#' @import utils SingleCellExperiment stats
 #'
 #' @examples
-#' create a mock singleCellExperiment object for gene expMatrixession matrix
+#' # create a mock singleCellExperiment object for gene expMatrixession matrix
 #' set.seed(1000)
 #' gene_sce <- scuttle::mockSCE()
 #' gene_sce <- scuttle::logNormCounts(gene_sce)
 #' rownames(gene_sce) <- paste0("Gene_",1:2000)
-
-# create a mock singleCellExperiment object for peak matrix
+#'
+#' #' create a mock singleCellExperiment object for peak matrix
 #' peak_gr <- GRanges(seqnames = "chr1",
 #'                   ranges = IRanges(start = seq(from = 1, to = 10000, by = 100), width = 100))
 #' peak_counts <- matrix(sample(x = 0:4, size = ncol(gene_sce)*length(peak_gr), replace = TRUE),
 #'                      nrow = length(peak_gr), ncol=ncol(gene_sce))
 #' peak_sce <- SingleCellExperiment(list(counts = peak_counts), colData = colData(gene_sce))
 #' rownames(peak_sce) <- paste0("Peak_",1:100)
-
+#'
 #' # create a mock regulon
 #' regulon <- data.frame(tf = c(rep("Gene_1",10), rep("Gene_2",10)),
 #'                      idxATAC = sample(1:100, 20),
@@ -51,33 +51,27 @@
 #'
 #' # calculate joint probability for all cells
 #' pruned.regulon <- calculateJointProbability(expMatrix = gene_sce,
-#'                          exp_assay = "logcounts",
-#'                          peakMatrix = peak_sce,
-#'                          peak_assay = "counts",
-#'                          regulon = regulon,
-#'                         regulon_cutoff = 0.5)
+#' exp_assay = "logcounts", peakMatrix = peak_sce,peak_assay = "counts",
+#' regulon = regulon, regulon_cutoff = 0.5)
 #'
-#'# calculate joint probability for each cluster
+#' #calculate joint probability for each cluster
 #' pruned.regulon <- calculateJointProbability(expMatrix = gene_sce,
-#'                                            exp_assay = "logcounts",
-#'                                            peakMatrix = peak_sce,
-#'                                            peak_assay = "counts",
-#'                                            regulon = regulon,
-#'                                            clusters = gene_sce$Treatment,
-#'                                            regulon_cutoff = 0.5,
-#'                                            aggregate = FALSE)
+#' exp_assay = "logcounts",peakMatrix = peak_sce,peak_assay = "counts",
+#' regulon = regulon,clusters = gene_sce$Treatment,
+#' regulon_cutoff = 0.5,aggregate = FALSE)
+#'
 #' @author Xiaosai Yao
 
 calculateJointProbability <- function(expMatrix,
-                                 exp_assay = "logcounts",
-                                 exp_cutoff = 1,
-                                 peakMatrix,
-                                 peak_assay = "PeakMatrix",
-                                 peak_cutoff = 0,
-                                 regulon,
-                                 regulon_cutoff = 0,
-                                 clusters = NULL,
-                                 aggregate = TRUE) {
+                                      exp_assay = "logcounts",
+                                      exp_cutoff = 1,
+                                      peakMatrix,
+                                      peak_assay = "PeakMatrix",
+                                      peak_cutoff = 0,
+                                      regulon,
+                                      regulon_cutoff = 0,
+                                      clusters = NULL,
+                                      aggregate = TRUE) {
 
   if (checkmate::test_class(expMatrix,classes = "SummarizedExperiment")){
     expMatrix <- assay(expMatrix, exp_assay)

@@ -124,7 +124,7 @@ getTFMotifInfo <- function(genome = "hg19"){
 #'
 #' # create overlaps between p2g matrix, TF binding sites and peak matrix
 #' overlap <- addTFMotifInfo(p2g, grl, peakMatrix = peak_sce)
-#' head(overlap)
+#' utils::head(overlap)
 #' @author Xiaosai Yao, Shang-yang Chen
 addTFMotifInfo <- function(p2g, grl, peakMatrix=NULL, archR_project_path=NULL){
 
@@ -187,7 +187,7 @@ addTFMotifInfo <- function(p2g, grl, peakMatrix=NULL, archR_project_path=NULL){
 #'
 #' # create overlaps between p2g matrix, TF binding sites and peak matrix
 #' overlap <- addTFMotifInfo(p2g, grl, peakMatrix = peak_sce)
-#' head(overlap)
+#' utils::head(overlap)
 #'
 #' # aggregate gene expression if the gene is bound by the same TF at regulatory elements
 #' regulon <- getRegulon(p2g, overlap, aggregate = TRUE)
@@ -200,7 +200,7 @@ getRegulon <- function(p2g, overlap, aggregate = TRUE){
   if (aggregate) {
     regulon_df <- regulon_df[, c("tf", "Gene", "Correlation")]
     colnames(regulon_df) <- c("tf", "target", "corr")
-    regulon_df <- aggregate(corr ~ tf + target, data = regulon_df,
+    regulon_df <- stats::aggregate(corr ~ tf + target, data = regulon_df,
                             FUN = mean, na.rm = TRUE)
   } else {
     #colnames(regulon_df) <- c("idxATAC","idxTF", "tf", "Chrom", "idxRNA", "target","corr")

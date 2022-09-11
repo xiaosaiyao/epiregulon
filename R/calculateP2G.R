@@ -15,7 +15,7 @@
 #' @param ... other parameters to pass to addPeak2GeneLinks from ArchR package
 #'
 #' @return A Peak2Gene correlation dataframe
-#' @import SummarizedExperiment S4Vectors stats SingleCellExperiment GenomicRanges
+#' @import SummarizedExperiment stats SingleCellExperiment GenomicRanges
 #' @export
 #'
 #' @examples
@@ -174,7 +174,7 @@ calculateP2G <- function(peakMatrix = NULL,
     peakCorMatrix <- peakGroupMatrix[as.integer(o$ATAC), ]
 
     writeLines("Computing correlation")
-    o$Correlation <- mapply(cor,
+    o$Correlation <- mapply(stats::cor,
                             as.data.frame(t(expCorMatrix)),
                             as.data.frame(t(peakCorMatrix)))
 
@@ -189,8 +189,8 @@ calculateP2G <- function(peakMatrix = NULL,
     #add metadata to o
     o$Gene <-  rowData(sce_grouped)[o[,1],"name"]
     o$chr <- as.character(seqnames(rowRanges(altExp(sce_grouped))[o[,2]]))
-    o$start <- start(rowRanges(altExp(sce_grouped))[o[,2],])
-    o$end <- end(rowRanges(altExp(sce_grouped))[o[,2],])
+    o$start <- GenomicRanges::start(rowRanges(altExp(sce_grouped))[o[,2],])
+    o$end <- GenomicRanges::end(rowRanges(altExp(sce_grouped))[o[,2],])
 
     o <- data.frame(o)
 

@@ -16,7 +16,7 @@
 #'
 #' @return A data frame with columns of corr and/or MI added to the regulon. TFs not found in the expression matrix and regulons not
 #' meeting the minimal number of targets were filtered out.
-#' @import SummarizedExperiment S4Vectors stats
+#' @import SummarizedExperiment stats
 #' @details
 #' The default mode is to compute weights by correlating the pseudobulk target gene expression vs the pseudobulk TF gene expression.
 #' However, often times, an inhibitor of TF does not alter the gene expression of the TF. In rare cases, cells may even compensate
@@ -43,7 +43,7 @@
 #'
 #' # Alternatively, add a matrix of chromVar values in place of TF expression
 #' \dontrun{
-#' #create chromVar values from archR
+#' # create chromVar values from archR
 #' library(ArchR)
 #' library(parallel)
 #' proj <- addBgdPeaks(proj)

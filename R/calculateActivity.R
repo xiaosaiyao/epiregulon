@@ -21,7 +21,7 @@
 #' the relative ranking of the target genes computed by AUCell.
 #'
 #' @examples
-#' # create create a mock singleCellExperiment object for gene expression matrix
+#' # create a mock singleCellExperiment object for gene expression matrix
 #' example_sce <- scuttle::mockSCE()
 #' example_sce <- scuttle::logNormCounts(example_sce)
 #' example_sce$cluster <- sample(LETTERS[1:5], ncol(example_sce), replace = TRUE)
