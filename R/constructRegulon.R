@@ -203,7 +203,7 @@ getRegulon <- function(p2g, overlap, aggregate = TRUE){
     regulon_df <- aggregate(corr ~ tf + target, data = regulon_df,
                             FUN = mean, na.rm = TRUE)
   } else {
-    colnames(regulon_df) <- c("idxATAC","idxTF", "tf", "Chrom", "idxRNA", "target","corr")
+    #colnames(regulon_df) <- c("idxATAC","idxTF", "tf", "Chrom", "idxRNA", "target","corr")
   }
   return(regulon_df)
 
