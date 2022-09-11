@@ -99,11 +99,11 @@ calculateJointProbability <- function(expMatrix,
   regulon <- regulon[regulon$tf %in% rownames(expMatrix),]
   regulon <- regulon[regulon$target %in% rownames(expMatrix),]
 
-  #initiate conditional probability matrix
+  #initialize conditional probability matrix
   prob_matrix <- matrix(NA, nrow = nrow(regulon), ncol = length(uniq_clusters))
   colnames(prob_matrix) = uniq_clusters
 
-  #initiate count vector
+  #initialize count vector
   all_count <- list()
 
 
