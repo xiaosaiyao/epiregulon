@@ -10,21 +10,36 @@
 #' @param peak_assay String indicating the name of the assay in peakMatrix for chromatin accessibility
 #' @param peak_cutoff A scalar indicating the minimum peak accessibility for a peak to be
 #' considered open. Default value is 0
-#' @param regulon A dataframe informing the gene regulatory relationship with the "tf" column
-#' representing transcription factors, "idxATAC"
-#' corresponding to the index in the peakMatrix and "target" column
+#' @param regulon A dataframe informing the gene regulatory relationship with the ```tf``` column
+#' representing transcription factors, ```idxATAC```
+#' corresponding to the index in the peakMatrix and ```target``` column
 #' representing target genes
 #' @param regulon_cutoff A scalar indicating the minimum value for the joint probability of
 #' a tf-idxATAC-target trio to be retained in the pruned regulon.
 #' @param clusters A vector corresponding to the cluster labels of the cells if
-#' cluster-specific joint probabilities are also required. If left null, joint probabilities
+#' cluster-specific joint probabilities are also required. If left ```NULL```, joint probabilities
 #' are calculated for all cells
 #' @param aggregate A logical indicating whether to collapse the regulatory elements of the
-#' same genes. If TRUE, the output will only contain tf and target. If FALSE, the output
+#' same genes. If ```TRUE```, the output will only contain tf and target. If ```FALSE```, the output
 #' will contain tf, idxATAC and target.
 #'
 #' @return A dataframe of a pruned regulon containing joint probabilities for tf-idxATAC-target trios
 #' either for all cells or in a cluster-specific manner
+#' @details This function calculates the joint probability for each of the TF-peak-target trios to be
+#' active - that is, out of all the cells, how many cells have the TF and target expression exceed
+#' ```exp_cutoff``` and chromatin accessibility exceed ```peak_cutoff``` simultaneously.
+#' The joint probability can be used to prune the networks since a true regulatory relationship
+#' likely requires cells to express the transcription factor, have a accessible peak and expressing
+#' the target gene simultaneously. While there could be time delays between tf binding,
+#' chromatin accessibility and target gene expression, requiring baseline expression of all three
+#' components greatly enhances the likelihood that this regulatory relationship holds true.
+#'
+#' This function can also compute cluster-specific joint probabilities. The output can be filtered to
+#' generate cluster-specific networks which can be fed into differential network analysis (to be continued).
+#'
+#' The aggregate function outputs either a bipartite network of the form TF-target (```aggregate = TRUE```)
+#' or a tripartite network of the form TF-RE-target (```aggregate = FALSE```).
+#
 #' @export
 #' @import utils SingleCellExperiment stats
 #'
