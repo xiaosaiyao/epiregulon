@@ -1,11 +1,11 @@
-#' A function to calculate joint probability of linked TF, RE and targets
+#' Calculate joint probability of linked TF, RE and targets
 #'
-#' @param expMatrix A SingleCellExperiment or matrix containing gene expression with
+#' @param expMatrix A SingleCellExperiment object or matrix containing gene expression with
 #' with genes in the rows and cells in the columns
 #' @param exp_assay String indicating the name of the assay in expMatrix for gene expression
 #' @param exp_cutoff A scalar indicating the minimum gene expression for a gene to be considered
 #' active. Default value is 1
-#' @param peakMatrix A SingleCellExperiment or matrix containing peak accessibility with
+#' @param peakMatrix A SingleCellExperiment object or matrix containing peak accessibility with
 #' peaks in the rows and cells in the columns
 #' @param peak_assay String indicating the name of the assay in peakMatrix for chromatin accessibility
 #' @param peak_cutoff A scalar indicating the minimum peak accessibility for a peak to be
