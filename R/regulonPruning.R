@@ -1,66 +1,99 @@
-#' Title
+#' A function to calculate joint probability of linked TF, RE and targets
 #'
-#' @param expr
-#' @param atac
-#' @param regulon
-#' @param clusters
-#' @param expr_cutoff
-#' @param atac_cutoff
+#' @param expMatrix A SingleCellExperiment or matrix containing gene expression with
+#' with genes in the rows and cells in the columns
+#' @param exp_assay String indicating the name of the assay in expMatrix for gene expression
+#' @param exp_cutoff A scalar indicating the minimum gene expression for a gene to be considered
+#' active. Default value is 1
+#' @param peakMatrix A SingleCellExperiment or matrix containing peak accessibility with
+#' peaks in the rows and cells in the columns
+#' @param peak_assay String indicating the name of the assay in peakMatrix for chromatin accessibility
+#' @param peak_cutoff A scalar indicating the minimum peak accessibility for a peak to be
+#' considered open. Default value is 0
+#' @param regulon A dataframe informing the gene regulatory relationship with the "tf" column
+#' representing transcription factors, "idxATAC"
+#' corresponding to the index in the peakMatrix and "target" column
+#' representing target genes
+#' @param regulon_cutoff A scalar indicating the minimum value for the joint probability of
+#' a tf-idxATAC-target trio to be retained in the pruned regulon.
+#' @param clusters A vector corresponding to the cluster labels of the cells if
+#' cluster-specific joint probabilities are also required. If left null, joint probabilities
+#' are calculated for all cells
+#' @param aggregate A logical indicating whether to collapse the regulatory elements of the
+#' same genes. If TRUE, the output will only contain tf and target. If FALSE, the output
+#' will contain tf, idxATAC and target.
 #'
-#' @return
-#' @export
+#' @return A dataframe of a pruned regulon containing joint probabilities for tf-idxATAC-target trios
+#' either for all cells or in a cluster-specific manner
+#'
+#' @export utils SingleCellExperiment stats
 #'
 #' @examples
-#' create a mock singleCellExperiment object for gene expression matrix
+#' create a mock singleCellExperiment object for gene expMatrixession matrix
 #' set.seed(1000)
 #' gene_sce <- scuttle::mockSCE()
 #' gene_sce <- scuttle::logNormCounts(gene_sce)
-#' gene_gr <- GRanges(seqnames = Rle(c("chr1", "chr2", "chr3","chr4"), nrow(gene_sce)/4),
-#'                    ranges = IRanges(start = seq(from = 1, length.out=nrow(gene_sce), by = 1000),
-#'                    width = 100))
-#' rownames(gene_sce) <- paste0("Gene_", 1:ncol(gene_sce))
-#' gene_gr$name <- rownames(gene_sce)
-#' rowRanges(gene_sce) <- gene_gr
-#'
-#' # create a mock singleCellExperiment object for peak matrix
-#' peak_gr <- GRanges(seqnames = "chr1",
-#'                    ranges = IRanges(start = seq(from = 1, to = 10000, by = 1000), width = 100))
-#' peak_counts <- matrix(sample(x = 0:4, size = ncol(gene_sce)*length(peak_gr), replace = TRUE),
-#'                       nrow = length(peak_gr), ncol=ncol(gene_sce))
-#' peak_sce <- SingleCellExperiment(list(counts = peak_counts), colData = colData(gene_sce))
-#' rowRanges(peak_sce) <- peak_gr
-#' rownames(peak_sce) <- paste0("peak",1:10)
-#' #'
-#'
-#' # create a mock regulon
-#' regulon <- data.frame(tf = c(rep("Gene_1",5), rep("Gene_2",10)),
-#'                       target = c(paste0("Gene_000",2:6), paste0("Gene_00",11:20)))
-#'
+#' rownames(gene_sce) <- paste0("Gene_",1:2000)
 
-calculateJointProbability <- function(expr,
-                                 expr_assay = "logcounts",
-                                 atac,
-                                 atac_assay = "PeakMatrix",
+# create a mock singleCellExperiment object for peak matrix
+#' peak_gr <- GRanges(seqnames = "chr1",
+#'                   ranges = IRanges(start = seq(from = 1, to = 10000, by = 100), width = 100))
+#' peak_counts <- matrix(sample(x = 0:4, size = ncol(gene_sce)*length(peak_gr), replace = TRUE),
+#'                      nrow = length(peak_gr), ncol=ncol(gene_sce))
+#' peak_sce <- SingleCellExperiment(list(counts = peak_counts), colData = colData(gene_sce))
+#' rownames(peak_sce) <- paste0("Peak_",1:100)
+
+#' # create a mock regulon
+#' regulon <- data.frame(tf = c(rep("Gene_1",10), rep("Gene_2",10)),
+#'                      idxATAC = sample(1:100, 20),
+#'                      target = c(paste0("Gene_", sample(3:2000,10)),
+#'                                 paste0("Gene_",sample(3:2000,10))))
+#'
+#' # calculate joint probability for all cells
+#' pruned.regulon <- calculateJointProbability(expMatrix = gene_sce,
+#'                          exp_assay = "logcounts",
+#'                          peakMatrix = peak_sce,
+#'                          peak_assay = "counts",
+#'                          regulon = regulon,
+#'                         regulon_cutoff = 0.5)
+#'
+#'# calculate joint probability for each cluster
+#' pruned.regulon <- calculateJointProbability(expMatrix = gene_sce,
+#'                                            exp_assay = "logcounts",
+#'                                            peakMatrix = peak_sce,
+#'                                            peak_assay = "counts",
+#'                                            regulon = regulon,
+#'                                            clusters = gene_sce$Treatment,
+#'                                            regulon_cutoff = 0.5,
+#'                                            aggregate = FALSE)
+#' @author Xiaosai Yao
+
+calculateJointProbability <- function(expMatrix,
+                                 exp_assay = "logcounts",
+                                 exp_cutoff = 1,
+                                 peakMatrix,
+                                 peak_assay = "PeakMatrix",
+                                 peak_cutoff = 0,
                                  regulon,
                                  regulon_cutoff = 0,
                                  clusters = NULL,
-                                 cutoff_cluster = "all",
-                                 expr_cutoff = 1,
-                                 atac_cutoff = 0,
                                  aggregate = TRUE) {
 
-  if (class(expr) %in% c("SingleCellExperiment", "SummarizedExperiment", "RangedSummarizedExperiment")){
-    expr <- assay(expr, expr_assay)
+  if (checkmate::test_class(expMatrix,classes = "SummarizedExperiment")){
+    expMatrix <- assay(expMatrix, exp_assay)
   }
 
-  if (class(atac) %in% c("SingleCellExperiment", "SummarizedExperiment", "RangedSummarizedExperiment")){
-    atac <- assay(atac, atac_assay)
+  if (checkmate::test_class(peakMatrix,classes = "SummarizedExperiment")){
+    peakMatrix <- assay(peakMatrix, peak_assay)
   }
 
-  expr_index <- apply(expr, 1, function(x) which(x > expr_cutoff))
-  names(expr_index) <- rownames(expr)
-  atac_index <- apply(atac, 1, function(x) which(x > atac_cutoff))
-  names(atac_index) <- rownames(atac)
+
+  total_cell <- ncol(expMatrix)
+
+  exp_index <- apply(expMatrix, 1, function(x) which(x > exp_cutoff))
+  names(exp_index) <- rownames(expMatrix)
+  peak_index <- apply(peakMatrix, 1, function(x) which(x > peak_cutoff))
+  names(peak_index) <- rownames(peakMatrix)
 
   if (is.null(clusters)) {
     uniq_clusters <- "all"
@@ -68,54 +101,65 @@ calculateJointProbability <- function(expr,
     uniq_clusters <- c("all", unique(clusters))
   }
 
-  #add all clusters
-  #uniq_clusters
+  #clean up regulon
+  regulon <- regulon[regulon$tf %in% rownames(expMatrix),]
+  regulon <- regulon[regulon$target %in% rownames(expMatrix),]
 
   #initiate conditional probability matrix
   prob_matrix <- matrix(NA, nrow = nrow(regulon), ncol = length(uniq_clusters))
   colnames(prob_matrix) = uniq_clusters
 
-  for (cluster in uniq_clusters){
+  #initiate count vector
+  all_count <- list()
 
-    if (cluster == "all"){
-      cluster_index <- 1:ncol(expr)
-      } else {
-      cluster_index <- which(clusters == cluster)
-      }
 
-    writeLines(paste("cluster", cluster))
+  writeLines("compute joint probability for all trios")
+  pb <- txtProgressBar(min = 0,
+                       max = nrow(regulon),
+                       style = 3)
 
-    pb <- txtProgressBar(min = 0,
-                         max = nrow(regulon),
-                         style = 3)
+  for (i in 1:nrow(regulon)){
 
+    # count the number of cells satisfying all 3 conditions
+    all_count[[i]] <- Reduce(intersect, list(tf = exp_index[[regulon$tf[i]]],
+                                                target = exp_index[[regulon$target[i]]],
+                                                peakMatrix = peak_index[[regulon$idxATAC[i]]]))
+
+    prob_matrix[i, "all"] <- length(all_count[[i]])/total_cell
+
+
+    Sys.sleep(1 / 100)
+
+    setTxtProgressBar(pb, i)
+  }
+
+
+
+  # Prune network by removing trios with probability = 0
+  wanted_trios <- which(prob_matrix[,"all"] > regulon_cutoff)
+  prob_matrix <- prob_matrix[wanted_trios,]
+  regulon <- regulon[wanted_trios,]
+  all_count <- all_count[wanted_trios]
+
+  writeLines("compute cluster-specific joint probability")
+
+  for (cluster in unique(clusters)){
+    cluster_index <- which(clusters == cluster)
     cluster_length <- length(cluster_index)
 
-    #compute conditional probability for all trios
-    for (i in 1:nrow(regulon)){
+    cluster_count <- sapply(1:length(all_count), function (x) length(intersect(all_count[[x]], cluster_index)))
 
-      # count the number of cells satisfying all 3 conditions
-      all_count <- length (Reduce(intersect, list(tf = expr_index[[regulon$tf[i]]],
-                             target = expr_index[[regulon$target[i]]],
-                             atac = atac_index[[regulon$idxATAC[i]]],
-                             cluster = cluster_index)))
+    prob_matrix[, cluster] <- cluster_count/cluster_length
 
-      prob_matrix[i, cluster] <- all_count/cluster_length
-
-
-      Sys.sleep(1 / 100)
-
-      setTxtProgressBar(pb, i)
-    }
 
   }
+
   regulon.combined <- cbind(regulon, prob_matrix)
-  regulon.pruned <- regulon.combined[which(regulon.combined[,cutoff_cluster] > regulon_cutoff),]
 
   if (aggregate == TRUE){
-    regulon.pruned <- aggregate(all ~ tf + target, data = regulon.pruned,
+    regulon.combined <- aggregate(prob_matrix ~ tf + target, data = regulon.combined,
                              FUN = mean, na.rm = TRUE)
   }
-return(regulon.pruned)
+ return(regulon.combined)
 
 }
