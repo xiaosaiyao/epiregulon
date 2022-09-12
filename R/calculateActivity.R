@@ -1,4 +1,4 @@
-#' A function that calculates the per cell activity of master regulators based on a regulon
+#' Calculate the per cell activity of master regulators based on a regulon
 #'
 #' @param sce A SingleCellExperiment object with rows representing genes and columns represent cells.
 #' Rownames (either gene symbols or geneID) must be consistent with the naming convention in the regulon.
@@ -128,7 +128,7 @@ calculateActivity <- function (sce,
   return(score.combine)
 }
 
-#' A function to aggregate the weighted gene expression of genes belonging to a given pathway or a regulon
+#' Aggregate the weighted gene expression of genes belonging to a given pathway or a regulon
 #'
 #' @param scale.mat A matrix of normalized gene expression with genes as the rows and cells as the columns
 #' @param geneset A data frame with the first column indicating the name of the genes in the pathway and the second column indicating the weights of genes contributing to the pathway or regulon

@@ -1,4 +1,4 @@
-#' A function to test for differential TF activity between pairs of single cell clusters/groups
+#' Test for differential TF activity between pairs of single cell clusters/groups
 #'
 #' @param activity_matrix A matrix of TF activities inferred from calculateActivity
 #' @param groups A character or integer vector of cluster or group labels for single cells
@@ -39,7 +39,7 @@ findDifferentialActivity <- function(activity_matrix,
 
 }
 
-#' A function to compile and summarize the output from findDifferentialActivity function
+#' Compile and summarize the output from findDifferentialActivity function
 #'
 #' @param da_list List of dataframes from running findDifferentialActivity
 #' @param fdr_cutoff A numeric scalar to specify the cutoff for FDR value. Default is 0.05
@@ -126,7 +126,7 @@ regulonEnrich_ <- function(TF,
 }
 
 
-#' A function to perform geneset enrichment of user-defined regulons
+#' Perform geneset enrichment of user-defined regulons
 #'
 #' @param TF  A character vector of TF names
 #' @param regulon A matrix of weighted regulon consisting of tf, targets, corr and weight

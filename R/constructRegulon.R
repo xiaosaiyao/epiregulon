@@ -1,4 +1,4 @@
-#' A function to compute correlations between ATAC-seq peaks and RNA-seq genes
+#' Compute correlations between ATAC-seq peaks and RNA-seq genes
 #'
 #' @param archr_path String indicating the path to a ArchR project that has already performed LSI dimensionality reduction and scRNA-seq integration
 #' @param cor_cutoff A numeric scalar to indicate the cutoff for correlations between ATAC-seq peaks and RNA-seq genes
@@ -93,7 +93,7 @@ getTFMotifInfo <- function(genome = "hg19"){
   return(grl)
 }
 
-#' A function to add TF binding motif occupancy information to the peak2gene object
+#' Add TF binding motif occupancy information to the peak2gene object
 #'
 #' @param p2g A Peak2Gene dataframe created by ArchR or getP2Glinks() function
 #' @param grl GRangeList object containing reference TF binding information
@@ -156,7 +156,7 @@ addTFMotifInfo <- function(p2g,
 }
 
 
-#'  A function to combine the TF binding motif info and peak to gene correlations to generate regulons
+#' Combine the TF binding motif info and peak to gene correlations to generate regulons
 #'
 #' @param p2g A Peak2Gene dataframe created by ArchR or getP2Glinks() function
 #' @param overlap A dataframe storing overlaps between the regions of the peak matrix with the bulk TF ChIP-seq binding sites computed from addTFMotifInfo

@@ -1,4 +1,4 @@
-#' A function to establish peak to gene links based on correlations between ATAC-seq peaks and RNA-seq genes
+#' Establish peak to gene links based on correlations between ATAC-seq peaks and RNA-seq genes
 #'
 #' @param peakMatrix A SingleCellExperiment object containing counts of chromatin accessibility at each peak region or genomic bin from scATAC-seq
 #' @param expMatrix A SingleCellExperiment object containing gene expression counts from scRNA-seq

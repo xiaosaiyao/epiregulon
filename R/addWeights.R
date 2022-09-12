@@ -1,4 +1,4 @@
-#' A function to calculate weights for the regulons by computing co-association between TF and target gene expression
+#' Calculate weights for the regulons by computing co-association between TF and target gene expression
 #'
 #' @param regulon A data frame consisting of tf (regulator) and target in the column names. Additional columns indicating degree
 #' of association between tf and target such as "mor" or "corr" are optional.
