@@ -1,11 +1,14 @@
 #' A function that calculates the per cell activity of master regulators based on a regulon
 #'
-#' @param sce A SingleCellExperiment object with rows representing genes and columns represent cells. Rownames (either gene symbols or geneID) must be consistent with the naming convention in the regulon.
-#' @param regulon  A data frame consisting of tf (regulator) and target in the column names, with additional columns indicating degree of association between tf and target such as "mor" or "corr" obtained from addWeights.
+#' @param sce A SingleCellExperiment object with rows representing genes and columns represent cells.
+#' Rownames (either gene symbols or geneID) must be consistent with the naming convention in the regulon.
+#' @param regulon  A data frame consisting of tf (regulator) and target in the column names, with additional columns
+#' indicating degree of association between tf and target such as "mor" or "corr" obtained from addWeights.
 #' @param mode String indicating the name of column to be used as the weights
 #' @param method String indicating the method for calculating activity. Available methods are weightedMean or aucell
 #' @param ncore Integer specifying the number of cores to be used in AUCell
-#' @param assay String specifying the name of the assay to be retrieved from the SingleCellExperiment object. Set to "logcounts" as the default
+#' @param assay String specifying the name of the assay to be retrieved from the SingleCellExperiment object. Set to
+#' "logcounts" as the default
 #' @param genesets A feature set collection in the form of CompressedSplitDataFrameList that contains genes in the
 #' first column and weights in the second column. See [genomitory](
 #' http://cedar.gene.com/gran/dev/PkgDocumentation/genomitory/uploads.html#from-compressedsplitdataframelists)
