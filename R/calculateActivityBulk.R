@@ -8,13 +8,13 @@
 #                 Esr1    Pgr     0.56
 #' @param method String indicating the method used to calculate signature score. Available methods in gsva package include "gsva", "ssgsea", "zscore" and "plage"
 #' @param mode String indicating the choice of TF-target association being either correlation "corr" or mode of regulation "mor".
-#' Correlation can either be supplied or computed from expr using (corr_calculate = FALSE). Mor is supplied by the Dorothea regulon.
+#' Correlation can either be supplied or computed from expMatrix using (corr_calculate = FALSE). Mor is supplied by the Dorothea regulon.
 #' @param corr_calculate Logical indicating whether correlation needs to be calculated
 #' @param save.regulon String indicating the path to save the new regulon with updated correlation
 #' @param assay_name String indicating the name of the assay corresponding to gene expression
-#' if expr is a SummarizedExperiment object
+#' if expMatrix is a SummarizedExperiment object
 #' @param rowData_name String indicating the column name in the rowData that matches the gene names in the regulon
-#' if expr is a SummarizedExperiment object
+#' if expMatrix is a SummarizedExperiment object
 #' @param sample_n An integer indicating the number of samples to subsample if the original expression matrix is large
 #'
 #'
@@ -66,7 +66,7 @@ calculateActivityBulk <- function(expMatrix,
                                   assay_name = "rpkm",
                                   rowData_name = "symbol") {
 
-  # convert expr to matrix
+  # convert expMatrix to matrix
 
     if (checkmate::test_class(expMatrix, classes = "SummarizedExperiment")){
       expr_assay <- assay(expMatrix, assay_name)
