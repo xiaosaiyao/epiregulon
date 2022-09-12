@@ -25,7 +25,13 @@
 #' test.type = "t")
 #' sig.genes <- getSigGenes(markers, fdr_cutoff = 1, logFC_cutoff = 0.1)
 #' @author Xiaosai Yao, Shang-yang Chen
-findDifferentialActivity <- function(activity_matrix, groups, test.type = "t", pval.type = "some", direction="up", ...){
+
+findDifferentialActivity <- function(activity_matrix,
+                                     groups,
+                                     test.type = "t",
+                                     pval.type = "some",
+                                     direction="up",
+                                     ...){
 
   activity_matrix <- stats::na.omit(as.matrix(activity_matrix))
   tf_markers <- scran::findMarkers(activity_matrix, groups, test.type = "t", pval.type = "some", direction="up", ...)
@@ -55,7 +61,11 @@ findDifferentialActivity <- function(activity_matrix, groups, test.type = "t", p
 #' sig.genes <- getSigGenes(markers, fdr_cutoff = 1, logFC_cutoff = 0.1)
 #' utils::head(sig.genes)
 #' @author Xiaosai Yao, Shang-yang Chen
-getSigGenes <- function(da_list, fdr_cutoff = 0.05, logFC_cutoff = NULL, topgenes = NULL){
+
+getSigGenes <- function(da_list,
+                        fdr_cutoff = 0.05,
+                        logFC_cutoff = NULL,
+                        topgenes = NULL){
 
   classes <- names(da_list)
 
@@ -94,7 +104,11 @@ getSigGenes <- function(da_list, fdr_cutoff = 0.05, logFC_cutoff = NULL, topgene
 
 }
 
-regulonEnrich_ <- function(TF, regulon, corr, corr_cutoff, genesets){
+regulonEnrich_ <- function(TF,
+                           regulon,
+                           corr,
+                           corr_cutoff,
+                           genesets){
 
   regulon.TF <- unique(regulon$target[which(regulon$tf == TF & regulon[, corr] >corr_cutoff)])
   if (is.null(regulon.TF)) {
@@ -147,6 +161,7 @@ regulonEnrich_ <- function(TF, regulon, corr, corr_cutoff, genesets){
 #'}
 #'
 #' @author Xiaosai Yao
+
 regulonEnrich <- function(TF,
                           regulon,
                           corr = "weight",

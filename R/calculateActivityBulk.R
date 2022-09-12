@@ -54,7 +54,7 @@
 #' This function generates the transcriptional activity from a matrix of bulk gene expression data and pre-existing regulons such as those
 #' available from Dorothea. The direction of target genes (activating or repressive) can be defined either by the mode of regulation
 #' included in the regulon or calculated based on the correlation between the expression of the TF and its target genes
-#' @author Xiaosai Yaon
+#' @author Xiaosai Yao
 
 calculateActivityBulk <- function(expr,
                                   regulon,

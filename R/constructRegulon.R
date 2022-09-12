@@ -12,7 +12,11 @@
 #' @author Shang-yang Chen
 
 
-getP2Glinks <- function(archr_path, cor_cutoff = 0.5, reducedDims = "IterativeLSI", useMatrix = "GeneIntegrationMatrix", ...){
+getP2Glinks <- function(archr_path,
+                        cor_cutoff = 0.5,
+                        reducedDims = "IterativeLSI",
+                        useMatrix = "GeneIntegrationMatrix",
+                        ...){
 
  .Deprecated("calculateP2G")
 
@@ -126,7 +130,11 @@ getTFMotifInfo <- function(genome = "hg19"){
 #' overlap <- addTFMotifInfo(p2g, grl, peakMatrix = peak_sce)
 #' utils::head(overlap)
 #' @author Xiaosai Yao, Shang-yang Chen
-addTFMotifInfo <- function(p2g, grl, peakMatrix=NULL, archR_project_path=NULL){
+
+addTFMotifInfo <- function(p2g,
+                           grl,
+                           peakMatrix = NULL,
+                           archR_project_path = NULL){
 
   if (!is.null(archR_project_path)) {
     proj <- loadArchRProject(path = archR_project_path, showLogo = F)
@@ -193,7 +201,9 @@ addTFMotifInfo <- function(p2g, grl, peakMatrix=NULL, archR_project_path=NULL){
 #' regulon <- getRegulon(p2g, overlap, aggregate = TRUE)
 #' @author Xiaosai Yao, Shang-yang Chen
 
-getRegulon <- function(p2g, overlap, aggregate = TRUE){
+getRegulon <- function(p2g,
+                       overlap,
+                       aggregate = TRUE){
 
   regulon_df <- merge(overlap, p2g, by="idxATAC")
 
