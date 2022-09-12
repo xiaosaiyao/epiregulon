@@ -1,6 +1,6 @@
 #' A function to calculate transcriptional activity from a matrix of gene expression and regulon
 #'
-#' @param expr Matrix of gene expression with gene names matching those of the regulon or a SummarizedExperiment object
+#' @param expMatrix a SummarizedExperiment object or matrix of gene expression with gene names matching those of the regulon or
 #' @param regulon Matrix consisting of tf(regulator), target and a column indicating degree of association between TF and target
 #                 such as "mor" or "corr".
 #                 example regulon:
@@ -56,7 +56,7 @@
 #' included in the regulon or calculated based on the correlation between the expression of the TF and its target genes
 #' @author Xiaosai Yao
 
-calculateActivityBulk <- function(expr,
+calculateActivityBulk <- function(expMatrix,
                                   regulon,
                                   method = c("gsva", "ssgsea", "zscore", "plage"),
                                   mode = c("mor", "corr"),
@@ -67,15 +67,16 @@ calculateActivityBulk <- function(expr,
                                   rowData_name = "symbol") {
 
   # convert expr to matrix
-    if (class(expr)[1] %in% c("SummarizedExperiment", "RangedSummarizedExperiment", "SingleCellExperiment")){
-      expr_assay <- assay(expr, assay_name)
+
+    if (checkmate::test_class(expMatrix, classes = "SummarizedExperiment")){
+      expr_assay <- assay(expMatrix, assay_name)
       if (!is.null(rowData_name)){
-        rownames(expr_assay) <- rowData(expr)[,rowData_name]
+        rownames(expr_assay) <- rowData(expMatrix)[,rowData_name]
       }
       expr <- as.matrix(expr_assay)
 
     } else {
-      expr <- as.matrix(expr)
+      expr <- as.matrix(expMatrix)
     }
 
     # remove tfs not found in expression matrix
