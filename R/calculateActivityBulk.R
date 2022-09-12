@@ -1,6 +1,6 @@
 #' A function to calculate transcriptional activity from a matrix of gene expression and regulon
 #'
-#' @param expMatrix a SummarizedExperiment object or matrix of gene expression with gene names matching those of the regulon or
+#' @param expMatrix a SummarizedExperiment object or matrix of gene expression with gene names matching those of the regulon
 #' @param regulon Matrix consisting of tf(regulator), target and a column indicating degree of association between TF and target
 #                 such as "mor" or "corr".
 #                 example regulon:
