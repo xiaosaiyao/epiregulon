@@ -1,4 +1,4 @@
-#' A function to plot cell-level reduced dimension results stored in a SingleCellExperiment object, colored by activities for a specific TF
+#' Plot cell-level reduced dimension results stored in a SingleCellExperiment object, colored by activities for a specific TF
 #'
 #' @param sce A SingleCellExperiment object containing dimensionality reduction coordinates
 #' @param activity_matrix A matrix of TF activities inferred from calculateActivity
@@ -42,7 +42,7 @@ plotActivityDim_ <- function(sce,
 }
 
 
-#' A function to plot cell-level reduced dimension results stored in a SingleCellExperiment object, colored by activities for a list of TFs
+#' Plot cell-level reduced dimension results stored in a SingleCellExperiment object, colored by activities for a list of TFs
 #'
 #' @param sce  A SingleCellExperiment object containing dimensionality reduction coordinates
 #' @param activity_matrix A matrix of TF activities inferred from calculateActivity
@@ -113,7 +113,7 @@ plotActivityDim <- function(sce,
 }
 
 
-#' A function to draw a violin plot of inferred activities for a specific TF grouped by cluster/group labels
+#' Generate violin plots of inferred activities for a specific TF grouped by cluster/group labels
 #'
 #' @param activity_matrix A matrix of TF activities inferred from calculateActivity
 #' @param tf A character vector indicating the names of the transcription factors to be plotted
@@ -144,7 +144,7 @@ plotActivityViolin_ <- function(activity_matrix,
 
 }
 
-#' A function to draw violin plots of inferred activities for a list of TFs grouped by cluster/group labels
+#' Generate violin plots of inferred activities for a list of TFs grouped by cluster/group labels
 #'
 #' @param activity_matrix A matrix of TF activities inferred from calculateActivity
 #' @param tf A character vector indicating the names of the transcription factors to be plotted
@@ -194,7 +194,7 @@ plotActivityViolin <- function(activity_matrix,
 
 }
 
-#' A function to draw bubble plot of relative activities across cluster/group labels for a list of TFs
+#' Generate bubble plots of relative activities across cluster/group labels for a list of TFs
 #'
 #' @param activity_matrix A matrix of TF activities inferred from calculateActivity
 #' @param tf A character vector indicating the names of the transcription factors to be plotted
@@ -284,7 +284,7 @@ enrichPlot_ <- function(results,
     )
 }
 
-#' A function to plot results of regulonEnrich
+#' Plot results of regulonEnrich
 #'
 #' @param results  Output from regulonEnrich
 #' @param top An integer to indicate the number of pathways to plot ranked by significance. Default is 15.
@@ -297,7 +297,7 @@ enrichPlot_ <- function(results,
 
 #' @examples
 #' \dontrun{
-#' enrichplot(results=enrichment_results )
+#' enrichplot(results = enrichment_results )
 #' }
 #'
 #' @author Xiaosai Yao
