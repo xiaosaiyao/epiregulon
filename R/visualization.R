@@ -170,11 +170,11 @@ plotActivityViolin <- function(activity_matrix,
                                legend.label = "activity"){
 
   # give warning for genes absent in tf list
-  missing = tf[which(! tf %in% rownames(activity_matrix))]
+  missing <- tf[which(! tf %in% rownames(activity_matrix))]
   if (!identical(missing, character(0))) {
     message(paste0(missing, " not found in activity matrix. Excluded from plots"))
   }
-  tf = tf[which(tf %in% rownames(activity_matrix))]
+  tf <- tf[which(tf %in% rownames(activity_matrix))]
 
   gs <- lapply(tf, function(x) {
     return(plotActivityViolin_(activity_matrix, x, class, legend.label))
@@ -215,11 +215,11 @@ plotBubble <- function (activity_matrix,
                         class,
                         bubblesize = "FDR"){
   # give warning for genes absent in tf list
-  missing = tf[which(! tf %in% rownames(activity_matrix))]
+  missing <- tf[which(! tf %in% rownames(activity_matrix))]
   if (!identical(missing, character(0))) {
     message(paste0(missing, " not found in activity matrix. Excluded from plots"))
   }
-  tf = tf[which(tf %in% rownames(activity_matrix))]
+  tf <- tf[which(tf %in% rownames(activity_matrix))]
 
   #find logFC and FDR of TFs
   markers <- findDifferentialActivity(activity_matrix, class,
@@ -227,8 +227,8 @@ plotBubble <- function (activity_matrix,
   markers <- suppressMessages(getSigGenes(markers, fdr_cutoff = 1.5,
                                           logFC_cutoff = -100))
   markers <- markers[which(markers$tf %in% tf), ]
-  levels=make.names(unique(tf[tf %in% markers$tf]))
-  markers$tf = make.names(markers$tf)
+  levels <- make.names(unique(tf[tf %in% markers$tf]))
+  markers$tf <- make.names(markers$tf)
 
   # z normalize activity and compute mean by cluster
   tf.activity <- activity_matrix[tf, ,drop=FALSE]
@@ -240,7 +240,7 @@ plotBubble <- function (activity_matrix,
 
   # merge logFC, FDR and mean activity
   df.plot <- merge(df.plot, markers)
-  df.plot$tf = factor(as.character(df.plot$tf), levels = levels )
+  df.plot$tf <- factor(as.character(df.plot$tf), levels = levels )
 
   # generate bubble plots
   if (bubblesize == "FDR") {
