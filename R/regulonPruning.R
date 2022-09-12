@@ -24,13 +24,13 @@
 #' will contain tf, idxATAC and target.
 #'
 #' @return A dataframe of a pruned regulon containing joint probabilities for tf-idxATAC-target trios
-#' either for all cells or in a cluster-specific manner
+#' either for all cells or for individual clusters
 #' @details This function calculates the joint probability for each of the TF-peak-target trios to be
 #' active - that is, out of all the cells, how many cells have the TF and target expression exceed
 #' ```exp_cutoff``` and chromatin accessibility exceed ```peak_cutoff``` simultaneously.
 #' The joint probability can be used to prune the networks since a true regulatory relationship
-#' likely requires cells to express the transcription factor, have a accessible peak and expressing
-#' the target gene simultaneously. While there could be time delays between tf binding,
+#' likely requires cells to express the transcription factor, have an accessible peak region and
+#' expressing the target gene simultaneously. While there could be time delays between tf binding,
 #' chromatin accessibility and target gene expression, requiring baseline expression of all three
 #' components greatly enhances the likelihood that this regulatory relationship holds true.
 #'
