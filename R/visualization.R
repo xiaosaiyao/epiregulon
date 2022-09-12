@@ -90,7 +90,7 @@ plotActivityDim <- function(sce,
     message(paste0(missing, " not found in activity matrix. Excluded from plots"))
   }
 
-  tf = tf[which(tf %in% rownames(activity_matrix))]
+  tf <- tf[which(tf %in% rownames(activity_matrix))]
 
 
   gs <- lapply(tf, function(x) {
