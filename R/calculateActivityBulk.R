@@ -38,11 +38,11 @@
 #'
 #' # Add correlation of Dorothea from user supplied gene matrix
 #' activity.corr <- calculateActivityBulk(expr, regulon, mode = "corr",
-#' method ="ssgsea", corr_calculate = TRUE)
+#' method = "ssgsea", corr_calculate = TRUE)
 #'
 #' # Subsample
 #' activity.corr <- calculateActivityBulk(expr, regulon, mode = "corr",
-#' method ="ssgsea", corr_calculate = TRUE, sample_n = 10)
+#' method = "ssgsea", corr_calculate = TRUE, sample_n = 10)
 #'
 #' # Use Dorothea regulon with pre-calculated calculation
 #' \dontrun{
