@@ -1,5 +1,5 @@
 
-#' plot networks graph of genesets from regulonEnrich results
+#' Plot networks graph of significant genesets from regulonEnrich results
 #'
 #' @param tf A vector of gene names to be plotted. They should be present in enrichresults
 #' @param enrichresults Output from regulonEnrich that computes enriched genesets from user-specified regulons
@@ -9,15 +9,26 @@
 #' @param layout layout option from igraph
 #'
 #' @return an igraph plot of interconnected pathways through TFs
-#' @import igraph
 #' @export
-#'
 #' @examples
-#' \dontrun{plotGseaNetwork(tf = names(enrichresults), enrichresults, p.adj_cutoff = 0.1,
-#' ntop_pathways = 10)}
+#' AR <- data.frame(ID = c("ANDROGEN RESPONSE","PROLIFERATION","MAPK"),
+#' p.adjust = c(0.001, 0.01, 0.04))
+#' GATA6 <- data.frame(ID = c("STK33","PROLIFERATION","MAPK"),
+#' p.adjust = c(0.001, 0.01, 0.04))
+#' enrichresults <- list(AR = AR, GATA6 = GATA6)
+#' plotGseaNetwork(tf = names(enrichresults), enrichresults = enrichresults)
 
-plotGseaNetwork <- function(tf, enrichresults, ntop_pathways = 10, p.adj_cutoff=0.05,
-                            layout = layout.fruchterman.reingold) {
+#' @author Phoebe Guo, Xiaosai Yao
+
+plotGseaNetwork <- function(tf,
+                            enrichresults,
+                            ntop_pathways = 10,
+                            p.adj_cutoff = 0.05,
+                            layout = "sugiyama",
+                            tf_label = "tf",
+                            gset_label = "ID",
+                            tf_color = "tomato",
+                            gset_color = "grey") {
 
   #filter non-significant pathways by p.adj
   enrichresults.filter <- lapply(setNames(names(enrichresults),names(enrichresults)), function (x) {
@@ -35,17 +46,17 @@ plotGseaNetwork <- function(tf, enrichresults, ntop_pathways = 10, p.adj_cutoff=
 
 
   # bind rows of pathway list
-  pathway.df = do.call(rbind, lapply(names(pathway.list), function(x) {
-    data.frame(tf = x, ID = pathway.list[[x]][, "ID"])
+  pathway.df <- do.call(rbind, lapply(names(pathway.list), function(x) {
+    data.frame(tf = x, ID = pathway.list[[x]][, gset_label])
   }))
 
   # create node object for igraph
-  nodes.list = lapply(names(pathway.list), function(x) {
-    data.frame(rbind(data.frame(name = x, type = "tf"),
-          data.frame(name = pathway.list[[x]][, "ID"], type = "ID")))
+  nodes.list <- lapply(names(pathway.list), function(x) {
+    data.frame(rbind(data.frame(name = x, type = tf_label),
+          data.frame(name = pathway.list[[x]][, gset_label], type = gset_label)))
   })
 
-  nodes = unique(do.call(rbind, nodes.list))
+  nodes <- unique(do.call(rbind, nodes.list))
 
 
   # create the network object
@@ -54,16 +65,33 @@ plotGseaNetwork <- function(tf, enrichresults, ntop_pathways = 10, p.adj_cutoff=
                              directed = F)
 
   # Create a vector of color
-  col  <- c("grey", "tomato")
-  pal <- col[as.numeric(as.factor(V(p)$type))]
+  col  <- c(gset_color, tf_color)
+  pal <- col[as.numeric(as.factor(igraph::V(p)$type))]
+  igraph::V(p)$type.num <- as.numeric(factor(igraph::V(p)$type, levels = c(tf_label, gset_label)))
 
-  plot(
-    p,
-    vertex.size = 15,
-    vertex.color = pal,
-    vertex.frame.color = "white",
-    vertex.label.cex = 0.5,
-    vertex.label.color = "black",
-    layout = layout
-  )
+  V(p)$color <- pal
+
+  # Create sugiyama layout
+  l <- igraph::layout_with_sugiyama(p, attributes = "all",
+                            layers = igraph::V(p)$type.num)
+
+  # plot
+  gseaplot <-
+    ggraph::ggraph(l$extd_graph,
+                   layout =  "sugiyama",
+                   layers = l$layout[, 2]) +
+    ggraph::geom_edge_link(alpha = 0.8) +
+    ggplot2::coord_flip() +
+    ggplot2::scale_color_manual(values = pal) +
+    ggraph::theme_graph(fg_text_colour = 'black') +
+    ggraph::geom_node_point(aes_string(color = "type"), size = 5)  +
+    ggraph::geom_node_text(aes(label = name, filter = type == gset_label),
+                            nudge_y = 0.1, hjust = 0) +
+    ggraph::geom_node_text(aes(label = name, filter = type == tf_label),
+                           nudge_y = -0.1, hjust = 1) +
+    ggplot2::scale_y_continuous(expand = ggplot2::expansion(add = c(1, 4)))
+  print(gseaplot)
+
 }
+
+
