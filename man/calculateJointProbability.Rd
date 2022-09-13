@@ -2,7 +2,7 @@
 % Please edit documentation in R/regulonPruning.R
 \name{calculateJointProbability}
 \alias{calculateJointProbability}
-\title{A function to calculate joint probability of linked TF, RE and targets}
+\title{Calculate joint probability of linked TF, RE and targets}
 \usage{
 calculateJointProbability(
   expMatrix,
@@ -18,7 +18,7 @@ calculateJointProbability(
 )
 }
 \arguments{
-\item{expMatrix}{A SingleCellExperiment or matrix containing gene expression with
+\item{expMatrix}{A SingleCellExperiment object or matrix containing gene expression with
 with genes in the rows and cells in the columns}
 
 \item{exp_assay}{String indicating the name of the assay in expMatrix for gene expression}
@@ -26,7 +26,7 @@ with genes in the rows and cells in the columns}
 \item{exp_cutoff}{A scalar indicating the minimum gene expression for a gene to be considered
 active. Default value is 1}
 
-\item{peakMatrix}{A SingleCellExperiment or matrix containing peak accessibility with
+\item{peakMatrix}{A SingleCellExperiment object or matrix containing peak accessibility with
 peaks in the rows and cells in the columns}
 
 \item{peak_assay}{String indicating the name of the assay in peakMatrix for chromatin accessibility}
@@ -34,28 +34,44 @@ peaks in the rows and cells in the columns}
 \item{peak_cutoff}{A scalar indicating the minimum peak accessibility for a peak to be
 considered open. Default value is 0}
 
-\item{regulon}{A dataframe informing the gene regulatory relationship with the "tf" column
-representing transcription factors, "idxATAC"
-corresponding to the index in the peakMatrix and "target" column
+\item{regulon}{A dataframe informing the gene regulatory relationship with the \code{tf} column
+representing transcription factors, \code{idxATAC}
+corresponding to the index in the peakMatrix and \code{target} column
 representing target genes}
 
 \item{regulon_cutoff}{A scalar indicating the minimum value for the joint probability of
 a tf-idxATAC-target trio to be retained in the pruned regulon.}
 
 \item{clusters}{A vector corresponding to the cluster labels of the cells if
-cluster-specific joint probabilities are also required. If left null, joint probabilities
+cluster-specific joint probabilities are also required. If left \code{NULL}, joint probabilities
 are calculated for all cells}
 
 \item{aggregate}{A logical indicating whether to collapse the regulatory elements of the
-same genes. If TRUE, the output will only contain tf and target. If FALSE, the output
+same genes. If \code{TRUE}, the output will only contain tf and target. If \code{FALSE}, the output
 will contain tf, idxATAC and target.}
 }
 \value{
 A dataframe of a pruned regulon containing joint probabilities for tf-idxATAC-target trios
-either for all cells or in a cluster-specific manner
+either for all cells or for individual clusters
 }
 \description{
-A function to calculate joint probability of linked TF, RE and targets
+Calculate joint probability of linked TF, RE and targets
+}
+\details{
+This function calculates the joint probability for each of the TF-peak-target trios to be
+active - that is, out of all the cells, how many cells have the TF and target expression exceed
+\code{exp_cutoff} and chromatin accessibility exceed \code{peak_cutoff} simultaneously.
+The joint probability can be used to prune the networks since a true regulatory relationship
+likely requires cells to express the transcription factor, have an accessible peak region and
+expressing the target gene simultaneously. While there could be time delays between tf binding,
+chromatin accessibility and target gene expression, requiring baseline expression of all three
+components greatly enhances the likelihood that this regulatory relationship holds true.
+
+This function can also compute cluster-specific joint probabilities. The output can be filtered to
+generate cluster-specific networks which can be fed into differential network analysis (to be continued).
+
+The aggregate function outputs either a bipartite network of the form TF-target (\code{aggregate = TRUE})
+or a tripartite network of the form TF-RE-target (\code{aggregate = FALSE}).
 }
 \examples{
 # create a mock singleCellExperiment object for gene expMatrixession matrix

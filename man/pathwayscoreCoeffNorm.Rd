@@ -2,7 +2,7 @@
 % Please edit documentation in R/calculateActivity.R
 \name{pathwayscoreCoeffNorm}
 \alias{pathwayscoreCoeffNorm}
-\title{A function to aggregate the weighted gene expression of genes belonging to a given pathway or a regulon}
+\title{Aggregate the weighted gene expression of genes belonging to a given pathway or a regulon}
 \usage{
 pathwayscoreCoeffNorm(scale.mat, geneset, geneset_name)
 }
@@ -17,7 +17,7 @@ pathwayscoreCoeffNorm(scale.mat, geneset, geneset_name)
 A vector of inferred activity scores for every single cell
 }
 \description{
-A function to aggregate the weighted gene expression of genes belonging to a given pathway or a regulon
+Aggregate the weighted gene expression of genes belonging to a given pathway or a regulon
 }
 \author{
 Xiaosai Yao

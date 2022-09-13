@@ -2,7 +2,7 @@
 % Please edit documentation in R/constructRegulon.R
 \name{getP2Glinks}
 \alias{getP2Glinks}
-\title{A function to compute correlations between ATAC-seq peaks and RNA-seq genes}
+\title{Compute correlations between ATAC-seq peaks and RNA-seq genes}
 \usage{
 getP2Glinks(
   archr_path,
@@ -27,7 +27,7 @@ getP2Glinks(
 A Peak2Gene correlation datafrane
 }
 \description{
-A function to compute correlations between ATAC-seq peaks and RNA-seq genes
+Compute correlations between ATAC-seq peaks and RNA-seq genes
 }
 \author{
 Shang-yang Chen

@@ -2,7 +2,7 @@
 % Please edit documentation in R/statisticalTests.R
 \name{findDifferentialActivity}
 \alias{findDifferentialActivity}
-\title{A function to test for differential TF activity between pairs of single cell clusters/groups}
+\title{Test for differential TF activity between pairs of single cell clusters/groups}
 \usage{
 findDifferentialActivity(
   activity_matrix,
@@ -30,7 +30,7 @@ findDifferentialActivity(
 A named list of dataframes containing differential TF activity test results for each cluster/group
 }
 \description{
-A function to test for differential TF activity between pairs of single cell clusters/groups
+Test for differential TF activity between pairs of single cell clusters/groups
 }
 \examples{
 set.seed(1)

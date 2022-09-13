@@ -2,7 +2,7 @@
 % Please edit documentation in R/visualization.R
 \name{plotBubble}
 \alias{plotBubble}
-\title{A function to draw bubble plot of relative activities across cluster/group labels for a list of TFs}
+\title{Generate bubble plots of relative activities across cluster/group labels for a list of TFs}
 \usage{
 plotBubble(activity_matrix, tf, class, bubblesize = "FDR")
 }
@@ -19,7 +19,7 @@ plotBubble(activity_matrix, tf, class, bubblesize = "FDR")
 A ggplot object
 }
 \description{
-A function to draw bubble plot of relative activities across cluster/group labels for a list of TFs
+Generate bubble plots of relative activities across cluster/group labels for a list of TFs
 }
 \examples{
 \dontrun{

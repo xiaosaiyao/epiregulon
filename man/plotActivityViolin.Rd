@@ -2,7 +2,7 @@
 % Please edit documentation in R/visualization.R
 \name{plotActivityViolin}
 \alias{plotActivityViolin}
-\title{A function to draw violin plots of inferred activities for a list of TFs grouped by cluster/group labels}
+\title{Generate violin plots of inferred activities for a list of TFs grouped by cluster/group labels}
 \usage{
 plotActivityViolin(
   activity_matrix,
@@ -30,7 +30,7 @@ plotActivityViolin(
 A combined ggplot object or a list of ggplots if combine == FALSE
 }
 \description{
-A function to draw violin plots of inferred activities for a list of TFs grouped by cluster/group labels
+Generate violin plots of inferred activities for a list of TFs grouped by cluster/group labels
 }
 \examples{
 \dontrun{

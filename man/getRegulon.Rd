@@ -2,7 +2,7 @@
 % Please edit documentation in R/constructRegulon.R
 \name{getRegulon}
 \alias{getRegulon}
-\title{A function to combine the TF binding motif info and peak to gene correlations to generate regulons}
+\title{Combine the TF binding motif info and peak to gene correlations to generate regulons}
 \usage{
 getRegulon(p2g, overlap, aggregate = TRUE)
 }
@@ -19,7 +19,7 @@ example regulon:
 tf      target  corr
 }
 \description{
-A function to combine the TF binding motif info and peak to gene correlations to generate regulons
+Combine the TF binding motif info and peak to gene correlations to generate regulons
 }
 \examples{
 set.seed(1)

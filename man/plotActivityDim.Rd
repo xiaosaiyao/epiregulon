@@ -2,7 +2,7 @@
 % Please edit documentation in R/visualization.R
 \name{plotActivityDim}
 \alias{plotActivityDim}
-\title{A function to plot cell-level reduced dimension results stored in a SingleCellExperiment object, colored by activities for a list of TFs}
+\title{Plot cell-level reduced dimension results stored in a SingleCellExperiment object, colored by activities for a list of TFs}
 \usage{
 plotActivityDim(
   sce,
@@ -53,7 +53,7 @@ to minimal and maximal values}
 A combined ggplot object or a list of ggplots if combine == FALSE
 }
 \description{
-A function to plot cell-level reduced dimension results stored in a SingleCellExperiment object, colored by activities for a list of TFs
+Plot cell-level reduced dimension results stored in a SingleCellExperiment object, colored by activities for a list of TFs
 }
 \examples{
 \dontrun{

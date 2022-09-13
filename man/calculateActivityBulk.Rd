@@ -2,10 +2,10 @@
 % Please edit documentation in R/calculateActivityBulk.R
 \name{calculateActivityBulk}
 \alias{calculateActivityBulk}
-\title{A function to calculate transcriptional activity from a matrix of gene expression and regulon}
+\title{Calculate transcriptional activity from a matrix of gene expression and regulon}
 \usage{
 calculateActivityBulk(
-  expr,
+  expMatrix,
   regulon,
   method = c("gsva", "ssgsea", "zscore", "plage"),
   mode = c("mor", "corr"),
@@ -17,14 +17,14 @@ calculateActivityBulk(
 )
 }
 \arguments{
-\item{expr}{Matrix of gene expression with gene names matching those of the regulon or a SummarizedExperiment object}
+\item{expMatrix}{a SummarizedExperiment object or matrix of gene expression with gene names matching those of the regulon}
 
 \item{regulon}{Matrix consisting of tf(regulator), target and a column indicating degree of association between TF and target}
 
 \item{method}{String indicating the method used to calculate signature score. Available methods in gsva package include "gsva", "ssgsea", "zscore" and "plage"}
 
 \item{mode}{String indicating the choice of TF-target association being either correlation "corr" or mode of regulation "mor".
-Correlation can either be supplied or computed from expr using (corr_calculate = FALSE). Mor is supplied by the Dorothea regulon.}
+Correlation can either be supplied or computed from expMatrix using (corr_calculate = FALSE). Mor is supplied by the Dorothea regulon.}
 
 \item{corr_calculate}{Logical indicating whether correlation needs to be calculated}
 
@@ -33,10 +33,10 @@ Correlation can either be supplied or computed from expr using (corr_calculate =
 \item{sample_n}{An integer indicating the number of samples to subsample if the original expression matrix is large}
 
 \item{assay_name}{String indicating the name of the assay corresponding to gene expression
-if expr is a SummarizedExperiment object}
+if expMatrix is a SummarizedExperiment object}
 
 \item{rowData_name}{String indicating the column name in the rowData that matches the gene names in the regulon
-if expr is a SummarizedExperiment object}
+if expMatrix is a SummarizedExperiment object}
 }
 \value{
 A matrix of inferred transcription factor (row) activities in samples (columns)
@@ -63,11 +63,11 @@ activity.mor <- calculateActivityBulk(expr, regulon, mode = "mor", method = "ssg
 
 # Add correlation of Dorothea from user supplied gene matrix
 activity.corr <- calculateActivityBulk(expr, regulon, mode = "corr",
-method ="ssgsea", corr_calculate = TRUE)
+method = "ssgsea", corr_calculate = TRUE)
 
 # Subsample
 activity.corr <- calculateActivityBulk(expr, regulon, mode = "corr",
-method ="ssgsea", corr_calculate = TRUE, sample_n = 10)
+method = "ssgsea", corr_calculate = TRUE, sample_n = 10)
 
 # Use Dorothea regulon with pre-calculated calculation
 \dontrun{
@@ -77,5 +77,5 @@ activity.corr <- calculateActivityBulk(expr, regulon, mode = "corr", method ="ss
 
 }
 \author{
-Xiaosai Yaon
+Xiaosai Yao
 }

@@ -2,7 +2,7 @@
 % Please edit documentation in R/visualization.R
 \name{plotActivityViolin_}
 \alias{plotActivityViolin_}
-\title{A function to draw a violin plot of inferred activities for a specific TF grouped by cluster/group labels}
+\title{Generate violin plots of inferred activities for a specific TF grouped by cluster/group labels}
 \usage{
 plotActivityViolin_(activity_matrix, tf, class, legend.label)
 }
@@ -19,7 +19,7 @@ plotActivityViolin_(activity_matrix, tf, class, legend.label)
 A ggplot object
 }
 \description{
-A function to draw a violin plot of inferred activities for a specific TF grouped by cluster/group labels
+Generate violin plots of inferred activities for a specific TF grouped by cluster/group labels
 }
 \author{
 Xiaosai Yao, Shang-yang Chen

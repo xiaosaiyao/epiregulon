@@ -2,7 +2,7 @@
 % Please edit documentation in R/calculateP2G.R
 \name{calculateP2G}
 \alias{calculateP2G}
-\title{A function to establish peak to gene links based on correlations between ATAC-seq peaks and RNA-seq genes}
+\title{Establish peak to gene links based on correlations between ATAC-seq peaks and RNA-seq genes}
 \usage{
 calculateP2G(
   peakMatrix = NULL,
@@ -47,7 +47,7 @@ Default correlation cutoff is 0.5.}
 A Peak2Gene correlation dataframe
 }
 \description{
-A function to establish peak to gene links based on correlations between ATAC-seq peaks and RNA-seq genes
+Establish peak to gene links based on correlations between ATAC-seq peaks and RNA-seq genes
 }
 \examples{
 # create a mock singleCellExperiment object for gene expression matrix

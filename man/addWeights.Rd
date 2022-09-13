@@ -2,7 +2,7 @@
 % Please edit documentation in R/addWeights.R
 \name{addWeights}
 \alias{addWeights}
-\title{A function to calculate weights for the regulons by computing co-association between TF and target gene expression}
+\title{Calculate weights for the regulons by computing co-association between TF and target gene expression}
 \usage{
 addWeights(
   regulon,
@@ -48,7 +48,7 @@ A data frame with columns of corr and/or MI added to the regulon. TFs not found 
 meeting the minimal number of targets were filtered out.
 }
 \description{
-A function to calculate weights for the regulons by computing co-association between TF and target gene expression
+Calculate weights for the regulons by computing co-association between TF and target gene expression
 }
 \details{
 The default mode is to compute weights by correlating the pseudobulk target gene expression vs the pseudobulk TF gene expression.

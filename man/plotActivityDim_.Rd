@@ -2,7 +2,7 @@
 % Please edit documentation in R/visualization.R
 \name{plotActivityDim_}
 \alias{plotActivityDim_}
-\title{A function to plot cell-level reduced dimension results stored in a SingleCellExperiment object, colored by activities for a specific TF}
+\title{Plot cell-level reduced dimension results stored in a SingleCellExperiment object, colored by activities for a specific TF}
 \usage{
 plotActivityDim_(
   sce,
@@ -41,7 +41,7 @@ to minimal and maximal values}
 A ggplot object
 }
 \description{
-A function to plot cell-level reduced dimension results stored in a SingleCellExperiment object, colored by activities for a specific TF
+Plot cell-level reduced dimension results stored in a SingleCellExperiment object, colored by activities for a specific TF
 }
 \author{
 Xiaosai Yao, Shang-yang Chen

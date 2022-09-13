@@ -2,7 +2,7 @@
 % Please edit documentation in R/statisticalTests.R
 \name{getSigGenes}
 \alias{getSigGenes}
-\title{A function to compile and summarize the output from findDifferentialActivity function}
+\title{Compile and summarize the output from findDifferentialActivity function}
 \usage{
 getSigGenes(da_list, fdr_cutoff = 0.05, logFC_cutoff = NULL, topgenes = NULL)
 }
@@ -19,7 +19,7 @@ getSigGenes(da_list, fdr_cutoff = 0.05, logFC_cutoff = NULL, topgenes = NULL)
 A compiled dataframe of TFs with differential activities across clusters/groups
 }
 \description{
-A function to compile and summarize the output from findDifferentialActivity function
+Compile and summarize the output from findDifferentialActivity function
 }
 \examples{
 set.seed(1)

@@ -2,7 +2,7 @@
 % Please edit documentation in R/calculateActivity.R
 \name{calculateActivity}
 \alias{calculateActivity}
-\title{A function that calculates the per cell activity of master regulators based on a regulon}
+\title{Calculate the per cell activity of master regulators based on a regulon}
 \usage{
 calculateActivity(
   sce,
@@ -15,9 +15,11 @@ calculateActivity(
 )
 }
 \arguments{
-\item{sce}{A SingleCellExperiment object with rows representing genes and columns represent cells. Rownames (either gene symbols or geneID) must be consistent with the naming convention in the regulon.}
+\item{sce}{A SingleCellExperiment object with rows representing genes and columns represent cells.
+Rownames (either gene symbols or geneID) must be consistent with the naming convention in the regulon.}
 
-\item{regulon}{A data frame consisting of tf (regulator) and target in the column names, with additional columns indicating degree of association between tf and target such as "mor" or "corr" obtained from addWeights.}
+\item{regulon}{A data frame consisting of tf (regulator) and target in the column names, with additional columns
+indicating degree of association between tf and target such as "mor" or "corr" obtained from addWeights.}
 
 \item{mode}{String indicating the name of column to be used as the weights}
 
@@ -25,7 +27,8 @@ calculateActivity(
 
 \item{ncore}{Integer specifying the number of cores to be used in AUCell}
 
-\item{assay}{String specifying the name of the assay to be retrieved from the SingleCellExperiment object. Set to "logcounts" as the default}
+\item{assay}{String specifying the name of the assay to be retrieved from the SingleCellExperiment object. Set to
+"logcounts" as the default}
 
 \item{genesets}{A feature set collection in the form of CompressedSplitDataFrameList that contains genes in the
 first column and weights in the second column. See \href{http://cedar.gene.com/gran/dev/PkgDocumentation/genomitory/uploads.html#from-compressedsplitdataframelists}{genomitory}
@@ -35,7 +38,7 @@ for more information on compressedSplitDataFramelists. See details}
 A matrix of inferred transcription factor (row) activities in single cells (columns)
 }
 \description{
-A function that calculates the per cell activity of master regulators based on a regulon
+Calculate the per cell activity of master regulators based on a regulon
 }
 \details{
 This function calculates activity score from a regulon that is a data frame consisting of a tf column,

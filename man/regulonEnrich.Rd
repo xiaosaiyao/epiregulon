@@ -2,7 +2,7 @@
 % Please edit documentation in R/statisticalTests.R
 \name{regulonEnrich}
 \alias{regulonEnrich}
-\title{A function to perform geneset enrichment of user-defined regulons}
+\title{Perform geneset enrichment of user-defined regulons}
 \usage{
 regulonEnrich(TF, regulon, corr = "weight", corr_cutoff = 0.5, genesets)
 }
@@ -21,7 +21,7 @@ regulonEnrich(TF, regulon, corr = "weight", corr_cutoff = 0.5, genesets)
 A dataframe showing the significantly enriched pathways
 }
 \description{
-A function to perform geneset enrichment of user-defined regulons
+Perform geneset enrichment of user-defined regulons
 }
 \examples{
 \dontrun{

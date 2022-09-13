@@ -2,14 +2,18 @@
 % Please edit documentation in R/network.R
 \name{plotGseaNetwork}
 \alias{plotGseaNetwork}
-\title{plot networks graph of genesets from regulonEnrich results}
+\title{Plot networks graph of significant genesets from regulonEnrich results}
 \usage{
 plotGseaNetwork(
   tf,
   enrichresults,
   ntop_pathways = 10,
   p.adj_cutoff = 0.05,
-  layout = layout.fruchterman.reingold
+  layout = "sugiyama",
+  tf_label = "tf",
+  gset_label = "ID",
+  tf_color = "tomato",
+  gset_color = "grey"
 )
 }
 \arguments{
@@ -28,9 +32,16 @@ of interest}
 an igraph plot of interconnected pathways through TFs
 }
 \description{
-plot networks graph of genesets from regulonEnrich results
+Plot networks graph of significant genesets from regulonEnrich results
 }
 \examples{
-\dontrun{plotGseaNetwork(tf = names(enrichresults), enrichresults, p.adj_cutoff = 0.1,
-ntop_pathways = 10)}
+AR <- data.frame(ID = c("ANDROGEN RESPONSE","PROLIFERATION","MAPK"),
+p.adjust = c(0.001, 0.01, 0.04))
+GATA6 <- data.frame(ID = c("STK33","PROLIFERATION","MAPK"),
+p.adjust = c(0.001, 0.01, 0.04))
+enrichresults <- list(AR = AR, GATA6 = GATA6)
+plotGseaNetwork(tf = names(enrichresults), enrichresults = enrichresults)
+}
+\author{
+Phoebe Guo, Xiaosai Yao
 }

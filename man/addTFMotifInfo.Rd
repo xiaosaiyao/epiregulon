@@ -2,7 +2,7 @@
 % Please edit documentation in R/constructRegulon.R
 \name{addTFMotifInfo}
 \alias{addTFMotifInfo}
-\title{A function to add TF binding motif occupancy information to the peak2gene object}
+\title{Add TF binding motif occupancy information to the peak2gene object}
 \usage{
 addTFMotifInfo(p2g, grl, peakMatrix = NULL, archR_project_path = NULL)
 }
@@ -19,7 +19,7 @@ addTFMotifInfo(p2g, grl, peakMatrix = NULL, archR_project_path = NULL)
 A dataframe containing overlapping ids of scATAC-seq peak regions and reference TF binding regions
 }
 \description{
-A function to add TF binding motif occupancy information to the peak2gene object
+Add TF binding motif occupancy information to the peak2gene object
 }
 \examples{
 set.seed(1)

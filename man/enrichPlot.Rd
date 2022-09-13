@@ -2,7 +2,7 @@
 % Please edit documentation in R/visualization.R
 \name{enrichPlot}
 \alias{enrichPlot}
-\title{A function to plot results of regulonEnrich}
+\title{Plot results of regulonEnrich}
 \usage{
 enrichPlot(results, top = 15, ncol = 3, combine = TRUE)
 }
@@ -19,11 +19,11 @@ enrichPlot(results, top = 15, ncol = 3, combine = TRUE)
 A combined ggplot object or a list of ggplots if combine == FALSE
 }
 \description{
-A function to plot results of regulonEnrich
+Plot results of regulonEnrich
 }
 \examples{
 \dontrun{
-enrichplot(results=enrichment_results )
+enrichplot(results = enrichment_results )
 }
 
 }
