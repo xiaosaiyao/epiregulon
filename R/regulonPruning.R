@@ -10,6 +10,11 @@
 #' @param peak_assay String indicating the name of the assay in peakMatrix for chromatin accessibility
 #' @param peak_cutoff A scalar indicating the minimum peak accessibility for a peak to be
 #' considered open. Default value is 0
+#' @param chromvarMatrix A SingleCellExperiment object or matrix containing averaged accessibility at the TF
+#' binding sites with tfs in the rows and cells in the columns. This can be used as an alternative to TF expression
+#' @param chromvar_assay String indicating the name of the assay in chromvarMatrix for chromatin accessibility
+#' @param chromvar_cutoff A scalar indicating the minimum chromvar values for a tf to be
+#' considered active. Default value is 0
 #' @param regulon A dataframe informing the gene regulatory relationship with the ```tf``` column
 #' representing transcription factors, ```idxATAC```
 #' corresponding to the index in the peakMatrix and ```target``` column
@@ -41,7 +46,7 @@
 #' or a tripartite network of the form TF-RE-target (```aggregate = FALSE```).
 #
 #' @export
-#' @import utils SingleCellExperiment stats
+#' @import utils SingleCellExperiment
 #'
 #' @examples
 #' # create a mock singleCellExperiment object for gene expMatrixession matrix
@@ -77,16 +82,32 @@
 #'
 #' @author Xiaosai Yao
 
+
+
 calculateJointProbability <- function(expMatrix,
                                       exp_assay = "logcounts",
                                       exp_cutoff = 1,
                                       peakMatrix,
                                       peak_assay = "PeakMatrix",
                                       peak_cutoff = 0,
+                                      chromvarMatrix = NULL,
+                                      chromvar_assay = NULL,
+                                      chromvar_cutoff = 0,
                                       regulon,
                                       regulon_cutoff = 0,
                                       clusters = NULL,
                                       aggregate = TRUE) {
+
+  # #convert delayedMatrix to dgCMatrix
+  # if (checkmate::test_class(expMatrix,classes = "DelayedMatrix")) {
+  #   writeLines("converting DelayedMatrix to dgCMatrix")
+  #   expMatrix <- as(expMatrix, Class = "dgCMatrix")
+  # }
+  # if (checkmate::test_class(peakMatrix,classes = "DelayedMatrix")){
+  #   writeLines("converting DelayedMatrix to dgCMatrix")
+  #   peakMatrix <- as(peakMatrix, Class = "dgCMatrix")
+  # }
+
 
   if (checkmate::test_class(expMatrix,classes = "SummarizedExperiment")){
     expMatrix <- assay(expMatrix, exp_assay)
@@ -96,79 +117,389 @@ calculateJointProbability <- function(expMatrix,
     peakMatrix <- assay(peakMatrix, peak_assay)
   }
 
+  if (!is.null (chromvar_assay)){
+    if (checkmate::test_class(chromvarMatrix,classes = "SummarizedExperiment")){
+      chromvarMatrix <- assay(chromvar_assay, peak_assay)
+    }
+  }
 
-  total_cell <- ncol(expMatrix)
 
-  exp_index <- apply(expMatrix, 1, function(x) which(x > exp_cutoff))
-  names(exp_index) <- rownames(expMatrix)
-  peak_index <- apply(peakMatrix, 1, function(x) which(x > peak_cutoff))
-  names(peak_index) <- rownames(peakMatrix)
 
   if (is.null(clusters)) {
     uniq_clusters <- "all"
   } else {
-    uniq_clusters <- c("all", unique(clusters))
+    uniq_clusters <- c("all", sort(unique(clusters)))
   }
 
   #clean up regulon
   regulon <- regulon[regulon$tf %in% rownames(expMatrix),]
   regulon <- regulon[regulon$target %in% rownames(expMatrix),]
 
-  #initialize conditional probability matrix
-  prob_matrix <- matrix(NA, nrow = nrow(regulon), ncol = length(uniq_clusters))
-  colnames(prob_matrix) = uniq_clusters
+  #order by TF
+  regulon <- regulon[order(regulon$tf),]
+  tf_uniq <- unique(regulon$tf)
 
-  #initialize count vector
-  all_count <- list()
 
+  total_cell <- ncol(expMatrix)
+
+
+
+  prob_matrix <- c()
 
   writeLines("compute joint probability for all trios")
+
   pb <- txtProgressBar(min = 0,
-                       max = nrow(regulon),
+                       max = length(tf_uniq),
                        style = 3)
 
-  for (i in 1:nrow(regulon)){
-
-    # count the number of cells satisfying all 3 conditions
-    all_count[[i]] <- Reduce(intersect, list(tf = exp_index[[regulon$tf[i]]],
-                                                target = exp_index[[regulon$target[i]]],
-                                                peakMatrix = peak_index[[regulon$idxATAC[i]]]))
-
-    prob_matrix[i, "all"] <- length(all_count[[i]])/total_cell
-
-
-    Sys.sleep(1 / 100)
-
-    setTxtProgressBar(pb, i)
-  }
+  counter <- 0
 
 
 
-  # Prune network by removing trios with probability = 0
-  wanted_trios <- which(prob_matrix[,"all"] > regulon_cutoff)
-  prob_matrix <- prob_matrix[wanted_trios,]
-  regulon <- regulon[wanted_trios,]
-  all_count <- all_count[wanted_trios]
+  prob_matrix_tf <- BiocParallel::bplapply(X = tf_uniq,
+                                           FUN = .calculateJointProbability_bp,
+                                           regulon,
+                                           expMatrix,
+                                           exp_cutoff,
+                                           peakMatrix,
+                                           peak_cutoff,
+                                           chromvarMatrix,
+                                           chromvar_cutoff,
+                                           clusters,
+                                           uniq_clusters,
+                                           BPPARAM=BiocParallel::MulticoreParam())
+  prob_matrix <- do.call("rbind", prob_matrix_tf)
+  # for (tf in tf_uniq){
+  #   message(tf)
+  #   regulon_tf <- regulon[regulon$tf == tf,]
+  #
+  #   # filter cells that did not pass tf cutoff either by expression or chromvar
+  #   if (is.null(chromvarMatrix)){
+  #     cells_sel_tf <- Matrix::which(expMatrix[tf,] > exp_cutoff)
+  #   } else {
+  #     cells_sel_tf <- Matrix::which(chromvarMatrix[tf,] > chromvar_cutoff)
+  #   }
+  #
+  #
+  #   #initiate a probability matrix to keep track of the number of cells that fulfill threshold for all cutoffs
+  #   prob_matrix_tf <- matrix(0, nrow = nrow(regulon_tf), ncol = length(uniq_clusters))
+  #   colnames(prob_matrix_tf) <- uniq_clusters
+  #
+  #   if (length(cells_sel_tf) != 0){
+  #
+  #
+  #
+  #     #track new clusters because cells got filtered
+  #     new_clusters <- clusters[cells_sel_tf]
+  #
+  #
+  #     target.short <- expMatrix[regulon_tf$target, cells_sel_tf, drop=FALSE]
+  #     peak.short <- peakMatrix[regulon_tf$idxATAC, cells_sel_tf, drop=FALSE]
+  #
+  #     # create target and peak matrix that pass threshold.
+  #     # 1s represent cells that pass threshold and 0s represent cells that fail threshold
+  #
+  #     target.bi.index <- Matrix::which(target.short > exp_cutoff, arr.ind = TRUE)
+  #     target.bi <- Matrix::sparseMatrix(x = rep(1,nrow(target.bi.index)),
+  #                            i = target.bi.index[,1],
+  #                            j = target.bi.index[,2],
+  #                            dims = c(nrow(target.short), ncol(target.short)) )
+  #
+  #
+  #     peak.bi.index <- Matrix::which(peak.short > peak_cutoff, arr.ind = TRUE)
+  #     peak.bi <- Matrix::sparseMatrix(x = rep(1,nrow(peak.bi.index)),
+  #                        i = peak.bi.index[,1],
+  #                        j =  peak.bi.index[,2],
+  #                        dims = c(nrow(peak.short), ncol(peak.short)) )
+  #
+  #     # perform element by element matrix multiplication to get cells that pass both thresholds
+  #     target.peak.bi <- target.bi * peak.bi
+  #
+  #
+  #     prob_matrix_tf[,"all" ] <- Matrix::rowSums(target.peak.bi)
+  #
+  #     # also computes joint probabilities by cluster
+  #     for (cluster in unique(clusters)){
+  #       cluster_index = which(new_clusters  == cluster)
+  #       if (length(cluster_index) >0) {
+  #         prob_matrix_tf[, cluster] <- Matrix::rowSums(target.peak.bi[,cluster_index, drop=FALSE])
+  #       }
+  #
+  #     }
+  #
+  #   }
+#
+#
+#     prob_matrix <- rbind(prob_matrix, prob_matrix_tf)
+#
+#     counter <- counter + 1
+#     setTxtProgressBar(pb, counter)
+#
+#   }
 
-  writeLines("compute cluster-specific joint probability")
+  # calculate the number of cells in each cluster
+  clusters_freq <- table(clusters)
+  clusters_freq <- c(sum(clusters_freq),clusters_freq)
 
-  for (cluster in unique(clusters)){
-    cluster_index <- which(clusters == cluster)
-    cluster_length <- length(cluster_index)
-
-    cluster_count <- sapply(1:length(all_count), function (x) length(intersect(all_count[[x]], cluster_index)))
-
-    prob_matrix[, cluster] <- cluster_count/cluster_length
+  # normalize by total cell counts
+  prob_matrix <- sweep(prob_matrix, MARGIN=2, STATS = clusters_freq, FUN = "/")
 
 
-  }
 
+  #add probability matrix to original regulon
   regulon.combined <- cbind(regulon, prob_matrix)
 
+  #if aggregate is true, collapse regulatory elements to have regulons containing tf and target
   if (aggregate == TRUE){
-    regulon.combined <- aggregate(prob_matrix ~ tf + target, data = regulon.combined,
-                             FUN = mean, na.rm = TRUE)
+    regulon.combined <- stats::aggregate(prob_matrix ~ tf + target, data = regulon.combined,
+                                  FUN = mean, na.rm = TRUE)
   }
- return(regulon.combined)
+
+  regulon.combined <- regulon.combined[regulon.combined[,"all"] > regulon_cutoff, ]
+  return(regulon.combined)
+
 
 }
+
+
+.calculateJointProbability_bp <- function(tf,
+                                          regulon,
+                                          expMatrix,
+                                          exp_cutoff,
+                                          peakMatrix,
+                                          peak_cutoff,
+                                          chromvarMatrix,
+                                          chromvar_cutoff,
+                                          clusters,
+                                          uniq_clusters){
+  message(tf)
+  regulon_tf <- regulon[regulon$tf == tf,]
+
+  # filter cells that did not pass tf cutoff either by expression or chromvar
+  if (is.null(chromvarMatrix)){
+    cells_sel_tf <- Matrix::which(expMatrix[tf,] > exp_cutoff)
+  } else {
+    cells_sel_tf <- Matrix::which(chromvarMatrix[tf,] > chromvar_cutoff)
+  }
+
+
+  #initiate a probability matrix to keep track of the number of cells that fulfill threshold for all cutoffs
+  prob_matrix_tf <- matrix(0, nrow = nrow(regulon_tf), ncol = length(uniq_clusters))
+  colnames(prob_matrix_tf) <- uniq_clusters
+
+  if (length(cells_sel_tf) != 0){
+
+
+
+    #track new clusters because cells got filtered
+    new_clusters <- clusters[cells_sel_tf]
+
+
+    target.short <- expMatrix[regulon_tf$target, cells_sel_tf, drop=FALSE]
+    peak.short <- peakMatrix[regulon_tf$idxATAC, cells_sel_tf, drop=FALSE]
+
+    # create target and peak matrix that pass threshold.
+    # 1s represent cells that pass threshold and 0s represent cells that fail threshold
+
+    target.bi.index <- Matrix::which(target.short > exp_cutoff, arr.ind = TRUE)
+    target.bi <- Matrix::sparseMatrix(x = rep(1,nrow(target.bi.index)),
+                                      i = target.bi.index[,1],
+                                      j = target.bi.index[,2],
+                                      dims = c(nrow(target.short), ncol(target.short)) )
+
+
+    peak.bi.index <- Matrix::which(peak.short > peak_cutoff, arr.ind = TRUE)
+    peak.bi <- Matrix::sparseMatrix(x = rep(1,nrow(peak.bi.index)),
+                                    i = peak.bi.index[,1],
+                                    j =  peak.bi.index[,2],
+                                    dims = c(nrow(peak.short), ncol(peak.short)) )
+
+    # perform element by element matrix multiplication to get cells that pass both thresholds
+    target.peak.bi <- target.bi * peak.bi
+
+
+    prob_matrix_tf[,"all" ] <- Matrix::rowSums(target.peak.bi)
+
+    # also computes joint probabilities by cluster
+    for (cluster in unique(clusters)){
+      cluster_index = which(new_clusters  == cluster)
+      if (length(cluster_index) >0) {
+        prob_matrix_tf[, cluster] <- Matrix::rowSums(target.peak.bi[,cluster_index, drop=FALSE])
+      }
+
+    }
+  }
+  return(prob_matrix_tf)
+}
+
+
+
+
+
+
+calculateJointProbability2 <- function(expMatrix,
+                                      exp_assay = "logcounts",
+                                      exp_cutoff = 1,
+                                      peakMatrix,
+                                      peak_assay = "PeakMatrix",
+                                      peak_cutoff = 0,
+                                      chromvarMatrix = NULL,
+                                      chromvar_assay = NULL,
+                                      chromvar_cutoff = 0,
+                                      regulon,
+                                      regulon_cutoff = 0,
+                                      clusters = NULL,
+                                      aggregate = TRUE) {
+
+  # #convert delayedMatrix to dgCMatrix
+  # if (checkmate::test_class(expMatrix,classes = "DelayedMatrix")) {
+  #   writeLines("converting DelayedMatrix to dgCMatrix")
+  #   expMatrix <- as(expMatrix, Class = "dgCMatrix")
+  # }
+  # if (checkmate::test_class(peakMatrix,classes = "DelayedMatrix")){
+  #   writeLines("converting DelayedMatrix to dgCMatrix")
+  #   peakMatrix <- as(peakMatrix, Class = "dgCMatrix")
+  # }
+
+
+  if (checkmate::test_class(expMatrix,classes = "SummarizedExperiment")){
+    expMatrix <- assay(expMatrix, exp_assay)
+  }
+
+  if (checkmate::test_class(peakMatrix,classes = "SummarizedExperiment")){
+    peakMatrix <- assay(peakMatrix, peak_assay)
+  }
+
+  if (!is.null (chromvar_assay)){
+    if (checkmate::test_class(chromvarMatrix,classes = "SummarizedExperiment")){
+      chromvarMatrix <- assay(chromvar_assay, peak_assay)
+    }
+  }
+
+
+
+  if (is.null(clusters)) {
+    uniq_clusters <- "all"
+  } else {
+    uniq_clusters <- c("all", sort(unique(clusters)))
+  }
+
+  #clean up regulon
+  regulon <- regulon[regulon$tf %in% rownames(expMatrix),]
+  regulon <- regulon[regulon$target %in% rownames(expMatrix),]
+
+  #order by TF
+  regulon <- regulon[order(regulon$tf),]
+  tf_uniq <- unique(regulon$tf)
+
+
+  total_cell <- ncol(expMatrix)
+
+
+
+  prob_matrix <- c()
+
+  writeLines("compute joint probability for all trios")
+
+  pb <- txtProgressBar(min = 0,
+                       max = length(tf_uniq),
+                       style = 3)
+
+  counter <- 0
+
+
+
+
+for (tf in tf_uniq){
+  message(tf)
+  regulon_tf <- regulon[regulon$tf == tf,]
+
+  # filter cells that did not pass tf cutoff either by expression or chromvar
+  if (is.null(chromvarMatrix)){
+    cells_sel_tf <- Matrix::which(expMatrix[tf,] > exp_cutoff)
+  } else {
+    cells_sel_tf <- Matrix::which(chromvarMatrix[tf,] > chromvar_cutoff)
+  }
+
+
+  #initiate a probability matrix to keep track of the number of cells that fulfill threshold for all cutoffs
+  prob_matrix_tf <- matrix(0, nrow = nrow(regulon_tf), ncol = length(uniq_clusters))
+  colnames(prob_matrix_tf) <- uniq_clusters
+
+  if (length(cells_sel_tf) != 0){
+
+
+
+    #track new clusters because cells got filtered
+    new_clusters <- clusters[cells_sel_tf]
+
+
+    target.short <- expMatrix[regulon_tf$target, cells_sel_tf, drop=FALSE]
+    peak.short <- peakMatrix[regulon_tf$idxATAC, cells_sel_tf, drop=FALSE]
+
+    # create target and peak matrix that pass threshold.
+    # 1s represent cells that pass threshold and 0s represent cells that fail threshold
+
+    target.bi.index <- Matrix::which(target.short > exp_cutoff, arr.ind = TRUE)
+    target.bi <- Matrix::sparseMatrix(x = rep(1,nrow(target.bi.index)),
+                           i = target.bi.index[,1],
+                           j = target.bi.index[,2],
+                           dims = c(nrow(target.short), ncol(target.short)) )
+
+
+    peak.bi.index <- Matrix::which(peak.short > peak_cutoff, arr.ind = TRUE)
+    peak.bi <- Matrix::sparseMatrix(x = rep(1,nrow(peak.bi.index)),
+                       i = peak.bi.index[,1],
+                       j =  peak.bi.index[,2],
+                       dims = c(nrow(peak.short), ncol(peak.short)) )
+
+    # perform element by element matrix multiplication to get cells that pass both thresholds
+    target.peak.bi <- target.bi * peak.bi
+
+
+    prob_matrix_tf[,"all" ] <- Matrix::rowSums(target.peak.bi)
+
+    # also computes joint probabilities by cluster
+    for (cluster in unique(clusters)){
+      cluster_index = which(new_clusters  == cluster)
+      if (length(cluster_index) >0) {
+        prob_matrix_tf[, cluster] <- Matrix::rowSums(target.peak.bi[,cluster_index, drop=FALSE])
+      }
+
+    }
+
+  }
+
+
+    prob_matrix <- rbind(prob_matrix, prob_matrix_tf)
+
+    counter <- counter + 1
+    setTxtProgressBar(pb, counter)
+
+  }
+
+  # calculate the number of cells in each cluster
+  clusters_freq <- table(clusters)
+  clusters_freq <- c(sum(clusters_freq),clusters_freq)
+
+  # normalize by total cell counts
+  prob_matrix <- sweep(prob_matrix, MARGIN=2, STATS = clusters_freq, FUN = "/")
+
+
+
+  #add probability matrix to original regulon
+  regulon.combined <- cbind(regulon, prob_matrix)
+
+  #if aggregate is true, collapse regulatory elements to have regulons containing tf and target
+  if (aggregate == TRUE){
+    regulon.combined <- stats::aggregate(prob_matrix ~ tf + target, data = regulon.combined,
+                                         FUN = mean, na.rm = TRUE)
+  }
+
+  regulon.combined <- regulon.combined[regulon.combined[,"all"] > regulon_cutoff, ]
+  return(regulon.combined)
+
+
+}
+
+
