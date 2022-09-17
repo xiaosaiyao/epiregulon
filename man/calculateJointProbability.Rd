@@ -11,10 +11,14 @@ calculateJointProbability(
   peakMatrix,
   peak_assay = "PeakMatrix",
   peak_cutoff = 0,
+  chromvarMatrix = NULL,
+  chromvar_assay = NULL,
+  chromvar_cutoff = 0,
   regulon,
   regulon_cutoff = 0,
   clusters = NULL,
-  aggregate = TRUE
+  aggregate = TRUE,
+  BPPARAM = BiocParallel::MulticoreParam()
 )
 }
 \arguments{
@@ -34,6 +38,14 @@ peaks in the rows and cells in the columns}
 \item{peak_cutoff}{A scalar indicating the minimum peak accessibility for a peak to be
 considered open. Default value is 0}
 
+\item{chromvarMatrix}{A SingleCellExperiment object or matrix containing averaged accessibility at the TF
+binding sites with tfs in the rows and cells in the columns. This can be used as an alternative to TF expression}
+
+\item{chromvar_assay}{String indicating the name of the assay in chromvarMatrix for chromatin accessibility}
+
+\item{chromvar_cutoff}{A scalar indicating the minimum chromvar values for a tf to be
+considered active. Default value is 0}
+
 \item{regulon}{A dataframe informing the gene regulatory relationship with the \code{tf} column
 representing transcription factors, \code{idxATAC}
 corresponding to the index in the peakMatrix and \code{target} column
@@ -49,6 +61,9 @@ are calculated for all cells}
 \item{aggregate}{A logical indicating whether to collapse the regulatory elements of the
 same genes. If \code{TRUE}, the output will only contain tf and target. If \code{FALSE}, the output
 will contain tf, idxATAC and target.}
+
+\item{BPPARAM}{A BiocParallelParam object specifying whether calculation should be parallelized.
+Default is set to BiocParallel::MulticoreParam()}
 }
 \value{
 A dataframe of a pruned regulon containing joint probabilities for tf-idxATAC-target trios
