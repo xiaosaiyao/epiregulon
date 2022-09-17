@@ -5,18 +5,24 @@
 #' @param enrichresults Output from regulonEnrich that computes enriched genesets from user-specified regulons
 #' of interest
 #' @param ntop_pathways An integer indicating the number of top pathways to be included in the graph
-#' @param p.adj_cutoff p.adjusted cutoff for pathways to be included in the graph. Default value is 0.05
-#' @param layout layout option from igraph
+#' @param p.adj_cutoff A scalar indicating the p.adjusted cutoff for pathways to be included in the graph. Default value is 0.05
+#' @param layout String indicating layout option from igraph
+#' @param tf_label String indicating the name of the tf label
+#' @param gset_label String indicating the name of the geneset label
+#' @param tf_color String indicating the color of the tf label
+#' @param gset_color String indicating the color of the geneset label
 #'
 #' @return an igraph plot of interconnected pathways through TFs
 #' @export
 #' @examples
+#' \dontrun{
 #' AR <- data.frame(ID = c("ANDROGEN RESPONSE","PROLIFERATION","MAPK"),
 #' p.adjust = c(0.001, 0.01, 0.04))
 #' GATA6 <- data.frame(ID = c("STK33","PROLIFERATION","MAPK"),
 #' p.adjust = c(0.001, 0.01, 0.04))
 #' enrichresults <- list(AR = AR, GATA6 = GATA6)
 #' plotGseaNetwork(tf = names(enrichresults), enrichresults = enrichresults)
+#' }
 
 #' @author Phoebe Guo, Xiaosai Yao
 
@@ -31,12 +37,12 @@ plotGseaNetwork <- function(tf,
                             gset_color = "grey") {
 
   #filter non-significant pathways by p.adj
-  enrichresults.filter <- lapply(setNames(names(enrichresults),names(enrichresults)), function (x) {
+  enrichresults.filter <- lapply(stats::setNames(names(enrichresults),names(enrichresults)), function (x) {
     enrichresults[[x]][which(as.numeric(enrichresults[[x]][,"p.adjust"]) < p.adj_cutoff), ]
   })
 
   # extract top pathways from enrichr results
-  pathway.list <- lapply(setNames(tf,tf), function (x) {
+  pathway.list <- lapply(stats::setNames(tf,tf), function (x) {
     head(enrichresults.filter[[x]][order(as.numeric(enrichresults.filter[[x]][, "p.adjust"])), ], ntop_pathways)
   })
 
@@ -69,7 +75,7 @@ plotGseaNetwork <- function(tf,
   pal <- col[as.numeric(as.factor(igraph::V(p)$type))]
   igraph::V(p)$type.num <- as.numeric(factor(igraph::V(p)$type, levels = c(tf_label, gset_label)))
 
-  V(p)$color <- pal
+  igraph::V(p)$color <- pal
 
   # Create sugiyama layout
   l <- igraph::layout_with_sugiyama(p, attributes = "all",

@@ -24,9 +24,17 @@ of interest}
 
 \item{ntop_pathways}{An integer indicating the number of top pathways to be included in the graph}
 
-\item{p.adj_cutoff}{p.adjusted cutoff for pathways to be included in the graph. Default value is 0.05}
+\item{p.adj_cutoff}{A scalar indicating the p.adjusted cutoff for pathways to be included in the graph. Default value is 0.05}
 
-\item{layout}{layout option from igraph}
+\item{layout}{String indicating layout option from igraph}
+
+\item{tf_label}{String indicating the name of the tf label}
+
+\item{gset_label}{String indicating the name of the geneset label}
+
+\item{tf_color}{String indicating the color of the tf label}
+
+\item{gset_color}{String indicating the color of the geneset label}
 }
 \value{
 an igraph plot of interconnected pathways through TFs
@@ -35,12 +43,14 @@ an igraph plot of interconnected pathways through TFs
 Plot networks graph of significant genesets from regulonEnrich results
 }
 \examples{
+\dontrun{
 AR <- data.frame(ID = c("ANDROGEN RESPONSE","PROLIFERATION","MAPK"),
 p.adjust = c(0.001, 0.01, 0.04))
 GATA6 <- data.frame(ID = c("STK33","PROLIFERATION","MAPK"),
 p.adjust = c(0.001, 0.01, 0.04))
 enrichresults <- list(AR = AR, GATA6 = GATA6)
 plotGseaNetwork(tf = names(enrichresults), enrichresults = enrichresults)
+}
 }
 \author{
 Phoebe Guo, Xiaosai Yao
