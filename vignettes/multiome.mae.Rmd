@@ -290,8 +290,8 @@ differential.regulon <- calculateProbability(expr = GeneExpressionMatrix,
                                        expr_assay = "counts",
                                        atac = PeakMatrix,
                                        atac_assay = "counts",
-                                       regulon = regulon[regulon$tf %in% c("AR","GATA6"),],
-                                       #clusters = GeneExpressionMatrix$Clusters,
+                                       regulon = regulon[regulon$tf %in% c("GATA6","AR","NKX2-1"),],
+                                       clusters = GeneExpressionMatrix$Clusters,
                                        expr_cutoff = 0.5,
                                        atac_cutoff = 0)
 ```
