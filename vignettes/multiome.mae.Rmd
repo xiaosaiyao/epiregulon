@@ -14,7 +14,7 @@ vignette: >
 knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>",
-  eval = FALSE
+  eval = TRUE
 )
 ```
 
@@ -138,26 +138,17 @@ head(regulon)
 
 ```{r network pruning}
 
-start.time <- Sys.time()
+
 pruned.regulon <- calculateJointProbability(expMatrix = GeneExpressionMatrix,
                                        exp_assay = "counts",
                                        peakMatrix = PeakMatrix,
                                        peak_assay = "counts",
-                                       regulon = regulon[regulon$tf %in% c("GATA6","AR","NKX2-1"),],
+                                       regulon = regulon[regulon$tf %in%
+                                                           c("GATA6","AR","NKX2-1"),],
                                        clusters = GeneExpressionMatrix$Clusters,
                                        exp_cutoff = 0.5,
                                        peak_cutoff = 0)
-pruned.regulon2 <- calculateJointProbability2(expMatrix = GeneExpressionMatrix,
-                                       exp_assay = "counts",
-                                       peakMatrix = PeakMatrix,
-                                       peak_assay = "counts",
-                                       regulon = regulon[regulon$tf %in% c("GATA6","AR","NKX2-1"),],
-                                       clusters = GeneExpressionMatrix$Clusters,
-                                       exp_cutoff = 0.5,
-                                       peak_cutoff = 0)
-end.time <- Sys.time()
-time.taken <- end.time - start.time
-time.taken
+
 ```
 
 6. Add Weights
@@ -286,7 +277,7 @@ differential networks
 
 ```{r differential networks}
 
-differential.regulon <- calculateProbability(expr = GeneExpressionMatrix,
+differential.regulon <- calculateJointProbability(expr = GeneExpressionMatrix,
                                        expr_assay = "counts",
                                        atac = PeakMatrix,
                                        atac_assay = "counts",

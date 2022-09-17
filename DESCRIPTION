@@ -24,7 +24,6 @@ Imports:
     rlang,
     genomitory,
     scran,
-    viridis,
     patchwork,
     clusterProfiler,
     GenomicRanges,
