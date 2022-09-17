@@ -52,6 +52,7 @@ Multiome data can now be conveniently processed by ```initiate.archr``` and then
 
 ```{r}
 # load the MAE object
+library(SingleCellExperiment)
 mae <- dsassembly::getDataset("DS000013080")
 
 # peak matrix
@@ -74,8 +75,10 @@ Visualize singleCellExperiment by UMAP
 ```{r}
 # transfer UMAP_combined from TileMatrix to GeneExpressionMatrix
 reducedDim(GeneExpressionMatrix, "UMAP_Combined") <- reducedDim(mae[['TileMatrix500']], "UMAP_Combined")
-scater::plotReducedDim(GeneExpressionMatrix, dimred = "UMAP_Combined", 
-                       text_by = "Clusters", colour_by = "Clusters")
+scater::plotReducedDim(GeneExpressionMatrix, 
+                       dimred = "UMAP_Combined", 
+                       text_by = "Clusters", 
+                       colour_by = "Clusters")
 
 ```
 
@@ -135,14 +138,26 @@ head(regulon)
 
 ```{r network pruning}
 
-pruned.regulon <- calculateJointProbability(expr = GeneExpressionMatrix,
-                                       expr_assay = "counts",
-                                       atac = PeakMatrix,
-                                       atac_assay = "counts",
-                                       regulon = regulon,
-                                       #clusters = GeneExpressionMatrix$Clusters,
-                                       expr_cutoff = 0.5,
-                                       atac_cutoff = 0)
+start.time <- Sys.time()
+pruned.regulon <- calculateJointProbability(expMatrix = GeneExpressionMatrix,
+                                       exp_assay = "counts",
+                                       peakMatrix = PeakMatrix,
+                                       peak_assay = "counts",
+                                       regulon = regulon[regulon$tf %in% c("GATA6","AR","NKX2-1"),],
+                                       clusters = GeneExpressionMatrix$Clusters,
+                                       exp_cutoff = 0.5,
+                                       peak_cutoff = 0)
+pruned.regulon2 <- calculateJointProbability2(expMatrix = GeneExpressionMatrix,
+                                       exp_assay = "counts",
+                                       peakMatrix = PeakMatrix,
+                                       peak_assay = "counts",
+                                       regulon = regulon[regulon$tf %in% c("GATA6","AR","NKX2-1"),],
+                                       clusters = GeneExpressionMatrix$Clusters,
+                                       exp_cutoff = 0.5,
+                                       peak_cutoff = 0)
+end.time <- Sys.time()
+time.taken <- end.time - start.time
+time.taken
 ```
 
 6. Add Weights

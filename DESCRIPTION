@@ -1,6 +1,6 @@
 Package: epiregulon
 Title: Building regulons by integrating scRNA-seq and scATAC-seq data
-Version: 1.0.11
+Version: 1.0.12
 Date: 2022-09-03
 Authors@R: 
     c(person(given = "Xiaosai", family = "Yao", role = c("aut", "cre"), email = "yaox19@gene.com"),
@@ -36,12 +36,13 @@ Imports:
     reshape2,
     scales,
     igraph,
-    GSVA
-Depends: 
+    GSVA,
     ArchR,
-    parallel,
+    checkmate,
+    ggraph
+Depends: 
     R (>= 4.0),
     SingleCellExperiment
 Suggests: 
-    knitr, rmarkdown, dorothea
+    knitr, rmarkdown, dorothea, EnrichmentBrowser, parallel
 VignetteBuilder: knitr
