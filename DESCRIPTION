@@ -43,5 +43,5 @@ Depends:
     R (>= 4.0),
     SingleCellExperiment
 Suggests: 
-    knitr, rmarkdown, dorothea, EnrichmentBrowser, parallel
+    knitr, rmarkdown, dorothea, EnrichmentBrowser, parallel, dsassembly
 VignetteBuilder: knitr

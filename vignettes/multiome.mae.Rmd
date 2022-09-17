@@ -136,7 +136,7 @@ head(regulon)
 5. Network pruning (highly recommended)
 
 
-```{r network pruning}
+```{r network pruning, results = "hide"}
 
 
 pruned.regulon <- calculateJointProbability(expMatrix = GeneExpressionMatrix,
@@ -144,7 +144,7 @@ pruned.regulon <- calculateJointProbability(expMatrix = GeneExpressionMatrix,
                                        peakMatrix = PeakMatrix,
                                        peak_assay = "counts",
                                        regulon = regulon[regulon$tf %in%
-                                                           c("GATA6","AR","NKX2-1"),],
+                                                      c("NKX2-1","GATA6","FOXA1","FOXA2", "AR","SOX2"),],
                                        clusters = GeneExpressionMatrix$Clusters,
                                        exp_cutoff = 0.5,
                                        peak_cutoff = 0)
@@ -236,7 +236,7 @@ plotActivityDim(sce = GeneExpressionMatrix, activity_matrix=score.combine,
                 tf = c("NKX2-1","GATA6","FOXA1","FOXA2", "AR", "SOX2"), 
                 dimtype = "UMAP_Combined", 
                 label = "Clusters", 
-                point_size=3, 
+                point_size=1, 
                 ncol = 3)
 ```
 
@@ -265,26 +265,33 @@ enrichPlot(results = enrichresults)
 11. Network analysis
 
 We can visualize the genesets as a network
-```{f}
+```{r plot gsea network}
 plotGseaNetwork(tf = names(enrichresults), 
-                enrichresults = enrichresults, 
-                p.adj_cutoff = 0.1, 
+                enrichresults = enrichresults,
+                p.adj_cutoff = 0.1,
                 ntop_pathways = 10)
-}
+
+
 ```
 
-differential networks
+12. Differential networks
+
+We can calculate joint probabilities for every cluster
 
 ```{r differential networks}
 
-differential.regulon <- calculateJointProbability(expr = GeneExpressionMatrix,
-                                       expr_assay = "counts",
-                                       atac = PeakMatrix,
-                                       atac_assay = "counts",
-                                       regulon = regulon[regulon$tf %in% c("GATA6","AR","NKX2-1"),],
+differential.regulon <- calculateJointProbability(expMatrix = GeneExpressionMatrix,
+                                       exp_assay = "counts",
+                                       peakMatrix = PeakMatrix,
+                                       peak_assay = "counts",
+                                       regulon = regulon[regulon$tf %in%
+                                                        c("NKX2-1","GATA6","FOXA1","FOXA2", "AR","SOX2"),],
                                        clusters = GeneExpressionMatrix$Clusters,
-                                       expr_cutoff = 0.5,
-                                       atac_cutoff = 0)
+                                       exp_cutoff = 0.5,
+                                       peak_cutoff = 0)
+
+head(differential.regulon)
+
 ```
 
 # Session Info

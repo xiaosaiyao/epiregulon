@@ -152,13 +152,6 @@ calculateJointProbability <- function(expMatrix,
 
   writeLines("compute joint probability for all trios")
 
-  pb <- txtProgressBar(min = 0,
-                       max = length(tf_uniq),
-                       style = 3)
-
-  counter <- 0
-
-
 
   prob_matrix_tf <- BiocParallel::bplapply(X = tf_uniq,
                                            FUN = calculateJointProbability_bp,
