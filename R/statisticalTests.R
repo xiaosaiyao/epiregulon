@@ -9,7 +9,6 @@
 #'
 #' @return A named list of dataframes containing differential TF activity test results for each cluster/group
 #' @export
-#' @import stats
 #'
 #' @examples
 #' set.seed(1)
@@ -48,7 +47,6 @@ findDifferentialActivity <- function(activity_matrix,
 #'
 #' @return A compiled dataframe of TFs with differential activities across clusters/groups
 #' @export
-#' @import stats
 #'
 #' @examples
 #' set.seed(1)
@@ -74,7 +72,7 @@ getSigGenes <- function(da_list,
     da_genes <- da_genes[,c("p.value","FDR","summary.logFC")]
 
     if (is.null(logFC_cutoff)){
-      logFC_cutoff <- round(quantile(da_genes$summary.logFC, 0.95), digits = 1)
+      logFC_cutoff <- round(stats::quantile(da_genes$summary.logFC, 0.95), digits = 1)
     }else {
       logFC_cutoff <- logFC_cutoff
     }
@@ -110,14 +108,17 @@ regulonEnrich_ <- function(TF,
                            corr_cutoff,
                            genesets){
 
-  regulon.TF <- unique(regulon$target[which(regulon$tf == TF & regulon[, corr] >corr_cutoff)])
+  regulon.TF <- unique(regulon$target[which(regulon$tf == TF & regulon[, corr] > corr_cutoff)])
   if (is.null(regulon.TF)) {
-    results <- data.frame(p.adjust=NA, Description=NA, GeneRatio=0, Odds.Ratio=NA)
+    results <- data.frame(p.adjust = NA, Description = NA, GeneRatio = 0, Odds.Ratio = NA)
   } else {
   enrichresults <- clusterProfiler::enricher(regulon.TF, TERM2GENE = genesets)
+
   results <- enrichresults@result
-  results$GeneRatio <-(as.numeric(lapply(strsplit(results$GeneRatio, split = "/"), "[",1)))/(as.numeric(lapply(strsplit(results$GeneRatio, split = "/"), "[",2)))
-  results$BgRatio <- (as.numeric(lapply(strsplit(results$BgRatio, split = "/"), "[",1)))/(as.numeric(lapply(strsplit(results$BgRatio, split = "/"), "[",2)))
+  results$GeneRatio <- (as.numeric(lapply(strsplit(results$GeneRatio, split = "/"), "[",1)))/
+    (as.numeric(lapply(strsplit(results$GeneRatio, split = "/"), "[",2)))
+  results$BgRatio <- (as.numeric(lapply(strsplit(results$BgRatio, split = "/"), "[",1)))/
+    (as.numeric(lapply(strsplit(results$BgRatio, split = "/"), "[",2)))
   results$Odds.Ratio <- results$GeneRatio/results$BgRatio
   results <- results[order(results$p.adjust),]
   results$Description <- factor(as.character(results$Description), levels = unique(as.character(results$Description[nrow(results):1])))

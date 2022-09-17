@@ -112,7 +112,7 @@ calculateActivityBulk <- function(expMatrix,
                 target_expr_matrix <- expr[regulon$target[tf_indexes[[tf]]], samples, drop = FALSE]
             }
 
-            corr <- as.numeric(cor(t(tf_expr), t(target_expr_matrix), use = "everything"))
+            corr <- as.numeric(stats::cor(t(tf_expr), t(target_expr_matrix), use = "everything"))
             regulon_weight_list[[tf]] = corr
 
             counter = counter + 1

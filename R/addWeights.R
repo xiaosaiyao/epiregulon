@@ -16,7 +16,7 @@
 #'
 #' @return A data frame with columns of corr and/or MI added to the regulon. TFs not found in the expression matrix and regulons not
 #' meeting the minimal number of targets were filtered out.
-#' @import SummarizedExperiment stats
+#' @import SummarizedExperiment
 #' @details
 #' The default mode is to compute weights by correlating the pseudobulk target gene expression vs the pseudobulk TF gene expression.
 #' However, often times, an inhibitor of TF does not alter the gene expression of the TF. In rare cases, cells may even compensate
@@ -82,7 +82,7 @@ addWeights <- function(regulon,
 
 
   # define groupings
-  groupings <- DataFrame(cluster = colData(sce)[cluster_factor])
+  groupings <- S4Vectors::DataFrame(cluster = colData(sce)[cluster_factor])
   if (!is.null(block_factor)) {
     groupings$block <- colData(sce)[block_factor]
   }
@@ -163,7 +163,7 @@ addWeights <- function(regulon,
         tf_expr <- tf_expr * tf_alt
       }
       target_expr_matrix <- expr[regulon$target[tf_indexes[[tf]]], ,drop = FALSE ]
-      weights <- as.numeric(cor(t(tf_expr), t(target_expr_matrix), use = "everything"))
+      weights <- as.numeric(stats::cor(t(tf_expr), t(target_expr_matrix), use = "everything"))
       regulon_weight_list[[tf]] <- weights
       Sys.sleep(1 / 100)
       counter <- counter + 1

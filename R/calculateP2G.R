@@ -15,7 +15,7 @@
 #' @param ... other parameters to pass to addPeak2GeneLinks from ArchR package
 #'
 #' @return A Peak2Gene correlation dataframe
-#' @import SummarizedExperiment stats SingleCellExperiment GenomicRanges
+#' @import SummarizedExperiment SingleCellExperiment GenomicRanges
 #' @export
 #'
 #' @examples
@@ -155,7 +155,7 @@ calculateP2G <- function(peakMatrix = NULL,
     peakSet <- rowRanges(altExp(sce_grouped))
 
     # find overlap after resizing
-    o <- DataFrame(findOverlaps(resize(geneStart, maxDist, "center"),
+    o <- S4Vectors::DataFrame(findOverlaps(resize(geneStart, maxDist, "center"),
                                 peakSet,
                                 ignore.strand = TRUE))
 
@@ -183,8 +183,8 @@ calculateP2G <- function(peakMatrix = NULL,
     o$TStat <- (o$Correlation /
                   sqrt((pmax(1 - o$Correlation ^ 2, 0.00000000000000001, na.rm = TRUE))
                        / (ncol(peakCorMatrix) - 2))) #T-statistic P-value
-    o$Pval <- 2 * pt(-abs(o$TStat), ncol(peakCorMatrix) - 2)
-    o$FDR <- p.adjust(o$Pval, method = "fdr")
+    o$Pval <- 2 * stats::pt(-abs(o$TStat), ncol(peakCorMatrix) - 2)
+    o$FDR <- stats::p.adjust(o$Pval, method = "fdr")
 
     #add metadata to o
     o$Gene <-  rowData(sce_grouped)[o[,1],"name"]

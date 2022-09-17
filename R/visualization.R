@@ -248,8 +248,9 @@ plotBubble <- function (activity_matrix,
     max.logpval <- max(logpval[is.finite(logpval)])
     logpval <- replace(logpval, is.infinite(logpval), max.logpval)
     g <- ggplot2::ggplot(df.plot, aes_string("class", "tf",
-                                             color = "relative_activity")) + geom_point(stat = "identity",
-                                                                                        aes(size = logpval)) + scale_color_viridis_c() +
+                                             color = "relative_activity")) +
+      geom_point(stat = "identity", aes(size = logpval)) +
+      scale_color_viridis_c() +
       scale_size_continuous(range = c(0, 7)) + theme_classic(base_size = 12) +
       theme(axis.text.x = element_text(angle = 45, hjust = 1))
   }
@@ -266,7 +267,8 @@ plotBubble <- function (activity_matrix,
 enrichPlot_ <- function(results,
                         title,
                         top) {
-  ggplot(results[1:top, ] , aes_string(y = -log10("p.adjust"),
+  results$logP.adj <- -log10(results$p.adjust)
+  ggplot(results[1:top, ] , aes_string(y = "logP.adj",
                                        x = "Description",
                                        color = "GeneRatio")) +
     scale_colour_gradient(high = "red", low = "blue") +
@@ -274,7 +276,7 @@ enrichPlot_ <- function(results,
     coord_flip() +
     theme_bw() + ggtitle (title) +
     theme(
-      text = element_text(size = 8),
+      text = element_text(size = 10),
       axis.text = element_text(size = 8),
       axis.text.x = element_text(angle = 45, hjust = 1),
       plot.title = element_text(hjust = 0.5),
