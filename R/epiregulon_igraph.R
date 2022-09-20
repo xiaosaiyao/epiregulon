@@ -105,7 +105,6 @@ add_centrality_degree <- function(graph){
     graph
 }
 
-#' @importFrom igraph V vcount
 rank_tfs <- function(graph){
     data.frame(tf = V(graph)$name[order(V(graph)$centrality, decreasing = TRUE)],
                rank = 1:vcount(graph),
@@ -130,7 +129,7 @@ plot_epiregulon_network <-
         ...
     ) {
         my_layout <- ggraph::create_layout(graph, layout = layout)
-        highlighted <- my_layout[my_layout$name  %in% tfs_to_label, ]
+        highlighted <- my_layout[my_layout$label_col  %in% tfs_to_label, ]
         my_plot <-
             ggraph::ggraph(graph = my_layout) +
             ggraph::geom_edge_link(alpha = 0.02) +
