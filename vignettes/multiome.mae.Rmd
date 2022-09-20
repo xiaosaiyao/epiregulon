@@ -2,7 +2,7 @@
 title: "Multiome tutorial - archR independent workflow"
 author: Xiaosai Yao^[yaox19@gene.com]
 date: "September 4th, 2022"
-output: html_document
+output: rmarkdown::html_vignette
 package: epiregulon
 vignette: >
   %\VignetteIndexEntry{Multiome tutorial - archR independent workflow}

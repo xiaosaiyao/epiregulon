@@ -92,7 +92,7 @@ calculateP2G <- function(peakMatrix = NULL,
     p2g_merged <- merge(p2g_merged, peak_metadata, by = "idxATAC") # merge by peak ID
 
     # Extract relevant columns
-    p2g_merged <- p2g_merged[, c("idxATAC", "seqnames.x", "start.x","start.y", "idxRNA", "name", "Correlation","FDR")]
+    p2g_merged <- p2g_merged[, c("idxATAC", "seqnames.x", "start.x","end.x", "idxRNA", "name", "Correlation","FDR")]
     colnames(p2g_merged) <- c("idxATAC", "chr", "start","end", "idxRNA", "target", "Correlation","FDR")
 
 
