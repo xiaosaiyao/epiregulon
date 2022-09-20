@@ -10,7 +10,7 @@
 #' target gene to regulatory element always contains a regulatory elements
 #' @param weights A character specifying which variable should be used to assign
 #' weights to edges. If set to 'NA' then unweighted graph is built.
-#' @importFrom igraph graph_from_data_frame
+#' @importFrom igraph graph_from_data_frame V vcount
 #'
 
 build_graph <-function(regulon, mode = "tripartite", weights = "corr"){
@@ -77,14 +77,16 @@ build_graph <-function(regulon, mode = "tripartite", weights = "corr"){
 }
 
 
-
+#' @importFrom igraph get.adjacency V graph_from_adjacency_matrix
 build_difference_graph <- function(graph_obj_1, graph_obj_2, weighted = TRUE){
+    if(!all(V(graph_obj_1)$name == V(graph_obj_2)$name)) stop("The nodes should be the same in both graphs")
     if(weighted)
         res <- igraph::graph_from_adjacency_matrix(abs(igraph::get.adjacency(graph_obj_1, attr = "weight") -
                                                       igraph::get.adjacency(graph_obj_2, attr = "weight")), weighted = TRUE)
     else
         res <- igraph::graph_from_adjacency_matrix(abs(igraph::get.adjacency(graph_obj_1) -
                                                            igraph::get.adjacency(graph_obj_2)), weighted = FALSE)
+    if (V(graph_obj_1)$type != V(graph_obj_2)$type) warning("Types of nodes differ between graphs. Only those from the first graph are used.")
     V(res)$type <- V(graph_obj_1)$type
     V(res)$type.num <- V(graph_obj_1)$type.num
     res
@@ -95,6 +97,7 @@ add_centrality_degree <- function(graph){
     graph
 }
 
+#' @importFrom igraph V vcount
 rank_tfs <- function(graph){
     data.frame(tf = V(graph)$name[order(V(graph)$centrality, decreasing = TRUE)],
                rank = 1:vcount(graph),
@@ -119,7 +122,7 @@ plot_epiregulon_network <-
         ...
     ) {
         my_layout <- ggraph::create_layout(graph, layout = layout)
-        highlighted <- my_layout[my_layout$label_col  %in% tfs_to_label, ]
+        highlighted <- my_layout[my_layout$name  %in% tfs_to_label, ]
         my_plot <-
             ggraph::ggraph(graph = my_layout) +
             ggraph::geom_edge_link(alpha = 0.02) +
