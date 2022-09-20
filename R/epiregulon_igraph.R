@@ -10,7 +10,7 @@
 #' target gene to regulatory element always contains a regulatory elements
 #' @param weights A character specifying which variable should be used to assign
 #' weights to edges. If set to 'NA' then unweighted graph is built.
-#' @importFrom igraph graph_from_data_frame
+#' @importFrom igraph graph_from_data_frame V vcount
 #'
 
 build_graph <-function(regulon, mode = "tripartite", weights = "corr"){
@@ -31,7 +31,7 @@ build_graph <-function(regulon, mode = "tripartite", weights = "corr"){
     graph_data <- regulon[,na.omit(c(vertex_columns, weights))]
     if (mode =="tripartite"){
         # add tf-re data
-        colnames(graph_data) <- na.omit(c("from", "to", weights))
+        colnames(graph_data) <- stats::na.omit(c("from", "to", weights))
         graph_data_tf_re <- data.frame(from = regulon$tf, to = regulon$idxATAC)
 
         # weights between tf and re are set to 1 for weighted graph
@@ -53,7 +53,7 @@ build_graph <-function(regulon, mode = "tripartite", weights = "corr"){
         colnames(graph_data)[colnames(graph_data) == weights] <- "weight"
         grouping_factors <- paste(vertex_columns, collapse="+")
         aggregation_formula <- eval(parse(text=paste0("weight~", grouping_factors)))
-        graph_data <- aggregate(graph_data, aggregation_formula, mean)
+        graph_data <- stats::aggregate(graph_data, aggregation_formula, mean)
     }
     epiregulon_graph <- igraph::graph_from_data_frame(graph_data)
     if (mode == "tripartite"){
@@ -77,14 +77,30 @@ build_graph <-function(regulon, mode = "tripartite", weights = "corr"){
 }
 
 
-
+#' @importFrom igraph get.adjacency V graph_from_adjacency_matrix
 build_difference_graph <- function(graph_obj_1, graph_obj_2, weighted = TRUE){
-    igraph::graph_from_adjacency_matrix(abs(igraph::get.adjacency(graph_obj_1, attr = "weight") -
-                                                igraph::get.adjacency(graph_obj_2, attr = "weight")), weighted = weighted)
+    if(!all(V(graph_obj_1)$name == V(graph_obj_2)$name)) {
+        stop("The nodes should be the same in both graphs")}
+    
+    if(weighted) {
+        res <- igraph::graph_from_adjacency_matrix(abs(igraph::get.adjacency(graph_obj_1, attr = "weight") -
+                                                           igraph::get.adjacency(graph_obj_2, attr = "weight")), weighted = TRUE)
+    } else {
+        res <- igraph::graph_from_adjacency_matrix(abs(igraph::get.adjacency(graph_obj_1) -
+                                                                       igraph::get.adjacency(graph_obj_2)), weighted = FALSE)
+    }
+    
+    if (!identical(V(graph_obj_1)$type, V(graph_obj_2)$type)) {
+        warning("Types of nodes differ between graphs. Only those from the first graph are used.") 
+    } 
+
+    V(res)$type <- V(graph_obj_1)$type
+    V(res)$type.num <- V(graph_obj_1)$type.num
+    res
 }
 
 
-calculate_centrality_degree <- function(graph){
+add_centrality_degree <- function(graph){
     igraph::V(graph)$centrality <- igraph::strength(graph)
     graph
 }
