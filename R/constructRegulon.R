@@ -208,7 +208,7 @@ getRegulon <- function(p2g,
   regulon_df <- merge(overlap, p2g, by="idxATAC")
 
   if (aggregate) {
-    regulon_df <- regulon_df[, c("tf", "Gene", "Correlation")]
+    regulon_df <- regulon_df[, c("tf", "target", "Correlation")]
     colnames(regulon_df) <- c("tf", "target", "corr")
     regulon_df <- stats::aggregate(corr ~ tf + target, data = regulon_df,
                             FUN = mean, na.rm = TRUE)
