@@ -79,10 +79,12 @@ build_graph <-function(regulon, mode = "tripartite", weights = "corr"){
 
 
 build_difference_graph <- function(graph_obj_1, graph_obj_2, weighted = TRUE){
-    igraph::graph_from_adjacency_matrix(abs(igraph::get.adjacency(graph_obj_1, attr = "weight") -
-                                                igraph::get.adjacency(graph_obj_2, attr = "weight")), weighted = weighted)
+    res <- igraph::graph_from_adjacency_matrix(abs(igraph::get.adjacency(graph_obj_1, attr = "weight") -
+                                                       igraph::get.adjacency(graph_obj_2, attr = "weight")), weighted = weighted)
+    V(res)$type <- V(graph_obj_1)$type
+    V(res)$type.num <- V(graph_obj_1)$type.num
+    res
 }
-
 
 calculate_centrality_degree <- function(graph){
     igraph::V(graph)$centrality <- igraph::strength(graph)
