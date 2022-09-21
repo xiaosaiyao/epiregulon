@@ -28,7 +28,7 @@ build_graph <-function(regulon, mode = "tripartite", weights = "corr"){
     else
         vertex_columns <- c("tf", "target")
 
-    graph_data <- regulon[,na.omit(c(vertex_columns, weights))]
+    graph_data <- regulon[,stats::na.omit(c(vertex_columns, weights))]
     if (mode =="tripartite"){
         # add tf-re data
         colnames(graph_data) <- stats::na.omit(c("from", "to", weights))
@@ -81,7 +81,7 @@ build_graph <-function(regulon, mode = "tripartite", weights = "corr"){
 build_difference_graph <- function(graph_obj_1, graph_obj_2, weighted = TRUE){
     if(!all(V(graph_obj_1)$name == V(graph_obj_2)$name)) {
         stop("The nodes should be the same in both graphs")}
-    
+
     if(weighted) {
         res <- igraph::graph_from_adjacency_matrix(abs(igraph::get.adjacency(graph_obj_1, attr = "weight") -
                                                            igraph::get.adjacency(graph_obj_2, attr = "weight")), weighted = TRUE)
@@ -89,10 +89,10 @@ build_difference_graph <- function(graph_obj_1, graph_obj_2, weighted = TRUE){
         res <- igraph::graph_from_adjacency_matrix(abs(igraph::get.adjacency(graph_obj_1) -
                                                                        igraph::get.adjacency(graph_obj_2)), weighted = FALSE)
     }
-    
+
     if (!identical(V(graph_obj_1)$type, V(graph_obj_2)$type)) {
-        warning("Types of nodes differ between graphs. Only those from the first graph are used.") 
-    } 
+        warning("Types of nodes differ between graphs. Only those from the first graph are used.")
+    }
 
     V(res)$type <- V(graph_obj_1)$type
     V(res)$type.num <- V(graph_obj_1)$type.num
