@@ -25,7 +25,7 @@ Combine the TF binding motif info and peak to gene correlations to generate regu
 set.seed(1)
 # create a mock peak-to-gene matrix
 p2g <- data.frame(idxATAC = c(rep(1,5), rep(2,5)), Chrom = "chr1", idxRNA = 1:10,
-Gene = paste0("Gene_", 1:10), Correlation = runif(10, 0, 1))
+target = paste0("Gene_", 1:10), Correlation = runif(10, 0, 1))
 
 # create a Granges list of TF binding sites
 grl <- GRangesList("TF1" = GRanges(seqnames = "chr1",
