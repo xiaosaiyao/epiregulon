@@ -136,13 +136,13 @@ plot_epiregulon_network <-
             ggraph::ggraph(graph = my_layout) +
             ggraph::geom_edge_link(alpha = 0.02) +
             ggraph::geom_node_point(
-                ggplot2::aes(fill = type),
+                ggplot2::aes_string(fill = "type"),
                 shape = 21,
                 size = re_and_tg_point_size,
                 stroke = re_and_tg_point_border_size
             ) +
             ggraph::geom_node_label(
-                ggplot2::aes(label = name),
+                ggplot2::aes_string(label = "name"),
                 data = highlighted,
                 alpha = label_alpha,
                 nudge_x = label_nudge_x,
@@ -150,7 +150,7 @@ plot_epiregulon_network <-
                 size = label_size
             ) +
             ggraph::geom_node_point(
-                ggplot2::aes(fill = type),
+                ggplot2::aes_string(fill = "type"),
                 shape = 21,
                 data = highlighted,
                 size = 3,
