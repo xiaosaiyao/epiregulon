@@ -3,12 +3,12 @@
 #' @param expMatrix A SingleCellExperiment object or matrix containing gene expression with
 #' with genes in the rows and cells in the columns
 #' @param exp_assay String indicating the name of the assay in expMatrix for gene expression
-#' @param exp_cutoff A scalar indicating the minimum gene expression for a gene to be considered
+#' @param exp_cutoff A scalar indicating the minimum gene expression above which gene is considered
 #' active. Default value is 1
 #' @param peakMatrix A SingleCellExperiment object or matrix containing peak accessibility with
 #' peaks in the rows and cells in the columns
 #' @param peak_assay String indicating the name of the assay in peakMatrix for chromatin accessibility
-#' @param peak_cutoff A scalar indicating the minimum peak accessibility for a peak to be
+#' @param peak_cutoff A scalar indicating the minimum peak accessibility above which peak is
 #' considered open. Default value is 0
 #' @param chromvarMatrix A SingleCellExperiment object or matrix containing averaged accessibility at the TF
 #' binding sites with tfs in the rows and cells in the columns. This can be used as an alternative to TF expression
