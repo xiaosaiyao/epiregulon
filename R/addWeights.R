@@ -128,11 +128,11 @@ addWeights <- function(regulon,
     regulon <- regulon[(regulon$tf %in% intersect(rownames(expr), rownames(alt.exp))),]
   }
 
-  # remove tfs with less than min_targets
-  regulon <- regulon[regulon$tf %in% names(which(table(regulon$tf) >= min_targets)),]
-
   #remove targets not found in expression matrix
   regulon <- subset(regulon, (target %in% rownames(expr)))
+
+  # remove tfs with less than min_targets
+  regulon <- regulon[regulon$tf %in% names(which(table(regulon$tf) >= min_targets)),]
 
   tf_indexes <- split(seq_len(nrow(regulon)), regulon$tf)
   unique_tfs <- names(tf_indexes)
