@@ -194,8 +194,8 @@ calculateP2G <- function(peakMatrix = NULL,
 
     o <- data.frame(o)
 
-    p2g_merged <- o[, c("old.idxATAC", "chr","start","end", "old.idxRNA", "Gene", "Correlation", "FDR")]
-    colnames(p2g_merged) <- c("idxATAC", "chr", "start","end", "idxRNA", "target", "Correlation","FDR")
+    p2g_merged <- o[, c("old.idxATAC", "chr","start","end", "old.idxRNA", "Gene", "Correlation", "distance", "FDR")]
+    colnames(p2g_merged) <- c("idxATAC", "chr", "start","end", "idxRNA", "target", "Correlation", "distance", "FDR")
     p2g_merged <- p2g_merged[p2g_merged$Correlation > cor_cutoff,,drop=FALSE]
 
 
