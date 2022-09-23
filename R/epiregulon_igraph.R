@@ -131,10 +131,11 @@ plot_epiregulon_network <-
         ...
     ) {
         my_layout <- ggraph::create_layout(graph, layout = layout)
-        highlighted <- my_layout[my_layout$label_col  %in% tfs_to_label, ]
+        highlighted <- my_layout[my_layout$name  %in% tfs_to_label, ]
         my_plot <-
             ggraph::ggraph(graph = my_layout) +
-            ggraph::geom_edge_link(alpha = 0.02) +
+            #ggraph::ggraph(graph = graph, layout  = my_layout) +
+            ggraph::geom_edge_link(alpha = 0.02, aes_string(color = "from")) +
             ggraph::geom_node_point(
                 ggplot2::aes_string(fill = "type"),
                 shape = 21,
@@ -162,3 +163,33 @@ plot_epiregulon_network <-
         return(my_plot)
     }
 
+plot_difference_network <- function(regulon,
+                                    cutoff = 0.01,
+                                    tf = NULL,
+                                    groups  = NULL,
+                                    layout = "stress"){
+  regulon.tf <- list()
+  for (group in groups) {
+    regulon.tf[[group]] <- regulon[which(regulon$tf %in% tf), c("tf","target", group)]
+
+    #apply cutoff
+    regulon.tf[[group]] <- regulon.tf[[group]][which(regulon.tf[[group]][, group] > cutoff),]
+
+    #rename colnames as weight to be consistent across all groups
+    colnames(regulon.tf[[group]])[which(colnames(regulon.tf[[group]]) == group)] = "weight"
+
+    #rename tf to be tf_group
+    regulon.tf[[group]][,"tf"] <- paste0(regulon.tf[[group]][,"tf"], "_", group)
+  }
+
+  combined.regulon <- do.call("rbind", regulon.tf)
+
+  combined.graph <- build_graph(combined.regulon, mode = "tg", weights = "weight")
+
+
+  plot_epiregulon_network(combined.graph,
+                          layout = layout,
+                          tfs_to_label = unique(combined.regulon$tf),
+                          label_nudge_x = 0.1,
+                          label_nudge_y = 0.1)
+}
