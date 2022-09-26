@@ -101,7 +101,7 @@ calculateJointProbability <- function(expMatrix,
                                       regulon_cutoff = 0,
                                       clusters = NULL,
                                       aggregate = TRUE,
-                                      return_n_triples = TRUE,
+                                      triple_prop = TRUE,
                                       BPPARAM=BiocParallel::MulticoreParam()
                                       ) {
 
@@ -206,13 +206,12 @@ calculateJointProbability_bp <- function(regulon,
 
   # filter cells that did not pass tf cutoff either by expression or chromvar
   if (is.null(chromvarMatrix)){
-    tf.bi.index <- Matrix::which(expMatrix[regulon$tf[1],] > exp_cutoff)
-    n_cells <- ncol(chromvarMatrix)
+    tf.bi.index <- Matrix::which(expMatrix[regulon$tf[1],,drop = FALSE] > exp_cutoff, arr.ind = TRUE)
+    n_cells <- ncol(expMatrix)
   } else {
-    tf.bi.index <- Matrix::which(chromvarMatrix[regulon$tf[1],] > chromvar_cutoff)
-    n_cells <- ncol(exprMatrix)
+    tf.bi.index <- Matrix::which(chromvarMatrix[regulon$tf[1],,drop = FALSE] > chromvar_cutoff, arr.ind = TRUE)
+    n_cells <- ncol(chromvarMatrix)
   }
-
   tf.bi <- Matrix::sparseMatrix(x = rep(1,nrow(tf.bi.index)),
                                 i = tf.bi.index[,1],
                                 j = tf.bi.index[,2],
