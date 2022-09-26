@@ -140,22 +140,17 @@ calculateJointProbability <- function(expMatrix,
   regulon <- regulon[regulon$target %in% rownames(expMatrix),]
 
   #order by TF
-  regulon <- regulon[order(regulon$tf),]
-  tf_uniq <- unique(regulon$tf)
-
+  regulon <- split(regulon, regulon$tf)
 
   total_cell <- ncol(expMatrix)
-
-
 
   prob_matrix <- c()
 
   writeLines("compute joint probability for all trios")
 
 
-  prob_matrix_tf <- BiocParallel::bplapply(X = tf_uniq,
+  prob_matrix_tf <- BiocParallel::bplapply(X = regulon,
                                            FUN = calculateJointProbability_bp,
-                                           regulon,
                                            expMatrix,
                                            exp_cutoff,
                                            peakMatrix,
@@ -192,8 +187,7 @@ calculateJointProbability <- function(expMatrix,
 }
 
 
-calculateJointProbability_bp <- function(tf,
-                                          regulon,
+calculateJointProbability_bp <- function(regulon,
                                           expMatrix,
                                           exp_cutoff,
                                           peakMatrix,
@@ -202,8 +196,8 @@ calculateJointProbability_bp <- function(tf,
                                           chromvar_cutoff,
                                           clusters,
                                           uniq_clusters){
-  message(tf)
-  regulon_tf <- regulon[regulon$tf == tf,]
+  message(regulon$tf[1])
+
 
   # filter cells that did not pass tf cutoff either by expression or chromvar
   if (is.null(chromvarMatrix)){
@@ -212,14 +206,11 @@ calculateJointProbability_bp <- function(tf,
     cells_sel_tf <- Matrix::which(chromvarMatrix[tf,] > chromvar_cutoff)
   }
 
-
   #initiate a probability matrix to keep track of the number of cells that fulfill threshold for all cutoffs
   prob_matrix_tf <- matrix(0, nrow = nrow(regulon_tf), ncol = length(uniq_clusters))
   colnames(prob_matrix_tf) <- uniq_clusters
 
   if (length(cells_sel_tf) != 0){
-
-
 
     #track new clusters because cells got filtered
     new_clusters <- clusters[cells_sel_tf]
@@ -251,12 +242,9 @@ calculateJointProbability_bp <- function(tf,
     prob_matrix_tf[,"all" ] <- Matrix::rowSums(target.peak.bi)
 
     # also computes joint probabilities by cluster
-    for (cluster in unique(clusters)){
+    for (cluster in unique(new_clusters)){
       cluster_index = which(new_clusters  == cluster)
-      if (length(cluster_index) >0) {
-        prob_matrix_tf[, cluster] <- Matrix::rowSums(target.peak.bi[,cluster_index, drop=FALSE])
-      }
-
+      prob_matrix_tf[, cluster] <- Matrix::rowSums(target.peak.bi[,cluster_index, drop=FALSE])
     }
   }
   return(prob_matrix_tf)
