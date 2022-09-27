@@ -119,6 +119,7 @@ plotActivityDim <- function(sce,
 #' @param tf A character vector indicating the names of the transcription factors to be plotted
 #' @param class A character or integer vector of cluster or group labels for single cells
 #' @param legend.label String indicating the name of variable to be plotted on the legend
+#' @param colors  A character vector representing the names of colors
 #'
 #' @return A ggplot object
 #' @export
@@ -127,7 +128,8 @@ plotActivityDim <- function(sce,
 plotActivityViolin_ <- function(activity_matrix,
                                 tf,
                                 class,
-                                legend.label){
+                                legend.label,
+                                colors){
 
   tf.activity <- as.numeric(activity_matrix[tf,])
   df <- data.frame(activity = tf.activity, class = class)
@@ -135,10 +137,13 @@ plotActivityViolin_ <- function(activity_matrix,
   g <- ggplot2::ggplot(df, aes_string(x = "class",
                                       y = "activity",
                                       fill = "class")) +
-    geom_violin() + theme_classic(base_size = 12) +
-    ggtitle(tf) + ylab(legend.label) + theme(legend.position = "none",
-                                             plot.title = element_text(hjust = 0.5),
-                                             axis.text.x = element_text(angle = 45,hjust = 1))
+    geom_violin() +
+    scale_fill_manual(values = colors) +
+    theme_classic(base_size = 12) +
+    ggtitle(tf) + ylab(legend.label) +
+    theme(legend.position = "none",
+          plot.title = element_text(hjust = 0.5),
+          axis.text.x = element_text(angle = 45,hjust = 1))
 
   return(g)
 
@@ -152,6 +157,7 @@ plotActivityViolin_ <- function(activity_matrix,
 #' @param ncol A integer to indicate the number of columns in the combined plot, if combine == TRUE
 #' @param combine logical to indicate whether to combine and visualize the plots in one panel
 #' @param legend.label String indicating the name of variable to be plotted on the legend
+#' @param colors  A character vector representing the names of colors
 #'
 #' @return A combined ggplot object or a list of ggplots if combine == FALSE
 #' @export
@@ -167,7 +173,8 @@ plotActivityViolin <- function(activity_matrix,
                                class,
                                ncol = NULL,
                                combine = TRUE,
-                               legend.label = "activity"){
+                               legend.label = "activity",
+                               colors){
 
   # give warning for genes absent in tf list
   missing <- tf[which(! tf %in% rownames(activity_matrix))]
@@ -177,7 +184,7 @@ plotActivityViolin <- function(activity_matrix,
   tf <- tf[which(tf %in% rownames(activity_matrix))]
 
   gs <- lapply(tf, function(x) {
-    return(plotActivityViolin_(activity_matrix, x, class, legend.label))
+    return(plotActivityViolin_(activity_matrix, x, class, legend.label, colors))
   })
 
   if (combine == TRUE) {
