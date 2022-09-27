@@ -169,7 +169,6 @@ calculateJointProbability <- function(expMatrix,
 
   #add probability matrix to original regulon
   regulon.combined <- cbind(regulon, prob_matrix)
- print((regulon.combined))
   #if aggregate is true, collapse regulatory elements to have regulons containing tf and target
   if (aggregate == TRUE){
     regulon.combined <- stats::aggregate(prob_matrix ~ tf + target, data = regulon.combined,
@@ -235,15 +234,14 @@ calculateJointProbability_bp <- function(regulon,
   # identify cells with tf-re-tg triples
   triple.bi <- tf_re.bi * target.bi
 
-  res_matrix <- BiocGenerics::Reduce(cbind,
-                                     lapply(as.list(uniq_clusters),
-                                            function(x) test_triple(x,
-                                                                    clusters,
-                                                                    tf_re.bi,
-                                                                    target.bi,
-                                                                    triple.bi,
-                                                                    n_cells,
-                                                                    triple_prop)))
+  res_list <- lapply(as.list(uniq_clusters), function(x) test_triple(x,
+                                                                     clusters,
+                                                                     tf_re.bi,
+                                                                     target.bi,
+                                                                     triple.bi,
+                                                                     n_cells,
+                                                                     triple_prop))
+  res_matrix <- BiocGenerics::Reduce(cbind, res_list)
   if(triple_prop)
     colnames(res_matrix) <- paste0(rep(c("p_val_", "triple_numb"), length(uniq_clusters)),
                                   rep(uniq_clusters, each =2))
@@ -267,7 +265,6 @@ test_triple <- function(selected_cluster, clusters, tf_re.bi, target.bi, triple.
   }
   p_vals <- mapply(binom_test, n_triple, n_cells, n_tf_re, n_target)
   if (triple_prop)
-    print(dim(matrix(c(p_vals, n_triple/n_cells), ncol=2)))
     return(matrix(c(p_vals, n_triple/n_cells), ncol=2))
   p_vals
 }
