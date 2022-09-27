@@ -243,7 +243,7 @@ calculateJointProbability_bp <- function(regulon,
                                                                      triple_prop))
   res_matrix <- BiocGenerics::Reduce(cbind, res_list)
   if(triple_prop)
-    colnames(res_matrix) <- paste0(rep(c("p_val_", "triple_numb"), length(uniq_clusters)),
+    colnames(res_matrix) <- paste0(rep(c("p_val_", "triple_numb_"), length(uniq_clusters)),
                                   rep(uniq_clusters, each =2))
   else
     colnames(res_matrix) <- paste0("p_val_", uniq_clusters)
@@ -259,9 +259,9 @@ test_triple <- function(selected_cluster, clusters, tf_re.bi, target.bi, triple.
     n_triple <- Matrix::rowSums(triple.bi)
   }
   else{
-    n_tf_re <- Matrix::rowSums(tf_re.bi[,clusters==selected_cluster])
-    n_target <- Matrix::rowSums(target.bi[,clusters==selected_cluster])
-    n_triple <- Matrix::rowSums(triple.bi[,clusters==selected_cluster])
+    n_tf_re <- Matrix::rowSums(tf_re.bi[,clusters==selected_cluster, drop = FALSE])
+    n_target <- Matrix::rowSums(target.bi[,clusters==selected_cluster, drop = FALSE])
+    n_triple <- Matrix::rowSums(triple.bi[,clusters==selected_cluster, drop = FALSE])
   }
   p_vals <- mapply(binom_test, n_triple, n_cells, n_tf_re, n_target)
   if (triple_prop)
