@@ -165,26 +165,17 @@ calculateJointProbability <- function(expMatrix,
                                            triple_prop,
                                            BPPARAM = BPPARAM)
   prob_matrix <- do.call("rbind", prob_matrix_tf)
-
-  # calculate the number of cells in each cluster
-  clusters_freq <- table(clusters)
-  clusters_freq <- c(sum(clusters_freq),clusters_freq)
-
-  # normalize by total cell counts
-  prob_matrix <- sweep(prob_matrix, MARGIN=2, STATS = clusters_freq, FUN = "/")
-
-
+  regulon <- do.call(rbind, regulon)
 
   #add probability matrix to original regulon
   regulon.combined <- cbind(regulon, prob_matrix)
-
+ print((regulon.combined))
   #if aggregate is true, collapse regulatory elements to have regulons containing tf and target
   if (aggregate == TRUE){
     regulon.combined <- stats::aggregate(prob_matrix ~ tf + target, data = regulon.combined,
                                   FUN = mean, na.rm = TRUE)
   }
 
-  regulon.combined <- regulon.combined[regulon.combined[,"all"] > regulon_cutoff, ]
   return(regulon.combined)
 
 
@@ -199,8 +190,8 @@ calculateJointProbability_bp <- function(regulon,
                                           chromvarMatrix,
                                           chromvar_cutoff,
                                           clusters,
-                                          triple_prop,
-                                          uniq_clusters){
+                                          uniq_clusters,
+                                          triple_prop){
   message(regulon$tf[1])
 
 
@@ -217,14 +208,7 @@ calculateJointProbability_bp <- function(regulon,
                                 j = tf.bi.index[,2],
                                 dims = c(1, n_cells))
 
-  #initiate a probability matrix to keep track of the number of cells that fulfill threshold for all cutoffs
-  p_val_matrix <- matrix(1, nrow = nrow(regulon_tf), ncol = length(uniq_clusters))
-  colnames(p_val_matrix) <- uniq_clusters
 
-  if (triple_prop){
-    triples_sum_matrix <- matrix(1, nrow = nrow(regulon_tf), ncol = length(uniq_clusters))
-    colnames(triples_sum_matrix) <- paste0("triple_numb_", uniq_clusters)
-  }
 
   # create target and peak matrices
   target.exp <- expMatrix[regulon$target,,drop = FALSE]
@@ -251,38 +235,40 @@ calculateJointProbability_bp <- function(regulon,
   # identify cells with tf-re-tg triples
   triple.bi <- tf_re.bi * target.bi
 
-  res_matrix <- BiocGenerics::Reduce(rbind,
+  res_matrix <- BiocGenerics::Reduce(cbind,
                                      lapply(as.list(uniq_clusters),
                                             function(x) test_triple(x,
+                                                                    clusters,
                                                                     tf_re.bi,
                                                                     target.bi,
                                                                     triple.bi,
                                                                     n_cells,
                                                                     triple_prop)))
   if(triple_prop)
-    colnames(res_marix) <- paste0(rep(c("p_val_", "triple_numb"), length(uniq_clusters)),
+    colnames(res_matrix) <- paste0(rep(c("p_val_", "triple_numb"), length(uniq_clusters)),
                                   rep(uniq_clusters, each =2))
   else
-    colnames(res_marix) <- paste0("p_val_", uniq_clusters)
+    colnames(res_matrix) <- paste0("p_val_", uniq_clusters)
 
-  return(res_marix)
+  return(res_matrix)
 }
 
 
-test_triple <- function(cluster, tf_re.bi, target.bi, triple.bi, n_cells, triple_prop){
-  if (cluster == "all"){
+test_triple <- function(selected_cluster, clusters, tf_re.bi, target.bi, triple.bi, n_cells, triple_prop){
+  if (selected_cluster == "all"){
     n_tf_re <- Matrix::rowSums(tf_re.bi)
     n_target <- Matrix::rowSums(target.bi)
     n_triple <- Matrix::rowSums(triple.bi)
   }
   else{
-    n_tf_re <- Matrix::rowSums(tf_re.bi[,clusters==cluster])
-    n_target <- Matrix::rowSums(target.bi[,clusters==cluster])
-    n_triple <- Matrix::rowSums(triple.bi[,clusters==cluster])
+    n_tf_re <- Matrix::rowSums(tf_re.bi[,clusters==selected_cluster])
+    n_target <- Matrix::rowSums(target.bi[,clusters==selected_cluster])
+    n_triple <- Matrix::rowSums(triple.bi[,clusters==selected_cluster])
   }
   p_vals <- mapply(binom_test, n_triple, n_cells, n_tf_re, n_target)
   if (triple_prop)
-    return(matrix(c(p_vals, n_triple/n_cells, ncol=2)))
+    print(dim(matrix(c(p_vals, n_triple/n_cells), ncol=2)))
+    return(matrix(c(p_vals, n_triple/n_cells), ncol=2))
   p_vals
 }
 
