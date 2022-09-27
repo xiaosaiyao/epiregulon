@@ -174,7 +174,7 @@ calculateJointProbability <- function(expMatrix,
   regulon.combined <- cbind(regulon, prob_matrix)
   if (p_val_corr){
     p_val_columns <- grepl("p_val", colnames(regulon.combined))
-    regulon.combined[,p_val_columns] <- regulon.combined[,p_val_columns]*nrow(regulon.combined)
+    regulon.combined[,p_val_columns] <- regulon.combined[,p_val_columns]*nrow(regulon.combined)*length(uniq_clusters)
     regulon.combined[,p_val_columns][regulon.combined[,p_val_columns]>1] <- 1
   }
 
