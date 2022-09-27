@@ -29,6 +29,8 @@
 #' will contain tf, idxATAC and target.
 #' @param triple_prop A logical indicating whether number of cells with identified tf-re-tg triple
 #' should be included in output
+#' @p_val_corr logical indicating whether p value Bonferroni correction for multiple comparison
+#' has to be done
 #' @param BPPARAM A BiocParallelParam object specifying whether calculation should be parallelized.
 #' Default is set to BiocParallel::MulticoreParam()
 #'
@@ -102,6 +104,7 @@ calculateJointProbability <- function(expMatrix,
                                       clusters = NULL,
                                       aggregate = TRUE,
                                       triple_prop = TRUE,
+                                      p_val_corr = FALSE,
                                       BPPARAM=BiocParallel::MulticoreParam()
                                       ) {
 
@@ -169,10 +172,10 @@ calculateJointProbability <- function(expMatrix,
 
   #add probability matrix to original regulon
   regulon.combined <- cbind(regulon, prob_matrix)
-  #if aggregate is true, collapse regulatory elements to have regulons containing tf and target
-  if (aggregate == TRUE){
-    regulon.combined <- stats::aggregate(prob_matrix ~ tf + target, data = regulon.combined,
-                                  FUN = mean, na.rm = TRUE)
+  if (p_val_corr){
+    p_val_columns <- grepl("p_val", colnames(regulon.combined))
+    regulon.combined[,p_val_columns] <- regulon.combined[,p_val_columns]*nrow(regulon.combined)
+    regulon.combined[,p_val_columns][regulon.combined[,p_val_columns]>1] <- 1
   }
 
   return(regulon.combined)
@@ -243,7 +246,7 @@ calculateJointProbability_bp <- function(regulon,
                                                                      triple_prop))
   res_matrix <- BiocGenerics::Reduce(cbind, res_list)
   if(triple_prop)
-    colnames(res_matrix) <- paste0(rep(c("p_val_", "triple_numb_"), length(uniq_clusters)),
+    colnames(res_matrix) <- paste0(rep(c("p_val_", "triple_prop_"), length(uniq_clusters)),
                                   rep(uniq_clusters, each =2))
   else
     colnames(res_matrix) <- paste0("p_val_", uniq_clusters)
@@ -257,13 +260,14 @@ test_triple <- function(selected_cluster, clusters, tf_re.bi, target.bi, triple.
     n_tf_re <- Matrix::rowSums(tf_re.bi)
     n_target <- Matrix::rowSums(target.bi)
     n_triple <- Matrix::rowSums(triple.bi)
+    p_vals <- mapply(binom_test, n_triple, n_cells, n_tf_re, n_target)
   }
   else{
     n_tf_re <- Matrix::rowSums(tf_re.bi[,clusters==selected_cluster, drop = FALSE])
     n_target <- Matrix::rowSums(target.bi[,clusters==selected_cluster, drop = FALSE])
     n_triple <- Matrix::rowSums(triple.bi[,clusters==selected_cluster, drop = FALSE])
+    p_vals <- mapply(binom_test, n_triple, sum(clusters==selected_cluster), n_tf_re, n_target)
   }
-  p_vals <- mapply(binom_test, n_triple, n_cells, n_tf_re, n_target)
   if (triple_prop)
     return(matrix(c(p_vals, n_triple/n_cells), ncol=2))
   p_vals
@@ -272,4 +276,12 @@ test_triple <- function(selected_cluster, clusters, tf_re.bi, target.bi, triple.
 binom_test <- function(n_triple, n_cells, n_tf_re, n_target){
   if(n_triple == 0) return(1)
   binom.test(n_triple, n_cells, n_tf_re*n_target/n_cells^2)$p.value
+}
+
+aggregate_targets <- function(regulon, p_val = 0.05, cluster = "all"){
+  regulon <- regulon[,grepl(paste0("tf|target|",cluster, "$"), colnames(regulon))]
+  regulon <- regulon[regulon[, paste0("p_val_", cluster)]<= p_val,]
+  aggr_formula <- eval(parse(text = paste0("triple_prop_",cluster, "~ tf + target")))
+  stats::aggregate(aggr_formula, data = regulon,
+                                       FUN = mean, na.rm = TRUE)
 }
