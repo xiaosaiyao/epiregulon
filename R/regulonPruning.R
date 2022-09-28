@@ -232,7 +232,7 @@ calculateJointProbability_bp <- function(regulon,
                                     dims = c(nrow(re.peak), ncol(re.peak)))
 
   # identify cells with tf being expressed and chromatin of corresponding re accessible
-  tf_re.bi <- sweep(peak.bi, MARGIN = 2 ,STATS = tf.bi, FUN = "&")
+  tf_re.bi <- t(t(peak.bi)*tf.bi)
 
   # identify cells with tf-re-tg triples
   triple.bi <- tf_re.bi * target.bi
