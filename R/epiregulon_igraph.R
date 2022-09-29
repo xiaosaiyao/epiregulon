@@ -115,6 +115,7 @@ build_graph <- function(regulon, mode = "tripartite", weights = "corr"){
 #' edges or their weights will be calculated
 #' @return an igraph object
 #' @importFrom igraph get.adjacency V graph_from_adjacency_matrix
+#'
 build_difference_graph <- function(graph_obj_1, graph_obj_2, weighted = TRUE,
                                    abs_diff = TRUE){
     if(!identical(V(graph_obj_1)$name, V(graph_obj_2)$name)) {
@@ -145,7 +146,8 @@ build_difference_graph <- function(graph_obj_1, graph_obj_2, weighted = TRUE,
 #'
 #' @param graph an igraph object
 #' @return an igraph object with attribute \code{centrality} added to vertices
-#' @importFrom igraph V
+#' @importFrom igraph V strength
+#'
 add_centrality_degree <- function(graph){
     V(graph)$centrality <- strength(graph)
     graph
@@ -160,9 +162,10 @@ add_centrality_degree <- function(graph){
 #' @return a data.frame with transcription factors sorted according to the value of the
 #' \code{centrality} attribute
 #' @importFrom igraph V vcount
+#'
 rank_tfs <- function(graph){
-    rank_df <- data.frame(tf = V(graph)$name[order(V(graph)$centrality, decreasing = TRUE)],
-               centrality = sort(V(graph)$centrality, decreasing = TRUE))
+    rank_df <- data.frame(tf = V(graph)$name[order(V(graph)$centrality[V(graph$type == "transcription factor")], decreasing = TRUE)],
+               centrality = sort(V(graph)$centrality[V(graph$type == "transcription factor")], decreasing = TRUE))
     rank_df$rank <- base::rank(-rank_df$centrality)
     rank_df
 }
