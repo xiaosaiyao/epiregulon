@@ -164,8 +164,8 @@ add_centrality_degree <- function(graph){
 #' @importFrom igraph V vcount
 #'
 rank_tfs <- function(graph){
-    rank_df <- data.frame(tf = V(graph)$name[order(V(graph)$centrality[V(graph$type == "transcription factor")], decreasing = TRUE)],
-               centrality = sort(V(graph)$centrality[V(graph$type == "transcription factor")], decreasing = TRUE))
+    rank_df <- data.frame(tf = V(graph)$name[order(V(graph)$centrality[V(graph$type) == "transcription factor"], decreasing = TRUE)],
+               centrality = sort(V(graph)$centrality[V(graph$type) == "transcription factor"], decreasing = TRUE))
     rank_df$rank <- base::rank(-rank_df$centrality)
     rank_df
 }
