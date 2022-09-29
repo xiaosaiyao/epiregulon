@@ -1,18 +1,33 @@
-#' Building igraph directed graph object based on the output of the getRegulon function
+#' Building igraph directed graph object based on the output of the \code{getRegulon} function
 #'
 #' @param regulon An object returned by the getRegulon or addWeights function
-#' @param mode A character specifying whch type of graph will be built. In 'tg' mode
-#' a bipartite graph is built connecting transcription factors directly to target genes
-#' and ignoring information about mediating regulatory elements; in 'pairs' mode
+#' @param mode A character specifying whch type of graph will be built. In \code{'tg'} mode
+#' a bipartite graph is built connecting transcription factors directly to the target genes
+#' and ignoring information about mediating regulatory elements; in \code{'pairs'} mode
 #' transcription factors are connected to unique target gene-regulatory element pairs;
-#' in tripartite mode the network is build of three type of vertices (nodes):
+#' in \code{'tripartite'} mode the network is build of three type of vertices (nodes):
 #' trascription factors, regulatory elements and target genes; here the path from
-#' target gene to regulatory element always contains a regulatory elements
+#' target gene to regulatory element always contains a regulatory element; in
+#' \code{'re'} mode data in the target genes is dropped and only connections are
+#' between transcription factors and regulatory elements.
 #' @param weights A character specifying which variable should be used to assign
 #' weights to edges. If set to 'NA' then unweighted graph is built.
 #' @return A regulatory network graph
 #' @importFrom igraph graph_from_data_frame V vcount
-#'
+#' @return An igraph object
+#' @examples
+#' # create an artificial getRegulon output
+#' set.seed(1234)
+#' tf_set <- apply(expand.grid(LETTERS[1:10], LETTERS[1:10]),1,  paste, collapse = "")
+#' regulon <- data.frame(tf = sample(tf_set, 5e3, replace = TRUE))
+#' gene_set <- expand.grid(LETTERS[1:10], LETTERS[1:10], LETTERS[1:10])
+#' regulon$target <- sample(gene_set, 5e3, replace = TRUE)
+#' regulon$idxATAC <- 1:5e3
+#' regulon$corr <- runif(5e3)*0.5+0.5
+#' # build bipartite graph using regulatory element-target gena pairs
+#' gr1 <- build_graph(regulon, mode = "pairs")
+#' # bulid tripartite graph
+#' gr2 <- build_graph(regulon, mode = "tripartite")
 
 build_graph <- function(regulon, mode = "tripartite", weights = "corr"){
     stopifnot(mode %in% c("tg", "re", "tripartite", "pairs"))
@@ -56,35 +71,57 @@ build_graph <- function(regulon, mode = "tripartite", weights = "corr"){
         aggregation_formula <- eval(parse(text=paste0("weight~", grouping_factors)))
         graph_data <- stats::aggregate(graph_data, aggregation_formula, mean)
     }
-    epiregulon_graph <- igraph::graph_from_data_frame(graph_data)
+    epiregulon_graph <- graph_from_data_frame(graph_data)
     if (mode == "tripartite"){
-        layer_numb <- rep(1, igraph::vcount(epiregulon_graph))
-        layer_numb[grepl("_gene$", igraph::V(epiregulon_graph)$name)] <- 2
-        layer_numb[grepl("_peak$", igraph::V(epiregulon_graph)$name)] <- 3
-        igraph::V(epiregulon_graph)$layer <- layer_numb
+        layer_numb <- rep(1, vcount(epiregulon_graph))
+        layer_numb[grepl("_gene$", V(epiregulon_graph)$name)] <- 2
+        layer_numb[grepl("_peak$", V(epiregulon_graph)$name)] <- 3
+        V(epiregulon_graph)$layer <- layer_numb
     }
     # set 'type' attribute for vertices required by bipartite graphs
-    vertex_type <- rep("transcription factor", igraph::vcount(epiregulon_graph))
-    vertex_type[grepl("_peak$", igraph::V(epiregulon_graph)$name)] <- "regulatory element"
-    vertex_type[grepl("_gene$", igraph::V(epiregulon_graph)$name)] <- "target gene"
-    igraph::V(epiregulon_graph)$type <- vertex_type
+    vertex_type <- rep("transcription factor", vcount(epiregulon_graph))
+    vertex_type[grepl("_peak$", V(epiregulon_graph)$name)] <- "regulatory element"
+    vertex_type[grepl("_gene$", V(epiregulon_graph)$name)] <- "target gene"
+    V(epiregulon_graph)$type <- vertex_type
     # transform character constants to numeric values for later use by graphics functions
-    igraph::V(epiregulon_graph)$type.num <- match(igraph::V(epiregulon_graph)$type,
+    V(epiregulon_graph)$type.num <- match(V(epiregulon_graph)$type,
                                                   c("transcription factor", "peak", "target gene"))
 
     # restore original names
-    igraph::V(epiregulon_graph)$name <- gsub("_gene|_peak", "", igraph::V(epiregulon_graph)$name)
+    V(epiregulon_graph)$name <- gsub("_gene|_peak", "", V(epiregulon_graph)$name)
     epiregulon_graph
 }
 
-
+#' Build a graph difference
+#'
+#' Build a graph based on the edge difference of two input graphs
+#'
+#' Function building a graph difference by subtracting the edges of \code{graph_obj_2}
+#' from those of the \code{graph_obj_1}. If \code{weighted} is set to \code{TRUE} then for each
+#' ordered pair of vertices (nodes) the difference in number of edges between \code{graph_obj_1}
+#' and \code{graph_obj_1} is calculated. The result is used to set the number of
+#' corresponding edges in output graph. Note that unless \code{abs_diff} is set to
+#' \code{TRUE} any non-positive difference will translate into lack of the edges
+#' for a corresponding ordered pair of vertices in the output graph (equivalent
+#' to 0 value in the respective position in adjacency matrix). In case of
+#' weighted graphs, the weight of the output graph is calculated as a difference
+#' of the corresponding weights between input graphs.
+#'
+#' @param graph_obj_1 an igraph object from which \code{graph_obj_2} will be
+#' subtracted
+#' @param graph_obj_2 an igraph object used for being subtracted from \code(graph_obj_1)
+#' @param weighted a logical indicating whether weighted graphs are used
+#' @param abs_diff a logical indicating whether absulute difference in the number
+#' edges or their weights will be calculated
+#' @return an igraph object
 #' @importFrom igraph get.adjacency V graph_from_adjacency_matrix
-build_difference_graph <- function(graph_obj_1, graph_obj_2, weighted = TRUE){
-    if(!identical(igraph::V(graph_obj_1)$name, igraph::V(graph_obj_2)$name)) {
+build_difference_graph <- function(graph_obj_1, graph_obj_2, weighted = TRUE,
+                                   abs_diff = TRUE){
+    if(!identical(V(graph_obj_1)$name, V(graph_obj_2)$name)) {
         stop("The nodes should be the same in both graphs")}
-
+    transformation_function <- ifelse(abs_diff, abs, identity)
     if(weighted) {
-        res <- graph_from_adjacency_matrix(abs(get.adjacency(graph_obj_1, attr = "weight") -
+        res <- graph_from_adjacency_matrix(transformation_function(get.adjacency(graph_obj_1, attr = "weight") -
                                                  get.adjacency(graph_obj_2, attr = "weight")),
                                            weighted = TRUE)
     } else {
@@ -102,18 +139,33 @@ build_difference_graph <- function(graph_obj_1, graph_obj_2, weighted = TRUE){
     res
 }
 
-
+#' Calculate degree centrality
+#'
+#' Calculate degree centrality for each vertex
+#'
+#' @param graph an igraph object
+#' @return an igraph object with attribute \code{centrality} added to vertices
+#' @importFrom igraph V
 add_centrality_degree <- function(graph){
-    igraph::V(graph)$centrality <- igraph::strength(graph)
+    V(graph)$centrality <- strength(graph)
     graph
 }
 
-rank_tfs <- function(graph){
-    data.frame(tf = igraph::V(graph)$name[order(V(graph)$centrality, decreasing = TRUE)],
-               rank = seq_len(igraph::vcount(graph)),
-               centrality = sort(igraph::V(graph)$centrality, decreasing = TRUE))
-}
 
+#' Rank transcription factors
+#'
+#' Rank transcription factors according to degree centrality of their vertices
+#'
+#' @param graph an igraph object with \code{centrality} attribute added to vertices
+#' @return a data.frame with transcription factors sorted according to the value of the
+#' \code{centrality} attribute
+#' @importFrom igraph V vcount
+rank_tfs <- function(graph){
+    rank_df <- data.frame(tf = V(graph)$name[order(V(graph)$centrality, decreasing = TRUE)],
+               centrality = sort(V(graph)$centrality, decreasing = TRUE))
+    rank_df$rank <- base::rank(-rank_df$centrality)
+    rank_df
+}
 
 plot_epiregulon_network <-
     function(
