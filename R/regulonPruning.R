@@ -174,7 +174,8 @@ calculateJointProbability <- function(expMatrix,
   regulon.combined <- cbind(regulon, prob_matrix)
   if (p_val_corr){
     p_val_columns <- grepl("p_val", colnames(regulon.combined))
-    regulon.combined[,p_val_columns] <- regulon.combined[,p_val_columns]*nrow(regulon.combined)*length(uniq_clusters)
+    regulon.combined[,p_val_columns] <- p.adjust(regulon.combined[,p_val_columns],
+                                                 method = "holm", n = nrow(regulon)*length(uniq_clusters))
     regulon.combined[,p_val_columns][regulon.combined[,p_val_columns]>1] <- 1
   }
 
@@ -232,7 +233,8 @@ calculateJointProbability_bp <- function(regulon,
                                     dims = c(nrow(re.peak), ncol(re.peak)))
 
   # identify cells with tf being expressed and chromatin of corresponding re accessible
-  tf_re.bi <- t(t(peak.bi)*tf.bi)
+  tf_re.bi <- Matrix::t(Matrix::t(peak.bi)*as.vector(tf.bi))
+
 
   # identify cells with tf-re-tg triples
   triple.bi <- tf_re.bi * target.bi
@@ -246,10 +248,11 @@ calculateJointProbability_bp <- function(regulon,
                                                                      triple_prop))
   res_matrix <- BiocGenerics::Reduce(cbind, res_list)
   if(triple_prop)
-    colnames(res_matrix) <- paste0(rep(c("p_val_", "triple_prop_"), length(uniq_clusters)),
-                                  rep(uniq_clusters, each =2))
+    colnames(res_matrix) <- paste0(rep(c("p_val_", "z_score_", "triple_prop_"), length(uniq_clusters)),
+                                   rep(uniq_clusters, each =3))
+
   else
-    colnames(res_matrix) <- paste0("p_val_", uniq_clusters)
+    colnames(res_matrix) <- paste0(c("p_val_", "z_score_"), uniq_clusters)
 
   return(res_matrix)
 }
@@ -260,22 +263,24 @@ test_triple <- function(selected_cluster, clusters, tf_re.bi, target.bi, triple.
     n_tf_re <- Matrix::rowSums(tf_re.bi)
     n_target <- Matrix::rowSums(target.bi)
     n_triple <- Matrix::rowSums(triple.bi)
-    p_vals <- mapply(binom_test, n_triple, n_cells, n_tf_re, n_target)
+    res <- t(mapply(binom_test, n_triple, n_cells, n_tf_re, n_target))
   }
   else{
     n_tf_re <- Matrix::rowSums(tf_re.bi[,clusters==selected_cluster, drop = FALSE])
     n_target <- Matrix::rowSums(target.bi[,clusters==selected_cluster, drop = FALSE])
     n_triple <- Matrix::rowSums(triple.bi[,clusters==selected_cluster, drop = FALSE])
-    p_vals <- mapply(binom_test, n_triple, sum(clusters==selected_cluster), n_tf_re, n_target)
+    res <- t(mapply(binom_test, n_triple, sum(clusters==selected_cluster), n_tf_re, n_target))
   }
   if (triple_prop)
-    return(matrix(c(p_vals, n_triple/n_cells), ncol=2))
-  p_vals
+    return(cbind(res, n_triple/n_cells))
+  res
 }
 
 binom_test <- function(n_triple, n_cells, n_tf_re, n_target){
-  if(n_triple == 0) return(1)
-  binom.test(n_triple, n_cells, n_tf_re*n_target/n_cells^2)$p.value
+  null_probability <- n_tf_re*n_target/n_cells^2
+  binom_res <- binom.test(n_triple, n_cells, null_probability, alternative = "greater")
+  z_score <- qnorm(1-binom_res$p.value/2)*sign(binom_res$estimate - null_probability)
+  c(binom_res$p.value, z_score)
 }
 
 aggregate_targets <- function(regulon, p_val = 0.05, cluster = "all"){
