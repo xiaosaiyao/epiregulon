@@ -29,7 +29,9 @@
 #' # bulid tripartite graph
 #' gr2 <- build_graph(regulon, mode = "tripartite")
 
-build_graph <- function(regulon, mode = "tripartite", weights = "corr"){
+
+build_graph <-function(regulon, mode = "tripartite", weights = "corr",
+                       aggregation_function = mean){
     stopifnot(mode %in% c("tg", "re", "tripartite", "pairs"))
 
     # give names to the peaks and target genes which will be easy to extract
@@ -69,7 +71,7 @@ build_graph <- function(regulon, mode = "tripartite", weights = "corr"){
         colnames(graph_data)[colnames(graph_data) == weights] <- "weight"
         grouping_factors <- paste(vertex_columns, collapse="+")
         aggregation_formula <- eval(parse(text=paste0("weight~", grouping_factors)))
-        graph_data <- stats::aggregate(graph_data, aggregation_formula, mean)
+        graph_data <- stats::aggregate(graph_data, aggregation_formula, aggregation_function)
     }
     epiregulon_graph <- graph_from_data_frame(graph_data)
     if (mode == "tripartite"){
@@ -148,9 +150,18 @@ build_difference_graph <- function(graph_obj_1, graph_obj_2, weighted = TRUE,
 #' @return an igraph object with attribute \code{centrality} added to vertices
 #' @importFrom igraph V strength
 #'
+#'
 add_centrality_degree <- function(graph){
     V(graph)$centrality <- strength(graph)
     graph
+}
+
+#' @importFrom igraph E V eigen_centrality
+add_centrality_eigen <- function(graph){
+  # use non-negative weights to avoid complex solutions
+  E(graph)$weight <- abs(E(graph)$weight)
+  V(graph)$centrality <- eigen_centrality(graph, directed = TRUE)$vector
+  graph
 }
 
 
@@ -163,11 +174,27 @@ add_centrality_degree <- function(graph){
 #' \code{centrality} attribute
 #' @importFrom igraph V vcount
 #'
-rank_tfs <- function(graph){
-    rank_df <- data.frame(tf = V(graph)$name[order(V(graph)$centrality[V(graph$type) == "transcription factor"], decreasing = TRUE)],
-               centrality = sort(V(graph)$centrality[V(graph$type) == "transcription factor"], decreasing = TRUE))
+rank_tfs <- function(graph, type_attr = "type"){
+    rank_df <- data.frame(tf = V(graph)$name[order(V(graph)$centrality[vertex_attr(graph, type_attr) == "transcription factor"], decreasing = TRUE)],
+               centrality = sort(V(graph)$centrality[vertex_attr(graph, type_attr) == "transcription factor"], decreasing = TRUE))
     rank_df$rank <- base::rank(-rank_df$centrality)
     rank_df
+}
+
+#' @importFrom igraph V ego_size
+normalize_centrality <- function(graph, FUN = sqrt){
+  V(graph)$centrality <- V(graph)$centrality/FUN(ego_size(graph))
+  graph
+}
+
+#' @importFrom igraph V reverse_graph delete_vertex_attr
+build_unconstrained_graph <- function(graph){
+  graph <- reverse_edges(graph)
+  V(graph)$element_type <- V(graph)$type
+
+  #remove special attribute 'type'
+  graph <- delete_vertex_attr(graph, "type")
+  graph
 }
 
 plot_epiregulon_network <-
