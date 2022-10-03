@@ -263,14 +263,14 @@ test_triple <- function(selected_cluster, clusters, tf_re.bi, target.bi, triple.
     n_tf_re <- Matrix::rowSums(tf_re.bi)
     n_target <- Matrix::rowSums(target.bi)
     n_triple <- Matrix::rowSums(triple.bi)
-    res <- t(mapply(binom_test, n_triple, n_cells, n_tf_re, n_target))
   }
   else{
     n_tf_re <- Matrix::rowSums(tf_re.bi[,clusters==selected_cluster, drop = FALSE])
     n_target <- Matrix::rowSums(target.bi[,clusters==selected_cluster, drop = FALSE])
     n_triple <- Matrix::rowSums(triple.bi[,clusters==selected_cluster, drop = FALSE])
-    res <- t(mapply(binom_test, n_triple, sum(clusters==selected_cluster), n_tf_re, n_target))
+    n_cells <- sum(clusters==selected_cluster)
   }
+  res <- t(mapply(binom_test, n_triple, n_cells, n_tf_re, n_target))
   if (triple_prop)
     return(cbind(res, n_triple/n_cells))
   res
@@ -278,7 +278,7 @@ test_triple <- function(selected_cluster, clusters, tf_re.bi, target.bi, triple.
 
 binom_test <- function(n_triple, n_cells, n_tf_re, n_target){
   null_probability <- n_tf_re*n_target/n_cells^2
-  binom_res <- binom.test(n_triple, n_cells, null_probability, alternative = "greater")
+  binom_res <- binom.test(n_triple, n_cells, null_probability)
   z_score <- qnorm(1-binom_res$p.value/2)*sign(binom_res$estimate - null_probability)
   c(binom_res$p.value, z_score)
 }
