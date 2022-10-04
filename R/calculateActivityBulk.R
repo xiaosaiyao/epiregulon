@@ -10,9 +10,11 @@
 #' `gene_id` column indicating the genes and `weights` column indicating the weights. If `geneset_weight` is
 #' `FALSE`, each list element is a character vector corresponding to the genes in the geneset.
 #' @param geneset_weighted Logical indicating whether the genesets are weighted
-#' @param method String indicating the method used to calculate signature score. Available methods in gsva package include "gsva", "ssgsea", "zscore" and "plage"
+#' @param method String indicating the method used to calculate signature score. Available methods in gsva package include
+#' "gsva", "ssgsea", "zscore" and "plage"
 #' @param mode String indicating the choice of TF-target association being either correlation "corr" or mode of regulation "mor".
-#' Correlation can either be supplied or computed from expMatrix using (`corr_calculate = FALSE`). Mor is supplied by the Dorothea regulon.
+#' Correlation can either be supplied or computed from expMatrix using (`corr_calculate = FALSE`). Mor is supplied by the
+#' Dorothea regulon.
 #' @param corr_calculate Logical indicating whether correlation needs to be calculated
 #' @param save.regulon String indicating the path to save the new regulon with updated correlation
 #' @param assay_name String indicating the name of the assay corresponding to gene expression
@@ -22,8 +24,8 @@
 #' @param sample_n An integer indicating the number of samples to subsample if the original expression matrix is large
 #' @param BPPARAM A BiocParallelParam object specifying whether summation should be parallelized. Use BiocParallel::SerialParam() for
 #' serial evaluation and use `BiocParallel::MulticoreParam()` for parallel evaluation
-#' @param min.sz An integer indicating the minimum number of genes in genesets. Default value is set to 3.
-#' @param ... additional arguments for `GSVA::gsva`
+#' @param min.sz An integer indicating the minimum number of genes in gene sets. Default value is set to 3.
+#' @param ... additional arguments to pass into `GSVA::gsva`
 #'
 #' @return A matrix of inferred transcription factor (row) activities in samples (columns)
 #' @export
@@ -51,7 +53,6 @@
 #' activity.corr <- calculateActivityBulk(expr, regulon = regulon, mode = "corr",
 #' method = "ssgsea", corr_calculate = TRUE, sample_n = 10)
 #'
-
 #' # Use Dorothea regulon with pre-calculated calculation
 #' \dontrun{
 #' regulon <- readRDS(file = "/gstore/project/lineage/GRN/data/Dorothea_TCGA/regulon.Breast.TCGA.ABCDE.rds")
