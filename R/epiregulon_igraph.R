@@ -179,9 +179,28 @@ rank_tfs <- function(graph, type_attr = "type"){
     rank_df
 }
 
-#' @importFrom igraph V ego_size
-normalize_centrality <- function(graph, FUN = sqrt){
-  V(graph)$centrality <- V(graph)$centrality/FUN(ego_size(graph))
+
+#' Normalize centrality scores
+#'
+#' The nornalized values of centrality will be calculated as old value
+#' divided by \code{FUN}(total number of non-zero edges associated with each node).
+#'
+#' @param graph nn igraph object. In a typical use case it will be the output of
+#' \code{add_centrality_degree} function
+#' @param FUN a function which will be used for normalization. The input to this
+#' function will be the number of edges connected with each node (incident edges).
+#' @param weighted a logical indicating whether a weighted graph is used
+#' @return An igraph object with normalized values of 'centrality' attribute
+#' @importFrom igraph V E incident_edges
+
+normalize_centrality <- function(graph, FUN = identity, weighted = TRUE){
+  if (!"centrality" %in% list.vertex.attributes(graph)) stop("Vertices do not have 'centrality' attribute")
+  if (!"weight" %in% list.edge.attributes(graph) & weighted) stop("Set 'weight' attribute to edges or use with 'weighted = FALSE'")
+
+  # remove zero-weight edges
+  graph <- delete.edges(graph, E(graph)[E(graph)$weight == 0])
+
+  V(graph)$centrality <- V(graph)$centrality/sapply(sapply(incident_edges(graph, V(graph)), lenght), FUN)
   graph
 }
 
