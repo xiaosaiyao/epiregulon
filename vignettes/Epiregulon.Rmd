@@ -1,10 +1,14 @@
 ---
 title: "Epiregulon"
-author:
-- Shang-Yang Chen^[chens179@gene.com]
-- Xiaosai Yao^[yaox19@gene.com]
+author: Shang-Yang and Xiaosai Yao
+email: yao.xiaosai@gene.com
 date: "March 29th, 2022"
-output: html_document
+output:
+  BiocStyle::html_document:
+    toc: true
+    number_section: true
+    self_contained: true
+    titlecaps: true
 package: epiregulon
 vignette: >
   %\VignetteIndexEntry{Epiregulon}
@@ -16,7 +20,7 @@ vignette: >
 knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>",
-  eval = FALSE
+  eval = TRUE
 )
 ```
 
