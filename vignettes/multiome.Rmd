@@ -297,7 +297,7 @@ enrichPlot(results = enrichresults)
 9. Network analysis
 
 We can visualize the genesets as a network
-```{f}
+```{r}
 plotGseaNetwork(tf = names(enrichresults), 
                 enrichresults = enrichresults, 
                 p.adj_cutoff = 0.1, 
