@@ -60,30 +60,56 @@ getP2Glinks <- function(archr_path,
 
 #' An accessor function to retrieve TF motif info from genomitory repository
 #'
-#' @param genome String specifying the genomic build for bed files. Currently supporting hg19, hg38 and mm10
+#' @param genome String specifying the genomic build for bed files. Currently supporting `hg19`, `hg38` and `mm10`.
+#' For legacy version with cistrome DB, use `hg19_old`, `hg38_old` and `mm10_old`
 #' @importFrom SummarizedExperiment rowRanges
 #' @return A GRangeList object containing binding site information of transcription factor chipseq combined from Cistrome database and ENCODE
 #' @export
+#' @details We obtain ChIP-seq files from ENCODE and ChIP-Atlas. Public ChIP-seq files were processed using a
+#' standardized pipeline by [ChIP-Atlas](https://github.com/inutano/chip-atlas/wiki).
+#' The ENCODE and ChIP-Atlas bed files were then merged to give a list of non-overlapping binding regions per TF.
+#' When the number of merged cell lines is large, these binding sites represent a set of universal/tissue-
+#' agnostic binding sites.
 #'
-#' @author Shang-yang Chen
+#' @author Shang-yang Chen and Xiaosai Yao
 
-getTFMotifInfo <- function(genome = "hg19"){
+getTFMotifInfo <- function(genome = c("hg38","hg19","mm10")){
 
   if (genome == 'hg19'){
 
     id <- genomitory::packID("GMTY156", # project name
                              "hg19_motif_bed_granges", # path within the project
-                             "REVISION-4") # version
+                             "REVISION-5") # version
     grl <- genomitory::getFeatures(id)
 
   } else if (genome == "hg38") {
 
     id <- genomitory::packID("GMTY162", # project name
                              "hg38_motif_bed_granges", # path within the project
-                             "REVISION-3") # version
+                             "REVISION-4") # version
     grl <- genomitory::getFeatures(id)
 
   } else if (genome == "mm10"){
+    id <- genomitory::packID("GMTY181", # project name
+                             "mm10_motif_bed_granges", # path within the project
+                             "REVISION-5") # version
+    grl <- genomitory::getFeatures(id)
+  }
+  if (genome == 'hg19_old'){
+
+    id <- genomitory::packID("GMTY156", # project name
+                             "hg19_motif_bed_granges", # path within the project
+                             "REVISION-4") # version
+    grl <- genomitory::getFeatures(id)
+
+  } else if (genome == "hg38_old") {
+
+    id <- genomitory::packID("GMTY162", # project name
+                             "hg38_motif_bed_granges", # path within the project
+                             "REVISION-3") # version
+    grl <- genomitory::getFeatures(id)
+
+  } else if (genome == "mm10_old"){
     id <- genomitory::packID("GMTY181", # project name
                              "mm10_motif_bed_granges", # path within the project
                              "REVISION-4") # version
