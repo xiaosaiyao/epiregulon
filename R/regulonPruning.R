@@ -29,7 +29,7 @@
 #' will contain tf, idxATAC and target.
 #' @param triple_prop A logical indicating whether number of cells with identified tf-re-tg triple
 #' should be included in output
-#' @p_val_corr logical indicating whether p value Bonferroni correction for multiple comparison
+#' @param p_val_corr logical indicating whether p value Bonferroni correction for multiple comparison
 #' has to be done
 #' @param BPPARAM A BiocParallelParam object specifying whether calculation should be parallelized.
 #' Default is set to BiocParallel::MulticoreParam()
@@ -174,7 +174,7 @@ calculateJointProbability <- function(expMatrix,
   regulon.combined <- cbind(regulon, prob_matrix)
   if (p_val_corr){
     p_val_columns <- grepl("p_val", colnames(regulon.combined))
-    regulon.combined[,p_val_columns] <- p.adjust(regulon.combined[,p_val_columns],
+    regulon.combined[,p_val_columns] <- stats::p.adjust(regulon.combined[,p_val_columns],
                                                  method = "holm", n = nrow(regulon)*length(uniq_clusters))
     regulon.combined[,p_val_columns][regulon.combined[,p_val_columns]>1] <- 1
   }
@@ -278,8 +278,8 @@ test_triple <- function(selected_cluster, clusters, tf_re.bi, target.bi, triple.
 
 binom_test <- function(n_triple, n_cells, n_tf_re, n_target){
   null_probability <- n_tf_re*n_target/n_cells^2
-  binom_res <- binom.test(n_triple, n_cells, null_probability)
-  z_score <- qnorm(1-binom_res$p.value/2)*sign(binom_res$estimate - null_probability)
+  binom_res <- stats::binom.test(n_triple, n_cells, null_probability)
+  z_score <- stats::qnorm(1-binom_res$p.value/2)*sign(binom_res$estimate - null_probability)
   c(binom_res$p.value, z_score)
 }
 
