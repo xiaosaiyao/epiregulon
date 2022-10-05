@@ -79,7 +79,7 @@ build_graph <-function(regulon, mode = "tripartite", weights = "corr"){
 
 #' @importFrom igraph get.adjacency V graph_from_adjacency_matrix
 build_difference_graph <- function(graph_obj_1, graph_obj_2, weighted = TRUE){
-    if(!identical(V(graph_obj_1)$name, V(graph_obj_2)$name)) {
+    if(!identical(igraph::V(graph_obj_1)$name, igraph::V(graph_obj_2)$name)) {
         stop("The nodes should be the same in both graphs")}
 
     if(weighted) {
@@ -92,12 +92,12 @@ build_difference_graph <- function(graph_obj_1, graph_obj_2, weighted = TRUE){
                                            weighted = FALSE)
     }
 
-    if (!identical(V(graph_obj_1)$type, V(graph_obj_2)$type)) {
+    if (!identical(igraph::V(graph_obj_1)$type, igraph::V(graph_obj_2)$type)) {
         warning("Types of nodes differ between graphs. Only those from the first graph are used.")
     }
 
-    V(res)$type <- V(graph_obj_1)$type
-    V(res)$type.num <- V(graph_obj_1)$type.num
+  igraph::V(res)$type <- igraph::V(graph_obj_1)$type
+  igraph::V(res)$type.num <- igraph::V(graph_obj_1)$type.num
     res
 }
 

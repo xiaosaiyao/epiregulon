@@ -18,6 +18,8 @@ calculateJointProbability(
   regulon_cutoff = 0,
   clusters = NULL,
   aggregate = TRUE,
+  triple_prop = TRUE,
+  p_val_corr = FALSE,
   BPPARAM = BiocParallel::MulticoreParam()
 )
 }
@@ -61,6 +63,9 @@ are calculated for all cells}
 \item{aggregate}{A logical indicating whether to collapse the regulatory elements of the
 same genes. If \code{TRUE}, the output will only contain tf and target. If \code{FALSE}, the output
 will contain tf, idxATAC and target.}
+
+\item{triple_prop}{A logical indicating whether number of cells with identified tf-re-tg triple
+should be included in output}
 
 \item{BPPARAM}{A BiocParallelParam object specifying whether calculation should be parallelized.
 Default is set to BiocParallel::MulticoreParam()}
