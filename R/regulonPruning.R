@@ -27,6 +27,10 @@
 #' @param aggregate A logical indicating whether to collapse the regulatory elements of the
 #' same genes. If ```TRUE```, the output will only contain tf and target. If ```FALSE```, the output
 #' will contain tf, idxATAC and target.
+#' @param triple_prop A logical indicating whether number of cells with identified tf-re-tg triple
+#' should be included in output
+#' @p_val_corr logical indicating whether p value Bonferroni correction for multiple comparison
+#' has to be done
 #' @param BPPARAM A BiocParallelParam object specifying whether calculation should be parallelized.
 #' Default is set to BiocParallel::MulticoreParam()
 #'
@@ -99,6 +103,8 @@ calculateJointProbability <- function(expMatrix,
                                       regulon_cutoff = 0,
                                       clusters = NULL,
                                       aggregate = TRUE,
+                                      triple_prop = TRUE,
+                                      p_val_corr = FALSE,
                                       BPPARAM=BiocParallel::MulticoreParam()
                                       ) {
 
@@ -140,22 +146,17 @@ calculateJointProbability <- function(expMatrix,
   regulon <- regulon[regulon$target %in% rownames(expMatrix),]
 
   #order by TF
-  regulon <- regulon[order(regulon$tf),]
-  tf_uniq <- unique(regulon$tf)
-
+  regulon <- split(regulon, regulon$tf)
 
   total_cell <- ncol(expMatrix)
-
-
 
   prob_matrix <- c()
 
   writeLines("compute joint probability for all trios")
 
 
-  prob_matrix_tf <- BiocParallel::bplapply(X = tf_uniq,
+  prob_matrix_tf <- BiocParallel::bplapply(X = regulon,
                                            FUN = calculateJointProbability_bp,
-                                           regulon,
                                            expMatrix,
                                            exp_cutoff,
                                            peakMatrix,
@@ -164,36 +165,27 @@ calculateJointProbability <- function(expMatrix,
                                            chromvar_cutoff,
                                            clusters,
                                            uniq_clusters,
+                                           triple_prop,
                                            BPPARAM = BPPARAM)
   prob_matrix <- do.call("rbind", prob_matrix_tf)
-
-  # calculate the number of cells in each cluster
-  clusters_freq <- table(clusters)
-  clusters_freq <- c(sum(clusters_freq),clusters_freq)
-
-  # normalize by total cell counts
-  prob_matrix <- sweep(prob_matrix, MARGIN=2, STATS = clusters_freq, FUN = "/")
-
-
+  regulon <- do.call(rbind, regulon)
 
   #add probability matrix to original regulon
   regulon.combined <- cbind(regulon, prob_matrix)
-
-  #if aggregate is true, collapse regulatory elements to have regulons containing tf and target
-  if (aggregate == TRUE){
-    regulon.combined <- stats::aggregate(prob_matrix ~ tf + target, data = regulon.combined,
-                                  FUN = mean, na.rm = TRUE)
+  if (p_val_corr){
+    p_val_columns <- grepl("p_val", colnames(regulon.combined))
+    regulon.combined[,p_val_columns] <- p.adjust(regulon.combined[,p_val_columns],
+                                                 method = "holm", n = nrow(regulon)*length(uniq_clusters))
+    regulon.combined[,p_val_columns][regulon.combined[,p_val_columns]>1] <- 1
   }
 
-  regulon.combined <- regulon.combined[regulon.combined[,"all"] > regulon_cutoff, ]
   return(regulon.combined)
 
 
 }
 
 
-calculateJointProbability_bp <- function(tf,
-                                          regulon,
+calculateJointProbability_bp <- function(regulon,
                                           expMatrix,
                                           exp_cutoff,
                                           peakMatrix,
@@ -201,71 +193,100 @@ calculateJointProbability_bp <- function(tf,
                                           chromvarMatrix,
                                           chromvar_cutoff,
                                           clusters,
-                                          uniq_clusters){
-  message(tf)
-  regulon_tf <- regulon[regulon$tf == tf,]
+                                          uniq_clusters,
+                                          triple_prop){
+  message(regulon$tf[1])
+
 
   # filter cells that did not pass tf cutoff either by expression or chromvar
   if (is.null(chromvarMatrix)){
-    cells_sel_tf <- Matrix::which(expMatrix[tf,] > exp_cutoff)
+    tf.bi.index <- Matrix::which(expMatrix[regulon$tf[1],,drop = FALSE] > exp_cutoff, arr.ind = TRUE)
+    n_cells <- ncol(expMatrix)
   } else {
-    cells_sel_tf <- Matrix::which(chromvarMatrix[tf,] > chromvar_cutoff)
+    tf.bi.index <- Matrix::which(chromvarMatrix[regulon$tf[1],,drop = FALSE] > chromvar_cutoff, arr.ind = TRUE)
+    n_cells <- ncol(chromvarMatrix)
   }
-
-
-  #initiate a probability matrix to keep track of the number of cells that fulfill threshold for all cutoffs
-  prob_matrix_tf <- matrix(0, nrow = nrow(regulon_tf), ncol = length(uniq_clusters))
-  colnames(prob_matrix_tf) <- uniq_clusters
-
-  if (length(cells_sel_tf) != 0){
+  tf.bi <- Matrix::sparseMatrix(x = rep(1,nrow(tf.bi.index)),
+                                i = tf.bi.index[,1],
+                                j = tf.bi.index[,2],
+                                dims = c(1, n_cells))
 
 
 
-    #track new clusters because cells got filtered
-    new_clusters <- clusters[cells_sel_tf]
+  # create target and peak matrices
+  target.exp <- expMatrix[regulon$target,,drop = FALSE]
+  re.peak <- peakMatrix[regulon$idxATAC,,drop = FALSE]
+  # 1s represent cells that pass threshold and 0s represent cells that fail threshold
 
 
-    target.short <- expMatrix[regulon_tf$target, cells_sel_tf, drop=FALSE]
-    peak.short <- peakMatrix[regulon_tf$idxATAC, cells_sel_tf, drop=FALSE]
-
-    # create target and peak matrix that pass threshold.
-    # 1s represent cells that pass threshold and 0s represent cells that fail threshold
-
-    target.bi.index <- Matrix::which(target.short > exp_cutoff, arr.ind = TRUE)
-    target.bi <- Matrix::sparseMatrix(x = rep(1,nrow(target.bi.index)),
+  target.bi.index <- Matrix::which(target.exp > exp_cutoff, arr.ind = TRUE)
+  target.bi <- Matrix::sparseMatrix(x = rep(1,nrow(target.bi.index)),
                                       i = target.bi.index[,1],
                                       j = target.bi.index[,2],
-                                      dims = c(nrow(target.short), ncol(target.short)) )
+                                      dims = c(nrow(target.exp), ncol(target.exp)) )
 
 
-    peak.bi.index <- Matrix::which(peak.short > peak_cutoff, arr.ind = TRUE)
-    peak.bi <- Matrix::sparseMatrix(x = rep(1,nrow(peak.bi.index)),
+  peak.bi.index <- Matrix::which(re.peak > peak_cutoff, arr.ind = TRUE)
+  peak.bi <- Matrix::sparseMatrix(x = rep(1,nrow(peak.bi.index)),
                                     i = peak.bi.index[,1],
                                     j =  peak.bi.index[,2],
-                                    dims = c(nrow(peak.short), ncol(peak.short)) )
+                                    dims = c(nrow(re.peak), ncol(re.peak)))
 
-    # perform element by element matrix multiplication to get cells that pass both thresholds
-    target.peak.bi <- target.bi * peak.bi
+  # identify cells with tf being expressed and chromatin of corresponding re accessible
+  tf_re.bi <- Matrix::t(Matrix::t(peak.bi)*as.vector(tf.bi))
 
 
-    prob_matrix_tf[,"all" ] <- Matrix::rowSums(target.peak.bi)
+  # identify cells with tf-re-tg triples
+  triple.bi <- tf_re.bi * target.bi
 
-    # also computes joint probabilities by cluster
-    for (cluster in unique(clusters)){
-      cluster_index = which(new_clusters  == cluster)
-      if (length(cluster_index) >0) {
-        prob_matrix_tf[, cluster] <- Matrix::rowSums(target.peak.bi[,cluster_index, drop=FALSE])
-      }
+  res_list <- lapply(as.list(uniq_clusters), function(x) test_triple(x,
+                                                                     clusters,
+                                                                     tf_re.bi,
+                                                                     target.bi,
+                                                                     triple.bi,
+                                                                     n_cells,
+                                                                     triple_prop))
+  res_matrix <- BiocGenerics::Reduce(cbind, res_list)
+  if(triple_prop)
+    colnames(res_matrix) <- paste0(rep(c("p_val_", "z_score_", "triple_prop_"), length(uniq_clusters)),
+                                   rep(uniq_clusters, each =3))
 
-    }
-  }
-  return(prob_matrix_tf)
+  else
+    colnames(res_matrix) <- paste0(c("p_val_", "z_score_"), uniq_clusters)
+
+  return(res_matrix)
 }
 
 
+test_triple <- function(selected_cluster, clusters, tf_re.bi, target.bi, triple.bi, n_cells, triple_prop){
+  if (selected_cluster == "all"){
+    n_tf_re <- Matrix::rowSums(tf_re.bi)
+    n_target <- Matrix::rowSums(target.bi)
+    n_triple <- Matrix::rowSums(triple.bi)
+  }
+  else{
+    n_tf_re <- Matrix::rowSums(tf_re.bi[,clusters==selected_cluster, drop = FALSE])
+    n_target <- Matrix::rowSums(target.bi[,clusters==selected_cluster, drop = FALSE])
+    n_triple <- Matrix::rowSums(triple.bi[,clusters==selected_cluster, drop = FALSE])
+    n_cells <- sum(clusters==selected_cluster)
+  }
+  res <- t(mapply(binom_test, n_triple, n_cells, n_tf_re, n_target))
+  if (triple_prop)
+    return(cbind(res, n_triple/n_cells))
+  res
+}
 
+binom_test <- function(n_triple, n_cells, n_tf_re, n_target){
+  null_probability <- n_tf_re*n_target/n_cells^2
+  binom_res <- binom.test(n_triple, n_cells, null_probability)
+  z_score <- qnorm(1-binom_res$p.value/2)*sign(binom_res$estimate - null_probability)
+  c(binom_res$p.value, z_score)
+}
 
-
-
-
-
+aggregate_targets <- function(regulon, p_val = 0.05, cluster = "all"){
+  regulon <- regulon[,grepl(paste0("tf|target|",cluster, "$"), colnames(regulon))]
+  regulon <- regulon[regulon[, paste0("p_val_", cluster)]<= p_val,]
+  aggr_formula <- eval(parse(text = paste0("triple_prop_",cluster, "~ tf + target")))
+  stats::aggregate(aggr_formula, data = regulon,
+                                       FUN = mean, na.rm = TRUE)
+}
