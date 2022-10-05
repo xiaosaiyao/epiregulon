@@ -10,7 +10,8 @@ plotActivityViolin(
   class,
   ncol = NULL,
   combine = TRUE,
-  legend.label = "activity"
+  legend.label = "activity",
+  colors = NULL
 )
 }
 \arguments{
@@ -25,6 +26,8 @@ plotActivityViolin(
 \item{combine}{logical to indicate whether to combine and visualize the plots in one panel}
 
 \item{legend.label}{String indicating the name of variable to be plotted on the legend}
+
+\item{colors}{A character vector representing the names of colors}
 }
 \value{
 A combined ggplot object or a list of ggplots if combine == FALSE

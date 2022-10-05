@@ -1,21 +1,4 @@
-#' Plot cell-level reduced dimension results stored in a SingleCellExperiment object, colored by activities for a specific TF
-#'
-#' @param sce A SingleCellExperiment object containing dimensionality reduction coordinates
-#' @param activity_matrix A matrix of TF activities inferred from calculateActivity
-#' @param tf A character vector indicating the names of the transcription factors to be plotted
-#' @param dimtype String indicating the name of dimensionality reduction matrix to be extracted from the SingleCellExperiment
-#' @param label String corresponding to the field in the colData of sce for annotation on plot
-#' @param legend.label String indicating the name of variable to be plotted on the legend
-#' @param colors A vector of 2 colors for the intensity, with the first element refering to the lower value and
-#' the second element refering to the higher value. Default is c("blue","yellow").
-#' @param limit A vector of lower and upper bounds for the color scale. The default option is NULL and will adjust
-#' to minimal and maximal values
-#' @param ... Additional arguments from scater::plotReducedDim
-#'
-#' @return A ggplot object
-#' @export
-#' @import ggplot2
-#' @author Xiaosai Yao, Shang-yang Chen
+
 
 plotActivityDim_ <- function(sce,
                              activity_matrix,
@@ -113,18 +96,7 @@ plotActivityDim <- function(sce,
 }
 
 
-#' Generate violin plots of inferred activities for a specific TF grouped by cluster/group labels
-#'
-#' @param activity_matrix A matrix of TF activities inferred from calculateActivity
-#' @param tf A character vector indicating the names of the transcription factors to be plotted
-#' @param class A character or integer vector of cluster or group labels for single cells
-#' @param legend.label String indicating the name of variable to be plotted on the legend
-#' @param colors  A character vector representing the names of colors
-#'
-#' @return A ggplot object
-#' @export
-#' @import ggplot2
-#' @author Xiaosai Yao, Shang-yang Chen
+
 plotActivityViolin_ <- function(activity_matrix,
                                 tf,
                                 class,
@@ -138,12 +110,15 @@ plotActivityViolin_ <- function(activity_matrix,
                                       y = "activity",
                                       fill = "class")) +
     geom_violin() +
-    scale_fill_manual(values = colors) +
     theme_classic(base_size = 12) +
     ggtitle(tf) + ylab(legend.label) +
     theme(legend.position = "none",
           plot.title = element_text(hjust = 0.5),
           axis.text.x = element_text(angle = 45,hjust = 1))
+
+  if (!is.null(colors)){
+    g <- g +  scale_fill_manual(values = colors)
+  }
 
   return(g)
 
@@ -174,7 +149,7 @@ plotActivityViolin <- function(activity_matrix,
                                ncol = NULL,
                                combine = TRUE,
                                legend.label = "activity",
-                               colors){
+                               colors = NULL){
 
   # give warning for genes absent in tf list
   missing <- tf[which(! tf %in% rownames(activity_matrix))]

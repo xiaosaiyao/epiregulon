@@ -27,7 +27,7 @@ with genes in the rows and cells in the columns}
 
 \item{exp_assay}{String indicating the name of the assay in expMatrix for gene expression}
 
-\item{exp_cutoff}{A scalar indicating the minimum gene expression for a gene to be considered
+\item{exp_cutoff}{A scalar indicating the minimum gene expression above which gene is considered
 active. Default value is 1}
 
 \item{peakMatrix}{A SingleCellExperiment object or matrix containing peak accessibility with
@@ -35,7 +35,7 @@ peaks in the rows and cells in the columns}
 
 \item{peak_assay}{String indicating the name of the assay in peakMatrix for chromatin accessibility}
 
-\item{peak_cutoff}{A scalar indicating the minimum peak accessibility for a peak to be
+\item{peak_cutoff}{A scalar indicating the minimum peak accessibility above which peak is
 considered open. Default value is 0}
 
 \item{chromvarMatrix}{A SingleCellExperiment object or matrix containing averaged accessibility at the TF

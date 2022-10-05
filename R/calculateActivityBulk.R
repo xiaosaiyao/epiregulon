@@ -61,7 +61,7 @@
 #'
 #' # Weighted geneset
 #' geneset = list(genesetA = data.frame(gene_id = genes[1:10], weights = -5:4))
-#' activity.corr <- calculateActivityBulk(expr, geneset = breast, mode = "weights", method ="ssgsea")
+#' activity.corr <- calculateActivityBulk(expr, geneset = geneset, mode = "weights", method ="ssgsea")
 #'
 #' # Unweighted geneset
 #' geneset = list(genesetA = genes[1:10])

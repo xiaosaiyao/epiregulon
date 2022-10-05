@@ -4,10 +4,11 @@
 \alias{getTFMotifInfo}
 \title{An accessor function to retrieve TF motif info from genomitory repository}
 \usage{
-getTFMotifInfo(genome = "hg19")
+getTFMotifInfo(genome = c("hg38", "hg19", "mm10"))
 }
 \arguments{
-\item{genome}{String specifying the genomic build for bed files. Currently supporting hg19, hg38 and mm10}
+\item{genome}{String specifying the genomic build for bed files. Currently supporting \code{hg19}, \code{hg38} and \code{mm10}.
+For legacy version with cistrome DB, use \code{hg19_old}, \code{hg38_old} and \code{mm10_old}}
 }
 \value{
 A GRangeList object containing binding site information of transcription factor chipseq combined from Cistrome database and ENCODE
@@ -15,6 +16,15 @@ A GRangeList object containing binding site information of transcription factor 
 \description{
 An accessor function to retrieve TF motif info from genomitory repository
 }
+\details{
+We obtain ChIP-seq files from ENCODE and ChIP-Atlas. Public ChIP-seq files were processed using a
+standardized pipeline by \href{https://github.com/inutano/chip-atlas/wiki}{ChIP-Atlas}.
+The ENCODE and ChIP-Atlas bed files were then merged to give a list of non-overlapping binding regions per TF.
+When the number of merged cell lines is large, these binding sites represent a set of universal/tissue-
+agnostic binding sites.
+TF binding sites from Cistrome were replaced with ChIP-Atlas due to restriction on data usage. To retrieve
+Cistrome data, set genome to \code{hg38_old}, \code{hg19_old} or \code{mm10_old}
+}
 \author{
-Shang-yang Chen
+Shang-yang Chen and Xiaosai Yao
 }

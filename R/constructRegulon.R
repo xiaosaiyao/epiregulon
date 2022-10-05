@@ -6,7 +6,7 @@
 #' @param useMatrix String specifying which data matrix in the ArchR project to use
 #' @param ... other parameters to pass to addPeak2GeneLinks from ArchR package
 #'
-#' @return A Peak2Gene correlation datafrane
+#' @return A Peak2Gene correlation data frame
 #' @import ArchR utils
 #' @export
 #' @author Shang-yang Chen
@@ -28,7 +28,8 @@ getP2Glinks <- function(archr_path,
     ArchRProj = proj,
     reducedDims = reducedDims,
     useMatrix = useMatrix,
-    logFile = "x", ...
+    logFile = "x",
+    ...
   )
 
   p2g <- ArchR::getPeak2GeneLinks(
@@ -70,6 +71,8 @@ getP2Glinks <- function(archr_path,
 #' The ENCODE and ChIP-Atlas bed files were then merged to give a list of non-overlapping binding regions per TF.
 #' When the number of merged cell lines is large, these binding sites represent a set of universal/tissue-
 #' agnostic binding sites.
+#' TF binding sites from Cistrome were replaced with ChIP-Atlas due to restriction on data usage. To retrieve
+#' Cistrome data, set genome to `hg38_old`, `hg19_old` or `mm10_old`
 #'
 #' @author Shang-yang Chen and Xiaosai Yao
 
@@ -164,7 +167,7 @@ addTFMotifInfo <- function(p2g,
 
   if (!is.null(archR_project_path)) {
     proj <- loadArchRProject(path = archR_project_path, showLogo = F)
-    peakSet= getPeakSet(ArchRProj = proj)
+    peakSet = getPeakSet(ArchRProj = proj)
   } else {
     peakSet = rowRanges(peakMatrix)
   }
@@ -236,8 +239,10 @@ getRegulon <- function(p2g,
   if (aggregate) {
     regulon_df <- regulon_df[, c("tf", "target", "Correlation")]
     colnames(regulon_df) <- c("tf", "target", "corr")
-    regulon_df <- stats::aggregate(corr ~ tf + target, data = regulon_df,
-                            FUN = mean, na.rm = TRUE)
+    regulon_df <- stats::aggregate(corr ~ tf + target,
+                                   data = regulon_df,
+                                   FUN = mean,
+                                   na.rm = TRUE)
   } else {
     colnames(regulon_df) <- c("idxATAC", "idxTF","tf",  "chr", "start", "end", "idxRNA", "target", "corr", "FDR")
 

@@ -6,25 +6,42 @@
 \usage{
 calculateActivityBulk(
   expMatrix,
-  regulon,
+  regulon = NULL,
+  geneset = NULL,
+  geneset_weighted = TRUE,
   method = c("gsva", "ssgsea", "zscore", "plage"),
-  mode = c("mor", "corr"),
+  mode = c("mor", "corr", "weights"),
   corr_calculate = NULL,
   save.regulon = NULL,
   sample_n = NULL,
   assay_name = "rpkm",
-  rowData_name = "symbol"
+  rowData_name = "symbol",
+  BPPARAM = BiocParallel::SerialParam(),
+  min.sz = 3,
+  ...
 )
 }
 \arguments{
 \item{expMatrix}{a SummarizedExperiment object or matrix of gene expression with gene names matching those of the regulon}
 
-\item{regulon}{Matrix consisting of tf(regulator), target and a column indicating degree of association between TF and target}
+\item{regulon}{Matrix consisting of tf(regulator), target and a column indicating degree of association between TF and target
+such as "mor" or "corr".
+example regulon:
+tf      target  corr
+Esr1    Pgr     0.56}
 
-\item{method}{String indicating the method used to calculate signature score. Available methods in gsva package include "gsva", "ssgsea", "zscore" and "plage"}
+\item{geneset}{A list of genesets. If \code{geneset_weighted} is \code{TRUE}, each list element is a dataframe with
+\code{gene_id} column indicating the genes and \code{weights} column indicating the weights. If \code{geneset_weight} is
+\code{FALSE}, each list element is a character vector corresponding to the genes in the geneset.}
+
+\item{geneset_weighted}{Logical indicating whether the genesets are weighted}
+
+\item{method}{String indicating the method used to calculate signature score. Available methods in gsva package include
+"gsva", "ssgsea", "zscore" and "plage"}
 
 \item{mode}{String indicating the choice of TF-target association being either correlation "corr" or mode of regulation "mor".
-Correlation can either be supplied or computed from expMatrix using (corr_calculate = FALSE). Mor is supplied by the Dorothea regulon.}
+Correlation can either be supplied or computed from expMatrix using (\code{corr_calculate = FALSE}). Mor is supplied by the
+Dorothea regulon.}
 
 \item{corr_calculate}{Logical indicating whether correlation needs to be calculated}
 
@@ -37,14 +54,23 @@ if expMatrix is a SummarizedExperiment object}
 
 \item{rowData_name}{String indicating the column name in the rowData that matches the gene names in the regulon
 if expMatrix is a SummarizedExperiment object}
+
+\item{BPPARAM}{A BiocParallelParam object specifying whether summation should be parallelized. Use BiocParallel::SerialParam() for
+serial evaluation and use \code{BiocParallel::MulticoreParam()} for parallel evaluation}
+
+\item{min.sz}{An integer indicating the minimum number of genes in gene sets. Default value is set to 3.}
+
+\item{...}{additional arguments to pass into \code{GSVA::gsva}}
 }
 \value{
 A matrix of inferred transcription factor (row) activities in samples (columns)
 }
 \description{
-This function generates the transcriptional activity from a matrix of bulk gene expression data and pre-existing regulons such as those
-available from Dorothea. The direction of target genes (activating or repressive) can be defined either by the mode of regulation
-included in the regulon or calculated based on the correlation between the expression of the TF and its target genes
+This function generates the transcriptional activity from a matrix of bulk gene expression data and
+pre-existing regulons such as those available from Dorothea. The direction of target genes
+(activating or repressive) can be defined either by the mode of regulation included in the regulon or
+calculated based on the correlation between the expression of the TF and its target genes. This function
+can also be used to calculate activity from weighted or unweight genesets
 }
 \examples{
 # Load regulon from dorothea
@@ -59,14 +85,14 @@ rownames(expr) <- genes
 colnames(expr) <- paste("sample", 1:20)
 
 # Use mor embedded in Dorothea regulon
-activity.mor <- calculateActivityBulk(expr, regulon, mode = "mor", method = "ssgsea")
+activity.mor <- calculateActivityBulk(expr, regulon = regulon, mode = "mor", method = "ssgsea")
 
 # Add correlation of Dorothea from user supplied gene matrix
-activity.corr <- calculateActivityBulk(expr, regulon, mode = "corr",
+activity.corr <- calculateActivityBulk(expr, regulon = regulon, mode = "corr",
 method = "ssgsea", corr_calculate = TRUE)
 
 # Subsample
-activity.corr <- calculateActivityBulk(expr, regulon, mode = "corr",
+activity.corr <- calculateActivityBulk(expr, regulon = regulon, mode = "corr",
 method = "ssgsea", corr_calculate = TRUE, sample_n = 10)
 
 # Use Dorothea regulon with pre-calculated calculation
@@ -74,6 +100,15 @@ method = "ssgsea", corr_calculate = TRUE, sample_n = 10)
 regulon <- readRDS(file = "/gstore/project/lineage/GRN/data/Dorothea_TCGA/regulon.Breast.TCGA.ABCDE.rds")
 activity.corr <- calculateActivityBulk(expr, regulon, mode = "corr", method ="ssgsea")
 }
+
+# Weighted geneset
+geneset = list(genesetA = data.frame(gene_id = genes[1:10], weights = -5:4))
+activity.corr <- calculateActivityBulk(expr, geneset = breast, mode = "weights", method ="ssgsea")
+
+# Unweighted geneset
+geneset = list(genesetA = genes[1:10])
+activity.corr <- calculateActivityBulk(expr, geneset = geneset, geneset_weighted = FALSE,
+ mode = "weights", method ="ssgsea")
 
 }
 \author{

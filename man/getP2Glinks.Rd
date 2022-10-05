@@ -24,7 +24,7 @@ getP2Glinks(
 \item{...}{other parameters to pass to addPeak2GeneLinks from ArchR package}
 }
 \value{
-A Peak2Gene correlation datafrane
+A Peak2Gene correlation data frame
 }
 \description{
 Compute correlations between ATAC-seq peaks and RNA-seq genes
