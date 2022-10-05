@@ -15,13 +15,12 @@
 #' @return an igraph plot of interconnected pathways through TFs
 #' @export
 #' @examples
-#' \dontrun{
 #' AR <- data.frame(ID = c("ANDROGEN RESPONSE","PROLIFERATION","MAPK"),
 #' p.adjust = c(0.001, 0.01, 0.04))
 #' GATA6 <- data.frame(ID = c("STK33","PROLIFERATION","MAPK"),
 #' p.adjust = c(0.001, 0.01, 0.04))
 #' enrichresults <- list(AR = AR, GATA6 = GATA6)
-#' plotGseaNetwork(tf = names(enrichresults), enrichresults = enrichresults)}
+#' plotGseaNetwork(tf = names(enrichresults), enrichresults = enrichresults)
 #' @author Phoebe Guo, Xiaosai Yao
 
 plotGseaNetwork <- function(tf,
@@ -87,7 +86,7 @@ plotGseaNetwork <- function(tf,
     ggraph::geom_edge_link(alpha = 0.8) +
     ggplot2::coord_flip() +
     ggplot2::scale_color_manual(values = pal) +
-    ggraph::theme_graph(fg_text_colour = 'black') +
+    ggraph::theme_graph(base_family = "Arial", fg_text_colour = 'black') +
     ggraph::geom_node_point(aes_string(color = "type"), size = 5)  +
     ggraph::geom_node_text(aes(label = name, filter = type == gset_label),
                             nudge_y = 0.1, hjust = 0) +
