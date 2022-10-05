@@ -1,11 +1,15 @@
 Package: epiregulon
 Title: Gene regulatory network inference from single cell epigenomic data
 Version: 1.0.15
-Date: 2022-09-17
+Date: 2022-10-5
 Authors@R: 
     c(person(given = "Xiaosai", family = "Yao", role = c("aut", "cre"), email = "yao.xiaosai@gene.com"),
     person(given = "Shang-Yang", family = "Chen", role = "aut", email = "sychen9584@gmail.com"))
-Description: Construct gene regulatory network and infer transcription factor activity from single cell multiome data of gene expression and chromatin accessibility, supplied as MultiAssayExperiment or ArchR object
+Description: Gene regulatory networks model the underlying gene regulation hierarchies that drive gene expression and
+observed phenotypes. Epiregulon infers TF activity in single cells by constructing a gene regulatory network (regulons). 
+This is achieved through integration of scATAC-seq and scRNA-seq data and incorporation of public bulk TF ChIP-seq data. 
+Links between regulatory elements and their target genes are established by computing correlations between chromatin accessibility 
+and gene expressions.
 License: MIT + file LICENSE
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
