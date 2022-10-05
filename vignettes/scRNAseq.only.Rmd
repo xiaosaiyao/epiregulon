@@ -2,7 +2,7 @@
 title: "Dorothea regulon"
 author: Xiaosai Yao
 email: yao.xiaosai@gene.com
-date: "April 29, 2022"
+date: "October 4, 2022"
 output:
   BiocStyle::html_document:
     toc: true
@@ -22,13 +22,12 @@ knitr::opts_chunk$set(echo = TRUE,
 
   
 ```
-Epiregulon also supports transcription factor activity inference when users only have scRNA-seq. After all, multiome or scATAC-seq data is still considered a rarity. In this case, users can supply a pre-constructed gene regulatory network. [Dorothea](https://saezlab.github.io/dorothea/articles/dorothea.html) provides both human and mouse pre-constructed gene regulatory networks based on curated experimental and computational data. In this vignette, we bypass the regulon construction step and go straight to calculate TF activity from a Dorothea GRN.
+Epiregulon also supports transcription factor activity inference when users only have scRNA-seq. After all, multiome or scATAC-seq data is still relatively rare. To enable TF activity inference on scRNA-seq, users can supply a pre-constructed gene regulatory network. [Dorothea](https://saezlab.github.io/dorothea/articles/dorothea.html) provides both human and mouse pre-constructed gene regulatory networks based on curated experimental and computational data. In this vignette, we bypass the regulon construction step and go straight to calculate TF activity from a Dorothea GRN.
 
 
 # Load regulon
 
-Dorothea assigns confidence level to its regulon with A being the most confident (i.e. supported by multiple lines 
-of evidence) and E being the least confident. For this demo, we further trim the regulons to only 4 TFs.
+Dorothea assigns confidence level to its regulons with A being the most confident (i.e. supported by multiple lines of evidence) and E being the least confident. For this demo, we further trim the regulons to only 4 TFs.
 
 ```{r load_regulon}
 library(dorothea)
@@ -36,32 +35,32 @@ data(dorothea_mm, package = "dorothea")
 regulon <- dorothea_mm 
 
 #trim regulon
-genes_to_plot <- c("Foxa1", "Nkx3-1","Trp63","Sox2")
+genes_to_plot <- c("Foxa1", "Neurod1","Pdx1","Arx")
 regulon <- regulon[regulon$tf %in% genes_to_plot, ]
 ```
 
 
 # Load scRNA-seq data
 
-We load a previously analyzed scRNA-seq dataset from resultsDB. Dimension reduction and clustering were already performed. We also need to rename the rownames of the scRNA-seq as gene symbols to be compatible with the regulons.
+We download the raw counts of a mouse pancreas data set from [scRNAseq](https://bioconductor.org/packages/release/data/experiment/html/scRNAseq.html). We add normalized logcounts, perform dimension reduction and visualize the embeddings using [scater](https://bioconductor.org/packages/release/bioc/html/scater.html). 
 
-```{r resultsDB, message = FALSE}
-library(ResultsDB)
-library(epiregulon)
-file.id <- packID("GPA505",
-                  "scbasic-results/sce",
-                  "PUBLISHED-1")
+```{r load scRNAseq, message = FALSE}
 
-sce <- getPublishedResult(file.id)
+library(scRNAseq)
+library(scater)
 
-#rename rownames as gene symbol
-rownames(sce) <- rowData(sce)$symbol
+sce <- BaronPancreasData('mouse')
+sce <- logNormCounts(sce)
+sce <- runPCA(sce)
+sce <- runUMAP(sce)
+
+plotUMAP(sce, colour_by = "label", text_by = "label")
+
 ```
 
 # Calculate activity
 
-Even though Dorothea provides weights under the mor column, we achieved superior performance if we recompute the weights based on
-the correlation between tf and target gene expression based on our own data. We performed 2 steps, the first step is to add weights to the Dorothea regulons and the second step is to estimate the TF activity by taking the weighted average of the target gene expression.
+Even though Dorothea provides weights under the mor column, we achieved superior performance if we recompute the weights based on the correlation between tf and target gene expression based on our own data. We performed 2 steps, the first step is to add weights to the Dorothea regulons and the second step is to estimate the TF activity by taking the weighted average of the target gene expression.
 
 ``` {r activity, message=FALSE, warning=FALSE}
 
@@ -70,7 +69,7 @@ library(epiregulon)
 #Add weights to regulon
 regulon.ms <- addWeights(regulon = regulon,
                          sce = sce,
-                         cluster_factor = "cluster",
+                         cluster_factor = "label",
                          BPPARAM = BiocParallel::MulticoreParam())
 
 #Calculate activity
@@ -84,9 +83,11 @@ score.combine <- calculateActivity(sce,
 
 # Visualize activity
 
-Finally we finalize the TF activity by either UMAP, violin plots or bubble plots
-```{r visualization}
+Finally we visualize the TF activity by either UMAP, violin plots or bubble plots.
+We confirm the activity of known lineage factors Pdx1 and Neurod1 in beta cells, 
+Arx in alpha cells and Foxa1 in ductal cells.
 
+```{r visualization}
 
 # plot umap
 plotActivityDim(sce = sce, 
@@ -95,21 +96,50 @@ plotActivityDim(sce = sce,
                 legend.label = "score",
                 point_size = 0.1,
                 dimtype = "UMAP", 
-                label = "cluster", 
-                combine = TRUE)
+                label = "label", 
+                combine = TRUE,
+                text_size = 2)
 
 # plot violin plot
 plotActivityViolin(score.combine, 
-                   tf = genes_to_plot, 
-                   sce$cluster)
+                   tf = genes_to_plot,
+                   class = sce$label)
 
 # plot Bubble plot
 plotBubble(score.combine, 
            tf = genes_to_plot, 
-           sce$cluster)
+           class = sce$label)
 ```
+We can adapt the epiregulon package to plot gene expression. When compared against TF activity, gene expression of Foxa1 and Arx has noisy signals and high dropout rates. 
+Epiregulon enhances the signal to noise ratio of TF activity and better resolves lineage differences.
 
-## Pathway enrichment
+```{r scRNAseq}
+
+# plot umap
+plotActivityDim(sce = sce, 
+                activity_matrix = logcounts(sce)[genes_to_plot,],
+                tf = genes_to_plot, 
+                legend.label = "score",
+                point_size = 0.1,
+                dimtype = "UMAP", 
+                label = "label", 
+                combine = TRUE,
+                text_size = 2,
+                colors = c("gray","blue"),
+                limit = c(0,2))
+
+# plot violin plot
+plotActivityViolin(logcounts(sce)[genes_to_plot,], 
+                   tf = genes_to_plot,
+                   class = sce$label)
+
+# plot Bubble plot
+plotBubble(logcounts(sce)[genes_to_plot,], 
+           tf = genes_to_plot, 
+           class = sce$label)
+```
+# Pathway enrichment
+
 Sometimes it is useful to understand what pathways are enriched in the regulons. We take the highly correlated target genes of a regulon and perform geneset enrichment using the enricher function from [clusterProfiler](http://yulab-smu.top/biomedical-knowledge-mining-book/universal-api.html).
 
 ```{r enrichment, warning=FALSE, fig.height = 14}
