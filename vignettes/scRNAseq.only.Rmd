@@ -1,9 +1,14 @@
 ---
 title: "Dorothea regulon"
 author: Xiaosai Yao
-email: yaox19@gene.com
+email: yao.xiaosai@gene.com
 date: "April 29, 2022"
-output: html_document
+output:
+  BiocStyle::html_document:
+    toc: true
+    number_section: true
+    self_contained: true
+    titlecaps: true
 package: epiregulon
 vignette: >
   %\VignetteIndexEntry{Dorothea tutorial}
@@ -11,16 +16,16 @@ vignette: >
   %\VignetteEncoding{UTF-8}
 ---
 
-```{r setup, include=FALSE}
+```{r setup, include = FALSE}
 knitr::opts_chunk$set(echo = TRUE,
-                      eval = FALSE)
+                      eval = TRUE)
 
   
 ```
 Epiregulon also supports transcription factor activity inference when users only have scRNA-seq. After all, multiome or scATAC-seq data is still considered a rarity. In this case, users can supply a pre-constructed gene regulatory network. [Dorothea](https://saezlab.github.io/dorothea/articles/dorothea.html) provides both human and mouse pre-constructed gene regulatory networks based on curated experimental and computational data. In this vignette, we bypass the regulon construction step and go straight to calculate TF activity from a Dorothea GRN.
 
 
-## Load regulon
+# Load regulon
 
 Dorothea assigns confidence level to its regulon with A being the most confident (i.e. supported by multiple lines 
 of evidence) and E being the least confident. For this demo, we further trim the regulons to only 4 TFs.
@@ -29,17 +34,18 @@ of evidence) and E being the least confident. For this demo, we further trim the
 library(dorothea)
 data(dorothea_mm, package = "dorothea")
 regulon <- dorothea_mm 
+
 #trim regulon
 genes_to_plot <- c("Foxa1", "Nkx3-1","Trp63","Sox2")
 regulon <- regulon[regulon$tf %in% genes_to_plot, ]
 ```
 
 
-## Load scRNA-seq data
+# Load scRNA-seq data
 
 We load a previously analyzed scRNA-seq dataset from resultsDB. Dimension reduction and clustering were already performed. We also need to rename the rownames of the scRNA-seq as gene symbols to be compatible with the regulons.
 
-```{r resultsDB, message=FALSE}
+```{r resultsDB, message = FALSE}
 library(ResultsDB)
 library(epiregulon)
 file.id <- packID("GPA505",
@@ -52,7 +58,7 @@ sce <- getPublishedResult(file.id)
 rownames(sce) <- rowData(sce)$symbol
 ```
 
-## Calculate activity
+# Calculate activity
 
 Even though Dorothea provides weights under the mor column, we achieved superior performance if we recompute the weights based on
 the correlation between tf and target gene expression based on our own data. We performed 2 steps, the first step is to add weights to the Dorothea regulons and the second step is to estimate the TF activity by taking the weighted average of the target gene expression.
@@ -62,18 +68,21 @@ the correlation between tf and target gene expression based on our own data. We 
 library(epiregulon)
 
 #Add weights to regulon
-regulon.ms <- addWeights(regulon=regulon,
-                   sce=sce,
-                   cluster_factor="cluster",
-                   BPPARAM=BiocParallel::MulticoreParam())
+regulon.ms <- addWeights(regulon = regulon,
+                         sce = sce,
+                         cluster_factor = "cluster",
+                         BPPARAM = BiocParallel::MulticoreParam())
 
 #Calculate activity
-score.combine <- calculateActivity(sce, regulon.ms, "weight", method="weightedMean")
+score.combine <- calculateActivity(sce, 
+                                   regulon = regulon.ms, 
+                                   mode = "weight", 
+                                   method = "weightedMean")
 
 ```
 
 
-## Visualize activity
+# Visualize activity
 
 Finally we finalize the TF activity by either UMAP, violin plots or bubble plots
 ```{r visualization}
@@ -91,12 +100,12 @@ plotActivityDim(sce = sce,
 
 # plot violin plot
 plotActivityViolin(score.combine, 
-                   tf=genes_to_plot, 
+                   tf = genes_to_plot, 
                    sce$cluster)
 
 # plot Bubble plot
 plotBubble(score.combine, 
-           tf=genes_to_plot, 
+           tf = genes_to_plot, 
            sce$cluster)
 ```
 
@@ -110,12 +119,16 @@ C6 <- EnrichmentBrowser::getGenesets(org = "mmu", db = "msigdb", cat = "C6", gen
 
 #combine genesets and convert genesets to be compatible with enricher
 gs <- c(H,C6)
-gs.list <- do.call(rbind,lapply(names(gs), function(x) {data.frame(gs=x, genes=gs[[x]])}))
+gs.list <- do.call(rbind,lapply(names(gs), function(x) 
+  {data.frame(gs = x, genes = gs[[x]])}))
 
-enrichresults <- regulonEnrich(genes_to_plot, regulon=regulon.ms, corr="weight",
-                            corr_cutoff=0.5, genesets=gs.list)
+enrichresults <- regulonEnrich(genes_to_plot, 
+                               regulon = regulon.ms, 
+                               corr = "weight",
+                               corr_cutoff = 0.5, 
+                               genesets = gs.list)
 
 #plot results
-enrichPlot(results=enrichresults, ncol = 1)
+enrichPlot(results = enrichresults, ncol = 1)
 
 
