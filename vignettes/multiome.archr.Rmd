@@ -80,8 +80,9 @@ getAvailableMatrices(proj)
 
 We will use the joint reducedDims - "LSI_Combined" and  joint embeddings - "UMAP_Combined"
 ```{r}
-proj@reducedDims
-proj@embeddings
+getReducedDims(proj)
+getEmbedding(proj)
+
 
 ```
 

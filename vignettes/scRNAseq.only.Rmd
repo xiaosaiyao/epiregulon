@@ -161,4 +161,10 @@ enrichresults <- regulonEnrich(genes_to_plot,
 #plot results
 enrichPlot(results = enrichresults, ncol = 1)
 
+```
 
+# Session Info
+
+``` {r}
+sessionInfo()
+```

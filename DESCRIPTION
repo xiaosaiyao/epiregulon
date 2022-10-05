@@ -1,14 +1,13 @@
 Package: epiregulon
-Title: Building regulons by integrating scRNA-seq and scATAC-seq data
+Title: Gene regulatory network inference from single cell epigenomic data
 Version: 1.0.15
 Date: 2022-09-17
 Authors@R: 
-    c(person(given = "Xiaosai", family = "Yao", role = c("aut", "cre"), email = "yaox19@gene.com"),
+    c(person(given = "Xiaosai", family = "Yao", role = c("aut", "cre"), email = "yao.xiaosai@gene.com"),
     person(given = "Shang-Yang", family = "Chen", role = "aut", email = "sychen9584@gmail.com"))
-Description: Construct gene regulatory network and infer transcription factor activity from single cell multiome data.
+Description: Construct gene regulatory network and infer transcription factor activity from single cell multiome data of gene expression and chromatin accessibility, supplied as MultiAssayExperiment or ArchR object
 License: MIT + file LICENSE
 Encoding: UTF-8
-LazyData: true
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.2.1
 Imports:
@@ -40,8 +39,10 @@ Imports:
     checkmate,
     ggraph
 Depends: 
-    R (>= 4.0),
+    R (>= 4.2.0),
     SingleCellExperiment
 Suggests: 
-    knitr, rmarkdown, dorothea, EnrichmentBrowser, parallel, dsassembly, scRNAseq
+    knitr, rmarkdown, dorothea, EnrichmentBrowser, parallel, dsassembly, scRNAseq, BiocStyle
 VignetteBuilder: knitr
+URL:
+biocViews: Software, NetworkInference, Epigenetics, SingleCell
