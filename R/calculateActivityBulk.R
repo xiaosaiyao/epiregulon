@@ -128,31 +128,31 @@ calculateActivityBulk <- function(expMatrix,
 
     # add correlation
     if (mode == "corr") {
-      regulon$corr = 0
+      regulon$corr <- 0
       message("calculating correlation\n")
       pb <- txtProgressBar(min = 0,
                            max = length(unique_tfs),
                            style = 3)
 
-      regulon_weight_list = vector("list", length(unique_tfs))
-      names(regulon_weight_list) = unique_tfs
+      regulon_weight_list <- vector("list", length(unique_tfs))
+      names(regulon_weight_list) <- unique_tfs
 
-      counter = 0
+      counter <- 0
       for (tf in unique_tfs) {
 
         if (is.null(sample_n) & (corr_calculate)) {
           tf_expr <- expr[tf, , drop = FALSE]
           target_expr_matrix <- expr[regulon$target[tf_indexes[[tf]]], , drop = FALSE]
         } else if (!is.null(sample_n) & (corr_calculate)) {
-          samples <- sample(1:ncol(expr), sample_n, replace = FALSE)
+          samples <- sample(seq_len(ncol(expr)), sample_n, replace = FALSE)
           tf_expr <- expr[tf, samples , drop = FALSE]
           target_expr_matrix <- expr[regulon$target[tf_indexes[[tf]]], samples, drop = FALSE]
         }
 
         corr <- as.numeric(stats::cor(t(tf_expr), t(target_expr_matrix), use = "everything"))
-        regulon_weight_list[[tf]] = corr
+        regulon_weight_list[[tf]] <- corr
 
-        counter = counter + 1
+        counter <- counter + 1
         setTxtProgressBar(pb, counter)
         Sys.sleep(1 / 100)
 

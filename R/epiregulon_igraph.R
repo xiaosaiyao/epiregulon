@@ -10,10 +10,11 @@
 #' target gene to regulatory element always contains a regulatory elements
 #' @param weights A character specifying which variable should be used to assign
 #' weights to edges. If set to 'NA' then unweighted graph is built.
+#' @return A regulatory network graph
 #' @importFrom igraph graph_from_data_frame V vcount
 #'
 
-build_graph <-function(regulon, mode = "tripartite", weights = "corr"){
+build_graph <- function(regulon, mode = "tripartite", weights = "corr"){
     stopifnot(mode %in% c("tg", "re", "tripartite", "pairs"))
 
     # give names to the peaks and target genes which will be easy to extract
@@ -108,9 +109,9 @@ add_centrality_degree <- function(graph){
 }
 
 rank_tfs <- function(graph){
-    data.frame(tf = V(graph)$name[order(V(graph)$centrality, decreasing = TRUE)],
-               rank = 1:vcount(graph),
-               centrality = sort(V(graph)$centrality, decreasing = TRUE))
+    data.frame(tf = igraph::V(graph)$name[order(V(graph)$centrality, decreasing = TRUE)],
+               rank = seq_len(igraph::vcount(graph)),
+               centrality = sort(igraph::V(graph)$centrality, decreasing = TRUE))
 }
 
 
@@ -176,7 +177,7 @@ plot_difference_network <- function(regulon,
     regulon.tf[[group]] <- regulon.tf[[group]][which(regulon.tf[[group]][, group] > cutoff),]
 
     #rename colnames as weight to be consistent across all groups
-    colnames(regulon.tf[[group]])[which(colnames(regulon.tf[[group]]) == group)] = "weight"
+    colnames(regulon.tf[[group]])[which(colnames(regulon.tf[[group]]) == group)] <- "weight"
 
     #rename tf to be tf_group
     regulon.tf[[group]][,"tf"] <- paste0(regulon.tf[[group]][,"tf"], "_", group)

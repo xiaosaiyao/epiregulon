@@ -20,6 +20,9 @@ target gene to regulatory element always contains a regulatory elements}
 \item{weights}{A character specifying which variable should be used to assign
 weights to edges. If set to 'NA' then unweighted graph is built.}
 }
+\value{
+A regulatory network graph
+}
 \description{
 Building igraph directed graph object based on the output of the getRegulon function
 }

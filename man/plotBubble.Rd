@@ -22,9 +22,11 @@ A ggplot object
 Generate bubble plots of relative activities across cluster/group labels for a list of TFs
 }
 \examples{
-\dontrun{
-plotBubble(score.combine, c("SPI1", "ZNF623", "IRF4","SOX4"), sce$BioClassification)
-}
+example_sce <- scuttle::mockSCE()
+example_sce <- scuttle::logNormCounts(example_sce)
+example_sce$cluster <- sample(LETTERS[1:5], ncol(example_sce), replace = TRUE)
+plotBubble(activity_matrix = logcounts(example_sce),
+tf = c("Gene_0001","Gene_0002"),  class = example_sce$cluster)
 }
 \author{
 Shang-yang Chen

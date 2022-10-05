@@ -59,7 +59,7 @@ calculateActivity <- function (sce,
   scale.mat <- assay(sce, assay)
 
   #convert delayedMatrix to dgCMatrix
-  if (class(scale.mat)[1] == "DelayedMatrix") {
+  if (checkmate::test_class(scale.mat, classes = "DelayedMatrix")) {
     writeLines("converting DelayedMatrix to dgCMatrix")
     scale.mat <- as(scale.mat, Class = "dgCMatrix")
   }
@@ -67,9 +67,9 @@ calculateActivity <- function (sce,
 
   #convert genesets to regulon
   if (!is.null(genesets)){
-    if ( class(genesets)[1] == "CompressedSplitDFrameList") {
+    if ( checkmate::test_class(genesets, classes =  "CompressedSplitDFrameList")) {
       regulon <- do.call(rbind,lapply(names(genesets), function(x) {data.frame(tf=x, target=genesets[[x]][,"gene_id"], weight=genesets[[x]][,"weights"])}))
-    } else if (class(genesets)[1] == "CompressedCharacterList"){
+    } else if ( checkmate::test_class(genesets, classes =  "CompressedCharacterList")) {
       regulon <- do.call(rbind,lapply(names(genesets), function(x) {data.frame(tf=x, target=genesets[[x]], weight=1)}))
     }
 
@@ -81,8 +81,7 @@ calculateActivity <- function (sce,
 
   #calculate activity
   if (method == "weightedmean") {
-    message(paste("calculating TF activity from regulon using "),
-            method)
+    writeLines(paste("calculating TF activity from regulon using "), method)
 
     tf_indexes <- split(seq_len(nrow(regulon)), regulon$tf)
     unique_tfs <- names(tf_indexes)
@@ -110,14 +109,13 @@ calculateActivity <- function (sce,
     score.combine <- Matrix::t(score.combine)
   }
   else if (method == "aucell") {
-    message(paste("calculating TF activity from regulon using "),
-            method)
+    writeLines(paste("calculating TF activity from regulon using "), method)
     geneSets <- split(regulon$target, regulon$tf)
     writeLines("ranking cells...")
     cells_rankings <- AUCell::AUCell_buildRankings(scale.mat,
-                                                  splitByBlocks=TRUE,
+                                                  splitByBlocks = TRUE,
                                                   nCores = ncore,
-                                                  plotStats = F)
+                                                  plotStats = FALSE)
     writeLines("calculating AUC...")
     cells_AUC <- AUCell::AUCell_calcAUC(geneSets,
                                        rankings = cells_rankings,
@@ -128,15 +126,7 @@ calculateActivity <- function (sce,
   return(score.combine)
 }
 
-#' Aggregate the weighted gene expression of genes belonging to a given pathway or a regulon
-#'
-#' @param scale.mat A matrix of normalized gene expression with genes as the rows and cells as the columns
-#' @param geneset A data frame with the first column indicating the name of the genes in the pathway and the second column indicating the weights of genes contributing to the pathway or regulon
-#' @param geneset_name String indicating the name of the pathway or the regulon
-#'
-#' @return A vector of inferred activity scores for every single cell
-#' @export
-#' @author Xiaosai Yao
+
 
 pathwayscoreCoeffNorm <- function(scale.mat, geneset, geneset_name) {
 

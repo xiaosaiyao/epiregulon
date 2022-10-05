@@ -49,8 +49,7 @@ p.adjust = c(0.001, 0.01, 0.04))
 GATA6 <- data.frame(ID = c("STK33","PROLIFERATION","MAPK"),
 p.adjust = c(0.001, 0.01, 0.04))
 enrichresults <- list(AR = AR, GATA6 = GATA6)
-plotGseaNetwork(tf = names(enrichresults), enrichresults = enrichresults)
-}
+plotGseaNetwork(tf = names(enrichresults), enrichresults = enrichresults)}
 }
 \author{
 Phoebe Guo, Xiaosai Yao

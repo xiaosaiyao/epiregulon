@@ -10,7 +10,6 @@
 #' @param useMatrix String specifying which the name of the gene expression matrix in the ArchR project to use.
 #' It is often called the "GeneExpressionMatrix" for multiome and "GeneIntegrationMatrix" for unpaired data in ArchR project.
 #' @param cellNum An integer to specify the number of cells to include in each K-means cluster. Default is 200 cells.
-#' @param seed An integer scalar to specify the seed for K-means clustering
 #' @param maxDist An integer to specify the base pair extension from transcription start start for overlap with peak regions
 #' @param ... other parameters to pass to addPeak2GeneLinks from ArchR package
 #'
@@ -54,9 +53,8 @@ calculateP2G <- function(peakMatrix = NULL,
                         maxDist = 250000,
                         cor_cutoff = 0.5,
                         cellNum = 200,
-                        seed = 1,
                         ...) {
-  set.seed(seed)
+
 
   if (!is.null(ArchR_path)) {
     ArchR::addArchRLogging(useLogs = FALSE)
@@ -135,8 +133,8 @@ calculateP2G <- function(peakMatrix = NULL,
     # rowRanges(altExp(sce_grouped)) already preserved
 
     # keep track of original ATAC and expression indices
-    rowData(sce_grouped)$old.idxRNA <- 1:nrow(sce_grouped)
-    rowData(altExp(sce_grouped))$old.idxATAC <- 1:nrow(altExp(sce_grouped))
+    rowData(sce_grouped)$old.idxRNA <- seq_len(nrow(sce_grouped))
+    rowData(altExp(sce_grouped))$old.idxATAC <- seq_len(nrow(altExp(sce_grouped)))
 
     # remove genes and peaks that are equal to 0
     sce_grouped <- sce_grouped[which(rowSums(assay(sce_grouped)) != 0),]

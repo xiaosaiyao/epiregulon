@@ -22,9 +22,28 @@ A combined ggplot object or a list of ggplots if combine == FALSE
 Plot results of regulonEnrich
 }
 \examples{
-\dontrun{
-enrichplot(results = enrichment_results )
-}
+#retrieve genesets
+H <- EnrichmentBrowser::getGenesets(org = "hsa", db = "msigdb",
+cat = "H", gene.id.type = "SYMBOL" )
+C6 <- EnrichmentBrowser::getGenesets(org = "hsa", db = "msigdb",
+cat = "C6", gene.id.type = "SYMBOL" )
+
+#combine genesets and convert genesets to be compatible with enricher
+gs <- c(H,C6)
+gs.list <- do.call(rbind,lapply(names(gs), function(x) {
+data.frame(gs=x, genes=gs[[x]])}))
+
+head(gs.list)
+
+#get regulon
+library(dorothea)
+data(dorothea_hs, package = "dorothea")
+regulon <- dorothea_hs
+enrichment_results <- regulonEnrich(c("ESR1","AR"), regulon = regulon, corr = "mor",
+genesets = gs.list)
+
+# plot graph
+enrichPlot(results = enrichment_results )
 
 }
 \author{

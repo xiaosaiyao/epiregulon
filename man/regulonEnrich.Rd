@@ -24,7 +24,6 @@ A dataframe showing the significantly enriched pathways
 Perform geneset enrichment of user-defined regulons
 }
 \examples{
-\dontrun{
 #retrieve genesets
 H <- EnrichmentBrowser::getGenesets(org = "hsa", db = "msigdb",
 cat = "H", gene.id.type = "SYMBOL" )
@@ -36,15 +35,14 @@ gs <- c(H,C6)
 gs.list <- do.call(rbind,lapply(names(gs), function(x) {
 data.frame(gs=x, genes=gs[[x]])}))
 
-> head(gs.list)
-gs   genes
-1 M5890_HALLMARK_TNFA_SIGNALING_VIA_NFKB   ABCA1
-2 M5890_HALLMARK_TNFA_SIGNALING_VIA_NFKB   ACKR3
-3 M5890_HALLMARK_TNFA_SIGNALING_VIA_NFKB    AREG
+head(gs.list)
 
-enrichment_results <- regulonEnrich(c("NKX2-1","GATA6","AR"), regulon = regulon.w,
+#get regulon
+library(dorothea)
+data(dorothea_hs, package = "dorothea")
+regulon <- dorothea_hs
+enrichment_results <- regulonEnrich(c("ESR1","AR"), regulon = regulon, corr = "mor",
 genesets = gs.list)
-}
 
 }
 \author{

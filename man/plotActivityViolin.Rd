@@ -36,9 +36,13 @@ A combined ggplot object or a list of ggplots if combine == FALSE
 Generate violin plots of inferred activities for a list of TFs grouped by cluster/group labels
 }
 \examples{
-\dontrun{
-plotActivityViolin(score.combine, c("FOXA1","GATA3","SOX9","SPI1"), sce$BioClassification)
-}
+# create a mock singleCellExperiment object for gene expression matrix
+example_sce <- scuttle::mockSCE()
+example_sce <- scuttle::logNormCounts(example_sce)
+example_sce$cluster <- sample(LETTERS[1:5], ncol(example_sce), replace = TRUE)
+plotActivityViolin(activity_matrix = logcounts(example_sce),
+tf = c("Gene_0001","Gene_0002"),  class = example_sce$cluster)
+
 }
 \author{
 Xiaosai Yao, Shang-yang Chen

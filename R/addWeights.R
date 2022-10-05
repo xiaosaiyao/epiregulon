@@ -94,7 +94,7 @@ addWeights <- function(regulon,
     sce,
     exprs_values = exprs_values,
     ids = groupings,
-    average = T,
+    average = TRUE,
     BPPARAM = BPPARAM
   )
 
@@ -103,7 +103,7 @@ addWeights <- function(regulon,
     alt.avg.se <- scater::sumCountsAcrossCells(
       alt.exp,
       ids = groupings,
-      average = T,
+      average = TRUE,
       BPPARAM = BPPARAM
     )
     alt.avg <- assays(alt.avg.se)$average

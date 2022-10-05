@@ -40,11 +40,11 @@ getP2Glinks <- function(archr_path,
   )
 
   # Get metadata from p2g object and turn into df with peak indexes
-  peak_metadata = as.data.frame(S4Vectors::metadata(p2g)[[1]]) # shows  chromosome, start, and end coordinates for each peak
+  peak_metadata <- as.data.frame(S4Vectors::metadata(p2g)[[1]]) # shows  chromosome, start, and end coordinates for each peak
   peak_metadata$idxATAC <- as.numeric(rownames(peak_metadata))
 
-  gene_metadata = as.data.frame(S4Vectors::metadata(p2g)[[2]]) # shows gene name and RNA index of genomic ranges
-  gene_metadata$idxRNA = as.numeric(rownames(gene_metadata))
+  gene_metadata <- as.data.frame(S4Vectors::metadata(p2g)[[2]]) # shows gene name and RNA index of genomic ranges
+  gene_metadata$idxRNA <- as.numeric(rownames(gene_metadata))
 
   # Add gene names, chromosome num, chrom start, and chrom end to dataframe
   p2g <- as.data.frame(p2g)
@@ -166,10 +166,10 @@ addTFMotifInfo <- function(p2g,
                            archR_project_path = NULL){
 
   if (!is.null(archR_project_path)) {
-    proj <- loadArchRProject(path = archR_project_path, showLogo = F)
-    peakSet = getPeakSet(ArchRProj = proj)
+    proj <- loadArchRProject(path = archR_project_path, showLogo = FALSE)
+    peakSet <- getPeakSet(ArchRProj = proj)
   } else {
-    peakSet = rowRanges(peakMatrix)
+    peakSet <- rowRanges(peakMatrix)
   }
 
   message("Computing overlap...")

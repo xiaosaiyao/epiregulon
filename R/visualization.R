@@ -47,10 +47,15 @@ plotActivityDim_ <- function(sce,
 #' @export
 #'
 #' @examples
-#' \dontrun{
-#' plotActivityDim(sce, score.combine, c("FOXA1","GATA3","SOX9","SPI1"), "TSNE", point_size = 0.25)
-#'}
-#'
+#' # create a mock singleCellExperiment object for gene expression matrix
+#' example_sce <- scuttle::mockSCE()
+#' example_sce <- scuttle::logNormCounts(example_sce)
+#' example_sce <- scater::runPCA(example_sce)
+#' example_sce <- scater::runUMAP(example_sce)
+#' example_sce$cluster <- sample(LETTERS[1:5], ncol(example_sce), replace = TRUE)
+#' plotActivityDim(sce = example_sce, activity = logcounts(example_sce),
+#' tf = c("Gene_0001","Gene_0002"),  label = "cluster")
+
 #' @author Xiaosai Yao, Shang-yang Chen
 #'
 plotActivityDim <- function(sce,
@@ -68,9 +73,9 @@ plotActivityDim <- function(sce,
                             ...){
 
   # give warning for genes absent in tf list
-  missing = tf[which(! tf %in% rownames(activity_matrix))]
+  missing <- tf[which(! tf %in% rownames(activity_matrix))]
   if (!identical(missing, character(0))) {
-    message(paste0(missing, " not found in activity matrix. Excluded from plots"))
+    writeLines(paste0(missing, " not found in activity matrix. Excluded from plots"))
   }
 
   tf <- tf[which(tf %in% rownames(activity_matrix))]
@@ -139,9 +144,13 @@ plotActivityViolin_ <- function(activity_matrix,
 #' @import ggplot2
 #'
 #' @examples
-#' \dontrun{
-#' plotActivityViolin(score.combine, c("FOXA1","GATA3","SOX9","SPI1"), sce$BioClassification)
-#' }
+#' # create a mock singleCellExperiment object for gene expression matrix
+#' example_sce <- scuttle::mockSCE()
+#' example_sce <- scuttle::logNormCounts(example_sce)
+#' example_sce$cluster <- sample(LETTERS[1:5], ncol(example_sce), replace = TRUE)
+#' plotActivityViolin(activity_matrix = logcounts(example_sce),
+#' tf = c("Gene_0001","Gene_0002"),  class = example_sce$cluster)
+#'
 #' @author Xiaosai Yao, Shang-yang Chen
 plotActivityViolin <- function(activity_matrix,
                                tf,
@@ -154,7 +163,7 @@ plotActivityViolin <- function(activity_matrix,
   # give warning for genes absent in tf list
   missing <- tf[which(! tf %in% rownames(activity_matrix))]
   if (!identical(missing, character(0))) {
-    message(paste0(missing, " not found in activity matrix. Excluded from plots"))
+    writeLines(paste0(missing, " not found in activity matrix. Excluded from plots"))
   }
   tf <- tf[which(tf %in% rownames(activity_matrix))]
 
@@ -188,9 +197,11 @@ plotActivityViolin <- function(activity_matrix,
 #' @import ggplot2
 #'
 #' @examples
-#' \dontrun{
-#' plotBubble(score.combine, c("SPI1", "ZNF623", "IRF4","SOX4"), sce$BioClassification)
-#'}
+#' example_sce <- scuttle::mockSCE()
+#' example_sce <- scuttle::logNormCounts(example_sce)
+#' example_sce$cluster <- sample(LETTERS[1:5], ncol(example_sce), replace = TRUE)
+#' plotBubble(activity_matrix = logcounts(example_sce),
+#' tf = c("Gene_0001","Gene_0002"),  class = example_sce$cluster)
 #' @author Shang-yang Chen
 plotBubble <- function (activity_matrix,
                         tf,
@@ -199,7 +210,7 @@ plotBubble <- function (activity_matrix,
   # give warning for genes absent in tf list
   missing <- tf[which(! tf %in% rownames(activity_matrix))]
   if (!identical(missing, character(0))) {
-    message(paste0(missing, " not found in activity matrix. Excluded from plots"))
+    writeLines(paste0(missing, " not found in activity matrix. Excluded from plots"))
   }
   tf <- tf[which(tf %in% rownames(activity_matrix))]
 
@@ -250,7 +261,7 @@ enrichPlot_ <- function(results,
                         title,
                         top) {
   results$logP.adj <- -log10(results$p.adjust)
-  ggplot(results[1:top, ] , aes_string(y = "logP.adj",
+  ggplot(results[seq_len(top), ] , aes_string(y = "logP.adj",
                                        x = "Description",
                                        color = "GeneRatio")) +
     scale_colour_gradient(high = "red", low = "blue") +
@@ -280,9 +291,28 @@ enrichPlot_ <- function(results,
 #' @import ggplot2
 
 #' @examples
-#' \dontrun{
-#' enrichplot(results = enrichment_results )
-#' }
+#' #retrieve genesets
+#' H <- EnrichmentBrowser::getGenesets(org = "hsa", db = "msigdb",
+#' cat = "H", gene.id.type = "SYMBOL" )
+#' C6 <- EnrichmentBrowser::getGenesets(org = "hsa", db = "msigdb",
+#' cat = "C6", gene.id.type = "SYMBOL" )
+#'
+#' #combine genesets and convert genesets to be compatible with enricher
+#' gs <- c(H,C6)
+#' gs.list <- do.call(rbind,lapply(names(gs), function(x) {
+#' data.frame(gs=x, genes=gs[[x]])}))
+#'
+#' head(gs.list)
+#'
+#' #get regulon
+#' library(dorothea)
+#' data(dorothea_hs, package = "dorothea")
+#' regulon <- dorothea_hs
+#' enrichment_results <- regulonEnrich(c("ESR1","AR"), regulon = regulon, corr = "mor",
+#' genesets = gs.list)
+#'
+#' # plot graph
+#' enrichPlot(results = enrichment_results )
 #'
 #' @author Xiaosai Yao
 enrichPlot <- function(results,

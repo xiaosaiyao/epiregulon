@@ -67,6 +67,9 @@ will contain tf, idxATAC and target.}
 \item{triple_prop}{A logical indicating whether number of cells with identified tf-re-tg triple
 should be included in output}
 
+\item{p_val_corr}{logical indicating whether p value Bonferroni correction for multiple comparison
+has to be done}
+
 \item{BPPARAM}{A BiocParallelParam object specifying whether calculation should be parallelized.
 Default is set to BiocParallel::MulticoreParam()}
 }

@@ -21,9 +21,7 @@
 #' GATA6 <- data.frame(ID = c("STK33","PROLIFERATION","MAPK"),
 #' p.adjust = c(0.001, 0.01, 0.04))
 #' enrichresults <- list(AR = AR, GATA6 = GATA6)
-#' plotGseaNetwork(tf = names(enrichresults), enrichresults = enrichresults)
-#' }
-
+#' plotGseaNetwork(tf = names(enrichresults), enrichresults = enrichresults)}
 #' @author Phoebe Guo, Xiaosai Yao
 
 plotGseaNetwork <- function(tf,
@@ -68,7 +66,7 @@ plotGseaNetwork <- function(tf,
   # create the network object
   p <- igraph::graph_from_data_frame(d = pathway.df,
                              vertices = nodes,
-                             directed = F)
+                             directed = FALSE)
 
   # Create a vector of color
   col  <- c(gset_color, tf_color)

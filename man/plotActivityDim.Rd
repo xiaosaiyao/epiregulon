@@ -56,10 +56,14 @@ A combined ggplot object or a list of ggplots if combine == FALSE
 Plot cell-level reduced dimension results stored in a SingleCellExperiment object, colored by activities for a list of TFs
 }
 \examples{
-\dontrun{
-plotActivityDim(sce, score.combine, c("FOXA1","GATA3","SOX9","SPI1"), "TSNE", point_size = 0.25)
-}
-
+# create a mock singleCellExperiment object for gene expression matrix
+example_sce <- scuttle::mockSCE()
+example_sce <- scuttle::logNormCounts(example_sce)
+example_sce <- scater::runPCA(example_sce)
+example_sce <- scater::runUMAP(example_sce)
+example_sce$cluster <- sample(LETTERS[1:5], ncol(example_sce), replace = TRUE)
+plotActivityDim(sce = example_sce, activity = logcounts(example_sce),
+tf = c("Gene_0001","Gene_0002"),  label = "cluster")
 }
 \author{
 Xiaosai Yao, Shang-yang Chen
