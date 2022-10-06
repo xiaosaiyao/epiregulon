@@ -275,7 +275,7 @@ enrichPlot_ <- function(results,
       plot.title = element_text(hjust = 0.5),
       panel.grid.major = element_blank(),
       panel.grid.minor = element_blank(),
-      panel.margin = unit(0.5, "lines")
+      panel.spacing = unit(0.5, "lines")
     )
 }
 
