@@ -107,7 +107,7 @@ calculateJointProbability <- function(expMatrix,
                                       regulon_p_cutoff = 1,
                                       clusters = NULL,
                                       aggregate = TRUE,
-                                      aggregate_by = "z_score_all",
+                                      aggregate_by = "triple_prop_all",
                                       triple_prop = TRUE,
                                       p_val_corr = FALSE,
                                       BPPARAM=BiocParallel::MulticoreParam()
