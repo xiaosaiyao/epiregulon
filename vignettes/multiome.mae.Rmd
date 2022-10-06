@@ -297,7 +297,8 @@ differential.regulon <- calculateJointProbability(expMatrix = GeneExpressionMatr
                                                         c("NKX2-1","GATA6","FOXA1","FOXA2", "AR","SOX2"),],
                                        clusters = GeneExpressionMatrix$Clusters,
                                        exp_cutoff = 0.5,
-                                       peak_cutoff = 0)
+                                       peak_cutoff = 0,
+                                       aggregate = FALSE)
 
 head(differential.regulon)
 
