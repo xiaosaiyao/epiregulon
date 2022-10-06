@@ -29,6 +29,7 @@
 #' @param aggregate A logical indicating whether to collapse the regulatory elements of the
 #' same genes. If ```TRUE```, the output will only contain tf and target. If ```FALSE```, the output
 #' will contain tf, idxATAC and target.
+#' @param aggregate_by A string indicating the name of the columns to aggregate targets by
 #' @param triple_prop A logical indicating whether number of cells with identified tf-re-tg triple
 #' should be included in output
 #' @param p_val_corr logical indicating whether p value Bonferroni correction for multiple comparison
@@ -106,6 +107,7 @@ calculateJointProbability <- function(expMatrix,
                                       regulon_p_cutoff = 1,
                                       clusters = NULL,
                                       aggregate = TRUE,
+                                      aggregate_by = "z_score_all",
                                       triple_prop = TRUE,
                                       p_val_corr = FALSE,
                                       BPPARAM=BiocParallel::MulticoreParam()
@@ -196,7 +198,9 @@ calculateJointProbability <- function(expMatrix,
   # aggregation
   # if aggregate is true, collapse regulatory elements to have regulons containing tf and target
   if (aggregate == TRUE){
-    regulon.combined <- stats::aggregate(triple_prop_all ~ tf + target, data = regulon.combined,
+
+    aggr_formula <- eval(parse(text = paste0(aggregate_by, "~ tf + target")))
+    regulon.combined <- stats::aggregate(aggr_formula, data = regulon.combined,
                                          FUN = mean, na.rm = TRUE)
   }
 
