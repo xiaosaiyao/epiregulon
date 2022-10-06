@@ -244,7 +244,7 @@ getRegulon <- function(p2g,
                                    FUN = mean,
                                    na.rm = TRUE)
   } else {
-    colnames(regulon_df) <- c("idxATAC", "idxTF","tf",  "chr", "start", "end", "idxRNA", "target", "corr", "FDR")
+    colnames(regulon_df) <- c("idxATAC", "idxTF","tf",  "chr", "start", "end", "idxRNA", "target", "corr", "distance" , "FDR")
 
   }
   return(regulon_df)
