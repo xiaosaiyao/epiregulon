@@ -19,8 +19,10 @@
 #' representing transcription factors, ```idxATAC```
 #' corresponding to the index in the peakMatrix and ```target``` column
 #' representing target genes
-#' @param regulon_cutoff A scalar indicating the minimum value for the joint probability of
+#' @param regulon_prop_cutoff A scalar indicating the minimum value for the joint probability of
 #' a tf-idxATAC-target trio to be retained in the pruned regulon.
+#' @param regulon_p_cutoff A scalar indicating the maximal value for p-value for a tf-idxATAC-target trio
+#' to be retained in the pruned regulon.
 #' @param clusters A vector corresponding to the cluster labels of the cells if
 #' cluster-specific joint probabilities are also required. If left ```NULL```, joint probabilities
 #' are calculated for all cells
@@ -78,13 +80,13 @@
 #' # calculate joint probability for all cells
 #' pruned.regulon <- calculateJointProbability(expMatrix = gene_sce,
 #' exp_assay = "logcounts", peakMatrix = peak_sce,peak_assay = "counts",
-#' regulon = regulon, regulon_cutoff = 0.5)
+#' regulon = regulon, regulon_prop_cutof = 0.5)
 #'
 #' #calculate joint probability for each cluster
 #' pruned.regulon <- calculateJointProbability(expMatrix = gene_sce,
 #' exp_assay = "logcounts",peakMatrix = peak_sce,peak_assay = "counts",
 #' regulon = regulon,clusters = gene_sce$Treatment,
-#' regulon_cutoff = 0.5,aggregate = FALSE)
+#' regulon_prop_cutof = 0.5,aggregate = FALSE)
 #'
 #' @author Xiaosai Yao
 
@@ -100,7 +102,8 @@ calculateJointProbability <- function(expMatrix,
                                       chromvar_assay = NULL,
                                       chromvar_cutoff = 0,
                                       regulon,
-                                      regulon_cutoff = 0,
+                                      regulon_prop_cutoff = 0,
+                                      regulon_p_cutoff = 1,
                                       clusters = NULL,
                                       aggregate = TRUE,
                                       triple_prop = TRUE,
@@ -174,9 +177,27 @@ calculateJointProbability <- function(expMatrix,
   regulon.combined <- cbind(regulon, prob_matrix)
   if (p_val_corr){
     p_val_columns <- grepl("p_val", colnames(regulon.combined))
-    regulon.combined[,p_val_columns] <- stats::p.adjust(regulon.combined[,p_val_columns],
-                                                 method = "holm", n = nrow(regulon)*length(uniq_clusters))
-    regulon.combined[,p_val_columns][regulon.combined[,p_val_columns]>1] <- 1
+    q_value <- apply(regulon.combined[,p_val_columns], 2,
+                     function(x) {stats::p.adjust(x, method = "holm", n = nrow(regulon))})
+    q_val_columns <- gsub("p_val", "padj_val", colnames(regulon.combined)[p_val_columns])
+    colnames(q_value) <- q_val_columns
+    regulon.combined <- cbind(regulon.combined, q_value)
+  }
+
+  # pruning
+  # by triple_prop_all
+  regulon.combined <- regulon.combined[which(regulon.combined["triple_prop_all"] > regulon_prop_cutoff), ]
+
+  # by p-value
+  p_value <- regulon.combined[,grepl("p_val", colnames(regulon.combined)), drop = FALSE]
+  p_value_min <- apply(p_value, 1, min)
+  regulon.combined <- regulon.combined[which(p_value_min < regulon_p_cutoff),]
+
+  # aggregation
+  # if aggregate is true, collapse regulatory elements to have regulons containing tf and target
+  if (aggregate == TRUE){
+    regulon.combined <- stats::aggregate(triple_prop_all ~ tf + target, data = regulon.combined,
+                                         FUN = mean, na.rm = TRUE)
   }
 
   return(regulon.combined)
@@ -283,10 +304,4 @@ binom_test <- function(n_triple, n_cells, n_tf_re, n_target){
   c(binom_res$p.value, z_score)
 }
 
-aggregate_targets <- function(regulon, p_val = 0.05, cluster = "all"){
-  regulon <- regulon[,grepl(paste0("tf|target|",cluster, "$"), colnames(regulon))]
-  regulon <- regulon[regulon[, paste0("p_val_", cluster)]<= p_val,]
-  aggr_formula <- eval(parse(text = paste0("triple_prop_",cluster, "~ tf + target")))
-  stats::aggregate(aggr_formula, data = regulon,
-                                       FUN = mean, na.rm = TRUE)
-}
+
