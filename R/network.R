@@ -86,7 +86,7 @@ plotGseaNetwork <- function(tf,
     ggraph::geom_edge_link(alpha = 0.8) +
     ggplot2::coord_flip() +
     ggplot2::scale_color_manual(values = pal) +
-    ggraph::theme_graph(base_family = "Arial", fg_text_colour = 'black') +
+    ggraph::theme_graph(base_family = "Helvetica", fg_text_colour = 'black') +
     ggraph::geom_node_point(aes_string(color = "type"), size = 5)  +
     ggraph::geom_node_text(aes(label = name, filter = type == gset_label),
                             nudge_y = 0.1, hjust = 0) +
