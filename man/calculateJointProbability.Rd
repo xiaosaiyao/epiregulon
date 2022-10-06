@@ -15,7 +15,8 @@ calculateJointProbability(
   chromvar_assay = NULL,
   chromvar_cutoff = 0,
   regulon,
-  regulon_cutoff = 0,
+  regulon_prop_cutoff = 0,
+  regulon_p_cutoff = 1,
   clusters = NULL,
   aggregate = TRUE,
   triple_prop = TRUE,
@@ -53,8 +54,11 @@ representing transcription factors, \code{idxATAC}
 corresponding to the index in the peakMatrix and \code{target} column
 representing target genes}
 
-\item{regulon_cutoff}{A scalar indicating the minimum value for the joint probability of
+\item{regulon_prop_cutoff}{A scalar indicating the minimum value for the joint probability of
 a tf-idxATAC-target trio to be retained in the pruned regulon.}
+
+\item{regulon_p_cutoff}{A scalar indicating the maximal value for p-value for a tf-idxATAC-target trio
+to be retained in the pruned regulon.}
 
 \item{clusters}{A vector corresponding to the cluster labels of the cells if
 cluster-specific joint probabilities are also required. If left \code{NULL}, joint probabilities
@@ -120,13 +124,13 @@ regulon <- data.frame(tf = c(rep("Gene_1",10), rep("Gene_2",10)),
 # calculate joint probability for all cells
 pruned.regulon <- calculateJointProbability(expMatrix = gene_sce,
 exp_assay = "logcounts", peakMatrix = peak_sce,peak_assay = "counts",
-regulon = regulon, regulon_cutoff = 0.5)
+regulon = regulon, regulon_prop_cutof = 0.5)
 
 #calculate joint probability for each cluster
 pruned.regulon <- calculateJointProbability(expMatrix = gene_sce,
 exp_assay = "logcounts",peakMatrix = peak_sce,peak_assay = "counts",
 regulon = regulon,clusters = gene_sce$Treatment,
-regulon_cutoff = 0.5,aggregate = FALSE)
+regulon_prop_cutof = 0.5,aggregate = FALSE)
 
 }
 \author{
