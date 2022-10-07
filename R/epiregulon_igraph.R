@@ -1,4 +1,29 @@
-#' Building igraph directed graph object based on the output of the \code{getRegulon} function
+#' Creating graphs and related operations
+#'
+#' @description
+#' \code{build_graph} function creates a directed graph based on the output of
+#' the \code{getRegulon} function.
+#'
+#' \code{build_difference_graph} a graph difference by subtracting the edges of \code{graph_obj_2}
+#' from those of the \code{graph_obj_1}. If \code{weighted} is set to \code{TRUE} then for each
+#' ordered pair of vertices (nodes) the difference in number of edges between \code{graph_obj_1}
+#' and \code{graph_obj_1} is calculated. The result is used to set the number of
+#' corresponding edges in output graph. Note that unless \code{abs_diff} is set to
+#' \code{TRUE} any non-positive difference will translate into lack of the edges
+#' for a corresponding ordered pair of vertices in the output graph (equivalent
+#' to 0 value in the respective position in adjacency matrix). In case of
+#' weighted graphs, the weight of the output graph is calculated as a difference
+#' of the corresponding weights between input graphs.
+#'
+#' \code{add_centrality_degree} calculates degree centrality for each vertex using
+#' \code{igraph::strength}.
+#'
+#' With \code{normalize_centrality} function the normalized values of centrality
+#' are calculated from the original ones divided by
+#' \code{FUN}(total number of non-zero edges associated with each node).
+#'
+#' \code{rank_tfs} assign ranks to transcription factors according to degree
+#' centrality of their vertices
 #'
 #' @param regulon An object returned by the getRegulon or addWeights function
 #' @param mode A character specifying whch type of graph will be built. In \code{'tg'} mode
@@ -10,11 +35,17 @@
 #' target gene to regulatory element always contains a regulatory element; in
 #' \code{'re'} mode data in the target genes is dropped and only connections are
 #' between transcription factors and regulatory elements.
+#' @param graph,graph_obj_1,graph_obj_2  an igraph object
 #' @param weights A character specifying which variable should be used to assign
 #' weights to edges. If set to 'NA' then unweighted graph is built.
-#' @return A regulatory network graph
-#' @importFrom igraph graph_from_data_frame V vcount
-#' @return An igraph object
+#' @param weighted a logical indicating whether weighted graphs are used
+#' @param abs_diff a logical indicating whether absulute difference in the number
+#' edges or their weights will be calculated
+#' @param FUN a function which will be used for normalization. The input to this
+#' function will be the number of edges connected with each node (incident edges).
+#' @return An igraph object.
+#' \code{rank_tfs} returns a data.frame with transcription factors sorted according
+#' to the value of the \code{centrality} attribute
 #' @examples
 #' # create an artificial getRegulon output
 #' set.seed(1234)
@@ -24,12 +55,16 @@
 #' regulon$target <- sample(gene_set, 5e3, replace = TRUE)
 #' regulon$idxATAC <- 1:5e3
 #' regulon$corr <- runif(5e3)*0.5+0.5
-#' # build bipartite graph using regulatory element-target gena pairs
-#' gr1 <- build_graph(regulon, mode = "pairs")
-#' # bulid tripartite graph
-#' gr2 <- build_graph(regulon, mode = "tripartite")
-
-
+#' graph_tripartite <- build_graph(regulon, mode = "tripartite")
+#' # build bipartite graph using regulatory element-target gene pairs
+#' graph_pairs_1 <- build_graph(regulon, mode = "pairs")
+#' regulon$corr <- runif(5e3)*0.5+0.5
+#' graph_pairs_2 <- build_graph(regulon, mode = "pairs")
+#' graph_diff <- build_difference_graph(graph_pairs_1, graph_pairs_2)
+#' graph_diff <- add_centrality_degree(graph_diff)
+#' graph_diff <- normalize_centrality(graph_diff)
+#' tf_ranking <- rank_tfs(graph_diff)
+#' @importFrom igraph graph_from_data_frame V V<- E E<- vcount strength incident_edges
 build_graph <-function(regulon, mode = "tripartite", weights = "corr",
                        aggregation_function = mean){
     stopifnot(mode %in% c("tg", "re", "tripartite", "pairs"))
@@ -94,30 +129,7 @@ build_graph <-function(regulon, mode = "tripartite", weights = "corr",
     epiregulon_graph
 }
 
-#' Build a graph difference
-#'
-#' Build a graph based on the edge difference of two input graphs
-#'
-#' Function building a graph difference by subtracting the edges of \code{graph_obj_2}
-#' from those of the \code{graph_obj_1}. If \code{weighted} is set to \code{TRUE} then for each
-#' ordered pair of vertices (nodes) the difference in number of edges between \code{graph_obj_1}
-#' and \code{graph_obj_1} is calculated. The result is used to set the number of
-#' corresponding edges in output graph. Note that unless \code{abs_diff} is set to
-#' \code{TRUE} any non-positive difference will translate into lack of the edges
-#' for a corresponding ordered pair of vertices in the output graph (equivalent
-#' to 0 value in the respective position in adjacency matrix). In case of
-#' weighted graphs, the weight of the output graph is calculated as a difference
-#' of the corresponding weights between input graphs.
-#'
-#' @param graph_obj_1 an igraph object from which \code{graph_obj_2} will be
-#' subtracted
-#' @param graph_obj_2 an igraph object used for being subtracted from \code(graph_obj_1)
-#' @param weighted a logical indicating whether weighted graphs are used
-#' @param abs_diff a logical indicating whether absulute difference in the number
-#' edges or their weights will be calculated
-#' @return an igraph object
-#' @importFrom igraph get.adjacency V graph_from_adjacency_matrix
-#'
+#' @rdname build_graph
 build_difference_graph <- function(graph_obj_1, graph_obj_2, weighted = TRUE,
                                    abs_diff = TRUE){
     if(!identical(V(graph_obj_1)$name, V(graph_obj_2)$name)) {
@@ -142,59 +154,13 @@ build_difference_graph <- function(graph_obj_1, graph_obj_2, weighted = TRUE,
     res
 }
 
-#' Calculate degree centrality
-#'
-#' Calculate degree centrality for each vertex
-#'
-#' @param graph an igraph object
-#' @return an igraph object with attribute \code{centrality} added to vertices
-#' @importFrom igraph V strength
-#'
-#'
+#' @rdname build_graph
 add_centrality_degree <- function(graph){
     V(graph)$centrality <- strength(graph)
     graph
 }
 
-#' @importFrom igraph E V eigen_centrality
-add_centrality_eigen <- function(graph){
-  # use non-negative weights to avoid complex solutions
-  E(graph)$weight <- abs(E(graph)$weight)
-  V(graph)$centrality <- eigen_centrality(graph, directed = TRUE)$vector
-  graph
-}
-
-
-#' Rank transcription factors
-#'
-#' Rank transcription factors according to degree centrality of their vertices
-#'
-#' @param graph an igraph object with \code{centrality} attribute added to vertices
-#' @return a data.frame with transcription factors sorted according to the value of the
-#' \code{centrality} attribute
-#' @importFrom igraph V vcount
-#'
-rank_tfs <- function(graph, type_attr = "type"){
-    rank_df <- data.frame(tf = V(graph)$name[order(V(graph)$centrality[vertex_attr(graph, type_attr) == "transcription factor"], decreasing = TRUE)],
-               centrality = sort(V(graph)$centrality[vertex_attr(graph, type_attr) == "transcription factor"], decreasing = TRUE))
-    rank_df$rank <- base::rank(-rank_df$centrality)
-    rank_df
-}
-
-
-#' Normalize centrality scores
-#'
-#' The nornalized values of centrality will be calculated as old value
-#' divided by \code{FUN}(total number of non-zero edges associated with each node).
-#'
-#' @param graph nn igraph object. In a typical use case it will be the output of
-#' \code{add_centrality_degree} function
-#' @param FUN a function which will be used for normalization. The input to this
-#' function will be the number of edges connected with each node (incident edges).
-#' @param weighted a logical indicating whether a weighted graph is used
-#' @return An igraph object with normalized values of 'centrality' attribute
-#' @importFrom igraph V E incident_edges
-
+#' @rdname build_graph
 normalize_centrality <- function(graph, FUN = identity, weighted = TRUE){
   if (!"centrality" %in% list.vertex.attributes(graph)) stop("Vertices do not have 'centrality' attribute")
   if (!"weight" %in% list.edge.attributes(graph) & weighted) stop("Set 'weight' attribute to edges or use with 'weighted = FALSE'")
@@ -206,6 +172,13 @@ normalize_centrality <- function(graph, FUN = identity, weighted = TRUE){
   graph
 }
 
+#' @rdname build_graph
+rank_tfs <- function(graph, type_attr = "type"){
+    rank_df <- data.frame(tf = V(graph)$name[order(V(graph)$centrality[vertex_attr(graph, type_attr) == "transcription factor"], decreasing = TRUE)],
+               centrality = sort(V(graph)$centrality[vertex_attr(graph, type_attr) == "transcription factor"], decreasing = TRUE))
+    rank_df$rank <- base::rank(-rank_df$centrality)
+    rank_df
+}
 
 plot_epiregulon_network <-
     function(
