@@ -2,27 +2,50 @@
 % Please edit documentation in R/epiregulon_igraph.R
 \name{build_graph}
 \alias{build_graph}
-\title{Building igraph directed graph object based on the output of the getRegulon function}
+\title{Building igraph directed graph object based on the output of the \code{getRegulon} function}
 \usage{
-build_graph(regulon, mode = "tripartite", weights = "corr")
+build_graph(
+  regulon,
+  mode = "tripartite",
+  weights = "corr",
+  aggregation_function = mean
+)
 }
 \arguments{
 \item{regulon}{An object returned by the getRegulon or addWeights function}
 
-\item{mode}{A character specifying whch type of graph will be built. In 'tg' mode
-a bipartite graph is built connecting transcription factors directly to target genes
-and ignoring information about mediating regulatory elements; in 'pairs' mode
+\item{mode}{A character specifying whch type of graph will be built. In \code{'tg'} mode
+a bipartite graph is built connecting transcription factors directly to the target genes
+and ignoring information about mediating regulatory elements; in \code{'pairs'} mode
 transcription factors are connected to unique target gene-regulatory element pairs;
-in tripartite mode the network is build of three type of vertices (nodes):
+in \code{'tripartite'} mode the network is build of three type of vertices (nodes):
 trascription factors, regulatory elements and target genes; here the path from
-target gene to regulatory element always contains a regulatory elements}
+target gene to regulatory element always contains a regulatory element; in
+\code{'re'} mode data in the target genes is dropped and only connections are
+between transcription factors and regulatory elements.}
 
 \item{weights}{A character specifying which variable should be used to assign
 weights to edges. If set to 'NA' then unweighted graph is built.}
 }
 \value{
 A regulatory network graph
+
+An igraph object
 }
 \description{
-Building igraph directed graph object based on the output of the getRegulon function
+Building igraph directed graph object based on the output of the \code{getRegulon} function
+}
+\examples{
+# create an artificial getRegulon output
+set.seed(1234)
+tf_set <- apply(expand.grid(LETTERS[1:10], LETTERS[1:10]),1,  paste, collapse = "")
+regulon <- data.frame(tf = sample(tf_set, 5e3, replace = TRUE))
+gene_set <- expand.grid(LETTERS[1:10], LETTERS[1:10], LETTERS[1:10])
+regulon$target <- sample(gene_set, 5e3, replace = TRUE)
+regulon$idxATAC <- 1:5e3
+regulon$corr <- runif(5e3)*0.5+0.5
+# build bipartite graph using regulatory element-target gena pairs
+gr1 <- build_graph(regulon, mode = "pairs")
+# bulid tripartite graph
+gr2 <- build_graph(regulon, mode = "tripartite")
 }

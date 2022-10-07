@@ -206,15 +206,6 @@ normalize_centrality <- function(graph, FUN = identity, weighted = TRUE){
   graph
 }
 
-#' @importFrom igraph V reverse_graph delete_vertex_attr
-build_unconstrained_graph <- function(graph){
-  graph <- reverse_edges(graph)
-  V(graph)$element_type <- V(graph)$type
-
-  #remove special attribute 'type'
-  graph <- delete_vertex_attr(graph, "type")
-  graph
-}
 
 plot_epiregulon_network <-
     function(
