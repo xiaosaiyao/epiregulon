@@ -29,9 +29,9 @@ normalize_centrality(graph, FUN = identity, weighted = TRUE)
 rank_tfs(graph, type_attr = "type")
 }
 \arguments{
-\item{regulon}{An object returned by the getRegulon or addWeights function}
+\item{regulon}{an object returned by the getRegulon or addWeights function}
 
-\item{mode}{A character specifying whch type of graph will be built. In \code{'tg'} mode
+\item{mode}{a character specifying whch type of graph will be built. In \code{'tg'} mode
 a bipartite graph is built connecting transcription factors directly to the target genes
 and ignoring information about mediating regulatory elements; in \code{'pairs'} mode
 transcription factors are connected to unique target gene-regulatory element pairs;
@@ -41,8 +41,10 @@ target gene to regulatory element always contains a regulatory element; in
 \code{'re'} mode data in the target genes is dropped and only connections are
 between transcription factors and regulatory elements.}
 
-\item{weights}{A character specifying which variable should be used to assign
+\item{weights}{a character specifying which variable should be used to assign
 weights to edges. If set to 'NA' then unweighted graph is built.}
+
+\item{aggregation_function}{a function used to collapse duplicated edges}
 
 \item{weighted}{a logical indicating whether weighted graphs are used}
 
@@ -51,11 +53,14 @@ edges or their weights will be calculated}
 
 \item{graph, graph_obj_1, graph_obj_2}{an igraph object}
 
-\item{FUN}{a function which will be used for normalization. The input to this
-function will be the number of edges connected with each node (incident edges).}
+\item{FUN}{a function used for normalization. The input to this
+function is be the number of edges connected with each node (incident edges).}
+
+\item{type_attr}{a character corresponding to the name of the vertex attribute
+which indicate the type of vertex}
 }
 \value{
-An igraph object.
+an igraph object
 \code{rank_tfs} returns a data.frame with transcription factors sorted according
 to the value of the \code{centrality} attribute
 }
@@ -90,6 +95,7 @@ set.seed(1234)
 tf_set <- apply(expand.grid(LETTERS[1:10], LETTERS[1:10]),1,  paste, collapse = "")
 regulon <- data.frame(tf = sample(tf_set, 5e3, replace = TRUE))
 gene_set <- expand.grid(LETTERS[1:10], LETTERS[1:10], LETTERS[1:10])
+gene_set <- apply(gene_set,1,function(x) paste0(x,collapse=""))
 regulon$target <- sample(gene_set, 5e3, replace = TRUE)
 regulon$idxATAC <- 1:5e3
 regulon$corr <- runif(5e3)*0.5+0.5

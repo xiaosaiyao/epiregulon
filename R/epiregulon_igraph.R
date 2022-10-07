@@ -25,8 +25,8 @@
 #' \code{rank_tfs} assign ranks to transcription factors according to degree
 #' centrality of their vertices
 #'
-#' @param regulon An object returned by the getRegulon or addWeights function
-#' @param mode A character specifying whch type of graph will be built. In \code{'tg'} mode
+#' @param regulon an object returned by the getRegulon or addWeights function
+#' @param mode a character specifying whch type of graph will be built. In \code{'tg'} mode
 #' a bipartite graph is built connecting transcription factors directly to the target genes
 #' and ignoring information about mediating regulatory elements; in \code{'pairs'} mode
 #' transcription factors are connected to unique target gene-regulatory element pairs;
@@ -36,14 +36,17 @@
 #' \code{'re'} mode data in the target genes is dropped and only connections are
 #' between transcription factors and regulatory elements.
 #' @param graph,graph_obj_1,graph_obj_2  an igraph object
-#' @param weights A character specifying which variable should be used to assign
+#' @param weights a character specifying which variable should be used to assign
 #' weights to edges. If set to 'NA' then unweighted graph is built.
+#' @param aggregation_function a function used to collapse duplicated edges
 #' @param weighted a logical indicating whether weighted graphs are used
 #' @param abs_diff a logical indicating whether absulute difference in the number
 #' edges or their weights will be calculated
-#' @param FUN a function which will be used for normalization. The input to this
-#' function will be the number of edges connected with each node (incident edges).
-#' @return An igraph object.
+#' @param FUN a function used for normalization. The input to this
+#' function is be the number of edges connected with each node (incident edges).
+#' @param type_attr a character corresponding to the name of the vertex attribute
+#' which indicate the type of vertex
+#' @return an igraph object
 #' \code{rank_tfs} returns a data.frame with transcription factors sorted according
 #' to the value of the \code{centrality} attribute
 #' @examples
@@ -52,6 +55,7 @@
 #' tf_set <- apply(expand.grid(LETTERS[1:10], LETTERS[1:10]),1,  paste, collapse = "")
 #' regulon <- data.frame(tf = sample(tf_set, 5e3, replace = TRUE))
 #' gene_set <- expand.grid(LETTERS[1:10], LETTERS[1:10], LETTERS[1:10])
+#' gene_set <- apply(gene_set,1,function(x) paste0(x,collapse=""))
 #' regulon$target <- sample(gene_set, 5e3, replace = TRUE)
 #' regulon$idxATAC <- 1:5e3
 #' regulon$corr <- runif(5e3)*0.5+0.5
@@ -65,6 +69,9 @@
 #' graph_diff <- normalize_centrality(graph_diff)
 #' tf_ranking <- rank_tfs(graph_diff)
 #' @importFrom igraph graph_from_data_frame V V<- E E<- vcount strength incident_edges
+#' list.edge.attributes graph_from_adjacency_matrix get.adjacency list.vertex.attributes
+#' vertex_attr delete.edges
+#' @export
 build_graph <-function(regulon, mode = "tripartite", weights = "corr",
                        aggregation_function = mean){
     stopifnot(mode %in% c("tg", "re", "tripartite", "pairs"))
@@ -130,6 +137,7 @@ build_graph <-function(regulon, mode = "tripartite", weights = "corr",
 }
 
 #' @rdname build_graph
+#' @export
 build_difference_graph <- function(graph_obj_1, graph_obj_2, weighted = TRUE,
                                    abs_diff = TRUE){
     if(!identical(V(graph_obj_1)$name, V(graph_obj_2)$name)) {
@@ -155,12 +163,14 @@ build_difference_graph <- function(graph_obj_1, graph_obj_2, weighted = TRUE,
 }
 
 #' @rdname build_graph
+#' @export
 add_centrality_degree <- function(graph){
     V(graph)$centrality <- strength(graph)
     graph
 }
 
 #' @rdname build_graph
+#' @export
 normalize_centrality <- function(graph, FUN = identity, weighted = TRUE){
   if (!"centrality" %in% list.vertex.attributes(graph)) stop("Vertices do not have 'centrality' attribute")
   if (!"weight" %in% list.edge.attributes(graph) & weighted) stop("Set 'weight' attribute to edges or use with 'weighted = FALSE'")
@@ -168,11 +178,12 @@ normalize_centrality <- function(graph, FUN = identity, weighted = TRUE){
   # remove zero-weight edges
   graph <- delete.edges(graph, E(graph)[E(graph)$weight == 0])
 
-  V(graph)$centrality <- V(graph)$centrality/sapply(sapply(incident_edges(graph, V(graph)), lenght), FUN)
+  V(graph)$centrality <- V(graph)$centrality/sapply(sapply(incident_edges(graph, V(graph)), length), FUN)
   graph
 }
 
 #' @rdname build_graph
+#' @export
 rank_tfs <- function(graph, type_attr = "type"){
     rank_df <- data.frame(tf = V(graph)$name[order(V(graph)$centrality[vertex_attr(graph, type_attr) == "transcription factor"], decreasing = TRUE)],
                centrality = sort(V(graph)$centrality[vertex_attr(graph, type_attr) == "transcription factor"], decreasing = TRUE))
@@ -180,33 +191,75 @@ rank_tfs <- function(graph, type_attr = "type"){
     rank_df
 }
 
+#' Plot a graph build based on \code{getRegulon} output
+#'
+#' This function takes an input an igraph object created by any of the following:
+#' \code{build_graph}, \code{add_centrality_degree}, \code{igraph::strength}, \code{normalize_centrality}.
+#' It makes a force-directed layout plot to visualize it at a high level.
+#'
+#' @param graph an igraph object
+#' @param layout a layout specification. Any values that are valid for
+#' \link[ggraph]{ggraph} or \link[ggraph]{create_layout} will work. Defaults to
+#' "stress". Consider also trying "mds", "nicely", and "fr" while you experiment.
+#' @param label_size an integer indicating how large the labels of highlighted
+#' transcription factors should be
+#' @param tfs_to_highlight a character vector specifying which TFs in the plot
+#' should be highlighted. Defaults to NULL (no labels).
+#' @param edge_alpha a numeric value between 0 and 1 indicating the level of
+#' transparency to use for the edge links in the force-directed layout. Defaults
+#' to 0.02.
+#' @param point_size a numeric value indicating the size of nodes in the force-directed layout
+#' @param point_border_size a numeric value indicating the size of point
+#' borders for nodes in the force-directed layout
+#' @param label_alpha a numeric value between 0 and 1 indicating the level of
+#' transparency to use for the labels of highlighted nodes
+#' @param label_nudge_x a numeric value indicating the shift of the labels
+#' along the x axis that should be used in the force-directed layout
+#' @param label_nudge_y A numeric value indicating the shift of the labels
+#' along the y axis that should be used in the force-directed layout.
+#' @param ... optional additional arguments to pass to \link[ggraph]{create_layout}
+#' @return a ggraph object
+#' @author Timothy Keyes, Tomasz Wlodarczyk
+#' @examples
+#' # create an artificial getRegulon output
+#' set.seed(1234)
+#' tf_set <- apply(expand.grid(LETTERS[seq_len(5)], LETTERS[seq_len(5)]),1,  paste, collapse = "")
+#' regulon <- data.frame(tf = sample(tf_set, 5e2, replace = TRUE))
+#' gene_set <- expand.grid(LETTERS[seq_len(5)], LETTERS[seq_len(5)], LETTERS[seq_len(5)])
+#' gene_set <- apply(gene_set,1,function(x) paste0(x,collapse=""))
+#' regulon$target <- sample(gene_set, 5e2, replace = TRUE)
+#' regulon$idxATAC <- seq_len(5e2)
+#' regulon$corr <- runif(5e2)*0.5+0.5
+#' #create igraph object
+#' graph_tripartite <- build_graph(regulon, mode = "tripartite")
+#' plot_epiregulon_network(graph_tripartite, tfs_to_highlight = sample(unique(tf_set),3),
+#' edge_alpha = 0.2)
+#' @export
 plot_epiregulon_network <-
     function(
         graph,
         layout = "stress",
         label_size = 3,
-        tfs_to_label = NULL,
+        tfs_to_highlight = NULL,
         edge_alpha = 0.02,
-        tf_point_size = 3,
-        re_and_tg_point_size = 1,
-        tf_point_border_size = 0.5,
-        re_and_tg_point_border_size = 0.5,
+        point_size = 1,
+        point_border_size = 0.5,
         label_alpha = 0.8,
-        label_nudge_x = 0.5,
-        label_nudge_y = 0.5,
+        label_nudge_x = 0.2,
+        label_nudge_y = 0.2,
         ...
     ) {
-        my_layout <- ggraph::create_layout(graph, layout = layout)
-        highlighted <- my_layout[my_layout$name  %in% tfs_to_label, ]
+        my_layout <- ggraph::create_layout(graph, layout = layout, ...)
+        highlighted <- my_layout[my_layout$name  %in% tfs_to_highlight, ]
         my_plot <-
             ggraph::ggraph(graph = my_layout) +
             #ggraph::ggraph(graph = graph, layout  = my_layout) +
-            ggraph::geom_edge_link(alpha = 0.02, aes_string(color = "from")) +
+            ggraph::geom_edge_link(alpha = edge_alpha) +
             ggraph::geom_node_point(
                 ggplot2::aes_string(fill = "type"),
                 shape = 21,
-                size = re_and_tg_point_size,
-                stroke = re_and_tg_point_border_size
+                size = point_size,
+                stroke = point_border_size
             ) +
             ggraph::geom_node_label(
                 ggplot2::aes_string(label = "name"),
@@ -221,13 +274,45 @@ plot_epiregulon_network <-
                 shape = 21,
                 data = highlighted,
                 size = 3,
-                stroke = tf_point_border_size
+                stroke = point_border_size
             ) +
             ggplot2::theme_void() +
             ggplot2::labs(fill = NULL)
 
         return(my_plot)
     }
+
+#' Plot graph according to grouping factor
+#'
+#' Plot graph with separate weights for different levels of the grouping factor
+#'
+#' @param regulon an object returned by the getRegulon or addWeights function
+#' @param cutoff a numerical used to select values of the variables passed in `groups`
+#' parameter. Values greater than `cutoff` are retained and used as
+#' graph edge weights.
+#' @param tf a character vector storing the names of transcription factors to be
+#' included in the graph
+#' @param groups a character indicating levels of the grouping factor; should
+#' correspond to columns of `regulon` to be used as `weight`
+#' variable in the long format of `epiregulon` data frame.
+#' @param layout a layout specification. Any values that are valid for
+#' \link[ggraph]{ggraph} or \link[ggraph]{create_layout} will work.
+#' @author Xiaodai Yao, Tomasz Wlodarczyk
+#' @return a ggraph object
+#' @examples
+#' #' # create an artificial getRegulon output
+#' set.seed(1234)
+#' tf_set <- apply(expand.grid(LETTERS[1:10], LETTERS[1:10]),1,  paste, collapse = "")
+#' regulon <- data.frame(tf = sample(tf_set, 5e3, replace = TRUE))
+#' gene_set <- expand.grid(LETTERS[1:10], LETTERS[1:10], LETTERS[1:10])
+#' gene_set <- apply(gene_set,1,function(x) paste0(x,collapse=""))
+#' regulon$target <- sample(gene_set, 5e3, replace = TRUE)
+#' regulon$idxATAC <- 1:5e3
+#' regulon <- cbind(regulon, data.frame(C1 = runif(5e3), C2 = runif(5e3),
+#' C3 = runif(5e3)))
+#' plot_difference_network(regulon, tf = unique(tf_set)[1:3],
+#' groups = c("C1", "C2", "C3"), cutoff = 0.2)
+#' @export
 
 plot_difference_network <- function(regulon,
                                     cutoff = 0.01,
@@ -236,26 +321,28 @@ plot_difference_network <- function(regulon,
                                     layout = "stress"){
   regulon.tf <- list()
   for (group in groups) {
-    regulon.tf[[group]] <- regulon[which(regulon$tf %in% tf), c("tf","target", group)]
+    regulon_group <- regulon[regulon$tf %in% tf, c("tf","target", group)]
 
     #apply cutoff
-    regulon.tf[[group]] <- regulon.tf[[group]][which(regulon.tf[[group]][, group] > cutoff),]
+    regulon_group <- regulon_group[regulon_group[, group] > cutoff, ]
 
     #rename colnames as weight to be consistent across all groups
-    colnames(regulon.tf[[group]])[which(colnames(regulon.tf[[group]]) == group)] <- "weight"
+    colnames(regulon_group)[colnames(regulon_group) == group] <- "weight"
 
     #rename tf to be tf_group
-    regulon.tf[[group]][,"tf"] <- paste0(regulon.tf[[group]][,"tf"], "_", group)
+    regulon_group[,"tf"] <- paste0(regulon_group[,"tf"], "_", group)
+    regulon.tf[[group]] <- regulon_group
   }
 
   combined.regulon <- do.call("rbind", regulon.tf)
 
   combined.graph <- build_graph(combined.regulon, mode = "tg", weights = "weight")
 
-
   plot_epiregulon_network(combined.graph,
                           layout = layout,
-                          tfs_to_label = unique(combined.regulon$tf),
+                          tfs_to_highlight = unique(combined.regulon$tf),
                           label_nudge_x = 0.1,
                           label_nudge_y = 0.1)
 }
+
+
