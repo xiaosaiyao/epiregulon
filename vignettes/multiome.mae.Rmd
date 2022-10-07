@@ -149,10 +149,11 @@ pruned.regulon <- calculateJointProbability(expMatrix = GeneExpressionMatrix,
                                        peakMatrix = PeakMatrix,
                                        peak_assay = "counts",
                                        regulon = regulon[regulon$tf %in%
-                                                      c("NKX2-1","GATA6","FOXA1","FOXA2", "AR","SOX2"),],
+                                                  c("NKX2-1","GATA6","FOXA1","FOXA2","AR","SOX2"),],
                                        clusters = GeneExpressionMatrix$Clusters,
                                        exp_cutoff = 0.5,
-                                       peak_cutoff = 0)
+                                       peak_cutoff = 0,
+                                       regulon_p_cutoff = 0.05)
 
 ```
 
@@ -298,6 +299,7 @@ differential.regulon <- calculateJointProbability(expMatrix = GeneExpressionMatr
                                        clusters = GeneExpressionMatrix$Clusters,
                                        exp_cutoff = 0.5,
                                        peak_cutoff = 0,
+                                       regulon_p_cutoff = 0.05,
                                        aggregate = FALSE)
 
 head(differential.regulon)
