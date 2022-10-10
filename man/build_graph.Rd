@@ -2,27 +2,110 @@
 % Please edit documentation in R/epiregulon_igraph.R
 \name{build_graph}
 \alias{build_graph}
-\title{Building igraph directed graph object based on the output of the getRegulon function}
+\alias{build_difference_graph}
+\alias{add_centrality_degree}
+\alias{normalize_centrality}
+\alias{rank_tfs}
+\title{Creating graphs and related operations}
 \usage{
-build_graph(regulon, mode = "tripartite", weights = "corr")
+build_graph(
+  regulon,
+  mode = "tripartite",
+  weights = "corr",
+  aggregation_function = mean
+)
+
+build_difference_graph(
+  graph_obj_1,
+  graph_obj_2,
+  weighted = TRUE,
+  abs_diff = TRUE
+)
+
+add_centrality_degree(graph)
+
+normalize_centrality(graph, FUN = identity, weighted = TRUE)
+
+rank_tfs(graph, type_attr = "type")
 }
 \arguments{
-\item{regulon}{An object returned by the getRegulon or addWeights function}
+\item{regulon}{an object returned by the getRegulon or addWeights function}
 
-\item{mode}{A character specifying whch type of graph will be built. In 'tg' mode
-a bipartite graph is built connecting transcription factors directly to target genes
-and ignoring information about mediating regulatory elements; in 'pairs' mode
+\item{mode}{a character specifying whch type of graph will be built. In \code{'tg'} mode
+a bipartite graph is built connecting transcription factors directly to the target genes
+and ignoring information about mediating regulatory elements; in \code{'pairs'} mode
 transcription factors are connected to unique target gene-regulatory element pairs;
-in tripartite mode the network is build of three type of vertices (nodes):
+in \code{'tripartite'} mode the network is build of three type of vertices (nodes):
 trascription factors, regulatory elements and target genes; here the path from
-target gene to regulatory element always contains a regulatory elements}
+target gene to regulatory element always contains a regulatory element; in
+\code{'re'} mode data in the target genes is dropped and only connections are
+between transcription factors and regulatory elements.}
 
-\item{weights}{A character specifying which variable should be used to assign
+\item{weights}{a character specifying which variable should be used to assign
 weights to edges. If set to 'NA' then unweighted graph is built.}
+
+\item{aggregation_function}{a function used to collapse duplicated edges}
+
+\item{weighted}{a logical indicating whether weighted graphs are used}
+
+\item{abs_diff}{a logical indicating whether absulute difference in the number
+edges or their weights will be calculated}
+
+\item{graph, graph_obj_1, graph_obj_2}{an igraph object}
+
+\item{FUN}{a function used for normalization. The input to this
+function is be the number of edges connected with each node (incident edges).}
+
+\item{type_attr}{a character corresponding to the name of the vertex attribute
+which indicate the type of vertex}
 }
 \value{
-A regulatory network graph
+an igraph object
+\code{rank_tfs} returns a data.frame with transcription factors sorted according
+to the value of the \code{centrality} attribute
 }
 \description{
-Building igraph directed graph object based on the output of the getRegulon function
+\code{build_graph} function creates a directed graph based on the output of
+the \code{getRegulon} function.
+
+\code{build_difference_graph} a graph difference by subtracting the edges of \code{graph_obj_2}
+from those of the \code{graph_obj_1}. If \code{weighted} is set to \code{TRUE} then for each
+ordered pair of vertices (nodes) the difference in number of edges between \code{graph_obj_1}
+and \code{graph_obj_1} is calculated. The result is used to set the number of
+corresponding edges in output graph. Note that unless \code{abs_diff} is set to
+\code{TRUE} any non-positive difference will translate into lack of the edges
+for a corresponding ordered pair of vertices in the output graph (equivalent
+to 0 value in the respective position in adjacency matrix). In case of
+weighted graphs, the weight of the output graph is calculated as a difference
+of the corresponding weights between input graphs.
+
+\code{add_centrality_degree} calculates degree centrality for each vertex using
+\code{igraph::strength}.
+
+With \code{normalize_centrality} function the normalized values of centrality
+are calculated from the original ones divided by
+\code{FUN}(total number of non-zero edges associated with each node).
+
+\code{rank_tfs} assign ranks to transcription factors according to degree
+centrality of their vertices
+}
+\examples{
+# create an artificial getRegulon output
+set.seed(1234)
+tf_set <- apply(expand.grid(LETTERS[1:10], LETTERS[1:10]),1,  paste, collapse = "")
+regulon <- data.frame(tf = sample(tf_set, 5e3, replace = TRUE))
+gene_set <- expand.grid(LETTERS[1:10], LETTERS[1:10], LETTERS[1:10])
+gene_set <- apply(gene_set,1,function(x) paste0(x,collapse=""))
+regulon$target <- sample(gene_set, 5e3, replace = TRUE)
+regulon$idxATAC <- 1:5e3
+regulon$corr <- runif(5e3)*0.5+0.5
+graph_tripartite <- build_graph(regulon, mode = "tripartite")
+# build bipartite graph using regulatory element-target gene pairs
+graph_pairs_1 <- build_graph(regulon, mode = "pairs")
+regulon$corr <- runif(5e3)*0.5+0.5
+graph_pairs_2 <- build_graph(regulon, mode = "pairs")
+graph_diff <- build_difference_graph(graph_pairs_1, graph_pairs_2)
+graph_diff <- add_centrality_degree(graph_diff)
+graph_diff <- normalize_centrality(graph_diff)
+tf_ranking <- rank_tfs(graph_diff)
 }
