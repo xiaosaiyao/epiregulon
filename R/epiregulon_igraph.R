@@ -140,6 +140,8 @@ build_graph <-function(regulon, mode = "tripartite", weights = "corr",
 #' @export
 build_difference_graph <- function(graph_obj_1, graph_obj_2, weighted = TRUE,
                                    abs_diff = TRUE){
+    checkmate::assertClass(graph_obj_1, "igraph")
+    checkmate::assertClass(graph_obj_2, "igraph")
     if(!identical(V(graph_obj_1)$name, V(graph_obj_2)$name)) {
         stop("The nodes should be the same in both graphs")}
     transformation_function <- ifelse(abs_diff, abs, identity)
@@ -165,6 +167,7 @@ build_difference_graph <- function(graph_obj_1, graph_obj_2, weighted = TRUE,
 #' @rdname build_graph
 #' @export
 add_centrality_degree <- function(graph){
+    checkmate::assertClass(graph, "igraph")
     V(graph)$centrality <- strength(graph)
     graph
 }
@@ -172,6 +175,7 @@ add_centrality_degree <- function(graph){
 #' @rdname build_graph
 #' @export
 normalize_centrality <- function(graph, FUN = identity, weighted = TRUE){
+  checkmate::assertClass(graph, "igraph")
   if (!"centrality" %in% list.vertex.attributes(graph)) stop("Vertices do not have 'centrality' attribute")
   if (!"weight" %in% list.edge.attributes(graph) & weighted) stop("Set 'weight' attribute to edges or use with 'weighted = FALSE'")
 
@@ -185,6 +189,7 @@ normalize_centrality <- function(graph, FUN = identity, weighted = TRUE){
 #' @rdname build_graph
 #' @export
 rank_tfs <- function(graph, type_attr = "type"){
+    checkmate::assertClass(graph, "igraph")
     rank_df <- data.frame(tf = V(graph)$name[order(V(graph)$centrality[vertex_attr(graph, type_attr) == "transcription factor"], decreasing = TRUE)],
                centrality = sort(V(graph)$centrality[vertex_attr(graph, type_attr) == "transcription factor"], decreasing = TRUE))
     rank_df$rank <- base::rank(-rank_df$centrality)
@@ -249,6 +254,7 @@ plot_epiregulon_network <-
         label_nudge_y = 0.2,
         ...
     ) {
+        checkmate::assertClass(graph, "igraph")
         my_layout <- ggraph::create_layout(graph, layout = layout, ...)
         highlighted <- my_layout[my_layout$name  %in% tfs_to_highlight, ]
         my_plot <-
