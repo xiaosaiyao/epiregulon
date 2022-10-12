@@ -302,7 +302,7 @@ test_triple <- function(selected_cluster, clusters, tf_re.bi, target.bi, triple.
 binom_test <- function(n_triple, n_cells, n_tf_re, n_target){
   null_probability <- n_tf_re*n_target/n_cells^2
   binom_res <- stats::binom.test(n_triple, n_cells, null_probability)
-  z_score <- stats::qnorm(1-binom_res$p.value/2)*sign(binom_res$estimate - null_probability)
+  z_score <- stats::qnorm(binom_res$p.value/2)*sign(null_probability - binom_res$estimate)
   c(binom_res$p.value, z_score)
 }
 
