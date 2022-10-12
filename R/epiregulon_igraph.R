@@ -182,7 +182,14 @@ normalize_centrality <- function(graph, FUN = identity, weighted = TRUE){
   # remove zero-weight edges
   graph <- delete.edges(graph, E(graph)[E(graph)$weight == 0])
 
-  V(graph)$centrality <- V(graph)$centrality/sapply(sapply(incident_edges(graph, V(graph)), length), FUN)
+  # calculate number of edges for each node
+  edge_numbers <- sapply(incident_edges(graph, V(graph)), length)
+
+  # omit nodes with zero centrality since either they have no edges (division by zero)
+  # or the sum of their edge weights is zero
+  centrality_scores <- V(graph)$centrality[V(graph)$centrality != 0]
+  edge_numbers <- edge_numbers[V(graph)$centrality != 0]
+  V(graph)$centrality[V(graph)$centrality != 0] <- centrality_scores/FUN(edge_numbers)
   graph
 }
 
