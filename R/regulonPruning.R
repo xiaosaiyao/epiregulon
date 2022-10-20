@@ -155,8 +155,6 @@ calculateJointProbability <- function(expMatrix,
 
   total_cell <- ncol(expMatrix)
 
-  prob_matrix <- c()
-
   writeLines("compute joint probability for all trios")
 
 
@@ -171,6 +169,7 @@ calculateJointProbability <- function(expMatrix,
                                            clusters,
                                            uniq_clusters,
                                            triple_prop,
+                                           total_cell = total_cell,
                                            BPPARAM = BPPARAM)
   prob_matrix <- do.call("rbind", prob_matrix_tf)
   regulon <- do.call(rbind, regulon)
@@ -219,6 +218,7 @@ calculateJointProbability_bp <- function(regulon,
                                           chromvar_cutoff,
                                           clusters,
                                           uniq_clusters,
+                                          total_cell,
                                           triple_prop){
   message(regulon$tf[1])
 
@@ -226,15 +226,13 @@ calculateJointProbability_bp <- function(regulon,
   # filter cells that did not pass tf cutoff either by expression or chromvar
   if (is.null(chromvarMatrix)){
     tf.bi.index <- Matrix::which(expMatrix[regulon$tf[1],,drop = FALSE] > exp_cutoff, arr.ind = TRUE)
-    n_cells <- ncol(expMatrix)
   } else {
     tf.bi.index <- Matrix::which(chromvarMatrix[regulon$tf[1],,drop = FALSE] > chromvar_cutoff, arr.ind = TRUE)
-    n_cells <- ncol(chromvarMatrix)
   }
   tf.bi <- Matrix::sparseMatrix(x = rep(1,nrow(tf.bi.index)),
                                 i = tf.bi.index[,1],
                                 j = tf.bi.index[,2],
-                                dims = c(1, n_cells))
+                                dims = c(1, total_cell))
 
 
 
@@ -269,7 +267,7 @@ calculateJointProbability_bp <- function(regulon,
                                                                      tf_re.bi,
                                                                      target.bi,
                                                                      triple.bi,
-                                                                     n_cells,
+                                                                     total_cell,
                                                                      triple_prop))
   res_matrix <- BiocGenerics::Reduce(cbind, res_list)
   if(triple_prop)
@@ -277,7 +275,7 @@ calculateJointProbability_bp <- function(regulon,
                                    rep(uniq_clusters, each =3))
 
   else
-    colnames(res_matrix) <- paste0(c("p_val_", "z_score_"), uniq_clusters)
+    colnames(res_matrix) <- paste0(c("p_val_", "z_score_"), rep(uniq_clusters, each = 2))
 
   return(res_matrix)
 }
@@ -304,7 +302,7 @@ test_triple <- function(selected_cluster, clusters, tf_re.bi, target.bi, triple.
 binom_test <- function(n_triple, n_cells, n_tf_re, n_target){
   null_probability <- n_tf_re*n_target/n_cells^2
   binom_res <- stats::binom.test(n_triple, n_cells, null_probability)
-  z_score <- stats::qnorm(1-binom_res$p.value/2)*sign(binom_res$estimate - null_probability)
+  z_score <- stats::qnorm(binom_res$p.value/2)*sign(null_probability - binom_res$estimate)
   c(binom_res$p.value, z_score)
 }
 
