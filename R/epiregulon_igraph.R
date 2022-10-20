@@ -149,7 +149,9 @@ build_difference_graph <- function(graph_obj_1, graph_obj_2, weighted = TRUE,
         res <- graph_from_adjacency_matrix(transformation_function(get.adjacency(graph_obj_1, attr = "weight") -
                                                  get.adjacency(graph_obj_2, attr = "weight")),
                                            weighted = TRUE)
-    } else {
+        # remove zero-weight edges
+        res <- delete.edges(res, E(res)[E(res)$weight == 0])   
+   } else {
         res <- graph_from_adjacency_matrix(abs(get.adjacency(graph_obj_1) -
                                                  get.adjacency(graph_obj_2)),
                                            weighted = FALSE)
@@ -157,8 +159,7 @@ build_difference_graph <- function(graph_obj_1, graph_obj_2, weighted = TRUE,
 
     if (!identical(igraph::V(graph_obj_1)$type, igraph::V(graph_obj_2)$type)) {
         warning("Types of nodes differ between graphs. Only those from the first graph are used.")
-    }
-
+    } 
   igraph::V(res)$type <- igraph::V(graph_obj_1)$type
   igraph::V(res)$type.num <- igraph::V(graph_obj_1)$type.num
     res
@@ -174,13 +175,10 @@ add_centrality_degree <- function(graph){
 
 #' @rdname build_graph
 #' @export
-normalize_centrality <- function(graph, FUN = identity, weighted = TRUE){
+normalize_centrality <- function(graph, FUN = sqrt, weighted = TRUE){
   checkmate::assertClass(graph, "igraph")
   if (!"centrality" %in% list.vertex.attributes(graph)) stop("Vertices do not have 'centrality' attribute")
   if (!"weight" %in% list.edge.attributes(graph) & weighted) stop("Set 'weight' attribute to edges or use with 'weighted = FALSE'")
-
-  # remove zero-weight edges
-  graph <- delete.edges(graph, E(graph)[E(graph)$weight == 0])
 
   # calculate number of edges for each node
   edge_numbers <- sapply(incident_edges(graph, V(graph)), length)
