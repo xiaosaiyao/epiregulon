@@ -24,7 +24,7 @@ build_difference_graph(
 
 add_centrality_degree(graph)
 
-normalize_centrality(graph, FUN = identity, weighted = TRUE)
+normalize_centrality(graph, FUN = sqrt, weighted = TRUE)
 
 rank_tfs(graph, type_attr = "type")
 }

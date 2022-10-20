@@ -70,7 +70,7 @@
 #' tf_ranking <- rank_tfs(graph_diff)
 #' @importFrom igraph graph_from_data_frame V V<- E E<- vcount strength incident_edges
 #' list.edge.attributes graph_from_adjacency_matrix get.adjacency list.vertex.attributes
-#' vertex_attr delete.edges
+#' vertex_attr delete.edges delete_vertices
 #' @export
 build_graph <-function(regulon, mode = "tripartite", weights = "corr",
                        aggregation_function = mean){
@@ -150,7 +150,7 @@ build_difference_graph <- function(graph_obj_1, graph_obj_2, weighted = TRUE,
                                                  get.adjacency(graph_obj_2, attr = "weight")),
                                            weighted = TRUE)
         # remove zero-weight edges
-        res <- delete.edges(res, E(res)[E(res)$weight == 0])   
+        res <- delete.edges(res, E(res)[E(res)$weight == 0])
    } else {
         res <- graph_from_adjacency_matrix(abs(get.adjacency(graph_obj_1) -
                                                  get.adjacency(graph_obj_2)),
@@ -159,10 +159,15 @@ build_difference_graph <- function(graph_obj_1, graph_obj_2, weighted = TRUE,
 
     if (!identical(igraph::V(graph_obj_1)$type, igraph::V(graph_obj_2)$type)) {
         warning("Types of nodes differ between graphs. Only those from the first graph are used.")
-    } 
+    }
   igraph::V(res)$type <- igraph::V(graph_obj_1)$type
   igraph::V(res)$type.num <- igraph::V(graph_obj_1)$type.num
-    res
+
+  # remove nodes with no edges
+  edge_numbers <- vapply(incident_edges(res, V(res), mode = "all"), length,
+                         FUN.VALUE = numeric(1))
+  res <- delete_vertices(res, V(res)[edge_numbers == 0])
+  res
 }
 
 #' @rdname build_graph
@@ -181,13 +186,10 @@ normalize_centrality <- function(graph, FUN = sqrt, weighted = TRUE){
   if (!"weight" %in% list.edge.attributes(graph) & weighted) stop("Set 'weight' attribute to edges or use with 'weighted = FALSE'")
 
   # calculate number of edges for each node
-  edge_numbers <- sapply(incident_edges(graph, V(graph)), length)
+  edge_numbers <- vapply(incident_edges(graph, V(graph), mode = "all"), length,
+                         FUN.VALUE = numeric(1))
 
-  # omit nodes with zero centrality since either they have no edges (division by zero)
-  # or the sum of their edge weights is zero
-  centrality_scores <- V(graph)$centrality[V(graph)$centrality != 0]
-  edge_numbers <- edge_numbers[V(graph)$centrality != 0]
-  V(graph)$centrality[V(graph)$centrality != 0] <- centrality_scores/FUN(edge_numbers)
+  V(graph)$centrality <- V(graph)$centrality/FUN(edge_numbers)
   graph
 }
 
@@ -298,7 +300,7 @@ plot_epiregulon_network <-
 #' Plot graph with separate weights for different levels of the grouping factor
 #'
 #' @param regulon an object returned by the getRegulon or addWeights function
-#' @param cutoff a numerical used to select values of the variables passed in `groups`
+#' @param cutoff a numeric used to select values of the variables passed in `groups`
 #' parameter. Values greater than `cutoff` are retained and used as
 #' graph edge weights.
 #' @param tf a character vector storing the names of transcription factors to be
