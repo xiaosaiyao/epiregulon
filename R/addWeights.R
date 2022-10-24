@@ -6,8 +6,7 @@
 #' @param cluster_factor String specifying the field in the colData of the SingleCellExperiment object to be averaged as pseudobulk (such as cluster)
 #' @param block_factor String specifying the field in the colData of the SingleCellExperiment object to be used as blocking factor (such as batch)
 #' @param exprs_values String specifying the name of the assay to be retrieved from the SingleCellExperiment object
-#' @param corr Logical scalar indicating whether to calculate weights based on correlation
-#' @param MI Logical scalar indicating whether to calculate weights based on mutual information
+#' @param weights String specifying the method of weights calculation.
 #' @param min_targets Integer specifying the minimum number of targets for each tf in the regulon with 10 targets as the default
 #' @param BPPARAM A BiocParallelParam object specifying whether summation should be parallelized. Use BiocParallel::SerialParam() for
 #' serial evaluation and use BiocParallel::MulticoreParam() for parallel evaluation
@@ -73,14 +72,14 @@ addWeights <- function(regulon,
                       cluster_factor,
                       block_factor = NULL,
                       exprs_values = "logcounts",
-                      corr = TRUE,
-                      MI = FALSE,
+                      weights = "corr",
                       min_targets = 10,
                       BPPARAM = BiocParallel::SerialParam(),
                       alt.exp = NULL,
                       alt.exp.merge = FALSE){
 
 
+  checkmate::assertChoice(weights, c("corr", "MI", "wilcoxon", "diff"))
   # define groupings
   groupings <- S4Vectors::DataFrame(cluster = colData(sce)[cluster_factor])
   if (!is.null(block_factor)) {
@@ -245,5 +244,10 @@ addWeights <- function(regulon,
 
 
   return(regulon)
+
+}
+
+.calculate_weights_wilcoxon <- function(regulon, exprMatrix, peakMatrix, clusters,
+                                        expr_cutoff, peak_cutoff){
 
 }
