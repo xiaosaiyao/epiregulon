@@ -3,11 +3,19 @@
 #' @param regulon A data frame consisting of tf (regulator) and target in the column names. Additional columns indicating degree
 #' of association between tf and target such as "mor" or "corr" are optional.
 #' @param sce A SingleCellExperiment object containing gene expression information
+#' @param peakMatrix A SingleCellExperiment object or matrix containing peak accessibility with
+#' peaks in the rows and cells in the columns
 #' @param cluster_factor String specifying the field in the colData of the SingleCellExperiment object to be averaged as pseudobulk (such as cluster)
 #' @param block_factor String specifying the field in the colData of the SingleCellExperiment object to be used as blocking factor (such as batch)
 #' @param exprs_values String specifying the name of the assay to be retrieved from the SingleCellExperiment object
-#' @param weights String specifying the method of weights calculation.
+#' @param method String specifying the method of weights calculation. Three options are available: `corr`, `wilcoxon` and `logFC`.
+#' @param MI Logical scalar indicating whether to calculate weights based on mutual information
+#' @param peak_assay String indicating the name of the assay in peakMatrix for chromatin accessibility
 #' @param min_targets Integer specifying the minimum number of targets for each tf in the regulon with 10 targets as the default
+#' @param expr_cutoff A scalar indicating the minimum gene expression for transcription factor above which
+#' cell is considered as having expressed transcription factor.
+#' @param peak_cutoff A scalar indicating the minimum peak accessibility above which peak is
+#' considered open.
 #' @param BPPARAM A BiocParallelParam object specifying whether summation should be parallelized. Use BiocParallel::SerialParam() for
 #' serial evaluation and use BiocParallel::MulticoreParam() for parallel evaluation
 #' @param alt.exp A matrix that is used in place of gene expression to correlate with target gene expression. See details.
@@ -22,6 +30,12 @@
 #' by increasing the expression of the TF. In this case, the activity of the TF, if computed by gene expression correlation, may show a
 #' spurious increase. As an alternative to gene expression, we may use accessibility associated with TF, such as those computed by
 #' chromVar. When alt.exp.merge is true, we take the product of the gene expression and the values in the alt.exp matrix.
+#' When `method` is set to `wilcoxon` or `logFC` for each unique pair of transcription factor and target gene the corresponding
+#' data from peakMatrix is collapsed (by cell-wise summing). This data along with data on the expression of transcription factor is
+#' used to label the cells which show both transcription factor expression and regulatory element accessibility. The target gene expression
+#' in the labeled cells is contrasted against the rest of the cells. If `wilcoxon` is chosen, the cell groups are compared with Wilcoxon test
+#' and the weight is the effect size calculated as a z-score divided by the square root of the sample size. If `logFC` is chosen the
+#' weight is the difference between mean target gene expression in compared cells groups.
 #'
 #'
 #' @export
@@ -66,20 +80,37 @@
 #' exprs_values = "logcounts", min_targets = 5, alt.exp = assay(motifMatrix, "z"),
 #' alt.exp.merge = TRUE)
 #'}
-#' @author Xiaosai Yao, Shang-yang Chen
+#' @author Xiaosai Yao, Shang-yang Chen, Tomasz Wlodarczyk
 addWeights <- function(regulon,
                       sce,
-                      cluster_factor,
+                      peakMatrix = NULL,
+                      cluster_factor=NULL,
                       block_factor = NULL,
                       exprs_values = "logcounts",
-                      weights = "corr",
+                      method = "corr",
+                      MI = FALSE,
+                      peak_assay = "PeakMatrix",
                       min_targets = 10,
+                      expr_cutoff = 1,
+                      peak_cutoff = 0,
                       BPPARAM = BiocParallel::SerialParam(),
                       alt.exp = NULL,
                       alt.exp.merge = FALSE){
 
 
-  checkmate::assertChoice(weights, c("corr", "MI", "wilcoxon", "diff"))
+  # extracting assays from SE
+
+  if (checkmate::test_class(peakMatrix,classes = "SummarizedExperiment")){
+    peakMatrix <- assay(peakMatrix, peak_assay)
+  }
+
+  exprMatrix <- assay(sce, exprs_values)
+
+  if (method %in% c("wilcoxon", "logFC"))
+    regulon <- find_expression_difference(regulon, exprMatrix, peakMatrix,
+                                      expr_cutoff, peak_cutoff, method)
+
+  if (!MI) return(regulon)
   # define groupings
   groupings <- S4Vectors::DataFrame(cluster = colData(sce)[cluster_factor])
   if (!is.null(block_factor)) {
@@ -138,7 +169,7 @@ addWeights <- function(regulon,
 
 
   # compute correlation
-  if (corr) {
+  if (method == "corr") {
     writeLines("computing correlation of the regulon...")
     pb <- txtProgressBar(min = 0,
                         max = length(unique_tfs),
@@ -242,12 +273,77 @@ addWeights <- function(regulon,
 
   }
 
-
   return(regulon)
 
 }
 
-.calculate_weights_wilcoxon <- function(regulon, exprMatrix, peakMatrix, clusters,
-                                        expr_cutoff, peak_cutoff){
+find_expression_difference <- function(regulon, exprMatrix, peakMatrix,
+                                        expr_cutoff, peak_cutoff, method){
+  if (!"idxATAC" %in% colnames(regulon)) stop("Regulon should contain 'idxATAC' column")
+  n_cells <- ncol(exprMatrix)
+  regulon <- regulon[order(regulon$tf, regulon$target),]
+  # determine unique tf-tg pairs for regulatory elements collapse
+  pair_id <- assign_id(regulon[,c("tf", "target")])
+  peakMatrix <- binarize_matrix(peakMatrix, peak_cutoff)
+  peakMatrix <- peakMatrix[regulon$idxATAC, ]
+  # collapse peakMatrix
+  peakMatrix <- rowsum(peakMatrix, pair_id, reorder = FALSE)
+  # binarize
+  peakMatrix <- peakMatrix > 0
+  # use unique tf-tg pairs
+  regulon <- regulon[!duplicated(regulon[,c("tf", "target")]),]
+  tfMatrix <- binarize_matrix(exprMatrix[regulon$tf,], expr_cutoff)
+  exprMatrix <- exprMatrix[regulon$target,]
+  # determine cells with tf-re pair
+  tf_reMatrix <- tfMatrix*peakMatrix
+  # prepare for processing by vectorized function
+  exprMatrix <- split_matrix(exprMatrix)
+  tf_reMatrix <- split_matrix(tf_reMatrix)
+  # prepare for parallel processing
+  tf_reMatrix <- split(tf_reMatrix, regulon$tf)
+  exprMatrix <- split(exprMatrix, regulon$tf)
+  regulon <- split(regulon, regulon$tf)
+  output_df <- BiocParallel::bplapply(X = seq_len(length(regulon)),
+                                           FUN = compare_groups_bp,
+                                           regulon = regulon,
+                                           tf_reMatrix = tf_reMatrix,
+                                           exprMatrix = exprMatrix,
+                                           method = method)
+  output_df <- do.call(rbind, output_df)
+  output_df <- output_df[,colnames(output_df) != "idxATAC"]
+  if(method == "wilcoxon"){
+    # if groups have the same ranks the result will be NaN
+    output_df$weight[is.nan(output_df$weight)] <- 0
+    # transform z-scores to effect size
+    output_df$weight <-output_df$weight/sqrt(n_cells)
+  }
+  output_df
+}
 
+split_matrix <- function(m)
+  lapply(seq_len(nrow(m)), function(x) m[x,])
+
+compare_groups_bp <- function(element_id, regulon, tf_reMatrix,
+                              exprMatrix, method){
+  pair_weights <- mapply(compare_two_groups, exprMatrix[[element_id]],
+                         tf_reMatrix[[element_id]],
+         MoreArgs = list(method = method))
+  message(regulon[[element_id]]$tf[1])
+  pair_weights <- matrix(pair_weights, ncol = 1, dimnames = list(NULL, "weight"))
+  cbind(regulon[[element_id]], pair_weights)
+}
+
+compare_two_groups <- function(x, tf_re, method){
+  if(method == "logFC") return(diff(tapply(x,tf_re,mean)))
+  # account for the case when all cells have tf-re pair
+  if(length(unique(tf_re))==0) return(0)
+  groups <- factor(tf_re, levels = c(1, 0))
+  coin::wilcox_test(x ~ groups)@statistic@teststatistic
+}
+
+assign_id <- function(x){
+  # assign unique id to sorted elements
+  duplicated_elements <- duplicated(x)
+  unique_positions <- c(which(!duplicated_elements),length(duplicated_elements)+1)
+  rep.int(1:(length(unique_positions)-1), times=diff(unique_positions))
 }
