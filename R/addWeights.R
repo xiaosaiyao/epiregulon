@@ -106,11 +106,11 @@ addWeights <- function(regulon,
 
   exprMatrix <- assay(sce, exprs_values)
 
-  if (method %in% c("wilcoxon", "logFC"))
+  if (method %in% c("wilcoxon", "logFC")){
     regulon <- find_expression_difference(regulon, exprMatrix, peakMatrix,
                                       expr_cutoff, peak_cutoff, method)
-
-  if (!MI) return(regulon)
+    if (!MI) return(regulon)
+    }
   # define groupings
   groupings <- S4Vectors::DataFrame(cluster = colData(sce)[cluster_factor])
   if (!is.null(block_factor)) {
