@@ -11,7 +11,7 @@ addWeights(
   cluster_factor = NULL,
   block_factor = NULL,
   exprs_values = "logcounts",
-  weights = "corr",
+  method = "corr",
   MI = FALSE,
   peak_assay = "PeakMatrix",
   min_targets = 10,
@@ -37,7 +37,7 @@ peaks in the rows and cells in the columns}
 
 \item{exprs_values}{String specifying the name of the assay to be retrieved from the SingleCellExperiment object}
 
-\item{weights}{String specifying the method of weights calculation. Three options are available: \code{corr}, \code{wilcoxon} and \code{logFC}.}
+\item{method}{String specifying the method of weights calculation. Three options are available: \code{corr}, \code{wilcoxon} and \code{logFC}.}
 
 \item{MI}{Logical scalar indicating whether to calculate weights based on mutual information}
 
@@ -71,8 +71,12 @@ However, often times, an inhibitor of TF does not alter the gene expression of t
 by increasing the expression of the TF. In this case, the activity of the TF, if computed by gene expression correlation, may show a
 spurious increase. As an alternative to gene expression, we may use accessibility associated with TF, such as those computed by
 chromVar. When alt.exp.merge is true, we take the product of the gene expression and the values in the alt.exp matrix.
-When \code{weights} is set to \code{wilcoxone} or \code{logFC} for each unique pair of transcription factor and target gene the corresponding
-data from peakMatrix is collapsed (by cell-wise summing). This data along with data on the expression of
+When \code{method} is set to \code{wilcoxon} or \code{logFC} for each unique pair of transcription factor and target gene the corresponding
+data from peakMatrix is collapsed (by cell-wise summing). This data along with data on the expression of transcription factor is
+used to label the cells which show both transcription factor expression and regulatory element accessibility. The target gene expression
+in the labeled cells is contrasted against the rest of the cells. If \code{wilcoxon} is chosen, the cell groups are compared with Wilcoxon test
+and the weight is the effect size calculated as a z-score divided by the square root of the sample size. If \code{logFC} is chosen the
+weight is the difference between mean target gene expression in compared cells groups.
 }
 \examples{
 # create a mock singleCellExperiment object for gene expression matrix
@@ -116,5 +120,5 @@ alt.exp.merge = TRUE)
 }
 }
 \author{
-Xiaosai Yao, Shang-yang Chen
+Xiaosai Yao, Shang-yang Chen, Tomasz Wlodarczyk
 }
