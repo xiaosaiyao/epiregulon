@@ -12,7 +12,6 @@ addWeights(
   block_factor = NULL,
   exprs_values = "logcounts",
   method = "corr",
-  MI = FALSE,
   peak_assay = "PeakMatrix",
   min_targets = 10,
   expr_cutoff = 1,
@@ -37,9 +36,7 @@ peaks in the rows and cells in the columns}
 
 \item{exprs_values}{String specifying the name of the assay to be retrieved from the SingleCellExperiment object}
 
-\item{method}{String specifying the method of weights calculation. Three options are available: \code{corr}, \code{wilcoxon} and \code{logFC}.}
-
-\item{MI}{Logical scalar indicating whether to calculate weights based on mutual information}
+\item{method}{String specifying the method of weights calculation. Four options are available: \code{corr},\code{MI}, \code{wilcoxon} and \code{logFC}.}
 
 \item{peak_assay}{String indicating the name of the assay in peakMatrix for chromatin accessibility}
 
@@ -76,7 +73,9 @@ data from peakMatrix is collapsed (by cell-wise summing). This data along with d
 used to label the cells which show both transcription factor expression and regulatory element accessibility. The target gene expression
 in the labeled cells is contrasted against the rest of the cells. If \code{wilcoxon} is chosen, the cell groups are compared with Wilcoxon test
 and the weight is the effect size calculated as a z-score divided by the square root of the sample size. If \code{logFC} is chosen the
-weight is the difference between mean target gene expression in compared cells groups.
+weight is the difference between mean target gene expression in compared cells groups. When \code{method} is set to \code{corr}
+weights are cacluated based on correlation between expression of transcription factor and a target gene. With \code{MI}
+value of \code{method} parameter mutual information is used to calculate the weights.
 }
 \examples{
 # create a mock singleCellExperiment object for gene expression matrix
