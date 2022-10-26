@@ -89,9 +89,12 @@ calculateP2G <- function(peakMatrix = NULL,
     p2g_merged <- merge(p2g, gene_metadata, by = "idxRNA") # merge by gene ID
     p2g_merged <- merge(p2g_merged, peak_metadata, by = "idxATAC") # merge by peak ID
 
+    # Calculate distance
+    p2g_merged$distance <- abs((p2g_merged$start.y + p2g_merged$end.y)/2 - (p2g_merged$start.x + p2g_merged$end.x)/2)
+
     # Extract relevant columns
-    p2g_merged <- p2g_merged[, c("idxATAC", "seqnames.x", "start.y","end.y", "idxRNA", "name", "Correlation","FDR")]
-    colnames(p2g_merged) <- c("idxATAC", "chr", "start","end", "idxRNA", "target", "Correlation","FDR")
+    p2g_merged <- p2g_merged[, c("idxATAC", "seqnames.y", "start.y","end.y", "idxRNA", "name", "Correlation", "distance","FDR")]
+    colnames(p2g_merged) <- c("idxATAC", "chr", "start","end", "idxRNA", "target", "Correlation", "distance","FDR")
 
 
 
