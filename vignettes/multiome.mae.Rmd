@@ -144,16 +144,16 @@ head(regulon)
 ```{r network pruning, results = "hide"}
 
 
-pruned.regulon <- calculateJointProbability(expMatrix = GeneExpressionMatrix,
-                                       exp_assay = "counts",
-                                       peakMatrix = PeakMatrix,
-                                       peak_assay = "counts",
-                                       regulon = regulon[regulon$tf %in%
-                                                  c("NKX2-1","GATA6","FOXA1","FOXA2","AR","SOX2"),],
-                                       clusters = GeneExpressionMatrix$Clusters,
-                                       exp_cutoff = 0.5,
-                                       peak_cutoff = 0,
-                                       regulon_p_cutoff = 0.05)
+pruned.regulon <- pruneRegulon(expMatrix = GeneExpressionMatrix,
+                               exp_assay = "counts",
+                               peakMatrix = PeakMatrix,
+                               peak_assay = "counts",                               
+                               regulon = regulon[regulon$tf %in%                                c("NKX2-1","GATA6","FOXA1","FOXA2","AR","SOX2"),],
+                               #regulon = regulon,
+                               clusters = GeneExpressionMatrix$Clusters,
+                               prune_value = "pval",
+                               regulon_cutoff = 0.05,
+                               BPPARAM = BiocParallel::MulticoreParam(progressbar = TRUE))
 
 ```
 
@@ -290,19 +290,6 @@ We can calculate joint probabilities for every cluster
 
 ```{r differential networks}
 
-differential.regulon <- calculateJointProbability(expMatrix = GeneExpressionMatrix,
-                                       exp_assay = "counts",
-                                       peakMatrix = PeakMatrix,
-                                       peak_assay = "counts",
-                                       regulon = regulon[regulon$tf %in%
-                                                        c("NKX2-1","GATA6","FOXA1","FOXA2", "AR","SOX2"),],
-                                       clusters = GeneExpressionMatrix$Clusters,
-                                       exp_cutoff = 0.5,
-                                       peak_cutoff = 0,
-                                       regulon_p_cutoff = 0.05,
-                                       aggregate = FALSE)
-
-head(differential.regulon)
 
 ```
 
