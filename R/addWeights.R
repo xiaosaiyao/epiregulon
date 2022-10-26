@@ -10,6 +10,8 @@
 #' @param exprs_values String specifying the name of the assay to be retrieved from the SingleCellExperiment object
 #' @param method String specifying the method of weights calculation. Four options are available: `corr`,`MI`, `wilcoxon` and `logFC`.
 #' @param peak_assay String indicating the name of the assay in peakMatrix for chromatin accessibility
+#' @param aggregation_function Function being used for summarizing weights from the transcription factor-target gene pair with
+#' many regulatory elements.
 #' @param min_targets Integer specifying the minimum number of targets for each tf in the regulon with 10 targets as the default
 #' @param expr_cutoff A scalar indicating the minimum gene expression for transcription factor above which
 #' cell is considered as having expressed transcription factor.
@@ -89,6 +91,7 @@ addWeights <- function(regulon,
                       exprs_values = "logcounts",
                       method = "corr",
                       peak_assay = "PeakMatrix",
+                      aggregation_function = mean,
                       min_targets = 10,
                       expr_cutoff = 1,
                       peak_cutoff = 0,
@@ -108,7 +111,7 @@ addWeights <- function(regulon,
 
   if (method %in% c("wilcoxon", "logFC")){
     regulon <- find_expression_difference(regulon, expMatrix, peakMatrix,
-                                      expr_cutoff, peak_cutoff, method)
+                                      expr_cutoff, peak_cutoff, method, aggregation_function)
   }
   else
   {
@@ -186,7 +189,7 @@ addWeights <- function(regulon,
 }
 
 find_expression_difference <- function(regulon, expMatrix, peakMatrix,
-                                        expr_cutoff, peak_cutoff, method){
+                                        expr_cutoff, peak_cutoff, method, aggregation_function){
   if (!"idxATAC" %in% colnames(regulon)) stop("Regulon should contain 'idxATAC' column")
   peakMatrix <- binarize_matrix(peakMatrix, peak_cutoff)
   tfMatrix <- binarize_matrix(expMatrix, expr_cutoff)
@@ -206,7 +209,7 @@ find_expression_difference <- function(regulon, expMatrix, peakMatrix,
     # transform z-scores to effect size
     output_df$weight <-output_df$weight/sqrt(n_cells)
   }
-  regulon <- aggregate(weight~tf+target, FUN = mean, na.rm = TRUE, data = output_df)
+  regulon <- aggregate(weight~tf+target, FUN = aggregation_function, na.rm = TRUE, data = output_df)
   regulon[order(regulon$tf),]
 }
 
