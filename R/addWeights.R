@@ -8,8 +8,7 @@
 #' @param cluster_factor String specifying the field in the colData of the SingleCellExperiment object to be averaged as pseudobulk (such as cluster)
 #' @param block_factor String specifying the field in the colData of the SingleCellExperiment object to be used as blocking factor (such as batch)
 #' @param exprs_values String specifying the name of the assay to be retrieved from the SingleCellExperiment object
-#' @param method String specifying the method of weights calculation. Three options are available: `corr`, `wilcoxon` and `logFC`.
-#' @param MI Logical scalar indicating whether to calculate weights based on mutual information
+#' @param method String specifying the method of weights calculation. Four options are available: `corr`,`MI`, `wilcoxon` and `logFC`.
 #' @param peak_assay String indicating the name of the assay in peakMatrix for chromatin accessibility
 #' @param min_targets Integer specifying the minimum number of targets for each tf in the regulon with 10 targets as the default
 #' @param expr_cutoff A scalar indicating the minimum gene expression for transcription factor above which
@@ -35,8 +34,9 @@
 #' used to label the cells which show both transcription factor expression and regulatory element accessibility. The target gene expression
 #' in the labeled cells is contrasted against the rest of the cells. If `wilcoxon` is chosen, the cell groups are compared with Wilcoxon test
 #' and the weight is the effect size calculated as a z-score divided by the square root of the sample size. If `logFC` is chosen the
-#' weight is the difference between mean target gene expression in compared cells groups.
-#'
+#' weight is the difference between mean target gene expression in compared cells groups. When `method` is set to `corr`
+#' weights are cacluated based on correlation between expression of transcription factor and a target gene. With `MI`
+#' value of `method` parameter mutual information is used to calculate the weights.
 #'
 #' @export
 #'
@@ -88,7 +88,6 @@ addWeights <- function(regulon,
                       block_factor = NULL,
                       exprs_values = "logcounts",
                       method = "corr",
-                      MI = FALSE,
                       peak_assay = "PeakMatrix",
                       min_targets = 10,
                       expr_cutoff = 1,
@@ -99,177 +98,86 @@ addWeights <- function(regulon,
 
 
   # extracting assays from SE
+  checkmate::checkChoice(method, c("corr", "MI", "wilcoxon", "logFC"))
 
   if (checkmate::test_class(peakMatrix,classes = "SummarizedExperiment")){
     peakMatrix <- assay(peakMatrix, peak_assay)
   }
 
-  exprMatrix <- assay(sce, exprs_values)
+  expMatrix <- assay(sce, exprs_values)
 
   if (method %in% c("wilcoxon", "logFC")){
-    regulon <- find_expression_difference(regulon, exprMatrix, peakMatrix,
+    regulon <- find_expression_difference(regulon, expMatrix, peakMatrix,
                                       expr_cutoff, peak_cutoff, method)
-    if (!MI) return(regulon)
-    }
-  # define groupings
-  groupings <- S4Vectors::DataFrame(cluster = colData(sce)[cluster_factor])
-  if (!is.null(block_factor)) {
-    groupings$block <- colData(sce)[block_factor]
   }
+  else
+  {
+    # define groupings
+    groupings <- S4Vectors::DataFrame(cluster = colData(sce)[cluster_factor])
+    if (!is.null(block_factor)) {
+      groupings$block <- colData(sce)[block_factor]
+    }
 
-  # compute average expression across clusters and batches
-  writeLines("calculating average expression across clusters...")
+    # compute average expression across clusters and batches
+    writeLines("calculating average expression across clusters...")
 
-  averages.se <- scater::sumCountsAcrossCells(
-    sce,
-    exprs_values = exprs_values,
-    ids = groupings,
-    average = TRUE,
-    BPPARAM = BPPARAM
-  )
-
-
-  if (!is.null(alt.exp)) {
-    alt.avg.se <- scater::sumCountsAcrossCells(
-      alt.exp,
+    averages.se <- scater::sumCountsAcrossCells(
+      sce,
+      exprs_values = exprs_values,
       ids = groupings,
       average = TRUE,
       BPPARAM = BPPARAM
     )
-    alt.avg <- assays(alt.avg.se)$average
-  }
-  # average expression across pseudobulk clusters
-  expr <- assays(averages.se)$average
 
-  # remove genes whose expressions are NA for all pseudobulks
-  expr <- expr[!rowSums(is.na(expr)) == ncol(expr), ]
-
-  # order regulon
-  regulon <- regulon[order(regulon$tf, regulon$target),]
-
-  # remove tfs not found in expression matrix or alt.exp matrix
-  if (is.null(alt.exp)){
-    regulon <- regulon[(regulon$tf %in% rownames(expr)),]
-  } else {
-    regulon <- regulon[(regulon$tf %in% rownames(alt.exp)),]
-  }
-
-  if (alt.exp.merge) {
-    regulon <- regulon[(regulon$tf %in% intersect(rownames(expr), rownames(alt.exp))),]
-  }
-
-  #remove targets not found in expression matrix
-  regulon <- subset(regulon, (target %in% rownames(expr)))
-
-  # remove tfs with less than min_targets
-  regulon <- regulon[regulon$tf %in% names(which(table(regulon$tf) >= min_targets)),]
-
-  tf_indexes <- split(seq_len(nrow(regulon)), regulon$tf)
-  unique_tfs <- names(tf_indexes)
-
-
-  # compute correlation
-  if (method == "corr") {
-    writeLines("computing correlation of the regulon...")
-    pb <- txtProgressBar(min = 0,
-                        max = length(unique_tfs),
-                        style = 3)
-    counter <- 0
-
-    regulon_weight_list <- vector("list", length(unique_tfs))
-    names(regulon_weight_list) <- unique_tfs
-
-
-    for (tf in unique_tfs) {
-      if (is.null(alt.exp)) {
-        tf_expr <- expr[tf, ,drop = FALSE ]
-      } else {
-        tf_expr <- alt.avg[tf, , drop=FALSE]
-      }
-
-      if (alt.exp.merge){
-        tf_expr <- expr[tf, ,drop = FALSE ]
-        tf_alt <- alt.avg[tf, , drop=FALSE]
-        tf_expr <- tf_expr * tf_alt
-      }
-      target_expr_matrix <- expr[regulon$target[tf_indexes[[tf]]], ,drop = FALSE ]
-      weights <- as.numeric(stats::cor(t(tf_expr), t(target_expr_matrix), use = "everything"))
-      regulon_weight_list[[tf]] <- weights
-      Sys.sleep(1 / 100)
-      counter <- counter + 1
-      setTxtProgressBar(pb, counter)
-
+    if (!is.null(alt.exp)) {
+      alt.avg.se <- scater::sumCountsAcrossCells(
+        alt.exp,
+        ids = groupings,
+        average = TRUE,
+        BPPARAM = BPPARAM
+      )
+      alt.avg <- assays(alt.avg.se)$average
     }
-    regulon_weights <- unlist(regulon_weight_list)
-    regulon$weight <- regulon_weights
+    # average expression across pseudobulk clusters
+    expr <- assays(averages.se)$average
 
-  }
-  # compute mutual information
-  if (MI) {
-    writeLines("computing mutual information of the regulon...")
+    # remove genes whose expressions are NA for all pseudobulks
+    expr <- expr[!rowSums(is.na(expr)) == ncol(expr), ]
 
-    n_pseudobulk <- length(unique(colData(sce)[,cluster_factor]))
+    # order regulon
+    regulon <- regulon[order(regulon$tf, regulon$target),]
 
-    if (n_pseudobulk < 5) {
-      stop("Too few clusters for mutual information calculation. Need at least 5 clusters")
-
-    } else{
-
-      regulon_MI <- c()
-      counter <- 0
-
-      pb <- txtProgressBar(min = 0,
-                          max = length(unique_tfs),
-                          style = 3)
-
-      regulon_MI_list <- vector("list", length(unique_tfs))
-      names(regulon_MI_list) <- unique_tfs
-
-      for (tf in unique_tfs) {
-
-        if (is.null(alt.exp)) {
-          tf_expr <- expr[tf, ,drop = FALSE ]
-        } else {
-          tf_expr <- alt.avg[tf, , drop=FALSE]
-        }
-
-        target_expr_matrix <- expr[regulon$target[tf_indexes[[tf]]], ]
-
-
-        if (length(unique(expr[tf,])) <  5) {
-          MI <- rep(NA,nrow(target_expr_matrix))
-
-        }else{
-          MI <- numeric(nrow(target_expr_matrix))
-
-          for (i in seq_len(nrow(target_expr_matrix))) {
-            target <- rownames(target_expr_matrix)[i]
-            if (length(unique(expr[target,])) <  5) {
-              MI[i] <- NA
-            } else{
-              y2d <- entropy::discretize2d(expr[tf,],
-                                          expr[target,],
-                                          numBins1 =  n_pseudobulk,
-                                          numBins2 =  n_pseudobulk)
-              MI[i] <- entropy::mi.empirical(y2d)
-
-            }
-          }
-
-
-        }
-
-        regulon_MI_list[[tf]] <- MI
-
-
-        Sys.sleep(1 / 100)
-        counter <- counter + 1
-        setTxtProgressBar(pb, counter)
-
-      }
-      regulon_MI <- unlist(regulon_MI_list)
-      regulon$MI <- regulon_MI
+    # remove tfs not found in expression matrix or alt.exp matrix
+    if (is.null(alt.exp)){
+      regulon <- regulon[(regulon$tf %in% rownames(expr)),]
+    } else {
+      regulon <- regulon[(regulon$tf %in% rownames(alt.exp)),]
     }
+
+    if (alt.exp.merge) {
+      regulon <- regulon[(regulon$tf %in% intersect(rownames(expr), rownames(alt.exp))),]
+    }
+
+    #remove targets not found in expression matrix
+    regulon <- subset(regulon, (target %in% rownames(expr)))
+
+    # remove tfs with less than min_targets
+    regulon <- regulon[regulon$tf %in% names(which(table(regulon$tf) >= min_targets)),]
+
+    tf_indices <- split(seq_len(nrow(regulon)), regulon$tf)
+    unique_tfs <- names(tf_indices)
+    if (method == "corr") regulon <- use_corr_method(regulon,
+                                                     unique_tfs,
+                                                     alt.exp, expr,
+                                                     alt.avg,
+                                                     alt.exp.merge,
+                                                     tf_indices)
+    else regulon <- use_MI_method(sce,
+                                  cluster_factor,
+                                  unique_tfs,
+                                  alt.exp,
+                                  expr,
+                                  alt.avg)
 
   }
 
@@ -277,60 +185,45 @@ addWeights <- function(regulon,
 
 }
 
-find_expression_difference <- function(regulon, exprMatrix, peakMatrix,
+find_expression_difference <- function(regulon, expMatrix, peakMatrix,
                                         expr_cutoff, peak_cutoff, method){
   if (!"idxATAC" %in% colnames(regulon)) stop("Regulon should contain 'idxATAC' column")
-  n_cells <- ncol(exprMatrix)
-  regulon <- regulon[order(regulon$tf, regulon$target),]
-  # determine unique tf-tg pairs for regulatory elements collapse
-  pair_id <- assign_id(regulon[,c("tf", "target")])
   peakMatrix <- binarize_matrix(peakMatrix, peak_cutoff)
-  peakMatrix <- peakMatrix[regulon$idxATAC, ]
-  # collapse peakMatrix
-  peakMatrix <- rowsum(peakMatrix, pair_id, reorder = FALSE)
-  # binarize
-  peakMatrix <- peakMatrix > 0
-  # use unique tf-tg pairs
-  regulon <- regulon[!duplicated(regulon[,c("tf", "target")]),]
-  tfMatrix <- binarize_matrix(exprMatrix[regulon$tf,], expr_cutoff)
-  exprMatrix <- exprMatrix[regulon$target,]
-  # determine cells with tf-re pair
-  tf_reMatrix <- tfMatrix*peakMatrix
-  # prepare for processing by vectorized function
-  exprMatrix <- split_matrix(exprMatrix)
-  tf_reMatrix <- split_matrix(tf_reMatrix)
+  tfMatrix <- binarize_matrix(expMatrix, expr_cutoff)
   # prepare for parallel processing
-  tf_reMatrix <- split(tf_reMatrix, regulon$tf)
-  exprMatrix <- split(exprMatrix, regulon$tf)
   regulon <- split(regulon, regulon$tf)
-  output_df <- BiocParallel::bplapply(X = seq_len(length(regulon)),
-                                           FUN = compare_groups_bp,
-                                           regulon = regulon,
-                                           tf_reMatrix = tf_reMatrix,
-                                           exprMatrix = exprMatrix,
-                                           method = method)
+  output_df <- BiocParallel::bplapply(X = regulon,
+                                      FUN = compare_groups_bp,
+                                      expMatrix = expMatrix,
+                                      tfMatrix =tfMatrix,
+                                      peakMatrix = peakMatrix,
+                                      method = method)
   output_df <- do.call(rbind, output_df)
-  output_df <- output_df[,colnames(output_df) != "idxATAC"]
+  n_cells <- ncol(expMatrix)
   if(method == "wilcoxon"){
     # if groups have the same ranks the result will be NaN
     output_df$weight[is.nan(output_df$weight)] <- 0
     # transform z-scores to effect size
     output_df$weight <-output_df$weight/sqrt(n_cells)
   }
-  output_df
+  regulon <- aggregate(weight~tf+target, FUN = mean, na.rm = TRUE, data = output_df)
+  regulon[order(regulon$tf),]
 }
 
 split_matrix <- function(m)
   lapply(seq_len(nrow(m)), function(x) m[x,])
 
-compare_groups_bp <- function(element_id, regulon, tf_reMatrix,
-                              exprMatrix, method){
-  pair_weights <- mapply(compare_two_groups, exprMatrix[[element_id]],
-                         tf_reMatrix[[element_id]],
-         MoreArgs = list(method = method))
-  message(regulon[[element_id]]$tf[1])
-  pair_weights <- matrix(pair_weights, ncol = 1, dimnames = list(NULL, "weight"))
-  cbind(regulon[[element_id]], pair_weights)
+compare_groups_bp <- function(regulon, expMatrix, tfMatrix, peakMatrix, method){
+  expMatrix <- expMatrix[regulon$target,,drop = FALSE]
+  # determine cells with tf-re pair
+  tf_reMatrix <- tfMatrix[regulon$tf,,drop = FALSE] * peakMatrix[regulon$idxATAC,,drop = FALSE]
+  # split matrices into list to be iterated over by mapply
+  expMatrix <- split_matrix(expMatrix)
+  tf_reMatrix <- split_matrix(tf_reMatrix)
+  pair_weights <- mapply(compare_two_groups, expMatrix, tf_reMatrix,
+                         MoreArgs = list(method = method))
+  regulon$weight <- pair_weights
+  regulon
 }
 
 compare_two_groups <- function(x, tf_re, method){
@@ -341,9 +234,107 @@ compare_two_groups <- function(x, tf_re, method){
   coin::wilcox_test(x ~ groups)@statistic@teststatistic
 }
 
-assign_id <- function(x){
-  # assign unique id to sorted elements
-  duplicated_elements <- duplicated(x)
-  unique_positions <- c(which(!duplicated_elements),length(duplicated_elements)+1)
-  rep.int(1:(length(unique_positions)-1), times=diff(unique_positions))
+use_corr_method <- function(regulon, unique_tfs, alt.exp, expr, alt.avg,
+                            alt.exp.merge, tf_indices){
+  writeLines("computing correlation of the regulon...")
+  pb <- txtProgressBar(min = 0,
+                       max = length(unique_tfs),
+                       style = 3)
+  counter <- 0
+
+  regulon_weight_list <- vector("list", length(unique_tfs))
+  names(regulon_weight_list) <- unique_tfs
+
+
+  for (tf in unique_tfs) {
+    if (is.null(alt.exp)) {
+      tf_expr <- expr[tf, ,drop = FALSE ]
+    } else {
+      tf_expr <- alt.avg[tf, , drop=FALSE]
+    }
+
+    if (alt.exp.merge){
+      tf_expr <- expr[tf, ,drop = FALSE ]
+      tf_alt <- alt.avg[tf, , drop=FALSE]
+      tf_expr <- tf_expr * tf_alt
+    }
+    target_expr_matrix <- expr[regulon$target[tf_indices[[tf]]], ,drop = FALSE ]
+    weights <- as.numeric(stats::cor(t(tf_expr), t(target_expr_matrix), use = "everything"))
+    regulon_weight_list[[tf]] <- weights
+    Sys.sleep(1 / 100)
+    counter <- counter + 1
+    setTxtProgressBar(pb, counter)
+
+  }
+  regulon_weights <- unlist(regulon_weight_list)
+  regulon$weight <- regulon_weights
+  regulon
 }
+
+
+use_MI_method <- function(sce, cluster_factor, unique_tfs, alt.exp, expr,
+                          alt.avg){
+  writeLines("computing mutual information of the regulon...")
+
+  n_pseudobulk <- length(unique(colData(sce)[,cluster_factor]))
+
+  if (n_pseudobulk < 5) {
+    stop("Too few clusters for mutual information calculation. Need at least 5 clusters")
+
+  } else{
+
+    regulon_MI <- c()
+    counter <- 0
+
+    pb <- txtProgressBar(min = 0,
+                         max = length(unique_tfs),
+                         style = 3)
+
+    regulon_MI_list <- vector("list", length(unique_tfs))
+    names(regulon_MI_list) <- unique_tfs
+
+    for (tf in unique_tfs) {
+      if (is.null(alt.exp)) {
+        tf_expr <- expr[tf, ,drop = FALSE ]
+      } else {
+        tf_expr <- alt.avg[tf, , drop=FALSE]
+      }
+      target_expr_matrix <- expr[regulon$target[tf_indices[[tf]]], ]
+      if (length(unique(expr[tf,])) <  5) {
+        MI <- rep(NA,nrow(target_expr_matrix))
+
+      }else{
+        MI <- numeric(nrow(target_expr_matrix))
+
+        for (i in seq_len(nrow(target_expr_matrix))) {
+          target <- rownames(target_expr_matrix)[i]
+          if (length(unique(expr[target,])) <  5) {
+            MI[i] <- NA
+          } else{
+            y2d <- entropy::discretize2d(expr[tf,],
+                                         expr[target,],
+                                         numBins1 =  n_pseudobulk,
+                                         numBins2 =  n_pseudobulk)
+            MI[i] <- entropy::mi.empirical(y2d)
+          }
+        }
+      }
+
+      regulon_MI_list[[tf]] <- MI
+
+      Sys.sleep(1 / 100)
+      counter <- counter + 1
+      setTxtProgressBar(pb, counter)
+    }
+    regulon_MI <- unlist(regulon_MI_list)
+    regulon$weight <- regulon_MI
+  }
+  regulon
+}
+
+
+
+
+
+
+
