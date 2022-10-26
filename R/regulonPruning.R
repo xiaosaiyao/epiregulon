@@ -157,7 +157,7 @@ pruneRegulon <- function(regulon,
   }
 
 
-  unique_clusters <- c("all", unique(clusters))
+  unique_clusters <- c("all", sort(unique(clusters)))
 
   n_min <- min(table(clusters))
   regulon <- regulon[order(regulon$tf),]
@@ -291,22 +291,29 @@ binom_bp <- function(n,
                      downsize,
                      n_min){
 
+
+
   expMatrix.cluster <- expMatrix.bi[regulon.split[[n]]$target, cluster_index, drop=FALSE]
+
   peakMatrix.cluster <- peakMatrix.bi[regulon.split[[n]]$idxATAC, cluster_index, drop=FALSE]
+
   tfMatrix.cluster <- tfMatrix.bi[regulon.split[[n]]$tf, cluster_index, drop=FALSE]
 
+
   triple.bi <- peakMatrix.cluster * expMatrix.cluster * tfMatrix.cluster
+
   tf_re.bi <- peakMatrix.cluster * tfMatrix.cluster
 
-  null.probability <- rowSums(tf_re.bi) * rowSums(expMatrix.cluster) / n_clusters ^2
+
+  null.probability <- Matrix::rowSums(tf_re.bi) * Matrix::rowSums(expMatrix.cluster) / n_clusters ^2
 
   if (downsize) {
-    n_triple = floor(rowSums(triple.bi) * n_min / n_clusters)
-    n_cells = rep(n_min, length(rowSums(triple.bi)))
+    n_triple = floor(Matrix::rowSums(triple.bi) * n_min / n_clusters)
+    n_cells = rep(n_min, length(Matrix::rowSums(triple.bi)))
 
   } else {
-    n_triple = rowSums(triple.bi)
-    n_cells = rep(n_clusters, length(rowSums(triple.bi)))
+    n_triple = Matrix::rowSums(triple.bi)
+    n_cells = rep(n_clusters, length(Matrix::rowSums(triple.bi)))
 
   }
 
@@ -336,15 +343,15 @@ chisq_bp <- function(n,
   tf_re.bi <- peakMatrix.cluster * tfMatrix.cluster
 
 
-  null.probability <- rowSums(tf_re.bi) * rowSums(expMatrix.cluster)
+  null.probability <- Matrix::rowSums(tf_re.bi) * Matrix::rowSums(expMatrix.cluster)
 
   if (downsize) {
-    n_triple = floor(rowSums(triple.bi) * n_min / n_clusters)
-    n_cells = rep(n_min, length(rowSums(triple.bi)))
+    n_triple = floor(Matrix::rowSums(triple.bi) * n_min / n_clusters)
+    n_cells = rep(n_min, length(Matrix::rowSums(triple.bi)))
 
   } else {
-    n_triple = rowSums(triple.bi)
-    n_cells = rep(n_clusters, length(rowSums(triple.bi)))
+    n_triple = Matrix::rowSums(triple.bi)
+    n_cells = rep(n_clusters, length(Matrix::rowSums(triple.bi)))
 
   }
 
