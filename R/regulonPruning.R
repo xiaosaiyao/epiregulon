@@ -8,29 +8,31 @@
 #' with genes in the rows and cells in the columns
 #' @param peakMatrix A SingleCellExperiment object or matrix containing peak accessibility with
 #' peaks in the rows and cells in the columns
+#' @param chromvarMatrix A SingleCellExperiment object or matrix containing averaged accessibility at the TF
+#' binding sites with tfs in the rows and cells in the columns. This can be used as an alternative to TF expression
 #' @param exp_assay String indicating the name of the assay in expMatrix for gene expression
+#' @param peak_assay String indicating the name of the assay in peakMatrix for chromatin accessibility
+#' @param chromvar_assay String indicating the name of the assay in chromvarMatrix for chromatin accessibility
+#' @param test String indicating whether `binom` or `chi.sq` test should be performed
 #' @param clusters A vector corresponding to the cluster labels of the cells if
 #' cluster-specific joint probabilities are also required. If left ```NULL```, joint probabilities
 #' are calculated for all cells
-#' @param peak_assay String indicating the name of the assay in peakMatrix for chromatin accessibility
-#' @param test String indicating whether the binomial or the chi-square test should be performed
 #' @param exp_cutoff A scalar indicating the minimum gene expression above which
 #' gene is considered active. Default value is 1. Applied to both transcription
 #' factors and target genes.
 #' @param peak_cutoff A scalar indicating the minimum peak accessibility above which peak is
 #' considered open. Default value is 0
+#' @param chromvar_cutoff A scalar indicating the minimum chromvar values for a tf to be
+#' considered active. Default value is 0
 #' @param regulon_cutoff A scalar indicating the maximal value for p-value for a tf-idxATAC-target trio
 #' to be retained in the pruned regulon.
 #' @param p_adj A logical indicating whether p adjustment should be performed
 #' @param prune_value String indicating whether to filter regulon based on `pval` or `padj`.
-#' @param chromvarMatrix A SingleCellExperiment object or matrix containing averaged accessibility at the TF
-#' binding sites with tfs in the rows and cells in the columns. This can be used as an alternative to TF expression
-#' @param chromvar_assay String indicating the name of the assay in chromvarMatrix for chromatin accessibility
-#' @param chromvar_cutoff A scalar indicating the minimum chromvar values for a tf to be
-#' considered active. Default value is 0
 #' @param collapse_re A logical indicating whether to collapse the regulatory elements of the
 #' same genes and use them as a whole. Note that checking with the `peak_cutoff`
 #' is made before the collapse.
+#' @param downsize A logical specifying whether the cluster size is set to minimum
+#' value across all clusters
 #' @param BPPARAM A BiocParallelParam object specifying whether calculation should be parallelized.
 #' Default is set to BiocParallel::MulticoreParam()
 #
@@ -57,17 +59,17 @@
 #' We implement two tests, the binomial test and the chi-square test.
 #'
 #' In the binomial test, the expected probability is P(TF, RE) * P(TG), and the number of trials is the number of cells,
-#' and the observed successes is the number of cells jointly expressing all three elements. Because the binomial test
-#' is very sensitive to the number of trials or the number of cells in this case and may be biased if the numbers of cells
-#' in each cluster are highly variable, we provide an option to normalize the cell number to the size of the smallest cluster.
-#' When `effect_size` is set to TRUE, the sample size `n` in binomial test is set to the size of the smallest cluster.
+#' and the observed successes is the number of cells jointly expressing all three elements.
+#'
+#' In the chi-square test, the expected probability for having all 3 elements active is also P(TF, RE) * P(TG) and
+#' the probability otherwise is 1- P(TF, RE) * P(TG). The observed cell count for the active category is the number of cells
+#' jointly expressing all three elements, and the cell count for the inactive category is n - n_triple.
+#'
+#' When conducting cluster-specific pruning, we provide an option to normalize the cell number to the size of the smallest cluster.
+#' When `downsize` is set to `TRUE`, the sample size `n` is set to the size of the smallest cluster.
 #' The number of successes is scaled proportionally and rounded to integer.
 #'
-#' If `test` parameter is set to `wilcoxon`, the target gene expression is compared between two
-#' group of cells identified by the presence of an active transcription factor-regulatory
-#' element pair. `effect_size` accounts for size differences between clusters by
-#' calculating modified z-score (effect size) as z-score/sqrt(sample size).
-#'
+
 #'
 #'
 #' @export
@@ -111,20 +113,20 @@
 pruneRegulon <- function(regulon,
                          expMatrix,
                          peakMatrix,
+                         chromvarMatrix = NULL,
                          exp_assay = "logcounts",
                          peak_assay = "PeakMatrix",
-                         test = c("binomial","chi-sq"),
+                         chromvar_assay = NULL,
+                         test = "binom",
                          clusters = NULL,
-                         n_samples = 1e4,
                          exp_cutoff = 1,
                          peak_cutoff = 0,
-                         regulon_cutoff = 0.05,
-                         p_adj = FALSE,
-                         prune_value = c("pval","padj"),
-                         chromvarMatrix = NULL,
-                         chromvar_assay = NULL,
                          chromvar_cutoff = 0,
+                         regulon_cutoff = 0.05,
+                         p_adj = TRUE,
+                         prune_value = "pval",
                          collapse_re = FALSE,
+                         downsize = FALSE,
                          BPPARAM = BiocParallel::SerialParam(progressbar = TRUE)){
 
   # extracting assays from SE
@@ -142,11 +144,6 @@ pruneRegulon <- function(regulon,
     }
   }
 
-  # if (!is.null(clusters)){
-  #   colnames(expMatrix) <- colnames(peakMatrix) <- clusters
-  #   if(!is.null(chromvarMatrix)) colnames(chromvarMatrix) <- clusters
-  # }
-
 
   # clean up regulon
   regulon <- regulon[regulon$tf %in% rownames(expMatrix),]
@@ -162,9 +159,11 @@ pruneRegulon <- function(regulon,
 
   unique_clusters <- c("all", unique(clusters))
 
+  n_min <- min(table(clusters))
   regulon <- regulon[order(regulon$tf),]
 
   res = list()
+
   # loop across each cluster
   for (selected_cluster in unique_clusters){
     message(selected_cluster)
@@ -180,42 +179,70 @@ pruneRegulon <- function(regulon,
 
     regulon.split <- split(regulon, regulon$tf)
 
-    res[[selected_cluster]] <- BiocParallel::bplapply(
-      X = seq_len(length(regulon.split)),
-      FUN = test_bp,
-      regulon.split,
-      expMatrix.bi,
-      peakMatrix.bi,
-      tfMatrix.bi,
-      test,
-      cluster_index,
-      n_clusters,
-      BPPARAM = BPPARAM
-    )
+
+    if (test == "binom") {
+      # Perform binomial test
+      res[[selected_cluster]] <- BiocParallel::bplapply(
+        X = seq_len(length(regulon.split)),
+        FUN = binom_bp,
+        regulon.split,
+        expMatrix.bi,
+        peakMatrix.bi,
+        tfMatrix.bi,
+        cluster_index,
+        n_clusters,
+        downsize,
+        n_min,
+        BPPARAM = BPPARAM)
+
+    } else if (test == "chi.sq") {
+      # Perform chi-square test
+      res[[selected_cluster]] <- BiocParallel::bplapply(
+        X = seq_len(length(regulon.split)),
+        FUN = chisq_bp,
+        regulon.split,
+        expMatrix.bi,
+        peakMatrix.bi,
+        tfMatrix.bi,
+        cluster_index,
+        n_clusters,
+        downsize,
+        n_min,
+        BPPARAM = BPPARAM)
+
+    } else {
+
+      stop("test must be either binom or chi.sq")
+    }
+
+
     res[[selected_cluster]] <- do.call("rbind", res[[selected_cluster]])
     colnames(res[[selected_cluster]]) <- c(paste0("pval_", selected_cluster),
                                            paste0("stats_", selected_cluster))
 
+
   }
+
   res <- do.call("cbind", res)
+
+  # Append test stats to regulon
   regulon.combined  <- cbind(regulon, res[,grep("pval_",colnames(res))], res[,grep("stats_",colnames(res))])
   colnames(regulon.combined ) <- c(colnames(regulon),
-                                    colnames(res)[grep("pval_",colnames(res))],
-                                    colnames(res)[grep("stats_",colnames(res))])
+                                   colnames(res)[grep("pval_",colnames(res))],
+                                   colnames(res)[grep("stats_",colnames(res))])
 
   # add p-value adjustment
 
   if (p_adj){
     pval_columns <- grepl("pval_", colnames(regulon.combined))
     qvalue <- apply(regulon.combined[,pval_columns, drop = FALSE], 2,
-                     function(x) {stats::p.adjust(x, method = "holm", n = nrow(regulon.combined))})
+                    function(x) {stats::p.adjust(x, method = "holm", n = nrow(regulon.combined))})
     qval_columns <- gsub("pval_", "padj_", colnames(regulon.combined)[pval_columns])
     colnames(qvalue) <- qval_columns
     regulon.combined <- cbind(regulon.combined, qvalue)
   }
 
-  # pruning
-  # by p-value
+  # pruning by p-value
   regulon.prune_value <- regulon.combined[,grepl(prune_value, colnames(regulon.combined)), drop = FALSE]
   prune_value_min <- apply(regulon.prune_value, 1, min)
   regulon.combined <- regulon.combined[which(prune_value_min < regulon_cutoff),]
@@ -225,7 +252,7 @@ pruneRegulon <- function(regulon,
   if (collapse_re == TRUE){
 
     aggregate_by <- colnames(regulon.combined)[grep("stats|pval|padj",
-                                                      colnames(regulon.combined))]
+                                                    colnames(regulon.combined))]
 
     regulon.combined <- stats::aggregate(regulon.combined[aggregate_by],
                                          by = regulon.combined[c("tf", "target")],
@@ -240,6 +267,8 @@ pruneRegulon <- function(regulon,
 }
 
 
+
+
 binarize_matrix <- function(matrix_obj, cutoff){
   matrix_obj.bi.index <- Matrix::which(matrix_obj > cutoff, arr.ind = TRUE)
   Matrix::sparseMatrix(x = rep(1,nrow(matrix_obj.bi.index)),
@@ -252,15 +281,15 @@ binarize_matrix <- function(matrix_obj, cutoff){
 
 
 
-
-test_bp <- function(n,
-                    regulon.split,
-                    expMatrix.bi,
-                    peakMatrix.bi,
-                    tfMatrix.bi,
-                    test,
-                    cluster_index,
-                    n_clusters){
+binom_bp <- function(n,
+                     regulon.split,
+                     expMatrix.bi,
+                     peakMatrix.bi,
+                     tfMatrix.bi,
+                     cluster_index,
+                     n_clusters,
+                     downsize,
+                     n_min){
 
   expMatrix.cluster <- expMatrix.bi[regulon.split[[n]]$target, cluster_index, drop=FALSE]
   peakMatrix.cluster <- peakMatrix.bi[regulon.split[[n]]$idxATAC, cluster_index, drop=FALSE]
@@ -269,43 +298,77 @@ test_bp <- function(n,
   triple.bi <- peakMatrix.cluster * expMatrix.cluster * tfMatrix.cluster
   tf_re.bi <- peakMatrix.cluster * tfMatrix.cluster
 
-  if (test == "binomial") {
-    res <- t(mapply(binom_test,
-                  n_triple = rowSums(triple.bi),
-                  n_cells = rep(n_clusters,length(rowSums(triple.bi))),
-                  n_tf_re = rowSums(tf_re.bi),
-                  n_target = rowSums(expMatrix.cluster)))
+  null.probability <- rowSums(tf_re.bi) * rowSums(expMatrix.cluster) / n_clusters ^2
 
-
-  } else if (test == "chi-sq"){
-
-    res <- t(mapply(chisq_test,
-                    n_triple = rowSums(triple.bi),
-                    n_cells = rep(n_clusters,length(rowSums(triple.bi))),
-                    n_tf_re = rowSums(tf_re.bi),
-                    n_target = rowSums(expMatrix.cluster)))
+  if (downsize) {
+    n_triple = floor(rowSums(triple.bi) * n_min / n_clusters)
+    n_cells = rep(n_min, length(rowSums(triple.bi)))
 
   } else {
-    stop("test must be either binomial or chi-seq")
+    n_triple = rowSums(triple.bi)
+    n_cells = rep(n_clusters, length(rowSums(triple.bi)))
+
   }
+
+  res <- t(mapply(binom_test,
+                  n_triple = n_triple,
+                  n_cells = n_cells,
+                  null_probability =  null.probability))
+
+
 }
 
+chisq_bp <- function(n,
+                     regulon.split,
+                     expMatrix.bi,
+                     peakMatrix.bi,
+                     tfMatrix.bi,
+                     cluster_index,
+                     n_clusters,
+                     downsize,
+                     n_min){
 
-binom_test <- function(n_triple, n_cells, n_tf_re, n_target, effect_size, n_min){
-  null_probability <- n_tf_re*n_target/n_cells^2
+  expMatrix.cluster <- expMatrix.bi[regulon.split[[n]]$target, cluster_index, drop=FALSE]
+  peakMatrix.cluster <- peakMatrix.bi[regulon.split[[n]]$idxATAC, cluster_index, drop=FALSE]
+  tfMatrix.cluster <- tfMatrix.bi[regulon.split[[n]]$tf, cluster_index, drop=FALSE]
 
-  if (effect_size) {
-    n_cells <- n_min
-    n_triple <- n_triple * n_min / n_cells
+  triple.bi <- peakMatrix.cluster * expMatrix.cluster * tfMatrix.cluster
+  tf_re.bi <- peakMatrix.cluster * tfMatrix.cluster
+
+
+  null.probability <- rowSums(tf_re.bi) * rowSums(expMatrix.cluster)
+
+  if (downsize) {
+    n_triple = floor(rowSums(triple.bi) * n_min / n_clusters)
+    n_cells = rep(n_min, length(rowSums(triple.bi)))
+
+  } else {
+    n_triple = rowSums(triple.bi)
+    n_cells = rep(n_clusters, length(rowSums(triple.bi)))
+
   }
 
+  res <- t(mapply(chisq_test,
+                  n_triple = n_triple,
+                  n_cells = n_cells,
+                  null.probability = null.probability))
+
+
+}
+
+binom_test <- function(n_triple, n_cells, null_probability){
   binom_res <- stats::binom.test(n_triple, n_cells, null_probability)
   z_score <- stats::qnorm(binom_res$p.value/2)*sign(null_probability - binom_res$estimate)
   c(p=binom_res$p.value, z=z_score)
 }
 
-chisq_test <- function(n_triple, n_cells, n_tf_re, n_target){
-  null_probability <- n_tf_re*n_target/n_cells^2
+
+
+
+chisq_test <- function(n_triple, n_cells, null_probability){
   chiseq_res <- stats::chisq.test(x = c(n_triple, (n_cells - n_triple)), p = c(null_probability, 1 - null_probability))
   c(p = chiseq_res$p.value, stats = chiseq_res$statistic)
 }
+
+
+
