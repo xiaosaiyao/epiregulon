@@ -257,8 +257,9 @@ compare_wilcox_bp <- function(n,
   tf_reMatrix_rowSums <- Matrix::rowSums(tf_reMatrix)
   for (i in which(tf_reMatrix_rowSums > 0)){
     groups <- factor(tf_reMatrix[i,], levels = c(1, 0))
-    weights[i] <- coin::wilcox_test(expMatrix[i,] ~ groups)@statistic@teststatistic
+    regulon[[n]]$weight <- coin::wilcox_test(expMatrix[i,] ~ groups)@statistic@teststatistic
   }
+  return(regulon[[n]])
 }
 
 compare_logFC_bp <- function(n,
