@@ -124,6 +124,12 @@ addWeights <- function(regulon,
     regulon <- split(regulon, regulon$tf)
 
     if (method == "wilcoxon"){
+      # output_df <- lapply(X = seq_len(length(regulon)),
+      #                                     FUN = compare_wilcox_bp,
+      #                                     regulon = regulon,
+      #                                     expMatrix = expMatrix,
+      #                                     tfMatrix = tfMatrix,
+      #                          peakMatrix = peakMatrix)
       output_df <- BiocParallel::bplapply(X = seq_len(length(regulon)),
                                           FUN = compare_wilcox_bp,
                                           regulon = regulon,
@@ -257,7 +263,7 @@ compare_wilcox_bp <- function(n,
   tf_reMatrix_rowSums <- Matrix::rowSums(tf_reMatrix)
   for (i in which(tf_reMatrix_rowSums > 0)){
     groups <- factor(tf_reMatrix[i,], levels = c(1, 0))
-    weights[n] <- coin::wilcox_test(expMatrix[i,] ~ groups)@statistic@teststatistic
+    weights[i] <- coin::wilcox_test(expMatrix[i,] ~ groups)@statistic@teststatistic
   }
   regulon[[n]]$weight <- weights
   return(regulon[[n]])
