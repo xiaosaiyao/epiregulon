@@ -159,7 +159,9 @@ pruneRegulon <- function(regulon,
 
   unique_clusters <- c("all", sort(unique(clusters)))
 
-  n_min <- min(table(clusters))
+  if(!is.null(clusters)) n_min <- min(table(clusters))
+  else n_min <- ncol(expMatrix)
+
   regulon <- regulon[order(regulon$tf),]
 
   res = list()
