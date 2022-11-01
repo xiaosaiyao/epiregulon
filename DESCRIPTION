@@ -42,7 +42,16 @@ Depends:
     R (>= 4.2.0),
     SingleCellExperiment
 Suggests: 
-    knitr, rmarkdown, dorothea, EnrichmentBrowser, parallel, dsassembly, scRNAseq, BiocStyle
+    knitr,
+    rmarkdown,
+    dorothea,
+    EnrichmentBrowser,
+    parallel,
+    dsassembly,
+    scRNAseq,
+    BiocStyle,
+    testthat (>= 3.0.0)
 VignetteBuilder: knitr
 URL:
 biocViews: Software, NetworkInference, Epigenetics, SingleCell, GeneRegulation, Network
+Config/testthat/edition: 3

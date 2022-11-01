@@ -7,12 +7,15 @@
 addWeights(
   regulon,
   sce,
-  cluster_factor,
+  peakMatrix = NULL,
+  cluster_factor = NULL,
   block_factor = NULL,
   exprs_values = "logcounts",
-  corr = TRUE,
-  MI = FALSE,
+  method = "corr",
+  peak_assay = "PeakMatrix",
   min_targets = 10,
+  expr_cutoff = 1,
+  peak_cutoff = 0,
   BPPARAM = BiocParallel::SerialParam(),
   alt.exp = NULL,
   alt.exp.merge = FALSE
@@ -24,17 +27,26 @@ of association between tf and target such as "mor" or "corr" are optional.}
 
 \item{sce}{A SingleCellExperiment object containing gene expression information}
 
+\item{peakMatrix}{A SingleCellExperiment object or matrix containing peak accessibility with
+peaks in the rows and cells in the columns}
+
 \item{cluster_factor}{String specifying the field in the colData of the SingleCellExperiment object to be averaged as pseudobulk (such as cluster)}
 
 \item{block_factor}{String specifying the field in the colData of the SingleCellExperiment object to be used as blocking factor (such as batch)}
 
 \item{exprs_values}{String specifying the name of the assay to be retrieved from the SingleCellExperiment object}
 
-\item{corr}{Logical scalar indicating whether to calculate weights based on correlation}
+\item{method}{String specifying the method of weights calculation. Four options are available: \code{corr},\code{MI}, \code{wilcoxon} and \code{logFC}.}
 
-\item{MI}{Logical scalar indicating whether to calculate weights based on mutual information}
+\item{peak_assay}{String indicating the name of the assay in peakMatrix for chromatin accessibility}
 
 \item{min_targets}{Integer specifying the minimum number of targets for each tf in the regulon with 10 targets as the default}
+
+\item{expr_cutoff}{A scalar indicating the minimum gene expression for transcription factor above which
+cell is considered as having expressed transcription factor.}
+
+\item{peak_cutoff}{A scalar indicating the minimum peak accessibility above which peak is
+considered open.}
 
 \item{BPPARAM}{A BiocParallelParam object specifying whether summation should be parallelized. Use BiocParallel::SerialParam() for
 serial evaluation and use BiocParallel::MulticoreParam() for parallel evaluation}
@@ -56,6 +68,14 @@ However, often times, an inhibitor of TF does not alter the gene expression of t
 by increasing the expression of the TF. In this case, the activity of the TF, if computed by gene expression correlation, may show a
 spurious increase. As an alternative to gene expression, we may use accessibility associated with TF, such as those computed by
 chromVar. When alt.exp.merge is true, we take the product of the gene expression and the values in the alt.exp matrix.
+When \code{method} is set to \code{wilcoxon} or \code{logFC} for each unique pair of transcription factor and target gene the corresponding
+data from peakMatrix is collapsed (by cell-wise summing). This data along with data on the expression of transcription factor is
+used to label the cells which show both transcription factor expression and regulatory element accessibility. The target gene expression
+in the labeled cells is contrasted against the rest of the cells. If \code{wilcoxon} is chosen, the cell groups are compared with Wilcoxon test
+and the weight is the effect size calculated as a z-score divided by the square root of the sample size. If \code{logFC} is chosen the
+weight is the difference between mean target gene expression in compared cells groups. When \code{method} is set to \code{corr}
+weights are cacluated based on correlation between expression of transcription factor and a target gene. With \code{MI}
+value of \code{method} parameter mutual information is used to calculate the weights.
 }
 \examples{
 # create a mock singleCellExperiment object for gene expression matrix
@@ -99,5 +119,5 @@ alt.exp.merge = TRUE)
 }
 }
 \author{
-Xiaosai Yao, Shang-yang Chen
+Xiaosai Yao, Shang-yang Chen, Tomasz Wlodarczyk
 }
