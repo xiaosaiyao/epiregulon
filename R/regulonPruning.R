@@ -148,6 +148,8 @@ pruneRegulon <- function(regulon,
   # clean up regulon
   regulon <- regulon[regulon$tf %in% rownames(expMatrix),]
   regulon <- regulon[regulon$target %in% rownames(expMatrix),]
+  regulon <- regulon[order(regulon$tf),]
+
 
   # binarize matrices according to cutoff
   peakMatrix.bi <- binarize_matrix(peakMatrix, peak_cutoff)
@@ -156,76 +158,54 @@ pruneRegulon <- function(regulon,
     tfMatrix.bi <- binarize_matrix(chromvarMatrix, chromvar_cutoff)
   }
 
-
   unique_clusters <- c("all", sort(unique(clusters)))
 
-  if(!is.null(clusters)) n_min <- min(table(clusters))
-  else n_min <- ncol(expMatrix)
+  n_min <- min(table(clusters))
 
-  regulon <- regulon[order(regulon$tf),]
-
-  res = list()
-
-  # loop across each cluster
-  for (selected_cluster in unique_clusters){
-    message(selected_cluster)
-
-    if(selected_cluster == "all"){
-      cluster_index <- seq_len(ncol(peakMatrix.bi))
-    }
-    else{
-      cluster_index <- which(clusters==selected_cluster)
-    }
-
-    n_clusters <- length(cluster_index)
-
-    regulon.split <- split(regulon, regulon$tf)
+  res <- list()
+  regulon.split <- split(regulon, regulon$tf)
 
 
-    if (test == "binom") {
-      # Perform binomial test
-      res[[selected_cluster]] <- BiocParallel::bplapply(
-        X = seq_len(length(regulon.split)),
-        FUN = binom_bp,
-        regulon.split,
-        expMatrix.bi,
-        peakMatrix.bi,
-        tfMatrix.bi,
-        cluster_index,
-        n_clusters,
-        downsize,
-        n_min,
-        BPPARAM = BPPARAM)
-
-    } else if (test == "chi.sq") {
-      # Perform chi-square test
-      res[[selected_cluster]] <- BiocParallel::bplapply(
-        X = seq_len(length(regulon.split)),
-        FUN = chisq_bp,
-        regulon.split,
-        expMatrix.bi,
-        peakMatrix.bi,
-        tfMatrix.bi,
-        cluster_index,
-        n_clusters,
-        downsize,
-        n_min,
-        BPPARAM = BPPARAM)
-
-    } else {
-
-      stop("test must be either binom or chi.sq")
-    }
+  if (test == "binom") {
+    # Perform binomial test
+    res <- BiocParallel::bplapply(
+      X = seq_len(length(regulon.split)),
+      FUN = binom_bp,
+      regulon.split,
+      expMatrix.bi,
+      peakMatrix.bi,
+      tfMatrix.bi,
+      clusters,
+      unique_clusters,
+      downsize,
+      n_min,
+      BPPARAM = BPPARAM)
 
 
-    res[[selected_cluster]] <- do.call("rbind", res[[selected_cluster]])
-    colnames(res[[selected_cluster]]) <- c(paste0("pval_", selected_cluster),
-                                           paste0("stats_", selected_cluster))
+  } else if (test == "chi.sq") {
+    # Perform chi-square test
+    res <- BiocParallel::bplapply(
+      X = seq_len(length(regulon.split)),
+      FUN = chisq_bp,
+      regulon.split,
+      expMatrix.bi,
+      peakMatrix.bi,
+      tfMatrix.bi,
+      clusters,
+      unique_clusters,
+      downsize,
+      n_min,
+      BPPARAM = BPPARAM)
 
+  } else {
 
+    stop("test must be either binom or chi.sq")
   }
 
-  res <- do.call("cbind", res)
+
+  res <- do.call("rbind", res)
+
+
 
   # Append test stats to regulon
   regulon.combined  <- cbind(regulon, res[,grep("pval_",colnames(res))], res[,grep("stats_",colnames(res))])
@@ -282,93 +262,133 @@ binarize_matrix <- function(matrix_obj, cutoff){
 }
 
 
-
 binom_bp <- function(n,
                      regulon.split,
                      expMatrix.bi,
                      peakMatrix.bi,
                      tfMatrix.bi,
-                     cluster_index,
-                     n_clusters,
+                     clusters,
+                     unique_clusters,
                      downsize,
                      n_min){
 
 
 
-  expMatrix.cluster <- expMatrix.bi[regulon.split[[n]]$target, cluster_index, drop=FALSE]
+  expMatrix.bi <- expMatrix.bi[regulon.split[[n]]$target, , drop=FALSE]
+  peakMatrix.bi <- peakMatrix.bi[regulon.split[[n]]$idxATAC, , drop=FALSE]
+  tfMatrix.bi <- tfMatrix.bi[regulon.split[[n]]$tf,, drop=FALSE]
 
-  peakMatrix.cluster <- peakMatrix.bi[regulon.split[[n]]$idxATAC, cluster_index, drop=FALSE]
+  triple.bi <- peakMatrix.bi * expMatrix.bi * tfMatrix.bi
+  tf_re.bi <- peakMatrix.bi * tfMatrix.bi
 
-  tfMatrix.cluster <- tfMatrix.bi[regulon.split[[n]]$tf, cluster_index, drop=FALSE]
+  res <- list()
+  message(n)
+  for (selected_cluster in unique_clusters){
+    message(selected_cluster)
 
+    if(selected_cluster == "all"){
+      cluster_index <- seq_len(ncol(peakMatrix.bi))
+    }
+    else{
+      cluster_index <- which(clusters==selected_cluster)
+    }
 
-  triple.bi <- peakMatrix.cluster * expMatrix.cluster * tfMatrix.cluster
+    n_clusters <- length(cluster_index)
+    null.probability <- Matrix::rowSums(tf_re.bi[, cluster_index, drop=FALSE]) *
+      Matrix::rowSums(expMatrix.bi[, cluster_index, drop=FALSE]) / n_clusters ^2
 
-  tf_re.bi <- peakMatrix.cluster * tfMatrix.cluster
+    if (downsize) {
+      n_triple = floor(Matrix::rowSums(triple.bi[, cluster_index, drop=FALSE]) * n_min / n_clusters)
+      n_cells = rep(n_min, length(Matrix::rowSums(triple.bi[, cluster_index, drop=FALSE])))
 
+    } else {
+      n_triple = Matrix::rowSums(triple.bi[, cluster_index, drop=FALSE])
+      n_cells = rep(n_clusters,
+                    length(Matrix::rowSums(triple.bi[, cluster_index, drop=FALSE])))
 
-  null.probability <- Matrix::rowSums(tf_re.bi) * Matrix::rowSums(expMatrix.cluster) / n_clusters ^2
+    }
 
-  if (downsize) {
-    n_triple = floor(Matrix::rowSums(triple.bi) * n_min / n_clusters)
-    n_cells = rep(n_min, length(Matrix::rowSums(triple.bi)))
-
-  } else {
-    n_triple = Matrix::rowSums(triple.bi)
-    n_cells = rep(n_clusters, length(Matrix::rowSums(triple.bi)))
+    res[[selected_cluster]] <- t(mapply(binom_test,
+                                        n_triple = n_triple,
+                                        n_cells = n_cells,
+                                        null_probability =  null.probability))
+    colnames(res[[selected_cluster]]) <- c(paste0("pval_",selected_cluster), paste0("zscore_", selected_cluster))
+    res[[selected_cluster]]
 
   }
 
-  res <- t(mapply(binom_test,
-                  n_triple = n_triple,
-                  n_cells = n_cells,
-                  null_probability =  null.probability))
+  res <- do.call("cbind", res)
 
 
 }
+
+
 
 chisq_bp <- function(n,
                      regulon.split,
                      expMatrix.bi,
                      peakMatrix.bi,
                      tfMatrix.bi,
-                     cluster_index,
-                     n_clusters,
+                     clusters,
+                     unique_clusters,
                      downsize,
                      n_min){
 
-  expMatrix.cluster <- expMatrix.bi[regulon.split[[n]]$target, cluster_index, drop=FALSE]
-  peakMatrix.cluster <- peakMatrix.bi[regulon.split[[n]]$idxATAC, cluster_index, drop=FALSE]
-  tfMatrix.cluster <- tfMatrix.bi[regulon.split[[n]]$tf, cluster_index, drop=FALSE]
-
-  triple.bi <- peakMatrix.cluster * expMatrix.cluster * tfMatrix.cluster
-  tf_re.bi <- peakMatrix.cluster * tfMatrix.cluster
 
 
-  null.probability <- Matrix::rowSums(tf_re.bi) * Matrix::rowSums(expMatrix.cluster)
 
-  if (downsize) {
-    n_triple = floor(Matrix::rowSums(triple.bi) * n_min / n_clusters)
-    n_cells = rep(n_min, length(Matrix::rowSums(triple.bi)))
+  expMatrix.bi <- expMatrix.bi[regulon.split[[n]]$target, , drop=FALSE]
+  peakMatrix.bi <- peakMatrix.bi[regulon.split[[n]]$idxATAC, , drop=FALSE]
+  tfMatrix.bi <- tfMatrix.bi[regulon.split[[n]]$tf,, drop=FALSE]
 
-  } else {
-    n_triple = Matrix::rowSums(triple.bi)
-    n_cells = rep(n_clusters, length(Matrix::rowSums(triple.bi)))
+  triple.bi <- peakMatrix.bi * expMatrix.bi * tfMatrix.bi
+  tf_re.bi <- peakMatrix.bi * tfMatrix.bi
+
+  res <- list()
+  message(n)
+  for (selected_cluster in unique_clusters){
+    message(selected_cluster)
+
+    if(selected_cluster == "all"){
+      cluster_index <- seq_len(ncol(peakMatrix.bi))
+    }
+    else{
+      cluster_index <- which(clusters==selected_cluster)
+    }
+
+    n_clusters <- length(cluster_index)
+    null.probability <- Matrix::rowSums(tf_re.bi[, cluster_index, drop=FALSE]) *
+      Matrix::rowSums(expMatrix.bi[, cluster_index, drop=FALSE]) / n_clusters ^2
+
+    if (downsize) {
+      n_triple = floor(Matrix::rowSums(triple.bi[, cluster_index, drop=FALSE]) * n_min / n_clusters)
+      n_cells = rep(n_min, length(Matrix::rowSums(triple.bi[, cluster_index, drop=FALSE])))
+
+    } else {
+      n_triple = Matrix::rowSums(triple.bi[, cluster_index, drop=FALSE])
+      n_cells = rep(n_clusters,
+                    length(Matrix::rowSums(triple.bi[, cluster_index, drop=FALSE])))
+
+    }
+
+    res[[selected_cluster]] <- t(mapply(chisq_test,
+                                        n_triple = n_triple,
+                                        n_cells = n_cells,
+                                        null_probability =  null.probability))
+    colnames(res[[selected_cluster]]) <- c(paste0("pval_",selected_cluster), paste0("zscore_", selected_cluster))
+    res[[selected_cluster]]
 
   }
 
-  res <- t(mapply(chisq_test,
-                  n_triple = n_triple,
-                  n_cells = n_cells,
-                  null.probability = null.probability))
+  res <- do.call("cbind", res)
 
 
 }
 
 binom_test <- function(n_triple, n_cells, null_probability){
-  binom_res <- stats::binom.test(n_triple, n_cells, null_probability)
+  binom_res <- stats::binom.test(x = n_triple, n = n_cells, p = null_probability)
   z_score <- stats::qnorm(binom_res$p.value/2)*sign(null_probability - binom_res$estimate)
-  c(p=binom_res$p.value, z=z_score)
+  c(p = binom_res$p.value, z = z_score)
 }
 
 
