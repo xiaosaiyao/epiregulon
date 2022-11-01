@@ -148,7 +148,7 @@ pruned.regulon <- pruneRegulon(expMatrix = GeneExpressionMatrix,
                                exp_assay = "counts",
                                peakMatrix = PeakMatrix,
                                peak_assay = "counts",                               
-                               regulon = regulon[regulon$tf %in%                                c("NKX2-1","GATA6","FOXA1","FOXA2","AR","SOX2"),],
+                               regulon = regulon[regulon$tf %in% c("NKX2-1","GATA6","FOXA1","FOXA2","AR","SOX2"),],
                                #regulon = regulon,
                                clusters = GeneExpressionMatrix$Clusters,
                                prune_value = "pval",
@@ -164,14 +164,35 @@ Epiregulon outputs two different correlations. The first, termed "corr", is the 
 ```{r addWeights, results = "hide", warning=FALSE}
 
 
-regulon.w <- addWeights(regulon = pruned.regulon,
+regulon.w.logFC <- addWeights(regulon = pruned.regulon,
                         sce = GeneExpressionMatrix,
-                        cluster_factor = "Clusters",
                         exprs_values = "counts",
+                        peakMatrix = PeakMatrix,
+                        peak_assay = "counts",
+                        cluster_factor = "Clusters",
                         block_factor = NULL,
-                        corr = TRUE,
-                        MI = FALSE,
-                        BPPARAM = BiocParallel::MulticoreParam())
+                        method = "logFC",
+                        aggregation_function = sum)
+
+regulon.w.wilcox <- addWeights(regulon = pruned.regulon,
+                        sce = GeneExpressionMatrix,
+                        exprs_values = "counts",
+                        peakMatrix = PeakMatrix,
+                        peak_assay = "counts",
+                        cluster_factor = "Clusters",
+                        block_factor = NULL,
+                        method = "wilcoxon",
+                        aggregation_function = sum)
+
+
+regulon.w.corr <- addWeights(regulon = pruned.regulon,
+                        sce = GeneExpressionMatrix,
+                        exprs_values = "counts",
+                        peakMatrix = PeakMatrix,
+                        peak_assay = "counts",
+                        cluster_factor = "Clusters",
+                        block_factor = NULL,
+                        method = "corr")
 ```
 ```{r }
 head(regulon.w)
@@ -189,7 +210,7 @@ $corr_i$ is the weight of TF and target i
 
 ```{r calculateActivity, results = "hide"}
 score.combine <- calculateActivity(sce = GeneExpressionMatrix, 
-                                   regulon = regulon.w, 
+                                   regulon = regulon.w.wilcox, 
                                    mode = "weight", 
                                    method = "weightedMean", 
                                    assay = "counts")
