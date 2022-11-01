@@ -307,7 +307,7 @@ binom_bp <- function(n,
 
   null.probability <- Matrix::rowSums(tf_re.bi) * Matrix::rowSums(expMatrix.cluster) / n_clusters ^2
 
-  if (downsize) {
+  if (downsize == TRUE & selected_cluster != "all") {
     n_triple = floor(Matrix::rowSums(triple.bi) * n_min / n_clusters)
     n_cells = rep(n_min, length(Matrix::rowSums(triple.bi)))
 
@@ -345,7 +345,7 @@ chisq_bp <- function(n,
 
   null.probability <- Matrix::rowSums(tf_re.bi) * Matrix::rowSums(expMatrix.cluster)
 
-  if (downsize) {
+  if (downsize == TRUE & selected_cluster != "all") {
     n_triple = floor(Matrix::rowSums(triple.bi) * n_min / n_clusters)
     n_cells = rep(n_min, length(Matrix::rowSums(triple.bi)))
 
