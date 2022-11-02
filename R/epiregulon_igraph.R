@@ -37,7 +37,7 @@
 #' between transcription factors and regulatory elements.
 #' @param graph,graph_obj_1,graph_obj_2  an igraph object
 #' @param weights a character specifying which variable should be used to assign
-#' weights to edges. If set to 'NA' then unweighted graph is built.
+#' weights to edges. If set to 'NULL' then unweighted graph is built.
 #' @param aggregation_function a function used to collapse duplicated edges
 #' @param weighted a logical indicating whether weighted graphs are used
 #' @param abs_diff a logical indicating whether absulute difference in the number
@@ -79,23 +79,21 @@ build_graph <-function(regulon, mode = "tripartite", weights = "corr",
     # give names to the peaks and target genes which will be easy to extract
     regulon$idxATAC <- paste0(as.character(regulon$idxATAC), "_peak")
     regulon$target <- paste0(regulon$target, "_gene")
-    if (mode == "re")
-        vertex_columns <- c("tf", "idxATAC")
 
-    else if (mode == "pairs")
-        vertex_columns <- c("tf", "idxATAC", "target")
+    vertex_columns <- switch(mode,
+                             "re" = c("tf", "idxATAC"),
+                             "pairs" = c("tf", "idxATAC", "target"),
+                             "tripartite" = c("idxATAC", "target"),
+                             "pairs" = c("tf", "target"))
 
-    else
-        vertex_columns <- c("tf", "target")
-
-    graph_data <- regulon[,stats::na.omit(c(vertex_columns, weights))]
+    graph_data <- regulon[,c(vertex_columns, weights)]
     if (mode =="tripartite"){
         # add tf-re data
-        colnames(graph_data) <- stats::na.omit(c("from", "to", weights))
+        colnames(graph_data) <- c("from", "to", weights)
         graph_data_tf_re <- data.frame(from = regulon$tf, to = regulon$idxATAC)
 
         # weights between tf and re are set to 1 for weighted graph
-        if (!is.na(weights)) graph_data_tf_re[,weights] <- 1
+        if (!is.null(weights)) graph_data_tf_re[,weights] <- 1
         graph_data <- rbind(graph_data, graph_data_tf_re)
         rm(graph_data_tf_re)
         vertex_columns <- c("from", "to")
@@ -107,7 +105,7 @@ build_graph <-function(regulon, mode = "tripartite", weights = "corr",
         vertex_columns <- c("tf", "target")
     }
 
-    if (is.na(weights))
+    if (is.null(weights))
         graph_data <- unique(graph_data)
     else{
         colnames(graph_data)[colnames(graph_data) == weights] <- "weight"
