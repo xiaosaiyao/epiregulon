@@ -84,7 +84,7 @@ build_graph <-function(regulon, mode = "tripartite", weights = "corr",
                              "re" = c("tf", "idxATAC"),
                              "pairs" = c("tf", "idxATAC", "target"),
                              "tripartite" = c("idxATAC", "target"),
-                             "pairs" = c("tf", "target"))
+                             "tg" = c("tf", "target"))
 
     graph_data <- regulon[,c(vertex_columns, weights)]
     if (mode =="tripartite"){
