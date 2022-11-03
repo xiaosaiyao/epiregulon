@@ -15,4 +15,4 @@ The target genes of TFs can be queried against known pathways to predict the fun
 
 Current prerequisites for running epiregulon include pre-computed peak matrix,  gene expression matrix and dimensionality reduction. Epiregulon offers seamless integration with ArchR. Alternately, users can analyze their data using their favorite analysis tools and package their matrices into `MultiAssayExperiment` (See `scMultiome` package). The scATAC-seq experiment can be either paired or unpaired with the scRNA-seq dataset as long as they were already integrated. The final output of epiregulon is a matrix of TF activities where rows are individual TFs and columns are single cell indexes.
 
-![plot](vignettes/overview.png)
+![plot](vignettes/epiregulon_functions.svg)
