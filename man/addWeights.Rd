@@ -13,10 +13,11 @@ addWeights(
   exprs_values = "logcounts",
   method = "corr",
   peak_assay = "PeakMatrix",
+  aggregation_function = mean,
   min_targets = 10,
-  expr_cutoff = 1,
+  expr_cutoff = 0,
   peak_cutoff = 0,
-  BPPARAM = BiocParallel::SerialParam(),
+  BPPARAM = BiocParallel::SerialParam(progressbar = TRUE),
   alt.exp = NULL,
   alt.exp.merge = FALSE
 )
@@ -39,6 +40,9 @@ peaks in the rows and cells in the columns}
 \item{method}{String specifying the method of weights calculation. Four options are available: \code{corr},\code{MI}, \code{wilcoxon} and \code{logFC}.}
 
 \item{peak_assay}{String indicating the name of the assay in peakMatrix for chromatin accessibility}
+
+\item{aggregation_function}{Function being used for summarizing weights from the transcription factor-target gene pair with
+many regulatory elements.}
 
 \item{min_targets}{Integer specifying the minimum number of targets for each tf in the regulon with 10 targets as the default}
 
@@ -63,19 +67,25 @@ meeting the minimal number of targets were filtered out.
 Calculate weights for the regulons by computing co-association between TF and target gene expression
 }
 \details{
-The default mode is to compute weights by correlating the pseudobulk target gene expression vs the pseudobulk TF gene expression.
-However, often times, an inhibitor of TF does not alter the gene expression of the TF. In rare cases, cells may even compensate
-by increasing the expression of the TF. In this case, the activity of the TF, if computed by gene expression correlation, may show a
-spurious increase. As an alternative to gene expression, we may use accessibility associated with TF, such as those computed by
-chromVar. When alt.exp.merge is true, we take the product of the gene expression and the values in the alt.exp matrix.
-When \code{method} is set to \code{wilcoxon} or \code{logFC} for each unique pair of transcription factor and target gene the corresponding
-data from peakMatrix is collapsed (by cell-wise summing). This data along with data on the expression of transcription factor is
-used to label the cells which show both transcription factor expression and regulatory element accessibility. The target gene expression
-in the labeled cells is contrasted against the rest of the cells. If \code{wilcoxon} is chosen, the cell groups are compared with Wilcoxon test
-and the weight is the effect size calculated as a z-score divided by the square root of the sample size. If \code{logFC} is chosen the
-weight is the difference between mean target gene expression in compared cells groups. When \code{method} is set to \code{corr}
-weights are cacluated based on correlation between expression of transcription factor and a target gene. With \code{MI}
-value of \code{method} parameter mutual information is used to calculate the weights.
+This function estimates the regulatory potential of transcription factor on its target genes, or in other words,
+the magnitude of gene expression changes induced by transcription factor activity, using one of the four methods:
+\itemize{
+\item{1. \code{corr} - correlation between TF and target gene expression}
+\item{2. \code{MI} - mutual information between the TF and target gene expression}
+\item{3. \code{wilcoxon} - effect size of the Wilcoxon test between target gene expression in cells jointly expressing all 3 elements vs
+cells that do not}
+\item{4. \code{logFC} - log 2 fold difference of target gene expression in cells jointly expressing all 3 elements vs cells that do not}
+}
+Three measures (\code{corr}, \code{wilcoxon} and \code{logFC}) give both the magnitude and directionality of changes whereas \code{MI} always outputs
+positive weights. The correlation and mutual information statistics are computed on the grouped pseudobulks by user-supplied cluster labels,
+whereas the Wilcoxon and log fold change group cells based on the joint expression of TF, RE and TG in each single cell.
+
+When using the \code{corr} method, the default practice is to compute weights by correlating the pseudobulk target gene expression vs
+the pseudobulk TF gene expression. However, often times, an inhibitor of TF does not alter the gene expression of the TF.
+In rare cases, cells may even compensate by increasing the expression of the TF. In this case, the activity of the TF,
+if computed by gene expression correlation, may show a spurious increase in its activity. As an alternative to gene expression,
+we may use accessibility associated with TF, such as those computed by chromVar. When alt.exp.merge is true, we take the product of
+the gene expression and the values in the alt.exp matrix.
 }
 \examples{
 # create a mock singleCellExperiment object for gene expression matrix
@@ -92,7 +102,7 @@ regulon.w <- addWeights(regulon, example_sce, cluster_factor="cluster", exprs_va
                         min_targets = 5)
 
 # Alternatively, add a matrix of chromVar values in place of TF expression
-\dontrun{
+\donttest{
 # create chromVar values from archR
 library(ArchR)
 library(parallel)
