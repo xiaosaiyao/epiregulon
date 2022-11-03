@@ -128,6 +128,7 @@ pruneRegulon <- function(regulon,
                          collapse_re = FALSE,
                          downsize = FALSE,
                          BPPARAM = BiocParallel::SerialParam(progressbar = TRUE)){
+  message("pruning network with ", test, " tests using a regulon cutoff of ", prune_value, "<", regulon_cutoff)
 
   # extracting assays from SE
   if (checkmate::test_class(expMatrix,classes = "SummarizedExperiment")){
@@ -282,9 +283,8 @@ binom_bp <- function(n,
   tf_re.bi <- peakMatrix.bi * tfMatrix.bi
 
   res <- list()
-  message(n)
+
   for (selected_cluster in unique_clusters){
-    message(selected_cluster)
 
     if(selected_cluster == "all"){
       cluster_index <- seq_len(ncol(peakMatrix.bi))
@@ -311,7 +311,7 @@ binom_bp <- function(n,
                                         n_triple = n_triple,
                                         n_cells = n_cells,
                                         null_probability =  null.probability))
-    colnames(res[[selected_cluster]]) <- c(paste0("pval_",selected_cluster), paste0("zscore_", selected_cluster))
+    colnames(res[[selected_cluster]]) <- c(paste0("pval_",selected_cluster), paste0("stats_", selected_cluster))
     res[[selected_cluster]]
 
   }
@@ -344,9 +344,8 @@ chisq_bp <- function(n,
   tf_re.bi <- peakMatrix.bi * tfMatrix.bi
 
   res <- list()
-  message(n)
+
   for (selected_cluster in unique_clusters){
-    message(selected_cluster)
 
     if(selected_cluster == "all"){
       cluster_index <- seq_len(ncol(peakMatrix.bi))
@@ -374,7 +373,7 @@ chisq_bp <- function(n,
                                         n_triple = n_triple,
                                         n_cells = n_cells,
                                         null_probability =  null.probability))
-    colnames(res[[selected_cluster]]) <- c(paste0("pval_",selected_cluster), paste0("zscore_", selected_cluster))
+    colnames(res[[selected_cluster]]) <- c(paste0("pval_",selected_cluster), paste0("stats_", selected_cluster))
     res[[selected_cluster]]
 
   }
@@ -394,7 +393,8 @@ binom_test <- function(n_triple, n_cells, null_probability){
 
 
 chisq_test <- function(n_triple, n_cells, null_probability){
-  chiseq_res <- stats::chisq.test(x = c(n_triple, (n_cells - n_triple)), p = c(null_probability, 1 - null_probability))
+  chiseq_res <- suppressWarnings(stats::chisq.test(x = c(n_triple, (n_cells - n_triple)),
+                                                   p = c(null_probability, 1 - null_probability)))
   c(p = chiseq_res$p.value, stats = chiseq_res$statistic)
 }
 

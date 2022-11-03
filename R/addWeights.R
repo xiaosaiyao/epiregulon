@@ -26,19 +26,25 @@
 #' meeting the minimal number of targets were filtered out.
 #' @import SummarizedExperiment
 #' @details
-#' The default mode is to compute weights by correlating the pseudobulk target gene expression vs the pseudobulk TF gene expression.
-#' However, often times, an inhibitor of TF does not alter the gene expression of the TF. In rare cases, cells may even compensate
-#' by increasing the expression of the TF. In this case, the activity of the TF, if computed by gene expression correlation, may show a
-#' spurious increase. As an alternative to gene expression, we may use accessibility associated with TF, such as those computed by
-#' chromVar. When alt.exp.merge is true, we take the product of the gene expression and the values in the alt.exp matrix.
-#' When `method` is set to `wilcoxon` or `logFC` for each unique pair of transcription factor and target gene the corresponding
-#' data from peakMatrix is collapsed (by cell-wise summing). This data along with data on the expression of transcription factor is
-#' used to label the cells which show both transcription factor expression and regulatory element accessibility. The target gene expression
-#' in the labeled cells is contrasted against the rest of the cells. If `wilcoxon` is chosen, the cell groups are compared with Wilcoxon test
-#' and the weight is the effect size calculated as a z-score divided by the square root of the sample size. If `logFC` is chosen the
-#' weight is the difference between mean target gene expression in compared cells groups. When `method` is set to `corr`
-#' weights are cacluated based on correlation between expression of transcription factor and a target gene. With `MI`
-#' value of `method` parameter mutual information is used to calculate the weights.
+#' This function estimates the regulatory potential of transcription factor on its target genes, or in other words,
+#' the magnitude of gene expression changes induced by transcription factor activity, using one of the four methods:
+#' 1) `corr` - correlation between TF and target gene expression <br>
+#' 2) `MI` - mutual information between the TF and target gene expression <br>
+#' 3) `wilcoxon` - effect size of the Wilcoxon test between target gene expression in cells jointly expressing all 3 elements vs
+#' cells that do not <br>
+#' 4) `logFC` - log 2 fold difference of target gene expression in cells jointly expressing all 3 elements vs cells that do not
+#'
+#' Three measures (`corr`, `wilcoxon` and `logFC`) give both the magnitude and directionality of changes whereas `MI` always outputs
+#' positive weights. The correlation and mutual information statistics are computed on the grouped pseudobulks by user-supplied cluster labels,
+#' whereas the Wilcoxon and log fold change group cells based on the joint expression of TF, RE and TG in each single cell.
+#'
+#' When using the `corr` method, the default practice is to compute weights by correlating the pseudobulk target gene expression vs
+#' the pseudobulk TF gene expression. However, often times, an inhibitor of TF does not alter the gene expression of the TF.
+#' In rare cases, cells may even compensate by increasing the expression of the TF. In this case, the activity of the TF,
+#' if computed by gene expression correlation, may show a spurious increase in its activity. As an alternative to gene expression,
+#' we may use accessibility associated with TF, such as those computed by chromVar. When alt.exp.merge is true, we take the product of
+#' the gene expression and the values in the alt.exp matrix.
+#'
 #'
 #' @export
 #'
