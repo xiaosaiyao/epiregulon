@@ -28,12 +28,13 @@
 #' @details
 #' This function estimates the regulatory potential of transcription factor on its target genes, or in other words,
 #' the magnitude of gene expression changes induced by transcription factor activity, using one of the four methods:
-#' 1) `corr` - correlation between TF and target gene expression <br>
-#' 2) `MI` - mutual information between the TF and target gene expression <br>
-#' 3) `wilcoxon` - effect size of the Wilcoxon test between target gene expression in cells jointly expressing all 3 elements vs
-#' cells that do not <br>
-#' 4) `logFC` - log 2 fold difference of target gene expression in cells jointly expressing all 3 elements vs cells that do not
-#'
+#' \itemize{
+#' \item{1. `corr` - correlation between TF and target gene expression}
+#' \item{2. `MI` - mutual information between the TF and target gene expression}
+#' \item{3. `wilcoxon` - effect size of the Wilcoxon test between target gene expression in cells jointly expressing all 3 elements vs
+#' cells that do not}
+#' \item{4. `logFC` - log 2 fold difference of target gene expression in cells jointly expressing all 3 elements vs cells that do not}
+#' }
 #' Three measures (`corr`, `wilcoxon` and `logFC`) give both the magnitude and directionality of changes whereas `MI` always outputs
 #' positive weights. The correlation and mutual information statistics are computed on the grouped pseudobulks by user-supplied cluster labels,
 #' whereas the Wilcoxon and log fold change group cells based on the joint expression of TF, RE and TG in each single cell.
@@ -63,7 +64,7 @@
 #'                         min_targets = 5)
 #'
 #' # Alternatively, add a matrix of chromVar values in place of TF expression
-#' \dontrun{
+#' \donttest{
 #' # create chromVar values from archR
 #' library(ArchR)
 #' library(parallel)
@@ -167,7 +168,7 @@ addWeights <- function(regulon,
 
 
     ## aggregating by REs
-    regulon <- aggregate(weight~tf+target, FUN = aggregation_function, na.rm = TRUE, data = output_df)
+    regulon <- stats::aggregate(weight~tf+target, FUN = aggregation_function, na.rm = TRUE, data = output_df)
     regulon[order(regulon$tf),]
 
     regulon <- output_df
@@ -223,7 +224,7 @@ addWeights <- function(regulon,
     }
 
     #remove targets not found in expression matrix
-    regulon <- subset(regulon, (target %in% rownames(expr)))
+    regulon <- regulon[which(regulon$target %in% rownames(expr)),]
 
     # remove tfs with less than min_targets
     regulon <- regulon[regulon$tf %in% names(which(table(regulon$tf) >= min_targets)),]
@@ -244,7 +245,8 @@ addWeights <- function(regulon,
                                unique_tfs,
                                alt.exp,
                                expr,
-                               alt.avg)
+                               alt.avg,
+                               tf_indices)
     }
 
   }
@@ -253,7 +255,7 @@ addWeights <- function(regulon,
 
 }
 
-
+#' @keywords internal
 
 compare_wilcox_bp <- function(n,
                               regulon,
@@ -275,6 +277,8 @@ compare_wilcox_bp <- function(n,
   return(regulon[[n]])
 }
 
+#' @keywords internal
+
 compare_logFC_bp <- function(n,
                              regulon,
                              expMatrix,
@@ -294,6 +298,7 @@ compare_logFC_bp <- function(n,
 
 }
 
+#' @keywords internal
 
 use_corr_method <- function(regulon,
                             unique_tfs,
@@ -338,13 +343,15 @@ use_corr_method <- function(regulon,
   regulon
 }
 
+#' @keywords internal
 
 use_MI_method <- function(sce,
                           cluster_factor,
                           unique_tfs,
                           alt.exp,
                           expr,
-                          alt.avg){
+                          alt.avg,
+                          tf_indices){
 
   writeLines("computing mutual information of the regulon...")
 

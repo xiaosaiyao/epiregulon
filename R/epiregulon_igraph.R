@@ -1,10 +1,10 @@
 #' Creating graphs and related operations
 #'
 #' @description
-#' \code{build_graph} function creates a directed graph based on the output of
+#' \code{buildGraph} function creates a directed graph based on the output of
 #' the \code{getRegulon} function.
 #'
-#' \code{build_difference_graph} a graph difference by subtracting the edges of \code{graph_obj_2}
+#' \code{buildDiffGraph} a graph difference by subtracting the edges of \code{graph_obj_2}
 #' from those of the \code{graph_obj_1}. If \code{weighted} is set to \code{TRUE} then for each
 #' ordered pair of vertices (nodes) the difference in number of edges between \code{graph_obj_1}
 #' and \code{graph_obj_1} is calculated. The result is used to set the number of
@@ -15,14 +15,14 @@
 #' weighted graphs, the weight of the output graph is calculated as a difference
 #' of the corresponding weights between input graphs.
 #'
-#' \code{add_centrality_degree} calculates degree centrality for each vertex using
+#' \code{addCentrality} calculates degree centrality for each vertex using
 #' \code{igraph::strength}.
 #'
-#' With \code{normalize_centrality} function the normalized values of centrality
+#' With \code{normalizeCentrality} function the normalized values of centrality
 #' are calculated from the original ones divided by
 #' \code{FUN}(total number of non-zero edges associated with each node).
 #'
-#' \code{rank_tfs} assign ranks to transcription factors according to degree
+#' \code{rankTfs} assign ranks to transcription factors according to degree
 #' centrality of their vertices
 #'
 #' @param regulon an object returned by the getRegulon or addWeights function
@@ -47,7 +47,7 @@
 #' @param type_attr a character corresponding to the name of the vertex attribute
 #' which indicate the type of vertex
 #' @return an igraph object
-#' \code{rank_tfs} returns a data.frame with transcription factors sorted according
+#' \code{rankTfs} returns a data.frame with transcription factors sorted according
 #' to the value of the \code{centrality} attribute
 #' @examples
 #' # create an artificial getRegulon output
@@ -59,20 +59,20 @@
 #' regulon$target <- sample(gene_set, 5e3, replace = TRUE)
 #' regulon$idxATAC <- 1:5e3
 #' regulon$corr <- runif(5e3)*0.5+0.5
-#' graph_tripartite <- build_graph(regulon, mode = "tripartite")
+#' graph_tripartite <- buildGraph(regulon, mode = "tripartite")
 #' # build bipartite graph using regulatory element-target gene pairs
-#' graph_pairs_1 <- build_graph(regulon, mode = "pairs")
+#' graph_pairs_1 <- buildGraph(regulon, mode = "pairs")
 #' regulon$corr <- runif(5e3)*0.5+0.5
-#' graph_pairs_2 <- build_graph(regulon, mode = "pairs")
-#' graph_diff <- build_difference_graph(graph_pairs_1, graph_pairs_2)
-#' graph_diff <- add_centrality_degree(graph_diff)
-#' graph_diff <- normalize_centrality(graph_diff)
-#' tf_ranking <- rank_tfs(graph_diff)
+#' graph_pairs_2 <- buildGraph(regulon, mode = "pairs")
+#' graph_diff <- buildDiffGraph(graph_pairs_1, graph_pairs_2)
+#' graph_diff <- addCentrality(graph_diff)
+#' graph_diff <- normalizeCentrality(graph_diff)
+#' tf_ranking <- rankTfs(graph_diff)
 #' @importFrom igraph graph_from_data_frame V V<- E E<- vcount strength incident_edges
 #' list.edge.attributes graph_from_adjacency_matrix get.adjacency list.vertex.attributes
 #' vertex_attr delete.edges delete_vertices
 #' @export
-build_graph <-function(regulon, mode = "tripartite", weights = "corr",
+buildGraph <-function(regulon, mode = "tripartite", weights = "corr",
                        aggregation_function = mean){
     stopifnot(mode %in% c("tg", "re", "tripartite", "pairs"))
 
@@ -132,9 +132,9 @@ build_graph <-function(regulon, mode = "tripartite", weights = "corr",
     epiregulon_graph
 }
 
-#' @rdname build_graph
+#' @rdname buildGraph
 #' @export
-build_difference_graph <- function(graph_obj_1, graph_obj_2, weighted = TRUE,
+buildDiffGraph <- function(graph_obj_1, graph_obj_2, weighted = TRUE,
                                    abs_diff = TRUE){
     checkmate::assertClass(graph_obj_1, "igraph")
     checkmate::assertClass(graph_obj_2, "igraph")
@@ -166,17 +166,17 @@ build_difference_graph <- function(graph_obj_1, graph_obj_2, weighted = TRUE,
   res
 }
 
-#' @rdname build_graph
+#' @rdname buildGraph
 #' @export
-add_centrality_degree <- function(graph){
+addCentrality <- function(graph){
     checkmate::assertClass(graph, "igraph")
     V(graph)$centrality <- strength(graph)
     graph
 }
 
-#' @rdname build_graph
+#' @rdname buildGraph
 #' @export
-normalize_centrality <- function(graph, FUN = sqrt, weighted = TRUE){
+normalizeCentrality <- function(graph, FUN = sqrt, weighted = TRUE){
   checkmate::assertClass(graph, "igraph")
   if (!"centrality" %in% list.vertex.attributes(graph)) stop("Vertices do not have 'centrality' attribute")
   if (!"weight" %in% list.edge.attributes(graph) & weighted) stop("Set 'weight' attribute to edges or use with 'weighted = FALSE'")
@@ -189,9 +189,9 @@ normalize_centrality <- function(graph, FUN = sqrt, weighted = TRUE){
   graph
 }
 
-#' @rdname build_graph
+#' @rdname buildGraph
 #' @export
-rank_tfs <- function(graph, type_attr = "type"){
+rankTfs <- function(graph, type_attr = "type"){
     checkmate::assertClass(graph, "igraph")
     rank_df <- data.frame(tf = V(graph)$name[order(V(graph)$centrality[vertex_attr(graph, type_attr) == "transcription factor"], decreasing = TRUE)],
                centrality = sort(V(graph)$centrality[vertex_attr(graph, type_attr) == "transcription factor"], decreasing = TRUE))
@@ -202,7 +202,7 @@ rank_tfs <- function(graph, type_attr = "type"){
 #' Plot a graph build based on \code{getRegulon} output
 #'
 #' This function takes an input an igraph object created by any of the following:
-#' \code{build_graph}, \code{add_centrality_degree}, \code{igraph::strength}, \code{normalize_centrality}.
+#' \code{buildGraph}, \code{addCentrality}, \code{igraph::strength}, \code{normalizeCentrality}.
 #' It makes a force-directed layout plot to visualize it at a high level.
 #'
 #' @param graph an igraph object
@@ -239,11 +239,11 @@ rank_tfs <- function(graph, type_attr = "type"){
 #' regulon$idxATAC <- seq_len(5e2)
 #' regulon$corr <- runif(5e2)*0.5+0.5
 #' #create igraph object
-#' graph_tripartite <- build_graph(regulon, mode = "tripartite")
-#' plot_epiregulon_network(graph_tripartite, tfs_to_highlight = sample(unique(tf_set),3),
+#' graph_tripartite <- buildGraph(regulon, mode = "tripartite")
+#' plotEpiregulonNetwork(graph_tripartite, tfs_to_highlight = sample(unique(tf_set),3),
 #' edge_alpha = 0.2)
 #' @export
-plot_epiregulon_network <-
+plotEpiregulonNetwork <-
     function(
         graph,
         layout = "stress",
@@ -319,11 +319,11 @@ plot_epiregulon_network <-
 #' regulon$idxATAC <- 1:5e3
 #' regulon <- cbind(regulon, data.frame(C1 = runif(5e3), C2 = runif(5e3),
 #' C3 = runif(5e3)))
-#' plot_difference_network(regulon, tf = unique(tf_set)[1:3],
+#' plotDiffNetwork(regulon, tf = unique(tf_set)[1:3],
 #' groups = c("C1", "C2", "C3"), cutoff = 0.2)
 #' @export
 
-plot_difference_network <- function(regulon,
+plotDiffNetwork <- function(regulon,
                                     cutoff = 0.01,
                                     tf = NULL,
                                     groups  = NULL,
@@ -345,9 +345,9 @@ plot_difference_network <- function(regulon,
 
   combined.regulon <- do.call("rbind", regulon.tf)
 
-  combined.graph <- build_graph(combined.regulon, mode = "tg", weights = "weight")
+  combined.graph <- buildGraph(combined.regulon, mode = "tg", weights = "weight")
 
-  plot_epiregulon_network(combined.graph,
+  plotEpiregulonNetwork(combined.graph,
                           layout = layout,
                           tfs_to_highlight = unique(combined.regulon$tf),
                           label_nudge_x = 0.1,
