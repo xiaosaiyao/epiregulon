@@ -91,9 +91,7 @@ build_graph <-function(regulon, mode = "tripartite", weights = "corr",
         # add tf-re data
         colnames(graph_data) <- c("from", "to", weights)
         graph_data_tf_re <- data.frame(from = regulon$tf, to = regulon$idxATAC)
-
-        # weights between tf and re are set to 1 for weighted graph
-        if (!is.null(weights)) graph_data_tf_re[,weights] <- 1
+        if (!is.null(weights)) graph_data_tf_re[,weights] <- regulon[,weights]
         graph_data <- rbind(graph_data, graph_data_tf_re)
         rm(graph_data_tf_re)
         vertex_columns <- c("from", "to")
