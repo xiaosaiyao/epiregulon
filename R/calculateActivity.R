@@ -122,8 +122,8 @@ calculateActivity <- function (sce,
       score.combine <- list()
       for (cluster_name in sort(unique(clusters))){
         score.combine[[cluster_name]] <-
-          Matrix::crossprod(Matrix::t(scale.mat)[, rownames(tf_target_mat[[cluster_name]]), drop = FALSE],
-                            tf_target_mat[[cluster_name]])
+          Matrix::t(scale.mat)[, rownames(tf_target_mat[[cluster_name]]), drop = FALSE] %*%
+                            tf_target_mat[[cluster_name]]
         # nullify cells not belonging to this cluster
         score.combine[[cluster_name]][which(clusters != cluster_name),] <- 0
 
@@ -140,8 +140,8 @@ calculateActivity <- function (sce,
       tf_target_mat[is.na(tf_target_mat)] <- 0
       tf_target_mat <- as(as.matrix(tf_target_mat), "dgCMatrix")
       # cross product of scale.matrix and tf_target matrix
-      score.combine <- Matrix::crossprod (Matrix::t(scale.mat)[,rownames(tf_target_mat), drop = FALSE],
-                                          tf_target_mat)
+      score.combine <- Matrix::t(scale.mat)[,rownames(tf_target_mat), drop = FALSE] %*%
+        tf_target_mat
       # need to normalize
     }
     score.combine <- Matrix::t(score.combine)
