@@ -70,7 +70,7 @@ calculateActivity <- function (sce,
 
   #convert delayedMatrix to dgCMatrix
   if (checkmate::test_class(scale.mat, classes = "DelayedMatrix")) {
-    writeLines("converting DelayedMatrix to dgCMatrix")
+    message("converting DelayedMatrix to dgCMatrix")
     scale.mat <- as(scale.mat, Class = "dgCMatrix")
   }
 
@@ -157,12 +157,12 @@ calculateActivity <- function (sce,
   else if (method == "aucell") {
     message(paste("calculating TF activity from regulon using "), method)
     geneSets <- split(regulon$target, regulon$tf)
-    writeLines("ranking cells...")
+    message("ranking cells...")
     cells_rankings <- AUCell::AUCell_buildRankings(scale.mat,
                                                    splitByBlocks = TRUE,
                                                    nCores = ncore,
                                                    plotStats = FALSE)
-    writeLines("calculating AUC...")
+    message("calculating AUC...")
     cells_AUC <- AUCell::AUCell_calcAUC(geneSets,
                                         rankings = cells_rankings,
                                         nCores = ncore)
