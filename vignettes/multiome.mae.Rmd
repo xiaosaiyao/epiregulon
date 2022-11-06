@@ -200,6 +200,7 @@ score.combine <- calculateActivity(sce = GeneExpressionMatrix,
                                    mode = "weight", 
                                    method = "weightedMean", 
                                    assay = "counts")
+
 ```
 
 ## Perform differential activity

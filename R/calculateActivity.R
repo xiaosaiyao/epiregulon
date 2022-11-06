@@ -92,7 +92,7 @@ calculateActivity <- function (sce,
   #normalize genes
   if (normalize){
     rowmeans <- Matrix::rowMeans(scale.mat)
-    scale.mat <- apply(scale.mat, 2, function(x){x/rowmeans})
+    scale.mat <- apply(scale.mat, 2, function(x){x-rowmeans})
   }
 
   #calculate activity
@@ -109,6 +109,7 @@ calculateActivity <- function (sce,
           local({
             tf_target_mat <- reshape2::dcast(regulon,
                                              target ~ tf,
+                                             fun.aggregate = mean,
                                              value.var = paste0(mode, "_", cluster_name))
             rownames(tf_target_mat) <- tf_target_mat$target
             tf_target_mat <- tf_target_mat[, -1]
@@ -134,7 +135,7 @@ calculateActivity <- function (sce,
     } else {
       # if no cluster information is provided, calculate activity for all cells
       # form a matrix of tf * targets
-      tf_target_mat <- reshape2::dcast(regulon, target ~ tf, FUN = mean, value.var = mode)
+      tf_target_mat <- reshape2::dcast(regulon, target ~ tf, fun.aggregate = mean, value.var = mode)
       rownames(tf_target_mat) <- tf_target_mat$target
       tf_target_mat <- tf_target_mat[,-1]
       tf_target_mat[is.na(tf_target_mat)] <- 0
