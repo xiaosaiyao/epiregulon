@@ -4,6 +4,7 @@
 #' Rownames (either gene symbols or geneID) must be consistent with the naming convention in the regulon.
 #' @param regulon  A data frame consisting of tf (regulator) and target in the column names, with additional columns
 #' indicating degree of association between tf and target such as "mor" or "corr" obtained from addWeights.
+#' @param normalize Logical indicating whether row means should be substracted from expression matrix
 #' @param mode String indicating the name of column to be used as the weights
 #' @param method String indicating the method for calculating activity. Available methods are weightedMean or aucell
 #' @param ncore Integer specifying the number of cores to be used in AUCell
@@ -13,6 +14,7 @@
 #' first column and weights in the second column. See [genomitory](
 #' http://cedar.gene.com/gran/dev/PkgDocumentation/genomitory/uploads.html#from-compressedsplitdataframelists)
 #' for more information on compressedSplitDataFramelists. See details
+#' @param clusters A vector indicating cluster assignment
 #' @return A matrix of inferred transcription factor (row) activities in single cells (columns)
 #' @export
 #' @import methods utils
@@ -38,6 +40,12 @@
 #' # calculate activity
 #' activity <- calculateActivity(example_sce, regulon.w, assay = "logcounts")
 #'
+#' # calculate cluster-specific activity if cluster-specific weights are supplied
+#' regulon.w$weight_positive = runif(nrow(regulon.w), -1,1)
+#' regulon.w$weight_negative = runif(nrow(regulon.w), -1,1)
+#' activity.cluster <- calculateActivity(example_sce, regulon=regulon.w,
+#' cluster=example_sce$Mutation_Status, assay = "logcounts")
+#'
 #' @examples
 #' \dontrun{
 #' # Compute signature scores
@@ -49,12 +57,14 @@
 #' @author Xiaosai Yao, Shang-yang Chen
 
 calculateActivity <- function (sce,
-                              regulon = NULL,
-                              mode = "weight",
-                              method = "weightedmean",
-                              ncore = 1,
-                              assay = "logcounts",
-                              genesets = NULL) {
+                               regulon = NULL,
+                               normalize = FALSE,
+                               mode = "weight",
+                               method = "weightedmean",
+                               ncore = 1,
+                               assay = "logcounts",
+                               genesets = NULL,
+                               clusters = NULL) {
   method <- tolower(method)
   scale.mat <- assay(sce, assay)
 
@@ -79,58 +89,81 @@ calculateActivity <- function (sce,
   #remove genes in regulon not found in sce
   regulon <- regulon[which(regulon$target %in% rownames(scale.mat)),]
 
+  #normalize genes
+  if (normalize){
+    rowmeans <- Matrix::rowMeans(scale.mat)
+    scale.mat <- apply(scale.mat, 2, function(x){x/rowmeans})
+  }
+
   #calculate activity
   if (method == "weightedmean") {
-    writeLines(paste("calculating TF activity from regulon using "), method)
+    message(paste("calculating TF activity from regulon using "), method)
 
-    tf_indexes <- split(seq_len(nrow(regulon)), regulon$tf)
-    unique_tfs <- names(tf_indexes)
 
-    pb <- txtProgressBar(min = 0,
-                        max = length(unique_tfs),
-                        style = 3)
+    # if cluster information is provided and if there are cluster-specific weights provided,
+    # compute total activity by summation of cluster-specific activity
+    if (!is.null(clusters)) {
 
-    score <- vector("list", length(unique_tfs))
-    counter <- 0
+      tf_target_mat <-
+        lapply(sort(unique(clusters)), function(cluster_name) {
+          local({
+            tf_target_mat <- reshape2::dcast(regulon,
+                                             target ~ tf,
+                                             value.var = paste0(mode, "_", cluster_name))
+            rownames(tf_target_mat) <- tf_target_mat$target
+            tf_target_mat <- tf_target_mat[, -1]
+            tf_target_mat[is.na(tf_target_mat)] <- 0
+            tf_target_mat <- as(as.matrix(tf_target_mat), "dgCMatrix")
+          })
+        })
+      names(tf_target_mat) <- sort(unique(clusters))
 
-    for (i in seq_along(unique_tfs)) {
 
-      tf <- unique_tfs[i]
-      regulon.current <- regulon[ tf_indexes[[tf]], ]
-      geneset <- data.frame(regulon.current$target, regulon.current[, mode])
-      score[[i]] <- pathwayscoreCoeffNorm(scale.mat,
-                                         geneset,
-                                         tf)
-      Sys.sleep(1 / 100)
-      counter <- counter + 1
-      setTxtProgressBar(pb, counter)
+      score.combine <- list()
+      for (cluster_name in sort(unique(clusters))){
+        score.combine[[cluster_name]] <-
+          Matrix::crossprod(Matrix::t(scale.mat)[, rownames(tf_target_mat[[cluster_name]]), drop = FALSE],
+                            tf_target_mat[[cluster_name]])
+        # nullify cells not belonging to this cluster
+        score.combine[[cluster_name]][which(clusters != cluster_name),] <- 0
+
+      }
+      score.combine <- Reduce("+", score.combine)
+
+
+    } else {
+      # if no cluster information is provided, calculate activity for all cells
+      # form a matrix of tf * targets
+      tf_target_mat <- reshape2::dcast(regulon, target ~ tf, FUN = mean, value.var = mode)
+      rownames(tf_target_mat) <- tf_target_mat$target
+      tf_target_mat <- tf_target_mat[,-1]
+      tf_target_mat[is.na(tf_target_mat)] <- 0
+      tf_target_mat <- as(as.matrix(tf_target_mat), "dgCMatrix")
+      # cross product of scale.matrix and tf_target matrix
+      score.combine <- Matrix::crossprod (Matrix::t(scale.mat)[,rownames(tf_target_mat), drop = FALSE],
+                                          tf_target_mat)
+      # need to normalize
     }
-    score.combine <- do.call(cbind, score)
     score.combine <- Matrix::t(score.combine)
+    #normalize by number of targets
+    freq <- table(regulon$tf)
+    score.combine <- apply(score.combine, 2, function(x) {x/freq[rownames(score.combine)]})
+
   }
   else if (method == "aucell") {
-    writeLines(paste("calculating TF activity from regulon using "), method)
+    message(paste("calculating TF activity from regulon using "), method)
     geneSets <- split(regulon$target, regulon$tf)
     writeLines("ranking cells...")
     cells_rankings <- AUCell::AUCell_buildRankings(scale.mat,
-                                                  splitByBlocks = TRUE,
-                                                  nCores = ncore,
-                                                  plotStats = FALSE)
+                                                   splitByBlocks = TRUE,
+                                                   nCores = ncore,
+                                                   plotStats = FALSE)
     writeLines("calculating AUC...")
     cells_AUC <- AUCell::AUCell_calcAUC(geneSets,
-                                       rankings = cells_rankings,
-                                       nCores = ncore)
+                                        rankings = cells_rankings,
+                                        nCores = ncore)
     #score.combine = data.frame(AUCell::getAUC(cells_AUC))
     score.combine <- AUCell::getAUC(cells_AUC)
   }
   return(score.combine)
-}
-
-
-
-pathwayscoreCoeffNorm <- function(scale.mat, geneset, geneset_name) {
-
-  score <- Matrix::crossprod(scale.mat[geneset[,1], , drop=FALSE], geneset[,2])/nrow(geneset)
-  colnames(score) <- geneset_name
-  return(score)
 }
