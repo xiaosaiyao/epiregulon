@@ -298,12 +298,12 @@ binom_bp <- function(n,
       Matrix::rowSums(expMatrix.bi[, cluster_index, drop=FALSE]) / n_clusters ^2
 
     if (downsize == TRUE & selected_cluster != "all") {
-      n_triple = floor(Matrix::rowSums(triple.bi[, cluster_index, drop=FALSE]) * n_min / n_clusters)
-      n_cells = rep(n_min, length(Matrix::rowSums(triple.bi[, cluster_index, drop=FALSE])))
+      n_triple <- floor(Matrix::rowSums(triple.bi[, cluster_index, drop=FALSE]) * n_min / n_clusters)
+      n_cells <- rep(n_min, length(Matrix::rowSums(triple.bi[, cluster_index, drop=FALSE])))
 
     } else {
-      n_triple = Matrix::rowSums(triple.bi[, cluster_index, drop=FALSE])
-      n_cells = rep(n_clusters,
+      n_triple <- Matrix::rowSums(triple.bi[, cluster_index, drop=FALSE])
+      n_cells <- rep(n_clusters,
                     length(Matrix::rowSums(triple.bi[, cluster_index, drop=FALSE])))
     }
 
@@ -359,12 +359,12 @@ chisq_bp <- function(n,
       Matrix::rowSums(expMatrix.bi[, cluster_index, drop=FALSE]) / n_clusters ^2
 
     if (downsize == TRUE & selected_cluster != "all") {
-      n_triple = floor(Matrix::rowSums(triple.bi[, cluster_index, drop=FALSE]) * n_min / n_clusters)
-      n_cells = rep(n_min, length(Matrix::rowSums(triple.bi[, cluster_index, drop=FALSE])))
+      n_triple <- floor(Matrix::rowSums(triple.bi[, cluster_index, drop=FALSE]) * n_min / n_clusters)
+      n_cells <- rep(n_min, length(Matrix::rowSums(triple.bi[, cluster_index, drop=FALSE])))
 
     } else {
-      n_triple = Matrix::rowSums(triple.bi[, cluster_index, drop=FALSE])
-      n_cells = rep(n_clusters,
+      n_triple <- Matrix::rowSums(triple.bi[, cluster_index, drop=FALSE])
+      n_cells <- rep(n_clusters,
                     length(Matrix::rowSums(triple.bi[, cluster_index, drop=FALSE])))
 
     }
