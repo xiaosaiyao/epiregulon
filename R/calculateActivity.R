@@ -44,7 +44,7 @@
 #' regulon.w$weight_positive = runif(nrow(regulon.w), -1,1)
 #' regulon.w$weight_negative = runif(nrow(regulon.w), -1,1)
 #' activity.cluster <- calculateActivity(example_sce, regulon=regulon.w,
-#' cluster=example_sce$Mutation_Status, assay = "logcounts")
+#' clusters=example_sce$Mutation_Status, assay = "logcounts")
 #'
 #' @examples
 #' \dontrun{
@@ -89,12 +89,6 @@ calculateActivity <- function (sce,
   #remove genes in regulon not found in sce
   regulon <- regulon[which(regulon$target %in% rownames(scale.mat)),]
 
-  #normalize genes
-  if (normalize){
-    rowmeans <- Matrix::rowMeans(scale.mat)
-    scale.mat <- apply(scale.mat, 2, function(x){x-rowmeans})
-  }
-
   #calculate activity
   if (method == "weightedmean") {
     message(paste("calculating TF activity from regulon using "), method)
@@ -110,7 +104,7 @@ calculateActivity <- function (sce,
             # convert regulon to a matrix of tf * targets for matrix multiplication
             tf_target_mat <- reshape2::dcast(regulon,
                                              target ~ tf,
-                                             fun.aggregate = mean,
+                                             fun.aggregate = function(x) mean(x, na.rm =TRUE),
                                              value.var = paste0(mode, "_", cluster_name))
             rownames(tf_target_mat) <- tf_target_mat$target
             tf_target_mat <- tf_target_mat[, -1]
@@ -120,13 +114,22 @@ calculateActivity <- function (sce,
           })
         })
       names(tf_target_mat) <- sort(unique(clusters))
-
+      if(normalize) meanExpr <- Matrix::rowMeans(scale.mat[rownames(tf_target_mat[[1]]),])
 
       score.combine <- list()
       for (cluster_name in sort(unique(clusters))){
         score.combine[[cluster_name]] <-
           Matrix::t(scale.mat)[, rownames(tf_target_mat[[cluster_name]]), drop = FALSE] %*%
                             tf_target_mat[[cluster_name]]
+        #normalize genes
+        if(normalize){
+          mean_activity <- meanExpr %*% tf_target_mat[[cluster_name]]
+          score.combine[[cluster_name]] <- sweep(score.combine[[cluster_name]],
+                                                 2, mean_activity, "-")
+
+        }
+
+
         # nullify cells not belonging to this cluster
         score.combine[[cluster_name]][which(clusters != cluster_name),] <- 0
 
@@ -137,7 +140,7 @@ calculateActivity <- function (sce,
     } else {
       # if no cluster information is provided, calculate activity for all cells
       # convert regulon to a matrix of tf * targets for matrix multiplication
-      tf_target_mat <- reshape2::dcast(regulon, target ~ tf, fun.aggregate = mean, value.var = mode)
+      tf_target_mat <- reshape2::dcast(regulon, target ~ tf, fun.aggregate = function(x) mean(x, na.rm = TRUE), value.var = mode)
       rownames(tf_target_mat) <- tf_target_mat$target
       tf_target_mat <- tf_target_mat[,-1]
       # convert NA to 0
@@ -146,6 +149,11 @@ calculateActivity <- function (sce,
       # cross product of scale.matrix and tf_target matrix
       score.combine <- Matrix::t(scale.mat)[,rownames(tf_target_mat), drop = FALSE] %*%
         tf_target_mat
+      if(normalize){
+        meanExpr <- Matrix::rowMeans(scale.mat[rownames(tf_target_mat),])
+        mean_activity <- meanExpr %*% tf_target_mat
+        score.combine <- sweep(score.combine, 2, mean_activity, "-")
+      }
       # need to normalize
     }
     score.combine <- Matrix::t(score.combine)
