@@ -60,12 +60,13 @@ calculateActivity <- function (sce,
                                regulon = NULL,
                                normalize = FALSE,
                                mode = "weight",
-                               method = "weightedmean",
+                               method = c("weightedmean","aucell"),
                                ncore = 1,
                                assay = "logcounts",
                                genesets = NULL,
                                clusters = NULL) {
   method <- tolower(method)
+  method <- match.arg(method)
   scale.mat <- assay(sce, assay)
 
   #convert delayedMatrix to dgCMatrix

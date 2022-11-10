@@ -97,7 +97,7 @@ addWeights <- function(regulon,
                        cluster_factor= NULL,
                        block_factor = NULL,
                        exprs_values = "logcounts",
-                       method = "corr",
+                       method = c("corr", "MI", "wilcoxon", "logFC"),
                        peak_assay = "PeakMatrix",
                        aggregation_function = mean,
                        min_targets = 10,
@@ -108,8 +108,9 @@ addWeights <- function(regulon,
                        alt.exp.merge = FALSE){
 
 
+
   # extracting assays from SE
-  checkmate::checkChoice(method, c("corr", "MI", "wilcoxon", "logFC"))
+  method <- match.arg(method)
 
   if (checkmate::test_class(peakMatrix, classes = "SummarizedExperiment")){
     peakMatrix <- assay(peakMatrix, peak_assay)
@@ -241,6 +242,7 @@ addWeights <- function(regulon,
                                  tf_indices)
     } else {
       regulon <- use_MI_method(sce,
+                               regulon,
                                cluster_factor,
                                unique_tfs,
                                alt.exp,
@@ -346,6 +348,7 @@ use_corr_method <- function(regulon,
 #' @keywords internal
 
 use_MI_method <- function(sce,
+                          regulon,
                           cluster_factor,
                           unique_tfs,
                           alt.exp,
@@ -376,7 +379,7 @@ use_MI_method <- function(sce,
       if (is.null(alt.exp)) {
         tf_expr <- expr[tf, ,drop = FALSE ]
       } else {
-        tf_expr <- alt.avg[tf, , drop=FALSE]
+        tf_expr <- alt.avg[tf, , drop = FALSE]
       }
       target_expr_matrix <- expr[regulon$target[tf_indices[[tf]]], ]
       if (length(unique(expr[tf,])) <  5) {
@@ -398,6 +401,7 @@ use_MI_method <- function(sce,
           }
         }
       }
+
 
       regulon_MI_list[[tf]] <- MI
 

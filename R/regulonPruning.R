@@ -117,7 +117,7 @@ pruneRegulon <- function(regulon,
                          exp_assay = "logcounts",
                          peak_assay = "PeakMatrix",
                          chromvar_assay = NULL,
-                         test = "binom",
+                         test = c("binom","chi.sq"),
                          clusters = NULL,
                          exp_cutoff = 1,
                          peak_cutoff = 0,
@@ -128,6 +128,8 @@ pruneRegulon <- function(regulon,
                          collapse_re = FALSE,
                          downsize = FALSE,
                          BPPARAM = BiocParallel::SerialParam(progressbar = TRUE)){
+
+  test <- match.arg(test)
   message("pruning network with ", test, " tests using a regulon cutoff of ", prune_value, "<", regulon_cutoff)
 
   # extracting assays from SE
