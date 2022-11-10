@@ -3,6 +3,7 @@ regulon <- data.frame(tf= rep(LETTERS[1:5], each = 3), target = LETTERS [6:20],
 
 geneExpressionMatrix <- matrix(0, nrow = 15, ncol = 100, dimnames = list(LETTERS[6:20], NULL))
 geneExpressionMatrix[1:(88*17)] <- rep(c(0, 0, 1, 2, 3, 0, 0, 1, 2, 0, 2, 0, 0, 0, 1, 3, 0), 88)
+geneExpressionMatrix <- as(geneExpressionMatrix, "sparseMatrix")
 
 tf_tg_matrix <- matrix(0, nrow = 15, ncol = 5, dimnames = list(LETTERS[6:20], LETTERS[1:5]))
 
@@ -10,7 +11,7 @@ for (i in seq_len(nrow(regulon))){
   tf_tg_matrix[regulon[i,"target"], regulon[i,"tf"]] <- regulon[i, "weight"]
 }
 
-activity_matrix <- t(t(geneExpressionMatrix) %*% tf_tg_matrix)
+activity_matrix <- as.matrix(t(t(geneExpressionMatrix) %*% tf_tg_matrix))
 
 # divide by the number of target genes
 activity_matrix <- activity_matrix/3
@@ -43,7 +44,7 @@ for (i in seq_len(nrow(regulon))){
 activity_matrix <- cbind(t(t(geneExpr_C1) %*% tf_tg_matrix_C1), t(t(geneExpr_C2) %*% tf_tg_matrix_C2))
 
 # divide by the number of target genes
-activity_matrix <- activity_matrix/3
+activity_matrix <- as.matrix(activity_matrix/3)
 
 test_that("calculateActivity works correctly with clusters", {
   expect_equal(calculateActivity(sce, regulon, assay = "counts", clusters = clusters), activity_matrix)
@@ -51,7 +52,7 @@ test_that("calculateActivity works correctly with clusters", {
 
 # subtract mean gene expression (centering at zero)
 geneExpressionMatrix <- sweep(geneExpressionMatrix, 1, rowMeans(geneExpressionMatrix),"-")
-activity_matrix <- t(t(geneExpressionMatrix) %*% tf_tg_matrix)
+activity_matrix <- as.matrix(t(t(geneExpressionMatrix) %*% tf_tg_matrix))
 
 # divide by the number of target genes
 activity_matrix <- activity_matrix/3

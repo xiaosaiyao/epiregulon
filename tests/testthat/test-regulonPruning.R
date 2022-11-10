@@ -5,6 +5,7 @@ geneM[c("A", "C"), 51:100] <- rep(c(1.1,0,0,2,0), 10)
 geneM["C", 1:50] <- rep(c(2,3,0,0,0),10)
 geneM["B",] <- rep(c(0,1.1,0,0,0,2,3,0,0,0),10)
 geneM["A",][c(1:30)*3] <- 0
+geneM <- as(geneM, "sparseMatrix")
 
 peakM <- matrix(0, nrow = 4, ncol =100, dimnames = list(LETTERS[1:4], NULL))
 peakM[c(1,2),] <- rep(c(0,1), 50)
@@ -13,6 +14,7 @@ peakM[2, 1:50] <- rep(c(0,1,1,0,1,1,0,0,0,0),5)
 peakM[2, 51:100] <- rep(c(0,4,0,0,0,0,0,0,4,0),5)
 peakM[4, 1:50] <- rep(c(1,1,1,1,0), 10)
 peakM[4, 51:100] <- rep(c(0,0,1,1,0),10)
+peakM <- as(peakM, "sparseMatrix")
 
 regulon <- data.frame(tf = c("A","A","A","C"), target = c("B", "B", "C", "B"), idxATAC = c(1:4))
 
