@@ -5,6 +5,8 @@ geneM[c("A", "C"), 51:100] <- rep(c(1.1,0,0,2,0), 10)
 geneM["C", 1:50] <- rep(c(2,3,0,0,0),10)
 geneM["B",] <- rep(c(0,1.1,0,0,0,2,3,0,0,0),10)
 geneM["A",][c(1:30)*3] <- 0
+geneM["B", c(6,10,19,20)] <- 1.5 # decrease p-val for A-2-B triplet, cluster 1
+geneM <- as(geneM, "sparseMatrix")
 
 peakM <- matrix(0, nrow = 4, ncol =100, dimnames = list(LETTERS[1:4], NULL))
 peakM[c(1,2),] <- rep(c(0,1), 50)
@@ -13,6 +15,10 @@ peakM[2, 1:50] <- rep(c(0,1,1,0,1,1,0,0,0,0),5)
 peakM[2, 51:100] <- rep(c(0,4,0,0,0,0,0,0,4,0),5)
 peakM[4, 1:50] <- rep(c(1,1,1,1,0), 10)
 peakM[4, 51:100] <- rep(c(0,0,1,1,0),10)
+peakM[2, c(10,17,19,20, 47)] <- 2 # decrease p-val for A-2-B triplet, cluster 1
+peakM <- as(peakM, "sparseMatrix")
+
+
 
 regulon <- data.frame(tf = c("A","A","A","C"), target = c("B", "B", "C", "B"), idxATAC = c(1:4))
 
@@ -22,35 +28,105 @@ tf_re.b <- geneM.b[regulon$tf,]*peakM.b[regulon$idxATAC,]
 triplets.b <- tf_re.b*geneM.b[regulon$target,]
 target.b <- geneM.b[regulon$target,]
 triplet_n <- rowSums(triplets.b)
-tf_re_prob <- rowSums(tf_re.b)/100
-target_prob <- rowSums(target.b)/100
+tf_re_n <- rowSums(tf_re.b)
+target_n <- rowSums(target.b)
+null_probs <-target_n*tf_re_n/100^2
 pvals <- c()
 for(i in 1:4){
-  pvals[i]<-binom.test(triplet_n[i], 100, target_prob[i]*tf_re_prob[i])$p.val
+  pvals[i]<-binom.test(triplet_n[i], 100, null_probs[i])$p.val
 }
 
 
-test_that("pruneRegulon calculates p-values in binomial test correctly", {
+test_that("pruneRegulon calculates p-values with binomial test correctly", {
   regulon.p <- pruneRegulon(regulon = regulon, expMatrix = geneM, peakMatrix = peakM, regulon_cutoff = 2)
   expect_identical(regulon.p$pval_all, pvals)
 })
 
-
-peakM.b <- peakM.b[,1:50]
-geneM.b <- geneM.b[,1:50]
-tf_re.b <- geneM.b[regulon$tf,]*peakM.b[regulon$idxATAC,]
-triplets.b <- tf_re.b*geneM.b[regulon$target,]
-target.b <- geneM.b[regulon$target,]
-triplet_n <- rowSums(triplets.b)
-tf_re_prob <- rowSums(tf_re.b)/50
-target_prob <- rowSums(target.b)/50
 pvals <- c()
 for(i in 1:4){
-  pvals[i]<-binom.test(triplet_n[i], 50, target_prob[i]*tf_re_prob[i])$p.val
+  pvals[i]<-suppressWarnings(chisq.test(c(triplet_n[i], 100-triplet_n[i]),
+                       p =c(null_probs[i] ,
+                            1- null_probs[i]))$p.val)
 }
 
-test_that("pruneRegulon calculates cluster p-values in binomial test correctly", {
+test_that("pruneRegulon calculates p-values with chi-square test correctly", {
+  regulon.p <- pruneRegulon(regulon = regulon, expMatrix = geneM, peakMatrix = peakM,
+                            regulon_cutoff = 2, test ="chi.sq")
+  expect_identical(regulon.p$pval_all, pvals[is.finite(pvals)])
+})
+
+# calculating results for the cluster 1
+peakM.b_C1 <- peakM.b[,1:50]
+geneM.b_C1 <- geneM.b[,1:50]
+tf_re.b_C1 <- geneM.b_C1[regulon$tf,]*peakM.b_C1[regulon$idxATAC,]
+triplets.b_C1 <- tf_re.b_C1*geneM.b_C1[regulon$target,]
+target.b_C1 <- geneM.b_C1[regulon$target,]
+triplet_n_C1 <- rowSums(triplets.b_C1)
+tf_re_n_C1 <- rowSums(tf_re.b_C1)
+target_n_C1 <- rowSums(target.b_C1)
+null_probs_C1 <- tf_re_n_C1*target_n_C1/50^2
+pvals_C1 <- c()
+for(i in 1:4){
+  pvals_C1[i]<-binom.test(triplet_n_C1[i], 50, null_probs_C1[i])$p.val
+}
+
+# calculating results for the cluster 2
+peakM.b_C2 <- peakM.b[,51:100]
+geneM.b_C2 <- geneM.b[,51:100]
+tf_re.b_C2 <- geneM.b_C2[regulon$tf,]*peakM.b_C2[regulon$idxATAC,]
+triplets.b_C2 <- tf_re.b_C2*geneM.b_C2[regulon$target,]
+target.b_C2 <- geneM.b_C2[regulon$target,]
+triplet_n_C2 <- rowSums(triplets.b_C2)
+tf_re_n_C2 <- rowSums(tf_re.b_C2)
+target_n_C2 <- rowSums(target.b_C2)
+null_probs_C2 <- tf_re_n_C2*target_n_C2/50^2
+pvals_C2 <- c()
+for(i in 1:4){
+  pvals_C2[i]<-binom.test(triplet_n_C2[i], 50, null_probs_C2[i])$p.val
+}
+
+test_that("pruneRegulon calculates cluster p-values with binomial test correctly", {
   regulon.p <- pruneRegulon(regulon = regulon, expMatrix = geneM, peakMatrix = peakM, regulon_cutoff = 2,
                             clusters = rep(c("C1", "C2"), each = 50))
-  expect_identical(regulon.p$pval_C1, pvals)
+  expect_identical(regulon.p$pval_C1, pvals_C1)
+  expect_identical(regulon.p$pval_C2, pvals_C2)
+})
+
+pvals_C1 <- c()
+for(i in 1:4){
+  pvals_C1[i]<-suppressWarnings(chisq.test(c(triplet_n_C1[i], 50-triplet_n_C1[i]),
+                                        p =c(null_probs_C1[i],
+                                             1- null_probs_C1[i]))$p.val)
+}
+
+pvals_C2 <- c()
+for(i in 1:4){
+  pvals_C2[i]<-suppressWarnings(chisq.test(c(triplet_n_C2[i], 50-triplet_n_C2[i]),
+                                           p =c(null_probs_C2[i],
+                                                1- null_probs_C2[i]))$p.val)
+}
+
+# create data frame with
+pvals <- data.frame(C1 = pvals_C1, C2 = pvals_C2)
+
+# remove rows with NaN values
+pvals <- suppressWarnings(pvals[is.finite(apply(pvals,1,function(x) min(x, na.rm = TRUE))),])
+
+test_that("pruneRegulon calculates cluster p-values with chi-square test correctly", {
+  regulon.p <- pruneRegulon(regulon = regulon, expMatrix = geneM, peakMatrix = peakM, regulon_cutoff = 2,
+                            clusters = rep(c("C1", "C2"), each = 50), test = "chi.sq")
+  print(regulon.p)
+  expect_identical(regulon.p$pval_C1, pvals$C1)
+  expect_identical(regulon.p$pval_C2, pvals$C2)
+})
+
+selected_rows <- apply(pvals, 1, function(x) min(x, na.rm = TRUE)<0.05)
+pvals <- pvals[selected_rows,]
+
+test_that("pruneRegulon correctly applies 'regulon_cutoff'", {
+  regulon.p <- pruneRegulon(regulon = regulon, expMatrix = geneM, peakMatrix = peakM, regulon_cutoff = 0.05,
+                            clusters = rep(c("C1", "C2"), each = 50), test = "chi.sq")
+  print(regulon.p)
+  expect_identical(regulon.p$pval_C1, pvals$C1)
+  expect_identical(regulon.p$pval_C2, pvals$C2)
 })
