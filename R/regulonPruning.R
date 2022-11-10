@@ -227,7 +227,7 @@ pruneRegulon <- function(regulon,
 
   # pruning by p-value
   regulon.prune_value <- regulon.combined[,grepl(prune_value, colnames(regulon.combined)), drop = FALSE]
-  prune_value_min <- apply(regulon.prune_value, 1, min)
+  prune_value_min <- apply(regulon.prune_value, 1, function(x) min(x, na.rm = TRUE))
   regulon.combined <- regulon.combined[which(prune_value_min < regulon_cutoff),]
 
   # aggregation
