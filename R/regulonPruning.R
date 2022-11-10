@@ -211,10 +211,8 @@ pruneRegulon <- function(regulon,
 
 
   # Append test stats to regulon
-  regulon.combined  <- cbind(regulon, res[,grep("pval_",colnames(res))], res[,grep("stats_",colnames(res))])
-  colnames(regulon.combined ) <- c(colnames(regulon),
-                                   colnames(res)[grep("pval_",colnames(res))],
-                                   colnames(res)[grep("stats_",colnames(res))])
+  regulon.combined  <- cbind(regulon, res[,grep("pval_",colnames(res)), drop = FALSE], res[,grep("stats_",colnames(res)), drop = FALSE])
+
 
   # add p-value adjustment
 
