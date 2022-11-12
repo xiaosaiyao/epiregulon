@@ -27,31 +27,37 @@ geneM.b <- geneM > 1
 tf_re.b <- geneM.b[regulon$tf,]*peakM.b[regulon$idxATAC,]
 triplets.b <- tf_re.b*geneM.b[regulon$target,]
 target.b <- geneM.b[regulon$target,]
-triplet_n <- rowSums(triplets.b)
-tf_re_n <- rowSums(tf_re.b)
-target_n <- rowSums(target.b)
+triplet_n <- Matrix::rowSums(triplets.b)
+tf_re_n <- Matrix::rowSums(tf_re.b)
+target_n <- Matrix::rowSums(target.b)
 null_probs <-target_n*tf_re_n/100^2
 pvals <- c()
 for(i in 1:4){
-  pvals[i]<-binom.test(triplet_n[i], 100, null_probs[i])$p.val
+  pvals[i] <- stats::binom.test(triplet_n[i], 100, null_probs[i])$p.val
 }
 
 
 test_that("pruneRegulon calculates p-values with binomial test correctly", {
-  regulon.p <- pruneRegulon(regulon = regulon, expMatrix = geneM, peakMatrix = peakM, regulon_cutoff = 2)
+  regulon.p <- pruneRegulon(regulon = regulon,
+                            expMatrix = geneM,
+                            peakMatrix = peakM,
+                            regulon_cutoff = 2)
   expect_identical(regulon.p$pval_all, pvals)
 })
 
 pvals <- c()
 for(i in 1:4){
-  pvals[i]<-suppressWarnings(chisq.test(c(triplet_n[i], 100-triplet_n[i]),
-                       p =c(null_probs[i] ,
-                            1- null_probs[i]))$p.val)
+  pvals[i] <- suppressWarnings(chisq.test(c(triplet_n[i], 100-triplet_n[i]),
+                                          p = c(null_probs[i],1- null_probs[i]))$p.val)
 }
 
 test_that("pruneRegulon calculates p-values with chi-square test correctly", {
-  regulon.p <- pruneRegulon(regulon = regulon, expMatrix = geneM, peakMatrix = peakM,
-                            regulon_cutoff = 2, test ="chi.sq")
+  regulon.p <- pruneRegulon(regulon = regulon,
+                            expMatrix = geneM,
+                            peakMatrix = peakM,
+                            regulon_cutoff = 2,
+                            test ="chi.sq")
+
   expect_identical(regulon.p$pval_all, pvals[is.finite(pvals)])
 })
 
@@ -61,13 +67,13 @@ geneM.b_C1 <- geneM.b[,1:50]
 tf_re.b_C1 <- geneM.b_C1[regulon$tf,]*peakM.b_C1[regulon$idxATAC,]
 triplets.b_C1 <- tf_re.b_C1*geneM.b_C1[regulon$target,]
 target.b_C1 <- geneM.b_C1[regulon$target,]
-triplet_n_C1 <- rowSums(triplets.b_C1)
-tf_re_n_C1 <- rowSums(tf_re.b_C1)
-target_n_C1 <- rowSums(target.b_C1)
+triplet_n_C1 <- Matrix::rowSums(triplets.b_C1)
+tf_re_n_C1 <- Matrix::rowSums(tf_re.b_C1)
+target_n_C1 <- Matrix::rowSums(target.b_C1)
 null_probs_C1 <- tf_re_n_C1*target_n_C1/50^2
 pvals_C1 <- c()
 for(i in 1:4){
-  pvals_C1[i]<-binom.test(triplet_n_C1[i], 50, null_probs_C1[i])$p.val
+  pvals_C1[i]<- binom.test(triplet_n_C1[i], 50, null_probs_C1[i])$p.val
 }
 
 # calculating results for the cluster 2
@@ -76,9 +82,9 @@ geneM.b_C2 <- geneM.b[,51:100]
 tf_re.b_C2 <- geneM.b_C2[regulon$tf,]*peakM.b_C2[regulon$idxATAC,]
 triplets.b_C2 <- tf_re.b_C2*geneM.b_C2[regulon$target,]
 target.b_C2 <- geneM.b_C2[regulon$target,]
-triplet_n_C2 <- rowSums(triplets.b_C2)
-tf_re_n_C2 <- rowSums(tf_re.b_C2)
-target_n_C2 <- rowSums(target.b_C2)
+triplet_n_C2 <- Matrix::rowSums(triplets.b_C2)
+tf_re_n_C2 <- Matrix::rowSums(tf_re.b_C2)
+target_n_C2 <- Matrix::rowSums(target.b_C2)
 null_probs_C2 <- tf_re_n_C2*target_n_C2/50^2
 pvals_C2 <- c()
 for(i in 1:4){
@@ -95,15 +101,13 @@ test_that("pruneRegulon calculates cluster p-values with binomial test correctly
 pvals_C1 <- c()
 for(i in 1:4){
   pvals_C1[i]<-suppressWarnings(chisq.test(c(triplet_n_C1[i], 50-triplet_n_C1[i]),
-                                        p =c(null_probs_C1[i],
-                                             1- null_probs_C1[i]))$p.val)
+                                           p = c(null_probs_C1[i], 1- null_probs_C1[i]))$p.val)
 }
 
 pvals_C2 <- c()
 for(i in 1:4){
-  pvals_C2[i]<-suppressWarnings(chisq.test(c(triplet_n_C2[i], 50-triplet_n_C2[i]),
-                                           p =c(null_probs_C2[i],
-                                                1- null_probs_C2[i]))$p.val)
+  pvals_C2[i]<- suppressWarnings(chisq.test(c(triplet_n_C2[i], 50-triplet_n_C2[i]),
+                                           p = c(null_probs_C2[i], 1- null_probs_C2[i]))$p.val)
 }
 
 # create data frame with
@@ -113,8 +117,12 @@ pvals <- data.frame(C1 = pvals_C1, C2 = pvals_C2)
 pvals <- suppressWarnings(pvals[is.finite(apply(pvals,1,function(x) min(x, na.rm = TRUE))),])
 
 test_that("pruneRegulon calculates cluster p-values with chi-square test correctly", {
-  regulon.p <- pruneRegulon(regulon = regulon, expMatrix = geneM, peakMatrix = peakM, regulon_cutoff = 2,
-                            clusters = rep(c("C1", "C2"), each = 50), test = "chi.sq")
+  regulon.p <- pruneRegulon(regulon = regulon,
+                            expMatrix = geneM,
+                            peakMatrix = peakM,
+                            regulon_cutoff = 2,
+                            clusters = rep(c("C1", "C2"), each = 50),
+                            test = "chi.sq")
   print(regulon.p)
   expect_identical(regulon.p$pval_C1, pvals$C1)
   expect_identical(regulon.p$pval_C2, pvals$C2)

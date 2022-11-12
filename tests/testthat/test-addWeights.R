@@ -17,7 +17,7 @@ regulon.w <- regulon[,c("tf", "target")]
 regulon.w$weight <- weights
 sce <- SingleCellExperiment(list(logcounts = expMatrix))
 test_that("addWeights works correctly using Wilcoxon test", {
-  regulon <- addWeights(regulon = regulon, sce=sce, method = "wilcoxon",
+  regulon <- addWeights(regulon = regulon, expMatrix=sce, method = "wilcoxon",
                         peakMatrix = peakMatrix)
   expect_identical(regulon$weight, regulon.w[order(regulon.w$tf, regulon.w$target),]$weight)
 })
