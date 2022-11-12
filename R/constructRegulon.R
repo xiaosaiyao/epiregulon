@@ -127,7 +127,7 @@ getTFMotifInfo <- function(genome = c("hg38","hg19","mm10")){
 #' @param p2g A Peak2Gene dataframe created by ArchR or getP2Glinks() function
 #' @param grl GRangeList object containing reference TF binding information
 #' @param peakMatrix A matrix of scATAC-seq peak regions with peak ids as rows
-#' @param archR_project_path Path to a ArchR project that have performed LSI dimensionality reduction and scRNA-seq integration
+#' @param archR_project_path Path to an ArchR project that have performed LSI dimensionality reduction and scRNA-seq integration
 #'
 #' @return A dataframe containing overlapping ids of scATAC-seq peak regions and reference TF binding regions
 #' @export
@@ -244,7 +244,7 @@ getRegulon <- function(p2g,
                                    FUN = mean,
                                    na.rm = TRUE)
   } else {
-    colnames(regulon_df) <- c("idxATAC", "idxTF","tf",  "chr", "start", "end", "idxRNA", "target", "corr", "distance" , "FDR")
+    colnames(regulon_df) <- c("idxATAC", "idxTF", "tf",  "chr", "start", "end", "idxRNA", "target", "corr", "distance" , "FDR")
 
   }
   return(regulon_df)
