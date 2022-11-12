@@ -109,7 +109,7 @@ regulonEnrich_ <- function(TF,
                            genesets){
 
   regulon.TF <- unique(regulon$target[which(regulon$tf == TF & regulon[, corr] > corr_cutoff)])
-  if (is.null(regulon.TF)) {
+  if (identical(regulon.TF, character(0))) {
     results <- data.frame(p.adjust = NA, Description = NA, GeneRatio = 0, Odds.Ratio = NA)
   } else {
   enrichresults <- clusterProfiler::enricher(regulon.TF, TERM2GENE = genesets)
