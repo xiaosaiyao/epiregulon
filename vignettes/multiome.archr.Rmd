@@ -81,8 +81,6 @@ We will use the joint reducedDims - "LSI_Combined" and  joint embeddings - "UMAP
 ```{r}
 getReducedDims(proj)
 getEmbedding(proj)
-
-
 ```
 
 Retrieve gene expression matrix from the ArchR project

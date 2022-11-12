@@ -172,11 +172,11 @@ Three measures (correlation, Wilcoxon statistics and log 2 fold difference) give
 ```{r addWeights, results = "hide", warning=FALSE}
 
 regulon.w <- addWeights(regulon = pruned.regulon,
-                        sce = GeneExpressionMatrix,
-                        exprs_values = "counts",
+                        expMatrix  = GeneExpressionMatrix,
+                        exp_assay  = "counts",
                         peakMatrix = PeakMatrix,
                         peak_assay = "counts",
-                        cluster_factor = "Clusters",
+                        clusters = "Clusters",
                         block_factor = NULL,
                         method = "corr")
 ```
@@ -195,7 +195,7 @@ $x_i$ is the log count expression of target i where i in {1,2,...,n}
 $weights_i$ is the weight of TF and target i
 
 ```{r calculateActivity, results = "hide"}
-score.combine <- calculateActivity(sce = GeneExpressionMatrix, 
+score.combine <- calculateActivity(expMatrix = GeneExpressionMatrix, 
                                    regulon = regulon.w, 
                                    mode = "weight", 
                                    method = "weightedMean", 
@@ -224,14 +224,14 @@ First visualize the known differential TFs by bubble plot
 ```{r visualization}
 plotBubble(activity_matrix = score.combine, 
            tf = c("NKX2-1","GATA6","FOXA1","FOXA2", "AR"), 
-           class = GeneExpressionMatrix$Clusters)
+           clusters = GeneExpressionMatrix$Clusters)
 ```
 
 Then visualize the most differential TFs by clusters
 ```{r}
 plotBubble(activity_matrix = score.combine, 
            tf = markers.sig$tf, 
-           class = GeneExpressionMatrix$Clusters)
+           clusters = GeneExpressionMatrix$Clusters)
 
 ```
 
@@ -240,7 +240,7 @@ Visualize the known differential TFs by violin plot. Note there is no activity c
 ```{r}
 plotActivityViolin(activity_matrix = score.combine, 
                    tf = c("NKX2-1","GATA6","FOXA1","FOXA2", "AR", "SOX2"), 
-                   class = GeneExpressionMatrix$Clusters)
+                   clusters = GeneExpressionMatrix$Clusters)
 ```
 
 Visualize the known differential TFs by UMAP

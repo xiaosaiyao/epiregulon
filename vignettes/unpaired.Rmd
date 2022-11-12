@@ -137,7 +137,7 @@ load scRNA-seq data
 
 ```{r, warning=FALSE}
 
-sce=readRDS("/gstore/project/lineage/sam/heme_GRN/scRNA-Granja-2019.rds")
+sce <- readRDS("/gstore/project/lineage/sam/heme_GRN/scRNA-Granja-2019.rds")
 
 ```
 
