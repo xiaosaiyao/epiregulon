@@ -1,11 +1,10 @@
 #' Prune regulons for true transcription factor - regulatory elements - target genes relationships
 #'
 #' @param regulon A dataframe informing the gene regulatory relationship with the ```tf``` column
-#' representing transcription factors, ```idxATAC```
-#' corresponding to the index in the peakMatrix and ```target``` column
-#' representing target genes
+#' representing transcription factors, ```idxATAC``` corresponding to the index in the peakMatrix and
+#'  ```target``` column representing target genes
 #' @param expMatrix A SingleCellExperiment object or matrix containing gene expression with
-#' with genes in the rows and cells in the columns
+#' genes in the rows and cells in the columns
 #' @param peakMatrix A SingleCellExperiment object or matrix containing peak accessibility with
 #' peaks in the rows and cells in the columns
 #' @param chromvarMatrix A SingleCellExperiment object or matrix containing averaged accessibility at the TF
@@ -28,7 +27,7 @@
 #' to be retained in the pruned regulon.
 #' @param p_adj A logical indicating whether p adjustment should be performed
 #' @param prune_value String indicating whether to filter regulon based on `pval` or `padj`.
-#' @param collapse_re A logical indicating whether to collapse the regulatory elements of the
+#' @param aggregate A logical indicating whether to collapse the regulatory elements of the
 #' same genes and use them as a whole. Note that checking with the `peak_cutoff`
 #' is made before the collapse.
 #' @param downsize A logical specifying whether the cluster size is set to minimum
@@ -82,7 +81,7 @@
 #' gene_sce <- scuttle::logNormCounts(gene_sce)
 #' rownames(gene_sce) <- paste0("Gene_",1:2000)
 #'
-#' #' create a mock singleCellExperiment object for peak matrix
+#' # create a mock singleCellExperiment object for peak matrix
 #' peak_gr <- GRanges(seqnames = "chr1",
 #'                   ranges = IRanges(start = seq(from = 1, to = 10000, by = 100), width = 100))
 #' peak_counts <- matrix(sample(x = 0:4, size = ncol(gene_sce)*length(peak_gr), replace = TRUE),
@@ -96,23 +95,17 @@
 #'                      target = c(paste0("Gene_", sample(3:2000,10)),
 #'                                 paste0("Gene_",sample(3:2000,10))))
 #'
-#' # calculate joint probability for all cells
+#  # prune regulon
 #' pruned.regulon <- pruneRegulon(expMatrix = gene_sce,
-#' exp_assay = "logcounts", clusters = gene_sce$Treatment, peakMatrix = peak_sce,peak_assay = "counts",
-#' regulon = regulon)
-#'
-#' #calculate joint probability for each cluster
-#' pruned.regulon <- pruneRegulon(expMatrix = gene_sce,
-#' exp_assay = "logcounts",peakMatrix = peak_sce,peak_assay = "counts",
-#' regulon = regulon,clusters = gene_sce$Treatment,
-#' collapse_re = FALSE)
+#' exp_assay = "logcounts", peakMatrix = peak_sce, peak_assay = "counts",
+#' regulon = regulon, clusters = gene_sce$Treatment, aggregate = FALSE, regulon_cutoff = 0.5)
 #'
 #' @author Xiaosai Yao, Tomasz Wlodarczyk
 
 
 pruneRegulon <- function(regulon,
-                         expMatrix,
-                         peakMatrix,
+                         expMatrix = NULL,
+                         peakMatrix = NULL,
                          chromvarMatrix = NULL,
                          exp_assay = "logcounts",
                          peak_assay = "PeakMatrix",
@@ -125,12 +118,14 @@ pruneRegulon <- function(regulon,
                          regulon_cutoff = 0.05,
                          p_adj = TRUE,
                          prune_value = "pval",
-                         collapse_re = FALSE,
+                         aggregate = FALSE,
                          downsize = FALSE,
                          BPPARAM = BiocParallel::SerialParam(progressbar = TRUE)){
 
+  # choose test method
   test <- match.arg(test)
   message("pruning network with ", test, " tests using a regulon cutoff of ", prune_value, "<", regulon_cutoff)
+
 
   # extracting assays from SE
   if (checkmate::test_class(expMatrix,classes = "SummarizedExperiment")){
@@ -143,9 +138,10 @@ pruneRegulon <- function(regulon,
 
   if (!is.null (chromvar_assay)){
     if (checkmate::test_class(chromvarMatrix,classes = "SummarizedExperiment")){
-      chromvarMatrix <- assay(chromvar_assay, peak_assay)
+      chromvarMatrix <- assay(chromvarMatrix, chromvar_assay)
     }
   }
+
 
 
   # clean up regulon
@@ -211,8 +207,7 @@ pruneRegulon <- function(regulon,
   res <- do.call("rbind", res)
 
 
-
-  # Append test stats to regulon
+  # append test stats to regulon
   regulon.combined  <- cbind(regulon, res[,grep("pval_",colnames(res)), drop = FALSE], res[,grep("stats_",colnames(res)), drop = FALSE])
 
 
@@ -227,14 +222,13 @@ pruneRegulon <- function(regulon,
     regulon.combined <- cbind(regulon.combined, qvalue)
   }
 
-  # pruning by p-value
+  # prune by p-value
   regulon.prune_value <- regulon.combined[,grepl(prune_value, colnames(regulon.combined)), drop = FALSE]
   prune_value_min <- apply(regulon.prune_value, 1, function(x) min(x, na.rm = TRUE))
   regulon.combined <- regulon.combined[which(prune_value_min < regulon_cutoff),]
 
-  # aggregation
   # if aggregate is true, collapse regulatory elements to have regulons containing tf and target
-  if (collapse_re == TRUE){
+  if (aggregate == TRUE){
 
     aggregate_by <- colnames(regulon.combined)[grep("stats|pval|padj",
                                                     colnames(regulon.combined))]
@@ -256,7 +250,7 @@ pruneRegulon <- function(regulon,
 
 binarize_matrix <- function(matrix_obj, cutoff){
   matrix_obj.bi.index <- Matrix::which(matrix_obj > cutoff, arr.ind = TRUE)
-  Matrix::sparseMatrix(x = rep(1,nrow(matrix_obj.bi.index)),
+  Matrix::sparseMatrix(x = rep(1, nrow(matrix_obj.bi.index)),
                        i = matrix_obj.bi.index[,1],
                        j =  matrix_obj.bi.index[,2],
                        dims = dim(matrix_obj),
