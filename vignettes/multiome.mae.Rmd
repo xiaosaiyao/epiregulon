@@ -1,17 +1,16 @@
 ---
 title: "Multiome tutorial - MultiAssayExperiment"
-author: Xiaosai Yao
-email: yao.xiaosai@gene.com
-date: "Nov 3rd, 2022"
+author: "Xiaosai Yao"
+email: "yao.xiaosai@gene.com"
 output:
   BiocStyle::html_document:
     toc: true
     number_section: true
     self_contained: true
     titlecaps: true
-package: epiregulon
+package: "epiregulon"
 vignette: >
-  %\VignetteIndexEntry{Multiome tutorial - archR independent workflow}
+  %\VignetteIndexEntry{Multiome tutorial - MultiAssayExperiment}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
@@ -20,7 +19,7 @@ vignette: >
 knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>",
-  eval = TRUE
+  eval = FALSE
 )
 ```
 
@@ -31,14 +30,14 @@ This tutorial walks through the same dataset used in the "multiome tutorial - ar
 
 Epiregulon is currently available on R/dev
 
-```{r, results='hide'}
+```{r, results='hide', message=FALSE}
 library(epiregulon)
 ```
 
 Alternatively, you could install from gitlab
 
 ```{r setup, message=FALSE, eval=FALSE}
-devtools::install_gitlab(repo='scwg/gene-transcriptional-network/activity-inference/Epiregulon', 
+devtools::install_gitlab(repo ='scwg/gene-transcriptional-network/activity-inference/Epiregulon', 
                          auth_token = "<gitlab token>", 
                          host = "https://code.roche.com/" )
 
@@ -176,7 +175,7 @@ regulon.w <- addWeights(regulon = pruned.regulon,
                         exp_assay  = "counts",
                         peakMatrix = PeakMatrix,
                         peak_assay = "counts",
-                        clusters = "Clusters",
+                        clusters = GeneExpressionMatrix$Clusters,
                         block_factor = NULL,
                         method = "corr")
 ```
@@ -199,7 +198,7 @@ score.combine <- calculateActivity(expMatrix = GeneExpressionMatrix,
                                    regulon = regulon.w, 
                                    mode = "weight", 
                                    method = "weightedMean", 
-                                   assay = "counts")
+                                   exp_assay = "counts")
 
 ```
 
@@ -246,7 +245,8 @@ plotActivityViolin(activity_matrix = score.combine,
 Visualize the known differential TFs by UMAP
 ```{r, fig.height = 8, fig.width = 12}
 
-plotActivityDim(sce = GeneExpressionMatrix, activity_matrix=score.combine, 
+plotActivityDim(sce = GeneExpressionMatrix, 
+                activity_matrix = score.combine, 
                 tf = c("NKX2-1","GATA6","FOXA1","FOXA2", "AR", "SOX2"), 
                 dimtype = "UMAP_Combined", 
                 label = "Clusters", 
