@@ -108,9 +108,9 @@ clusters = example_sce$cluster, min_targets = 5)
 chromvarMatrix <- scuttle::mockSCE()
 
 # calculate weights using chromvarMatrix
-regulon.w.2 <- addWeights(regulon = regulon, expMatrix = example_sce, clusters = example_sce$cluster,
-exp_assay = "logcounts", min_targets = 5, chromvarMatrix = chromvarMatrix, chromvar_assay = "counts",
-chromvarMatrix.merge = TRUE)
+regulon.w.2 <- addWeights(regulon = regulon, expMatrix = example_sce,
+clusters = example_sce$cluster, exp_assay = "logcounts", min_targets = 5,
+chromvarMatrix = chromvarMatrix, chromvar_assay = "counts", chromvarMatrix.merge = TRUE)
 
 }
 \author{

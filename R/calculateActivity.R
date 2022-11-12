@@ -33,25 +33,27 @@
 #' # create a mock regulon
 #' regulon <- data.frame(tf = c(rep("Gene_0001", 5), rep("Gene_0002", 10)),
 #'                       target = c(paste0("Gene_000", 2:6), paste0("Gene_00", 11:20)))
-#' regulon.w <- addWeights(regulon, example_sce, cluster_factor = "cluster",
-#'                         exprs_values = "counts", min_targets = 5)
+#' regulon.w <- addWeights(regulon = regulon, expMatrix = example_sce,
+#' clusters = example_sce$cluster, exp_assay = "counts", min_targets = 5)
 #'
 #' # calculate activity
-#' activity <- calculateActivity(example_sce, regulon.w, exp_assay = "logcounts")
+#' activity <- calculateActivity(expMatrix = example_sce, regulon = regulon.w,
+#' exp_assay = "logcounts")
 #'
 #' # calculate cluster-specific activity if cluster-specific weights are supplied
 #' regulon.w$weight_positive = runif(nrow(regulon.w), -1,1)
 #' regulon.w$weight_negative = runif(nrow(regulon.w), -1,1)
-#' activity.cluster <- calculateActivity(example_sce, regulon=regulon.w,
-#' clusters=example_sce$Mutation_Status, exp_assay = "logcounts")
+#' activity.cluster <- calculateActivity(example_sce, regulon = regulon.w,
+#' clusters = example_sce$Mutation_Status, exp_assay = "logcounts")
 #'
 #' # compute signature scores from weighted genesets
-#' weighted_genesets <- list(set1=data.frame(genes = c("Gene_0001", "Gene_0002", "Gene_0003"), weights = c(1,2,3)),
-#' set2 = data.frame(genes = c("Gene_0004", "Gene_0005", "Gene_0006"), weights = c(4,5,6)))
+#' weighted_genesets <- list(set1 = data.frame(genes = c("Gene_0001", "Gene_0002", "Gene_0003"),
+#' weights = c(1,2,3)), set2 = data.frame(genes = c("Gene_0004", "Gene_0005", "Gene_0006"),
+#' weights = c(4,5,6)))
 #' activity <- calculateActivity(example_sce, genesets = weighted_genesets)
 #'
 #' # compute signature scores from unweighted genesets
-#' unweighted_genesets <- list(set1=c("Gene_0001", "Gene_0002", "Gene_0003"),
+#' unweighted_genesets <- list(set1 = c("Gene_0001", "Gene_0002", "Gene_0003"),
 #' set2 = c("Gene_0004", "Gene_0005", "Gene_0006"))
 #' activity <- calculateActivity(example_sce, genesets = unweighted_genesets)
 #'
