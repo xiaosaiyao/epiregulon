@@ -1,19 +1,18 @@
 #' Calculate the per cell activity of master regulators based on a regulon
 #'
-#' @param sce A SingleCellExperiment object with rows representing genes and columns represent cells.
+#' @param expMatrix A SingleCellExperiment object containing gene expression information with rows representing genes and columns represent cells.
 #' Rownames (either gene symbols or geneID) must be consistent with the naming convention in the regulon.
+#' @param exp_assay String specifying the name of the assay to be retrieved from the SingleCellExperiment object. Set to
+#' "logcounts" as the default
 #' @param regulon  A data frame consisting of tf (regulator) and target in the column names, with additional columns
-#' indicating degree of association between tf and target such as "mor" or "corr" obtained from addWeights.
+#' indicating degree of association between tf and target such as "mor" or "corr" obtained from `addWeights`.
 #' @param normalize Logical indicating whether row means should be substracted from expression matrix
 #' @param mode String indicating the name of column to be used as the weights
-#' @param method String indicating the method for calculating activity. Available methods are weightedMean or aucell
+#' @param method String indicating the method for calculating activity. Available methods are `weightedMean` or `aucell`
 #' @param ncore Integer specifying the number of cores to be used in AUCell
-#' @param assay String specifying the name of the assay to be retrieved from the SingleCellExperiment object. Set to
-#' "logcounts" as the default
-#' @param genesets A feature set collection in the form of CompressedSplitDataFrameList that contains genes in the
-#' first column and weights in the second column. See [genomitory](
-#' http://cedar.gene.com/gran/dev/PkgDocumentation/genomitory/uploads.html#from-compressedsplitdataframelists)
-#' for more information on compressedSplitDataFramelists. See details
+#' @param genesets A list of genesets. Each list element can be a dataframe with the first column indicating the genes and second column indicating the weights.
+#' Alternatively, each list element is a character vector corresponding to the genes in the geneset. A feature set collection in the form of CompressedSplitDataFrameList that contains genes in the
+#' first column and weights in the second column. See details
 #' @param clusters A vector indicating cluster assignment
 #' @return A matrix of inferred transcription factor (row) activities in single cells (columns)
 #' @export
@@ -21,8 +20,8 @@
 #' @details
 #' This function calculates activity score from a regulon that is a data frame consisting of a tf column,
 #' a target column and a weight column. Alternatively, instead of a regulon, this function also accepts weighted
-#' signature sets that are stored in Genomitory as CompressedSplitDataFrameList where each gene set or signature
-#' is a DataFrame. The user has the option of computing signature score by weighted mean of target gene expression or
+#' signature sets where each gene set or signature is a data frame or unweighted signature sets where each gene set is a character vector.
+#' The user has the option of computing signature score by weighted mean of target gene expression or
 #' the relative ranking of the target genes computed by AUCell.
 #'
 #' @examples
@@ -38,59 +37,65 @@
 #'                         exprs_values = "counts", min_targets = 5)
 #'
 #' # calculate activity
-#' activity <- calculateActivity(example_sce, regulon.w, assay = "logcounts")
+#' activity <- calculateActivity(example_sce, regulon.w, exp_assay = "logcounts")
 #'
 #' # calculate cluster-specific activity if cluster-specific weights are supplied
 #' regulon.w$weight_positive = runif(nrow(regulon.w), -1,1)
 #' regulon.w$weight_negative = runif(nrow(regulon.w), -1,1)
 #' activity.cluster <- calculateActivity(example_sce, regulon=regulon.w,
-#' clusters=example_sce$Mutation_Status, assay = "logcounts")
+#' clusters=example_sce$Mutation_Status, exp_assay = "logcounts")
 #'
-#' @examples
-#' \dontrun{
-#' # Compute signature scores
-#' library(genomitory)
-#' breast <- getFeatureSetCollection("GMTY194:analysis/breast.gmt.bz2@REVISION-1")
-#' names(breast) <- breast@elementMetadata@listData[["name"]]
-#' activity <- calculateActivity(GeneExpressionMatrix, genesets = breast)
-#'}
+#' # compute signature scores from weighted genesets
+#' weighted_genesets <- list(set1=data.frame(genes = c("Gene_0001", "Gene_0002", "Gene_0003"), weights = c(1,2,3)),
+#' set2 = data.frame(genes = c("Gene_0004", "Gene_0005", "Gene_0006"), weights = c(4,5,6)))
+#' activity <- calculateActivity(example_sce, genesets = weighted_genesets)
+#'
+#' # compute signature scores from unweighted genesets
+#' unweighted_genesets <- list(set1=c("Gene_0001", "Gene_0002", "Gene_0003"),
+#' set2 = c("Gene_0004", "Gene_0005", "Gene_0006"))
+#' activity <- calculateActivity(example_sce, genesets = unweighted_genesets)
+#'
 #' @author Xiaosai Yao, Shang-yang Chen
 
-calculateActivity <- function (sce,
+calculateActivity <- function (expMatrix = NULL,
+                               exp_assay = "logcounts",
                                regulon = NULL,
                                normalize = FALSE,
                                mode = "weight",
                                method = c("weightedmean","aucell"),
                                ncore = 1,
-                               assay = "logcounts",
                                genesets = NULL,
                                clusters = NULL) {
   method <- tolower(method)
   method <- match.arg(method)
-  scale.mat <- assay(sce, assay)
 
-  #convert delayedMatrix to dgCMatrix
-  if (checkmate::test_class(scale.mat, classes = "DelayedMatrix")) {
-    message("converting DelayedMatrix to dgCMatrix")
-    scale.mat <- as(scale.mat, Class = "dgCMatrix")
+
+  if (checkmate::test_class(expMatrix,classes = "SummarizedExperiment")){
+    expMatrix <- assay(expMatrix, exp_assay)
+    expMatrix <- as(expMatrix, "dgCMatrix")
   }
 
 
-  #convert genesets to regulon
+
+  # convert genesets to regulon
   if (!is.null(genesets)){
-    if ( checkmate::test_class(genesets, classes =  "CompressedSplitDFrameList")) {
-      regulon <- do.call(rbind,lapply(names(genesets), function(x) {data.frame(tf=x, target=genesets[[x]][,"gene_id"], weight=genesets[[x]][,"weights"])}))
-    } else if ( checkmate::test_class(genesets, classes =  "CompressedCharacterList")) {
-      regulon <- do.call(rbind,lapply(names(genesets), function(x) {data.frame(tf=x, target=genesets[[x]], weight=1)}))
+    if ( is.data.frame(genesets[[1]])) {
+      regulon <- do.call(rbind,lapply(names(genesets), function(x) {
+        data.frame(tf = x, target = genesets[[x]][,1], weight = genesets[[x]][,2])}))
+    } else if (is.vector(genesets[[1]])) {
+      regulon <- do.call(rbind,lapply(names(genesets), function(x) {
+        data.frame(tf = x, target = genesets[[x]], weight = 1)}))
+    } else {
+      stop("genesets should be a list of data frames or character vectors")
     }
 
   }
 
 
-  #remove genes in regulon not found in sce
-  regulon <- regulon[which(regulon$target %in% rownames(scale.mat)),]
+  # remove genes in regulons not found in expMatrix
+  regulon <- regulon[which(regulon$target %in% rownames(expMatrix)),]
 
-  #calculate activity
+  # calculate activity
   if (method == "weightedmean") {
     message(paste("calculating TF activity from regulon using "), method)
 
@@ -115,12 +120,12 @@ calculateActivity <- function (sce,
           })
         })
       names(tf_target_mat) <- sort(unique(clusters))
-      if(normalize) meanExpr <- Matrix::rowMeans(scale.mat[rownames(tf_target_mat[[1]]),])
+      if(normalize) meanExpr <- Matrix::rowMeans(expMatrix[rownames(tf_target_mat[[1]]),])
 
       score.combine <- list()
       for (cluster_name in sort(unique(clusters))){
         score.combine[[cluster_name]] <-
-          Matrix::t(scale.mat)[, rownames(tf_target_mat[[cluster_name]]), drop = FALSE] %*%
+          Matrix::t(expMatrix)[, rownames(tf_target_mat[[cluster_name]]), drop = FALSE] %*%
                             tf_target_mat[[cluster_name]]
         #normalize genes
         if(normalize){
@@ -147,11 +152,11 @@ calculateActivity <- function (sce,
       # convert NA to 0
       tf_target_mat[is.na(tf_target_mat)] <- 0
       tf_target_mat <- as(as.matrix(tf_target_mat), "dgCMatrix")
-      # cross product of scale.matrix and tf_target matrix
-      score.combine <- Matrix::t(scale.mat)[,rownames(tf_target_mat), drop = FALSE] %*%
+      # cross product of expMatrix and tf_target matrix
+      score.combine <- Matrix::t(expMatrix)[,rownames(tf_target_mat), drop = FALSE] %*%
         tf_target_mat
       if(normalize){
-        meanExpr <- Matrix::rowMeans(scale.mat[rownames(tf_target_mat),])
+        meanExpr <- Matrix::rowMeans(expMatrix[rownames(tf_target_mat),])
         mean_activity <- meanExpr %*% tf_target_mat
         score.combine <- sweep(score.combine, 2, mean_activity, "-")
       }
@@ -167,7 +172,7 @@ calculateActivity <- function (sce,
     message(paste("calculating TF activity from regulon using "), method)
     geneSets <- split(regulon$target, regulon$tf)
     message("ranking cells...")
-    cells_rankings <- AUCell::AUCell_buildRankings(scale.mat,
+    cells_rankings <- AUCell::AUCell_buildRankings(expMatrix,
                                                    splitByBlocks = TRUE,
                                                    nCores = ncore,
                                                    plotStats = FALSE)

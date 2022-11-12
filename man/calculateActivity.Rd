@@ -5,34 +5,40 @@
 \title{Calculate the per cell activity of master regulators based on a regulon}
 \usage{
 calculateActivity(
-  sce,
+  expMatrix = NULL,
+  exp_assay = "logcounts",
   regulon = NULL,
+  normalize = FALSE,
   mode = "weight",
-  method = "weightedmean",
+  method = c("weightedmean", "aucell"),
   ncore = 1,
-  assay = "logcounts",
-  genesets = NULL
+  genesets = NULL,
+  clusters = NULL
 )
 }
 \arguments{
-\item{sce}{A SingleCellExperiment object with rows representing genes and columns represent cells.
+\item{expMatrix}{A SingleCellExperiment object containing gene expression information with rows representing genes and columns represent cells.
 Rownames (either gene symbols or geneID) must be consistent with the naming convention in the regulon.}
 
+\item{exp_assay}{String specifying the name of the assay to be retrieved from the SingleCellExperiment object. Set to
+"logcounts" as the default}
+
 \item{regulon}{A data frame consisting of tf (regulator) and target in the column names, with additional columns
-indicating degree of association between tf and target such as "mor" or "corr" obtained from addWeights.}
+indicating degree of association between tf and target such as "mor" or "corr" obtained from \code{addWeights}.}
+
+\item{normalize}{Logical indicating whether row means should be substracted from expression matrix}
 
 \item{mode}{String indicating the name of column to be used as the weights}
 
-\item{method}{String indicating the method for calculating activity. Available methods are weightedMean or aucell}
+\item{method}{String indicating the method for calculating activity. Available methods are \code{weightedMean} or \code{aucell}}
 
 \item{ncore}{Integer specifying the number of cores to be used in AUCell}
 
-\item{assay}{String specifying the name of the assay to be retrieved from the SingleCellExperiment object. Set to
-"logcounts" as the default}
+\item{genesets}{A list of genesets. Each list element can be a dataframe with the first column indicating the genes and second column indicating the weights.
+Alternatively, each list element is a character vector corresponding to the genes in the geneset. A feature set collection in the form of CompressedSplitDataFrameList that contains genes in the
+first column and weights in the second column. See details}
 
-\item{genesets}{A feature set collection in the form of CompressedSplitDataFrameList that contains genes in the
-first column and weights in the second column. See \href{http://cedar.gene.com/gran/dev/PkgDocumentation/genomitory/uploads.html#from-compressedsplitdataframelists}{genomitory}
-for more information on compressedSplitDataFramelists. See details}
+\item{clusters}{A vector indicating cluster assignment}
 }
 \value{
 A matrix of inferred transcription factor (row) activities in single cells (columns)
@@ -43,8 +49,8 @@ Calculate the per cell activity of master regulators based on a regulon
 \details{
 This function calculates activity score from a regulon that is a data frame consisting of a tf column,
 a target column and a weight column. Alternatively, instead of a regulon, this function also accepts weighted
-signature sets that are stored in Genomitory as CompressedSplitDataFrameList where each gene set or signature
-is a DataFrame. The user has the option of computing signature score by weighted mean of target gene expression or
+signature sets where each gene set or signature is a data frame or unweighted signature sets where each gene set is a character vector.
+The user has the option of computing signature score by weighted mean of target gene expression or
 the relative ranking of the target genes computed by AUCell.
 }
 \examples{
@@ -60,15 +66,24 @@ regulon.w <- addWeights(regulon, example_sce, cluster_factor = "cluster",
                         exprs_values = "counts", min_targets = 5)
 
 # calculate activity
-activity <- calculateActivity(example_sce, regulon.w, assay = "logcounts")
+activity <- calculateActivity(example_sce, regulon.w, exp_assay = "logcounts")
 
-\dontrun{
-# Compute signature scores
-library(genomitory)
-breast <- getFeatureSetCollection("GMTY194:analysis/breast.gmt.bz2@REVISION-1")
-names(breast) <- breast@elementMetadata@listData[["name"]]
-activity <- calculateActivity(GeneExpressionMatrix, genesets = breast)
-}
+# calculate cluster-specific activity if cluster-specific weights are supplied
+regulon.w$weight_positive = runif(nrow(regulon.w), -1,1)
+regulon.w$weight_negative = runif(nrow(regulon.w), -1,1)
+activity.cluster <- calculateActivity(example_sce, regulon=regulon.w,
+clusters=example_sce$Mutation_Status, exp_assay = "logcounts")
+
+# compute signature scores from weighted genesets
+weighted_genesets <- list(set1=data.frame(genes = c("Gene_0001", "Gene_0002", "Gene_0003"), weights = c(1,2,3)),
+set2 = data.frame(genes = c("Gene_0004", "Gene_0005", "Gene_0006"), weights = c(4,5,6)))
+activity <- calculateActivity(example_sce, genesets = weighted_genesets)
+
+# compute signature scores from unweighted genesets
+unweighted_genesets <- list(set1=c("Gene_0001", "Gene_0002", "Gene_0003"),
+set2 = c("Gene_0004", "Gene_0005", "Gene_0006"))
+activity <- calculateActivity(example_sce, genesets = unweighted_genesets)
+
 }
 \author{
 Xiaosai Yao, Shang-yang Chen
