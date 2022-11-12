@@ -6,58 +6,61 @@
 \usage{
 addWeights(
   regulon,
-  sce,
+  expMatrix = NULL,
   peakMatrix = NULL,
-  cluster_factor = NULL,
-  block_factor = NULL,
-  exprs_values = "logcounts",
-  method = "corr",
+  chromvarMatrix = NULL,
+  exp_assay = "logcounts",
   peak_assay = "PeakMatrix",
+  chromvar_assay = NULL,
+  method = c("corr", "MI", "wilcoxon", "logFC"),
+  clusters = NULL,
+  exp_cutoff = 0,
+  peak_cutoff = 0,
+  block_factor = NULL,
   aggregation_function = mean,
   min_targets = 10,
-  expr_cutoff = 0,
-  peak_cutoff = 0,
-  BPPARAM = BiocParallel::SerialParam(progressbar = TRUE),
-  alt.exp = NULL,
-  alt.exp.merge = FALSE
+  chromvarMatrix.merge = FALSE,
+  BPPARAM = BiocParallel::SerialParam(progressbar = TRUE)
 )
 }
 \arguments{
-\item{regulon}{A data frame consisting of tf (regulator) and target in the column names. Additional columns indicating degree
-of association between tf and target such as "mor" or "corr" are optional.}
+\item{regulon}{A data frame consisting of tf (regulator) and target in the column names.}
 
-\item{sce}{A SingleCellExperiment object containing gene expression information}
+\item{expMatrix}{A SingleCellExperiment object containing gene expression information}
 
 \item{peakMatrix}{A SingleCellExperiment object or matrix containing peak accessibility with
 peaks in the rows and cells in the columns}
 
-\item{cluster_factor}{String specifying the field in the colData of the SingleCellExperiment object to be averaged as pseudobulk (such as cluster)}
+\item{chromvarMatrix}{A SingleCellExperiment object or matrix that is used in place of gene expression to correlate with target gene expression.
+See details.}
 
-\item{block_factor}{String specifying the field in the colData of the SingleCellExperiment object to be used as blocking factor (such as batch)}
+\item{exp_assay}{String specifying the name of the assay to be retrieved from the SingleCellExperiment object}
 
-\item{exprs_values}{String specifying the name of the assay to be retrieved from the SingleCellExperiment object}
+\item{peak_assay}{String indicating the name of the assay in peakMatrix for chromatin accessibility}
+
+\item{chromvar_assay}{String indicating the name of the assay in chromvarMatrix for chromatin accessibility}
 
 \item{method}{String specifying the method of weights calculation. Four options are available: \code{corr},\code{MI}, \code{wilcoxon} and \code{logFC}.}
 
-\item{peak_assay}{String indicating the name of the assay in peakMatrix for chromatin accessibility}
+\item{clusters}{A vector corresponding to the cluster labels of the cells}
+
+\item{exp_cutoff}{A scalar indicating the minimum gene expression for transcription factor above which
+cell is considered as having expressed transcription factor.}
+
+\item{peak_cutoff}{A scalar indicating the minimum peak accessibility above which peak is
+considered open.}
+
+\item{block_factor}{String specifying the field in the colData of the SingleCellExperiment object to be used as blocking factor (such as batch)}
 
 \item{aggregation_function}{Function being used for summarizing weights from the transcription factor-target gene pair with
 many regulatory elements.}
 
 \item{min_targets}{Integer specifying the minimum number of targets for each tf in the regulon with 10 targets as the default}
 
-\item{expr_cutoff}{A scalar indicating the minimum gene expression for transcription factor above which
-cell is considered as having expressed transcription factor.}
-
-\item{peak_cutoff}{A scalar indicating the minimum peak accessibility above which peak is
-considered open.}
+\item{chromvarMatrix.merge}{A logical to indicate whether to consider both TF expression and chromvarMatrix matrix. See details.}
 
 \item{BPPARAM}{A BiocParallelParam object specifying whether summation should be parallelized. Use BiocParallel::SerialParam() for
 serial evaluation and use BiocParallel::MulticoreParam() for parallel evaluation}
-
-\item{alt.exp}{A matrix that is used in place of gene expression to correlate with target gene expression. See details.}
-
-\item{alt.exp.merge}{A logical to indicate whether to consider both TF expression and alt.exp matrix. See details.}
 }
 \value{
 A data frame with columns of corr and/or MI added to the regulon. TFs not found in the expression matrix and regulons not
@@ -84,8 +87,8 @@ When using the \code{corr} method, the default practice is to compute weights by
 the pseudobulk TF gene expression. However, often times, an inhibitor of TF does not alter the gene expression of the TF.
 In rare cases, cells may even compensate by increasing the expression of the TF. In this case, the activity of the TF,
 if computed by gene expression correlation, may show a spurious increase in its activity. As an alternative to gene expression,
-we may use accessibility associated with TF, such as those computed by chromVar. When alt.exp.merge is true, we take the product of
-the gene expression and the values in the alt.exp matrix.
+we may use accessibility associated with TF, such as those computed by chromVar. When chromvarMatrix.merge is true, we take the product of
+the gene expression and the values in the chromvarMatrix matrix.
 }
 \examples{
 # create a mock singleCellExperiment object for gene expression matrix
@@ -98,35 +101,17 @@ regulon <- data.frame(tf = c(rep("Gene_0001",5), rep("Gene_0002",10)),
                       target = c(paste0("Gene_000",2:6), paste0("Gene_00",11:20)))
 
 # add weights to regulon
-regulon.w <- addWeights(regulon, example_sce, cluster_factor="cluster", exprs_values = "logcounts",
-                        min_targets = 5)
+regulon.w <- addWeights(regulon = regulon, expMatrix = example_sce, exp_assay = "logcounts",
+clusters = example_sce$cluster, min_targets = 5)
 
-# Alternatively, add a matrix of chromVar values in place of TF expression
-\donttest{
-# create chromVar values from archR
-library(ArchR)
-library(parallel)
-proj <- addBgdPeaks(proj)
-proj <- addDeviationsMatrix(ArchRProj = proj,
-peakAnnotation = "motif", force = TRUE,logFile = "addDeviation")
+# alternatively, add a matrix of chromVar values in place of TF expression
+chromvarMatrix <- scuttle::mockSCE()
 
-#retrieve chromVar matrix
-#chromVar
-motifMatrix <- getMatrixFromProject(
-ArchRProj = proj,
-useMatrix = "motifMatrix",
-useSeqnames = NULL,
-verbose = TRUE,
-binarize = FALSE,
-threads = getArchRThreads(),
-logFile = createLogFile("getMatrixFromProject")
-)
+# calculate weights using chromvarMatrix
+regulon.w.2 <- addWeights(regulon = regulon, expMatrix = example_sce, clusters = example_sce$cluster,
+exp_assay = "logcounts", min_targets = 5, chromvarMatrix = chromvarMatrix, chromvar_assay = "counts",
+chromvarMatrix.merge = TRUE)
 
-# calculate weights using alt.exp
-regulon.w.2 <- addWeights(regulon, example_sce, cluster_factor = "cluster",
-exprs_values = "logcounts", min_targets = 5, alt.exp = assay(motifMatrix, "z"),
-alt.exp.merge = TRUE)
-}
 }
 \author{
 Xiaosai Yao, Shang-yang Chen, Tomasz Wlodarczyk
