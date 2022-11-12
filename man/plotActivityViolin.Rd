@@ -7,7 +7,7 @@
 plotActivityViolin(
   activity_matrix,
   tf,
-  class,
+  clusters,
   ncol = NULL,
   combine = TRUE,
   legend.label = "activity",
@@ -19,7 +19,7 @@ plotActivityViolin(
 
 \item{tf}{A character vector indicating the names of the transcription factors to be plotted}
 
-\item{class}{A vector of cluster or group labels for single cells}
+\item{clusters}{A vector of cluster or group labels for single cells}
 
 \item{ncol}{A integer to indicate the number of columns in the combined plot, if combine == TRUE}
 
@@ -41,7 +41,7 @@ example_sce <- scuttle::mockSCE()
 example_sce <- scuttle::logNormCounts(example_sce)
 example_sce$cluster <- sample(LETTERS[1:5], ncol(example_sce), replace = TRUE)
 plotActivityViolin(activity_matrix = logcounts(example_sce),
-tf = c("Gene_0001","Gene_0002"),  class = example_sce$cluster)
+tf = c("Gene_0001","Gene_0002"),  clusters = example_sce$cluster)
 
 }
 \author{

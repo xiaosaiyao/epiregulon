@@ -6,13 +6,13 @@
 \usage{
 pruneRegulon(
   regulon,
-  expMatrix,
-  peakMatrix,
+  expMatrix = NULL,
+  peakMatrix = NULL,
   chromvarMatrix = NULL,
   exp_assay = "logcounts",
   peak_assay = "PeakMatrix",
   chromvar_assay = NULL,
-  test = "binom",
+  test = c("binom", "chi.sq"),
   clusters = NULL,
   exp_cutoff = 1,
   peak_cutoff = 0,
@@ -20,19 +20,18 @@ pruneRegulon(
   regulon_cutoff = 0.05,
   p_adj = TRUE,
   prune_value = "pval",
-  collapse_re = FALSE,
+  aggregate = FALSE,
   downsize = FALSE,
   BPPARAM = BiocParallel::SerialParam(progressbar = TRUE)
 )
 }
 \arguments{
 \item{regulon}{A dataframe informing the gene regulatory relationship with the \code{tf} column
-representing transcription factors, \code{idxATAC}
-corresponding to the index in the peakMatrix and \code{target} column
-representing target genes}
+representing transcription factors, \code{idxATAC} corresponding to the index in the peakMatrix and
+\code{target} column representing target genes}
 
 \item{expMatrix}{A SingleCellExperiment object or matrix containing gene expression with
-with genes in the rows and cells in the columns}
+genes in the rows and cells in the columns}
 
 \item{peakMatrix}{A SingleCellExperiment object or matrix containing peak accessibility with
 peaks in the rows and cells in the columns}
@@ -69,7 +68,7 @@ to be retained in the pruned regulon.}
 
 \item{prune_value}{String indicating whether to filter regulon based on \code{pval} or \code{padj}.}
 
-\item{collapse_re}{A logical indicating whether to collapse the regulatory elements of the
+\item{aggregate}{A logical indicating whether to collapse the regulatory elements of the
 same genes and use them as a whole. Note that checking with the \code{peak_cutoff}
 is made before the collapse.}
 
@@ -123,7 +122,7 @@ gene_sce <- scuttle::mockSCE()
 gene_sce <- scuttle::logNormCounts(gene_sce)
 rownames(gene_sce) <- paste0("Gene_",1:2000)
 
-#' create a mock singleCellExperiment object for peak matrix
+# create a mock singleCellExperiment object for peak matrix
 peak_gr <- GRanges(seqnames = "chr1",
                   ranges = IRanges(start = seq(from = 1, to = 10000, by = 100), width = 100))
 peak_counts <- matrix(sample(x = 0:4, size = ncol(gene_sce)*length(peak_gr), replace = TRUE),
@@ -137,16 +136,9 @@ regulon <- data.frame(tf = c(rep("Gene_1",10), rep("Gene_2",10)),
                      target = c(paste0("Gene_", sample(3:2000,10)),
                                 paste0("Gene_",sample(3:2000,10))))
 
-# calculate joint probability for all cells
 pruned.regulon <- pruneRegulon(expMatrix = gene_sce,
-exp_assay = "logcounts", clusters = gene_sce$Treatment, peakMatrix = peak_sce,peak_assay = "counts",
-regulon = regulon)
-
-#calculate joint probability for each cluster
-pruned.regulon <- pruneRegulon(expMatrix = gene_sce,
-exp_assay = "logcounts",peakMatrix = peak_sce,peak_assay = "counts",
-regulon = regulon,clusters = gene_sce$Treatment,
-collapse_re = FALSE)
+exp_assay = "logcounts", peakMatrix = peak_sce, peak_assay = "counts",
+regulon = regulon, clusters = gene_sce$Treatment, aggregate = FALSE, regulon_cutoff = 0.5)
 
 }
 \author{

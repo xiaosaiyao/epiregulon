@@ -16,7 +16,7 @@ plotActivityDim_ <- function(sce,
   g <- scater::plotReducedDim(sce, dimred = dimtype, colour_by="activity",
                                 text_by = label,...)
 
-  g <- g + scale_color_gradient(low=colors[1], high=colors[2], limit = limit, oob=scales::squish) + ggtitle(tf) +
+  g <- g + scale_color_gradient(low = colors[1], high = colors[2], limit = limit, oob=scales::squish) + ggtitle(tf) +
     labs(color=legend.label) +
     theme_classic(base_size = 12) + theme(plot.title = element_text(hjust = 0.5))
 
@@ -44,6 +44,7 @@ plotActivityDim_ <- function(sce,
 #' @param ... Additional arguments from scater::plotReducedDim
 #'
 #' @return A combined ggplot object or a list of ggplots if combine == FALSE
+#' @import SingleCellExperiment
 #' @export
 #'
 #' @examples
@@ -58,10 +59,10 @@ plotActivityDim_ <- function(sce,
 
 #' @author Xiaosai Yao, Shang-yang Chen
 #'
-plotActivityDim <- function(sce,
+plotActivityDim <- function(sce = NULL,
                             activity_matrix,
                             tf,
-                            dimtype="UMAP",
+                            dimtype ="UMAP",
                             label = NULL,
                             ncol = NULL,
                             nrow = NULL,
@@ -104,16 +105,16 @@ plotActivityDim <- function(sce,
 
 plotActivityViolin_ <- function(activity_matrix,
                                 tf,
-                                class,
+                                clusters,
                                 legend.label,
                                 colors){
 
   tf.activity <- as.numeric(activity_matrix[tf,])
-  df <- data.frame(activity = tf.activity, class = class)
+  df <- data.frame(activity = tf.activity, clusters = clusters)
 
-  g <- ggplot2::ggplot(df, aes_string(x = "class",
+  g <- ggplot2::ggplot(df, aes_string(x = "clusters",
                                       y = "activity",
-                                      fill = "class")) +
+                                      fill = "clusters")) +
     geom_violin() +
     theme_classic(base_size = 12) +
     ggtitle(tf) + ylab(legend.label) +
@@ -133,7 +134,7 @@ plotActivityViolin_ <- function(activity_matrix,
 #'
 #' @param activity_matrix A matrix of TF activities inferred from calculateActivity
 #' @param tf A character vector indicating the names of the transcription factors to be plotted
-#' @param class A vector of cluster or group labels for single cells
+#' @param clusters A vector of cluster or group labels for single cells
 #' @param ncol A integer to indicate the number of columns in the combined plot, if combine == TRUE
 #' @param combine logical to indicate whether to combine and visualize the plots in one panel
 #' @param legend.label String indicating the name of variable to be plotted on the legend
@@ -149,12 +150,12 @@ plotActivityViolin_ <- function(activity_matrix,
 #' example_sce <- scuttle::logNormCounts(example_sce)
 #' example_sce$cluster <- sample(LETTERS[1:5], ncol(example_sce), replace = TRUE)
 #' plotActivityViolin(activity_matrix = logcounts(example_sce),
-#' tf = c("Gene_0001","Gene_0002"),  class = example_sce$cluster)
+#' tf = c("Gene_0001","Gene_0002"),  clusters = example_sce$cluster)
 #'
 #' @author Xiaosai Yao, Shang-yang Chen
 plotActivityViolin <- function(activity_matrix,
                                tf,
-                               class,
+                               clusters,
                                ncol = NULL,
                                combine = TRUE,
                                legend.label = "activity",
@@ -168,7 +169,7 @@ plotActivityViolin <- function(activity_matrix,
   tf <- tf[which(tf %in% rownames(activity_matrix))]
 
   gs <- lapply(tf, function(x) {
-    return(plotActivityViolin_(activity_matrix, x, class, legend.label, colors))
+    return(plotActivityViolin_(activity_matrix, x, clusters, legend.label, colors))
   })
 
   if (combine == TRUE) {
@@ -189,7 +190,7 @@ plotActivityViolin <- function(activity_matrix,
 #'
 #' @param activity_matrix A matrix of TF activities inferred from calculateActivity
 #' @param tf A character vector indicating the names of the transcription factors to be plotted
-#' @param class A character or integer vector of cluster or group labels for single cells
+#' @param clusters A character or integer vector of cluster or group labels for single cells
 #' @param bubblesize String indicating the variable from findDifferentialActivity output to scale size of bubbles by. Default is FDR
 #'
 #' @return A ggplot object
@@ -201,11 +202,11 @@ plotActivityViolin <- function(activity_matrix,
 #' example_sce <- scuttle::logNormCounts(example_sce)
 #' example_sce$cluster <- sample(LETTERS[1:5], ncol(example_sce), replace = TRUE)
 #' plotBubble(activity_matrix = logcounts(example_sce),
-#' tf = c("Gene_0001","Gene_0002"),  class = example_sce$cluster)
+#' tf = c("Gene_0001","Gene_0002"),  clusters = example_sce$cluster)
 #' @author Shang-yang Chen
 plotBubble <- function (activity_matrix,
                         tf,
-                        class,
+                        clusters,
                         bubblesize = "FDR"){
   # give warning for genes absent in tf list
   missing <- tf[which(! tf %in% rownames(activity_matrix))]
@@ -215,7 +216,7 @@ plotBubble <- function (activity_matrix,
   tf <- tf[which(tf %in% rownames(activity_matrix))]
 
   #find logFC and FDR of TFs
-  markers <- findDifferentialActivity(activity_matrix, class,
+  markers <- findDifferentialActivity(activity_matrix, clusters,
                                       pval.type = "some", direction = "up", test.type = "t")
   markers <- suppressMessages(getSigGenes(markers, fdr_cutoff = 1.5,
                                           logFC_cutoff = -100))
@@ -225,11 +226,11 @@ plotBubble <- function (activity_matrix,
 
   # z normalize activity and compute mean by cluster
   tf.activity <- activity_matrix[tf, ,drop=FALSE]
-  df <- data.frame(class = class, t(as.matrix(tf.activity)))
-  df.mean <- stats::aggregate(. ~ class, df, mean)
+  df <- data.frame(clusters = clusters, t(as.matrix(tf.activity)))
+  df.mean <- stats::aggregate(. ~ clusters, df, mean)
   zscores <- apply(df.mean[, -1], 2, scale)
-  df.mean <- data.frame(class = df.mean[, 1], as.data.frame(zscores))
-  df.plot <- suppressMessages(reshape2::melt(df.mean, id.variable="class", variable.name = "tf", value.name = "relative_activity"))
+  df.mean <- data.frame(clusters = df.mean[, 1], as.data.frame(zscores))
+  df.plot <- suppressMessages(reshape2::melt(df.mean, id.variable="clusters", variable.name = "tf", value.name = "relative_activity"))
 
   # merge logFC, FDR and mean activity
   df.plot <- merge(df.plot, markers)
@@ -240,7 +241,7 @@ plotBubble <- function (activity_matrix,
     logpval <- -log10(df.plot$FDR)
     max.logpval <- max(logpval[is.finite(logpval)])
     logpval <- replace(logpval, is.infinite(logpval), max.logpval)
-    g <- ggplot2::ggplot(df.plot, aes_string("class", "tf",
+    g <- ggplot2::ggplot(df.plot, aes_string("clusters", "tf",
                                              color = "relative_activity")) +
       geom_point(stat = "identity", aes(size = logpval)) +
       scale_color_viridis_c() +
@@ -248,7 +249,7 @@ plotBubble <- function (activity_matrix,
       theme(axis.text.x = element_text(angle = 45, hjust = 1))
   }
   else if (bubblesize == "summary.logFC") {
-    g <- ggplot2::ggplot(df.plot, aes_string("class", "tf",
+    g <- ggplot2::ggplot(df.plot, aes_string("clusters", "tf",
                                              color = "relative_activity")) + geom_point() + scale_color_viridis_c() +
       scale_size_continuous(range = c(0, 7)) + theme_classic(base_size = 12) +
       theme(axis.text.x = element_text(angle = 45, hjust = 1))

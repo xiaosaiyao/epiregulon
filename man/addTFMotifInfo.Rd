@@ -13,7 +13,7 @@ addTFMotifInfo(p2g, grl, peakMatrix = NULL, archR_project_path = NULL)
 
 \item{peakMatrix}{A matrix of scATAC-seq peak regions with peak ids as rows}
 
-\item{archR_project_path}{Path to a ArchR project that have performed LSI dimensionality reduction and scRNA-seq integration}
+\item{archR_project_path}{Path to an ArchR project that have performed LSI dimensionality reduction and scRNA-seq integration}
 }
 \value{
 A dataframe containing overlapping ids of scATAC-seq peak regions and reference TF binding regions

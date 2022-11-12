@@ -5,7 +5,7 @@
 \title{Plot cell-level reduced dimension results stored in a SingleCellExperiment object, colored by activities for a list of TFs}
 \usage{
 plotActivityDim(
-  sce,
+  sce = NULL,
   activity_matrix,
   tf,
   dimtype = "UMAP",
