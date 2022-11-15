@@ -16,7 +16,7 @@
 #' @param aggregation_function Function being used for summarizing weights from the transcription factor-target gene pair with
 #' many regulatory elements.
 #' @param min_targets Integer specifying the minimum number of targets for each tf in the regulon with 10 targets as the default
-#' @param tf_re.merge A logical to indicate whether to consider both TF expression and chromvarMatrix matrix. See details.
+#' @param tf_re.merge A logical to indicate whether to consider both TF expression and chromatin accessibility. See details.
 #' @param BPPARAM A BiocParallelParam object specifying whether summation should be parallelized. Use BiocParallel::SerialParam() for
 #' serial evaluation and use BiocParallel::MulticoreParam() for parallel evaluation
 #'
@@ -24,26 +24,7 @@
 #' meeting the minimal number of targets were filtered out.
 #' @import SummarizedExperiment
 #' @details
-#' This function estimates the regulatory potential of transcription factor on its target genes, or in other words,
-#' the magnitude of gene expression changes induced by transcription factor activity, using one of the four methods:
-#' \itemize{
-#' \item{1. `corr` - correlation between TF and target gene expression}
-#' \item{2. `MI` - mutual information between the TF and target gene expression}
-#' \item{3. `wilcoxon` - effect size of the Wilcoxon test between target gene expression in cells jointly expressing all 3 elements vs
-#' cells that do not}
-#' \item{4. `logFC` - log 2 fold difference of target gene expression in cells jointly expressing all 3 elements vs cells that do not}
-#' }
-#' Three measures (`corr`, `wilcoxon` and `logFC`) give both the magnitude and directionality of changes whereas `MI` always outputs
-#' positive weights. The correlation and mutual information statistics are computed on the grouped pseudobulks by user-supplied cluster labels,
-#' whereas the Wilcoxon and log fold change group cells based on the joint expression of TF, RE and TG in each single cell.
-#'
-#' When using the `corr` method, the default practice is to compute weights by correlating the pseudobulk target gene expression vs
-#' the pseudobulk TF gene expression. However, often times, an inhibitor of TF does not alter the gene expression of the TF.
-#' In rare cases, cells may even compensate by increasing the expression of the TF. In this case, the activity of the TF,
-#' if computed by gene expression correlation, may show a spurious increase in its activity. As an alternative to gene expression,
-#' we may use accessibility associated with TF, such as those computed by chromVar. When chromvarMatrix.merge is true, we take the product of
-#' the gene expression and the values in the chromvarMatrix matrix.
-#'
+
 #'
 #' @export
 #'
