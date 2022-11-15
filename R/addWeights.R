@@ -220,7 +220,7 @@ use_lmfit_method <- function(n,
 }
 
 linearfit <- function(tf,tg){
-  fit_res <- lm(tg~tf, data = data.frame(tf = tf, tg = tg))
+  fit_res <- lm(tf~tg, data = data.frame(tf = tf, tg = tg))
   fit_res <- fit_res$coefficients[2]
 }
 
