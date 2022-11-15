@@ -215,15 +215,8 @@ use_lmfit_method <- function(n,
     tf_re <- expMatrix[regulon.split[[n]]$tf, , drop = FALSE]
   }
   tg <- expMatrix[regulon.split[[n]]$target, , drop = FALSE]
-  regulon.split[[n]]$weight <- mapply(linearfit, as.data.frame(t(tf_re)), as.data.frame(t(tg)))
+  regulon.split[[n]]$weight <- mapply(function(y,x) cov(x,y)/var(x), as.data.frame(t(tf_re)), as.data.frame(t(tg)))
   regulon.split[[n]]
 }
-
-linearfit <- function(tf,tg){
-  fit_res <- lm(tf~tg, data = data.frame(tf = tf, tg = tg))
-  fit_res <- fit_res$coefficients[2]
-}
-
-
 
 
