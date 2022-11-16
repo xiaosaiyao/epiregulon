@@ -50,7 +50,9 @@ addWeights <- function(regulon,
                        peakMatrix = NULL,
                        exp_assay = "logcounts",
                        peak_assay = "PeakMatrix",
-                       method = c("corr", "MI", "lmfit"),
+                       exp_cutoff = 1,
+                       peak_cutoff = 0,
+                       method = c("corr", "MI", "lmfit","logFC"),
                        clusters,
                        block_factor = NULL,
                        aggregation_function = mean,
@@ -75,41 +77,49 @@ addWeights <- function(regulon,
   }
 
 
-  # define groupings
-  groupings <- S4Vectors::DataFrame(cluster = clusters)
-  if (!is.null(block_factor)) {
-    groupings$block <- colData(expMatrix)[block_factor]
+
+  if (method %in% c("corr", "MI", "lmfit")){
+    message("calculating average expression across clusters...")
+
+    # define groupings
+    groupings <- S4Vectors::DataFrame(cluster = clusters)
+    if (!is.null(block_factor)) {
+      groupings$block <- colData(expMatrix)[block_factor]
+    }
+
+    # compute average expression across clusters and batches
+    averages.se.exp <- scuttle::sumCountsAcrossCells(
+      expMatrix,
+      ids = groupings,
+      average = TRUE,
+      BPPARAM = BPPARAM
+    )
+
+    # average expression across pseudobulk clusters
+    expMatrix <- assays(averages.se.exp)$average
+
+    # remove genes whose expressions are NA for all pseudobulks
+    expMatrix <- expMatrix[!rowSums(is.na(expMatrix)) == ncol(expMatrix), ]
+
+
+    averages.se.peak <- scuttle::sumCountsAcrossCells(
+      peakMatrix,
+      ids = groupings,
+      average = TRUE,
+      BPPARAM = BPPARAM
+    )
+
+    # average accessibility across pseudobulk clusters
+    peakMatrix <- assays(averages.se.peak)$average
+
+    # remove REs whose accessibility are NA for all pseudobulks
+    #peakMatrix <- peakMatrix[!rowSums(is.na(peakMatrix)) == ncol(peakMatrix), ]
+
+  } else if (method %in% c("logFC")){
+    message("binarizing matrices...")
+    peakMatrix <- binarize_matrix(peakMatrix, peak_cutoff)
+    tfMatrix <- binarize_matrix(expMatrix, exp_cutoff)
   }
-
-  # compute average expression across clusters and batches
-  message("calculating average expression across clusters...")
-
-  averages.se.exp <- scuttle::sumCountsAcrossCells(
-    expMatrix,
-    ids = groupings,
-    average = TRUE,
-    BPPARAM = BPPARAM
-  )
-
-  # average expression across pseudobulk clusters
-  expMatrix <- assays(averages.se.exp)$average
-
-  # remove genes whose expressions are NA for all pseudobulks
-  expMatrix <- expMatrix[!rowSums(is.na(expMatrix)) == ncol(expMatrix), ]
-
-
-  averages.se.peak <- scuttle::sumCountsAcrossCells(
-    peakMatrix,
-    ids = groupings,
-    average = TRUE,
-    BPPARAM = BPPARAM
-  )
-
-  # average accessibility across pseudobulk clusters
-  peakMatrix <- assays(averages.se.peak)$average
-
-  # remove REs whose accessibility are NA for all pseudobulks
-  peakMatrix <- peakMatrix[!rowSums(is.na(peakMatrix)) == ncol(peakMatrix), ]
 
   # order regulon
   regulon <- regulon[order(regulon$tf, regulon$idxATAC, regulon$target),]
@@ -121,7 +131,7 @@ addWeights <- function(regulon,
   regulon <- regulon[which(regulon$target %in% rownames(expMatrix)),]
 
   # remove REs not found in peak matrix
-  regulon <- regulon[which(regulon$idxATAC %in% rownames(peakMatrix)),]
+  #regulon <- regulon[which(regulon$idxATAC %in% rownames(peakMatrix)),]
 
   # remove tfs with less than min_targets
   regulon <- regulon[regulon$tf %in% names(which(table(regulon$tf) >= min_targets)),]
@@ -165,7 +175,18 @@ addWeights <- function(regulon,
       tf_re.merge,
       BPPARAM = BPPARAM)
 
-  } else {
+  } else if (method == "logFC") {
+
+
+    output_df <- BiocParallel::bplapply(X = seq_len(length(regulon.split)),
+                                        FUN = compare_logFC_bp,
+                                        regulon.split,
+                                        expMatrix,
+                                        tfMatrix,
+                                        peakMatrix)
+
+  }
+  else {
 
     stop("method should be corr, MI or lmfit")
 
@@ -225,5 +246,24 @@ linearfit <- function(tf,tg){
 }
 
 
+compare_logFC_bp <- function(n,
+                             regulon.split,
+                             expMatrix,
+                             tfMatrix,
+                             peakMatrix){
+
+  expMatrix <- expMatrix[regulon.split[[n]]$target,,drop = FALSE]
+  tf_reMatrix <- tfMatrix[regulon.split[[n]]$tf,,drop = FALSE] *
+    peakMatrix[regulon.split[[n]]$idxATAC,,drop = FALSE]
+
+  group1 <- tf_reMatrix * expMatrix
+  group0 <- (1-tf_reMatrix) * expMatrix
+
+  regulon.split[[n]]$weight <- Matrix::rowSums(group1)/Matrix::rowSums(tf_reMatrix) -
+    Matrix::rowSums(group0)/Matrix::rowSums((1-tf_reMatrix))
+
+  return(regulon.split[[n]])
+
+}
 
 
