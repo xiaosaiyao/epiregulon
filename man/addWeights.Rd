@@ -8,18 +8,16 @@ addWeights(
   regulon,
   expMatrix = NULL,
   peakMatrix = NULL,
-  chromvarMatrix = NULL,
   exp_assay = "logcounts",
   peak_assay = "PeakMatrix",
-  chromvar_assay = NULL,
-  method = c("corr", "MI", "wilcoxon", "logFC"),
-  clusters = NULL,
-  exp_cutoff = 0,
+  method = c("corr", "MI", "lmfit", "logFC", "wilcoxon"),
+  clusters,
+  exp_cutoff = 1,
   peak_cutoff = 0,
   block_factor = NULL,
   aggregation_function = mean,
   min_targets = 10,
-  chromvarMatrix.merge = FALSE,
+  tf_re.merge = FALSE,
   BPPARAM = BiocParallel::SerialParam(progressbar = TRUE)
 )
 }
@@ -31,16 +29,11 @@ addWeights(
 \item{peakMatrix}{A SingleCellExperiment object or matrix containing peak accessibility with
 peaks in the rows and cells in the columns}
 
-\item{chromvarMatrix}{A SingleCellExperiment object or matrix that is used in place of gene expression to correlate with target gene expression.
-See details.}
-
 \item{exp_assay}{String specifying the name of the assay to be retrieved from the SingleCellExperiment object}
 
 \item{peak_assay}{String indicating the name of the assay in peakMatrix for chromatin accessibility}
 
-\item{chromvar_assay}{String indicating the name of the assay in chromvarMatrix for chromatin accessibility}
-
-\item{method}{String specifying the method of weights calculation. Four options are available: \code{corr},\code{MI}, \code{wilcoxon} and \code{logFC}.}
+\item{method}{String specifying the method of weights calculation. Four options are available: \code{corr},\code{MI}, \code{lmfit},\code{wilcoxon} and \code{logFC}.}
 
 \item{clusters}{A vector corresponding to the cluster labels of the cells}
 
@@ -57,7 +50,7 @@ many regulatory elements.}
 
 \item{min_targets}{Integer specifying the minimum number of targets for each tf in the regulon with 10 targets as the default}
 
-\item{chromvarMatrix.merge}{A logical to indicate whether to consider both TF expression and chromvarMatrix matrix. See details.}
+\item{tf_re.merge}{A logical to indicate whether to consider both TF expression and chromatin accessibility. See details.}
 
 \item{BPPARAM}{A BiocParallelParam object specifying whether summation should be parallelized. Use BiocParallel::SerialParam() for
 serial evaluation and use BiocParallel::MulticoreParam() for parallel evaluation}
@@ -74,44 +67,42 @@ This function estimates the regulatory potential of transcription factor on its 
 the magnitude of gene expression changes induced by transcription factor activity, using one of the four methods:
 \itemize{
 \item{1. \code{corr} - correlation between TF and target gene expression}
-\item{2. \code{MI} - mutual information between the TF and target gene expression}
-\item{3. \code{wilcoxon} - effect size of the Wilcoxon test between target gene expression in cells jointly expressing all 3 elements vs
+\item{2. \code{lmfit} - coefficients of target genes estimated from linear regression of TF ~ TG}
+\item{3. \code{MI} - mutual information between the TF and target gene expression}
+\item{4. \code{wilcoxon} - effect size of the Wilcoxon test between target gene expression in cells jointly expressing all 3 elements vs
 cells that do not}
-\item{4. \code{logFC} - log 2 fold difference of target gene expression in cells jointly expressing all 3 elements vs cells that do not}
+\item{5. \code{logFC} - log 2 fold difference of target gene expression in cells jointly expressing all 3 elements vs cells that do not}
 }
-Three measures (\code{corr}, \code{wilcoxon} and \code{logFC}) give both the magnitude and directionality of changes whereas \code{MI} always outputs
-positive weights. The correlation and mutual information statistics are computed on the grouped pseudobulks by user-supplied cluster labels,
-whereas the Wilcoxon and log fold change group cells based on the joint expression of TF, RE and TG in each single cell.
+Four measures (\code{corr}, \code{lmfit}, \code{wilcoxon} and \code{logFC}) give both the magnitude and directionality of changes whereas \code{MI} always outputs
+positive weights. The correlation, linear fit and mutual information statistics are computed on the pseudobulked gene expression or accessibility
+matrices, whereas the Wilcoxon and log fold change group cells based on the joint expression of TF, RE and TG in each single cell.
 
 When using the \code{corr} method, the default practice is to compute weights by correlating the pseudobulk target gene expression vs
 the pseudobulk TF gene expression. However, often times, an inhibitor of TF does not alter the gene expression of the TF.
 In rare cases, cells may even compensate by increasing the expression of the TF. In this case, the activity of the TF,
-if computed by gene expression correlation, may show a spurious increase in its activity. As an alternative to gene expression,
-we may use accessibility associated with TF, such as those computed by chromVar. When chromvarMatrix.merge is true, we take the product of
-the gene expression and the values in the chromvarMatrix matrix.
+if computed by TF-TG correlation, may show a spurious increase in its activity. As an alternative to gene expression,
+we may correlate the product of TF and RE against TG. When \code{tf_re.merge} is \code{TRUE}, we take the product of
+the gene expression and chromatin accessibility.
 }
 \examples{
 # create a mock singleCellExperiment object for gene expression matrix
-example_sce <- scuttle::mockSCE()
-example_sce <- scuttle::logNormCounts(example_sce)
-example_sce$cluster <- sample(LETTERS[1:5], ncol(example_sce), replace = TRUE)
+expMatrix <- scuttle::mockSCE()
+expMatrix <- scuttle::logNormCounts(expMatrix)
+expMatrix$cluster <- sample(LETTERS[1:5], ncol(expMatrix), replace = TRUE)
+
+# create a mock singleCellExperiment object for peak matrix
+peakMatrix <- scuttle::mockSCE()
+rownames(peakMatrix) <- 1:2000
 
 # create a mock regulon
 regulon <- data.frame(tf = c(rep("Gene_0001",5), rep("Gene_0002",10)),
+                      idxATAC = 1:15,
                       target = c(paste0("Gene_000",2:6), paste0("Gene_00",11:20)))
 
 # add weights to regulon
-regulon.w <- addWeights(regulon = regulon, expMatrix = example_sce, exp_assay = "logcounts",
-clusters = example_sce$cluster, min_targets = 5)
-
-# alternatively, add a matrix of chromVar values in place of TF expression
-chromvarMatrix <- scuttle::mockSCE()
-
-# calculate weights using chromvarMatrix
-regulon.w.2 <- addWeights(regulon = regulon, expMatrix = example_sce,
-clusters = example_sce$cluster, exp_assay = "logcounts", min_targets = 5,
-chromvarMatrix = chromvarMatrix, chromvar_assay = "counts", chromvarMatrix.merge = TRUE)
-
+regulon.w <- addWeights(regulon = regulon, expMatrix = expMatrix, exp_assay = "logcounts",
+peakMatrix = peakMatrix, peak_assay = "counts", clusters = expMatrix$cluster,
+min_targets = 5, method = "logFC")
 }
 \author{
 Xiaosai Yao, Shang-yang Chen, Tomasz Wlodarczyk
