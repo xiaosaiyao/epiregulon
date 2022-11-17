@@ -1,5 +1,7 @@
 # prepare dataset for testing Wilcoxon method
-regulon <- data.frame(tf = rep(LETTERS[1:10], each =2), idxATAC = 1:20, target = c(rep(letters[1:6],3), letters[4:5]))
+regulon <- data.frame(tf = rep(LETTERS[1:10], each =2),
+                      idxATAC = 1:20,
+                      target = c(rep(letters[1:6],3), letters[4:5]))
 expMatrix <- matrix(rep(c(0.2,3,6,0,0,2.3,5,0,0,0,1.1,2, 6,8,0,3),20), ncol = 20, nrow=16,
                     dimnames = list(c(LETTERS[1:10], letters[1:6]), NULL), byrow = TRUE)
 expMatrix <- as(expMatrix, "sparseMatrix")
@@ -25,8 +27,11 @@ weights <- weights/sqrt(20)
 regulon$weight <- weights
 expMatrix <- SingleCellExperiment(list(logcounts = expMatrix))
 test_that("addWeights works correctly using Wilcoxon test", {
-  regulon.w <- addWeights(regulon = regulon, expMatrix = expMatrix, method = "wilcoxon",
-                        peakMatrix = peakMatrix)
+  regulon.w <- addWeights(regulon = regulon,
+                          expMatrix = expMatrix,
+                          method = "wilcoxon",
+                          peakMatrix = peakMatrix,
+                          min_targets = 0)
   expect_identical(regulon.w$weight, regulon$weight)
 })
 
@@ -39,8 +44,11 @@ for(i in 1:20){
 }
 regulon$weight <- weights
 test_that("addWeights works correctly using 'logFC' method", {
-  regulon.w <- addWeights(regulon = regulon, expMatrix = expMatrix, method = "logFC",
-                          peakMatrix = peakMatrix)
+  regulon.w <- addWeights(regulon = regulon,
+                          expMatrix = expMatrix,
+                          method = "logFC",
+                          peakMatrix = peakMatrix,
+                          min_targets = 1)
   expect_identical(regulon.w$weight, regulon$weight)
 })
 
@@ -65,8 +73,8 @@ regulon$weight <- NA
 for(i in seq_len(nrow(regulon))){
   y2d <-  entropy::discretize2d(expMatrix.av[regulon$tf[i],],
                                expMatrix.av[regulon$target[i],],
-                               numBins1 =  20,
-                               numBins2 =  20)
+                               numBins1 =  max(10, unique(expMatrix.av[regulon$tf[i],])),
+                               numBins2 =  max(10, expMatrix.av[regulon$target[i],]))
   regulon$weight[i] <- suppressWarnings(entropy::mi.empirical(y2d))
 }
 
@@ -75,8 +83,11 @@ regulon <- regulon[order(regulon$tf, regulon$target),]
 expMatrix.sce <- SingleCellExperiment(list(logcounts = expMatrix))
 
 test_that("addWeights works correctly using mutual information method", {
-  regulon.w <- suppressWarnings(addWeights(regulon = regulon, expMatrix = expMatrix.sce, method = "MI",
-                        clusters = groupings, min_targets = 0))
+  regulon.w <- suppressWarnings(addWeights(regulon = regulon,
+                                           expMatrix = expMatrix.sce,
+                                           method = "MI",
+                                           clusters = groupings,
+                                           min_targets = 0))
   expect_identical(regulon.w$weight, regulon$weight)
 })
 
