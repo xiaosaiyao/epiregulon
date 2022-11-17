@@ -66,12 +66,12 @@ Calculate weights for the regulons by computing co-association between TF and ta
 This function estimates the regulatory potential of transcription factor on its target genes, or in other words,
 the magnitude of gene expression changes induced by transcription factor activity, using one of the four methods:
 \itemize{
-\item{1. \code{corr} - correlation between TF and target gene expression}
-\item{2. \code{lmfit} - coefficients of target genes estimated from linear regression of TF ~ TG}
-\item{3. \code{MI} - mutual information between the TF and target gene expression}
-\item{4. \code{wilcoxon} - effect size of the Wilcoxon test between target gene expression in cells jointly expressing all 3 elements vs
+\item{\code{corr} - correlation between TF and target gene expression}
+\item{\code{lmfit} - coefficients of target genes estimated from linear regression of TF ~ TG}
+\item{\code{MI} - mutual information between the TF and target gene expression}
+\item{\code{wilcoxon} - effect size of the Wilcoxon test between target gene expression in cells jointly expressing all 3 elements vs
 cells that do not}
-\item{5. \code{logFC} - log 2 fold difference of target gene expression in cells jointly expressing all 3 elements vs cells that do not}
+\item{\code{logFC} - log 2 fold difference of target gene expression in cells jointly expressing all 3 elements vs cells that do not}
 }
 Four measures (\code{corr}, \code{lmfit}, \code{wilcoxon} and \code{logFC}) give both the magnitude and directionality of changes whereas \code{MI} always outputs
 positive weights. The correlation, linear fit and mutual information statistics are computed on the pseudobulked gene expression or accessibility
