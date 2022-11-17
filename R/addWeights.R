@@ -27,12 +27,12 @@
 #' This function estimates the regulatory potential of transcription factor on its target genes, or in other words,
 #' the magnitude of gene expression changes induced by transcription factor activity, using one of the four methods:
 #' \itemize{
-#' \item{1. `corr` - correlation between TF and target gene expression}
-#' \item{2. `lmfit` - coefficients of target genes estimated from linear regression of TF ~ TG}
-#' \item{3. `MI` - mutual information between the TF and target gene expression}
-#' \item{4. `wilcoxon` - effect size of the Wilcoxon test between target gene expression in cells jointly expressing all 3 elements vs
+#' \item{`corr` - correlation between TF and target gene expression}
+#' \item{`lmfit` - coefficients of target genes estimated from linear regression of TF ~ TG}
+#' \item{`MI` - mutual information between the TF and target gene expression}
+#' \item{`wilcoxon` - effect size of the Wilcoxon test between target gene expression in cells jointly expressing all 3 elements vs
 #' cells that do not}
-#' \item{5. `logFC` - log 2 fold difference of target gene expression in cells jointly expressing all 3 elements vs cells that do not}
+#' \item{`logFC` - log 2 fold difference of target gene expression in cells jointly expressing all 3 elements vs cells that do not}
 #' }
 #' Four measures (`corr`, `lmfit`, `wilcoxon` and `logFC`) give both the magnitude and directionality of changes whereas `MI` always outputs
 #' positive weights. The correlation, linear fit and mutual information statistics are computed on the pseudobulked gene expression or accessibility
@@ -129,15 +129,19 @@ addWeights <- function(regulon,
     expMatrix <- expMatrix[!rowSums(is.na(expMatrix)) == ncol(expMatrix), ]
 
 
-    averages.se.peak <- scuttle::sumCountsAcrossCells(
-      peakMatrix,
-      ids = groupings,
-      average = TRUE,
-      BPPARAM = BPPARAM
-    )
+    if (tf_re.merge) {
+      averages.se.peak <- scuttle::sumCountsAcrossCells(
+        peakMatrix,
+        ids = groupings,
+        average = TRUE,
+        BPPARAM = BPPARAM
+      )
 
-    # average accessibility across pseudobulk clusters
-    peakMatrix <- assays(averages.se.peak)$average
+      # average accessibility across pseudobulk clusters
+      peakMatrix <- assays(averages.se.peak)$average
+
+    }
+
 
   } else if (method %in% c("logFC", "wilcoxon")){
     message("binarizing matrices...")
@@ -146,7 +150,9 @@ addWeights <- function(regulon,
   }
 
   # order regulon
-  regulon <- regulon[order(regulon$tf, regulon$idxATAC, regulon$target),]
+
+
+  regulon <- regulon[order(regulon$tf),]
 
   # remove tfs not found in expression matrix
   regulon <- regulon[which(regulon$tf %in% rownames(expMatrix)),]
@@ -218,12 +224,15 @@ addWeights <- function(regulon,
   } else if (method == "wilcoxon") {
 
 
-  output_df <- BiocParallel::bplapply(X = seq_len(length(regulon.split)),
-                                      FUN = compare_wilcox_bp,
-                                      regulon.split,
-                                      expMatrix,
-                                      tfMatrix,
-                                      peakMatrix)
+    output_df <- BiocParallel::bplapply(X = seq_len(length(regulon.split)),
+                                        FUN = compare_wilcox_bp,
+                                        regulon.split,
+                                        expMatrix,
+                                        tfMatrix,
+                                        peakMatrix)
+
+
+
   } else {
 
     stop("method should be corr, MI, lmfit, logFC or wilcoxon")
@@ -231,6 +240,18 @@ addWeights <- function(regulon,
   }
 
   output_df <- do.call(rbind, output_df)
+
+
+  if (method == "wilcoxon") {
+    # Calculate effect size for wilcoxon
+    n_cells <- ncol(expMatrix)
+    # if groups have the same ranks the result will be NaN
+    output_df$weight[is.nan(output_df$weight)] <- 0
+    # transform z-scores to effect size
+    output_df$weight <- output_df$weight/sqrt(n_cells)
+
+  }
+
 
   ## Aggregate by REs
   regulon <- stats::aggregate(weight~tf+target, FUN = aggregation_function, na.rm = TRUE, data = output_df)
