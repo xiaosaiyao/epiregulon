@@ -19,7 +19,7 @@ vignette: >
 knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>",
-  eval = FALSE
+  eval = TRUE
 )
 ```
 
@@ -44,9 +44,7 @@ library(epiregulon)
 If you would like to install from gitlab, 
 
 ```{r setup, message=FALSE, eval=FALSE}
-devtools::install_gitlab(repo='scwg/gene-transcriptional-network/activity-inference/Epiregulon', 
-                         auth_token = "<gitlab token>", 
-                         host = "https://code.roche.com/" )
+devtools::install_github(repo='xiaosaiyao/epiregulon')
 library(epiregulon)
 ```
 
@@ -91,24 +89,6 @@ p2g <- calculateP2G(ArchR_path = archR_project_path)
 head(p2g)
 ```
 
-Alternatively, users can now also supply peak, gene, and dimensional reduction matrices derived from a MultiAssayExperiment object. This is compatible with future GPSA multiome workflow. Epiregulon implements a custom algorithm to derive a more stringent set of P2G correlations compared to ArchR. 
-
-```{r, eval=FALSE}
-# load the MAE object
-heme <- readRDS("/gstore/project/archr_importer/heme_grn_unpaired_data/mae.rds")
-# peak matrix
-peakmatrix <- heme[["PeakMatrix"]]
-# expression matrix
-expmatrix <- heme[["GeneIntegrationMatrix"]]
-rownames(expmatrix) <- rowData(expmatrix)$name
-# dimensional reduction matrix
-reducedDim <- SingleCellExperiment::reducedDims(heme[['TileMatrix500']])[["IterativeLSI"]]
-
-p2g <- calculateP2G(peakmatrix, expmatrix, reducedDim)
-
-head(p2g)
-```
-
 ## Add TF motif binding to peaks
 
 The next step is to add the TF motif binding information by overlapping the regions of the peak matrix with the bulk chip-seq database loaded in 2. The user can supply either an archR project path and this function will retrieve the peak matrix, or a peakMatrix in the form of a Granges object or RangedSummarizedExperiment.
@@ -126,7 +106,7 @@ A long format dataframe, representing the inferred regulons, is then generated. 
 * peak to gene correlation between tf and target gene
 
 ```{r}
-regulon <- getRegulon(p2g, overlap, aggregate=TRUE)
+regulon <- getRegulon(p2g, overlap, aggregate=FALSE)
 head(regulon)
 ```
 
@@ -146,15 +126,56 @@ Trim regulon for demonstration purposes
 TFs <- c("FOXA1","GATA3","SOX9", "SPI1")
 regulon <- regulon[which(regulon$tf %in% TFs),]
 nrow(regulon)
+```
 
+Prune network
+```{r}
+# retrieve gene expression and peak matrix from archR project
+GeneExpressionMatrix <- getMatrixFromProject(
+    ArchRProj = proj,
+    useMatrix = "GeneIntegrationMatrix",
+    useSeqnames = NULL,
+    verbose = TRUE,
+    binarize = FALSE,
+    threads = 1,
+    logFile = "x"
+)
+
+rownames(GeneExpressionMatrix) <- rowData(GeneExpressionMatrix)$name
+
+PeakMatrix <- getMatrixFromProject(
+    ArchRProj = proj,
+    useMatrix = "PeakMatrix",
+    useSeqnames = NULL,
+    verbose = TRUE,
+    binarize = FALSE,
+    threads = 1,
+    logFile = "x"
+)
+
+
+pruned.regulon <- pruneRegulon(expMatrix = GeneExpressionMatrix,
+                               exp_assay = "GeneIntegrationMatrix",
+                               peakMatrix = PeakMatrix,
+                               peak_assay = "PeakMatrix",
+                               regulon = regulon,
+                               clusters = GeneExpressionMatrix$predictedGroup,
+                               prune_value = "pval",
+                               regulon_cutoff = 0.05)
+
+```
+
+
+Add Weights to regulon 
+```{r}
 regulon.w <- addWeights(regulon = regulon,
                         expMatrix = sce,
                         clusters = sce$BioClassification,
                         block_factor = NULL,
-                        method = "corr",
-                        BPPARAM = BiocParallel::MulticoreParam())
+                        method = "corr")
 head(regulon.w)
 ```
+
 
 ## Calculate TF activity 
 
@@ -199,10 +220,10 @@ Epiregulon also provides multiple options for visualizing the inferred TF activi
 
 tSNE or UMAP plots:
 ```{r, fig.width=12, fig.height=10}
-plotActivityDim(sce, 
-                score.combine, 
+plotActivityDim(sce = sce, 
+                activity_matrix = score.combine, 
                 tf = c("FOXA1","GATA3","SOX9", "SPI1"), 
-                "TSNE", 
+                dimtype = "TSNE", 
                 combine = T)
 ```
 

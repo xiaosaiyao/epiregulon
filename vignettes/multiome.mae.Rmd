@@ -19,7 +19,7 @@ vignette: >
 knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>",
-  eval = FALSE
+  eval = TRUE
 )
 ```
 
@@ -37,9 +37,7 @@ library(epiregulon)
 Alternatively, you could install from gitlab
 
 ```{r setup, message=FALSE, eval=FALSE}
-devtools::install_gitlab(repo ='scwg/gene-transcriptional-network/activity-inference/Epiregulon', 
-                         auth_token = "<gitlab token>", 
-                         host = "https://code.roche.com/" )
+devtools::install_github(repo ='xiaosaiyao/epiregulon')
 
 library(epiregulon)
 
@@ -62,7 +60,6 @@ mae <- dsassembly::getDataset("DS000013080")
 
 # peak matrix
 PeakMatrix <- mae[["PeakMatrix"]]
-rownames(PeakMatrix) <- rowData(PeakMatrix)$idx
 
 # expression matrix
 GeneExpressionMatrix <- mae[["GeneExpressionMatrix"]]
@@ -153,11 +150,10 @@ pruned.regulon <- pruneRegulon(expMatrix = GeneExpressionMatrix,
                                peak_assay = "counts",
                                test = "binom",
                                regulon = regulon[regulon$tf %in% c("NKX2-1","GATA6","FOXA1","FOXA2","AR","SOX2"),],
-                               #regulon = regulon,
                                clusters = GeneExpressionMatrix$Clusters,
                                prune_value = "pval",
                                regulon_cutoff = 0.05,
-                               BPPARAM = BiocParallel::MulticoreParam(workers = 2, progressbar = TRUE)
+                               BPPARAM = BiocParallel::MulticoreParam(progressbar = TRUE)
                                )
 
 ```
@@ -198,7 +194,8 @@ score.combine <- calculateActivity(expMatrix = GeneExpressionMatrix,
                                    regulon = regulon.w, 
                                    mode = "weight", 
                                    method = "weightedMean", 
-                                   exp_assay = "counts")
+                                   exp_assay = "counts",
+                                   normalize = FALSE)
 
 ```
 
@@ -250,7 +247,7 @@ plotActivityDim(sce = GeneExpressionMatrix,
                 tf = c("NKX2-1","GATA6","FOXA1","FOXA2", "AR", "SOX2"), 
                 dimtype = "UMAP_Combined", 
                 label = "Clusters", 
-                point_size=1, 
+                point_size = 1, 
                 ncol = 3)
 ```
 
