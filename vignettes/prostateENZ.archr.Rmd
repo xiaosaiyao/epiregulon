@@ -1,8 +1,7 @@
 ---
 title: "prostate cancer archr tutorial"
-author:
-- Shang-Yang Chen^[chens179@gene.com]
-- Xiaosai Yao^[yaox19@gene.com]
+author: "Xiaosai Yao"
+email: "yao.xiaosai@gene.com"
 output:
   BiocStyle::html_document:
     toc: true
@@ -20,11 +19,11 @@ vignette: >
 knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>",
-  eval = TRUE)
+  eval = FALSE)
 ```
 
 # Introduction
-This tutorial walks through an example of TF activity inference in unpaired scATACseq/scRNAseq of parental LNCaP cells treated with DMSO, Enzalutamide and Enza resistant cells. The dataset was taken from [Taavitsainen et al](https://www.nature.com/articles/s41467-021-25624-1) [GSE168667](https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE168667) and GSE168668](https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE168668).
+This tutorial walks through an example of TF activity inference in unpaired scATACseq/scRNAseq of parental LNCaP cells treated with DMSO, Enzalutamide and Enza resistant cells. The dataset was taken from [Taavitsainen et al](https://www.nature.com/articles/s41467-021-25624-1) [GSE168667](https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE168667) and [GSE168668](https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE168668).
 
 # Installation
 
@@ -185,7 +184,7 @@ pruned.regulon <- pruneRegulon(expMatrix = GeneExpressionMatrix,
                                BPPARAM = BiocParallel::MulticoreParam(progressbar = TRUE))
 ```
 
-Epiregulon computes weights using either correlation, mutual information, log fold change or wilcoxon rank sum test. In this case, we choose wilcoxon 
+Epiregulon computes weights using either correlation, linear regression, mutual information, log fold change or wilcoxon rank sum test. In this case, we chose logFC and set `tf_re.merge = TRUE` because the drug enzalutamide acts to alter chromatin accessibility of AR but less so AR expression.
 
 ```{r addWeights, results = "hide", warning=FALSE}
 
@@ -249,7 +248,7 @@ plotBubble(activity_matrix = score.combine,
            clusters = GeneExpressionMatrix$Sample)
 ```
 
-Visualize the known differential TFs by violin plot. Note there is no activity calculated for SOX2 because the expression of SOX2 is 0 in all cells.
+Visualize the known differential TFs by violin plot.
 
 ```{r}
 plotActivityViolin(activity_matrix = score.combine, 
