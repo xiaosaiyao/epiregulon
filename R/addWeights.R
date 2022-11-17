@@ -325,7 +325,7 @@ use_lmfit_method <- function(n,
     tf_re <- expMatrix[regulon.split[[n]]$tf, , drop = FALSE]
   }
   tg <- expMatrix[regulon.split[[n]]$target, , drop = FALSE]
-  regulon.split[[n]]$weight <- mapply(function(y,x) {cov(x,y)/var(x)}, as.data.frame(t(tf_re)), as.data.frame(t(tg)))
+  regulon.split[[n]]$weight <- mapply(function(y,x) {stats::cov(x,y)/stats::var(x)}, as.data.frame(t(tf_re)), as.data.frame(t(tg)))
   regulon.split[[n]]
 }
 
