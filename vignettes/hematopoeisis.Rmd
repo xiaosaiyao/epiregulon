@@ -62,7 +62,7 @@ b. For multiome data, use addGeneExpressionMatrix. See [multiome](https://greenl
 To verify that all the necessary matrices are present,
 
 ```{r}
-library(ArchR,verbose = FALSE)
+library(ArchR,quietly = TRUE)
 archR_project_path <- "/gstore/project/lineage/sam/heme_GRN/OUTPUT"
 proj <- loadArchRProject(path = archR_project_path, showLogo = FALSE)
 getAvailableMatrices(proj)
@@ -247,5 +247,4 @@ plotBubble(activity_matrix = score.combine,
 ```{r}
 sessionInfo()
 ```
-
 
