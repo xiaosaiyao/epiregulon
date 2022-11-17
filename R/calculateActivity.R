@@ -99,7 +99,7 @@ calculateActivity <- function (expMatrix = NULL,
 
   # calculate activity
   if (method == "weightedmean") {
-    message(paste("calculating TF activity from regulon using "), method)
+    message("calculating TF activity from regulon using ", method)
 
 
     # if cluster information is provided and if there are cluster-specific weights provided,
@@ -171,7 +171,7 @@ calculateActivity <- function (expMatrix = NULL,
 
   }
   else if (method == "aucell") {
-    message(paste("calculating TF activity from regulon using "), method)
+    message("calculating TF activity from regulon using ", method)
     geneSets <- split(regulon$target, regulon$tf)
     message("ranking cells...")
     cells_rankings <- AUCell::AUCell_buildRankings(expMatrix,

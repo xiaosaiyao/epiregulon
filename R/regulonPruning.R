@@ -151,13 +151,14 @@ pruneRegulon <- function(regulon,
 
 
   # binarize matrices according to cutoff
+  message("binarizing matrices")
   peakMatrix.bi <- binarize_matrix(peakMatrix, peak_cutoff)
   expMatrix.bi <- tfMatrix.bi <- binarize_matrix(expMatrix, exp_cutoff)
   if(!is.null(chromvarMatrix)) {
     tfMatrix.bi <- binarize_matrix(chromvarMatrix, chromvar_cutoff)
   }
 
-  unique_clusters <- c("all", sort(unique(clusters)))
+  unique_clusters <- c("all", as.character(sort(unique(clusters))))
 
   if(!is.null(clusters)) n_min <- min(table(clusters))
   else n_min <- ncol(expMatrix)
@@ -166,7 +167,7 @@ pruneRegulon <- function(regulon,
   res <- list()
   regulon.split <- split(regulon, regulon$tf)
 
-
+  message("pruning regulons")
   if (test == "binom") {
     # Perform binomial test
     res <- BiocParallel::bplapply(
@@ -229,7 +230,7 @@ pruneRegulon <- function(regulon,
 
   # if aggregate is true, collapse regulatory elements to have regulons containing tf and target
   if (aggregate == TRUE){
-
+    message("aggregating regulons...")
     aggregate_by <- colnames(regulon.combined)[grep("stats|pval|padj",
                                                     colnames(regulon.combined))]
 
