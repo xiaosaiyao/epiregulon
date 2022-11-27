@@ -219,7 +219,8 @@ addWeights <- function(regulon,
                                         regulon.split,
                                         expMatrix,
                                         tfMatrix,
-                                        peakMatrix)
+                                        peakMatrix,
+                                        BPPARAM = BPPARAM)
 
   } else if (method == "wilcoxon") {
 
@@ -229,7 +230,8 @@ addWeights <- function(regulon,
                                         regulon.split,
                                         expMatrix,
                                         tfMatrix,
-                                        peakMatrix)
+                                        peakMatrix,
+                                        BPPARAM = BPPARAM)
 
 
 
@@ -340,11 +342,10 @@ compare_logFC_bp <- function(n,
   tf_reMatrix <- tfMatrix[regulon.split[[n]]$tf,,drop = FALSE] *
     peakMatrix[regulon.split[[n]]$idxATAC,,drop = FALSE]
 
-  group1 <- tf_reMatrix * expMatrix
-  group0 <- (1-tf_reMatrix) * expMatrix
+  group1 <- tf_reMatrix
+  group0 <- (1-tf_reMatrix)
 
-  regulon.split[[n]]$weight <- Matrix::rowSums(group1)/Matrix::rowSums(tf_reMatrix) -
-    Matrix::rowSums(group0)/Matrix::rowSums((1-tf_reMatrix))
+  regulon.split[[n]]$weight <- Matrix::rowSums(expMatrix * group1) / Matrix::rowSums(group1) - Matrix::rowSums(expMatrix * group0) / Matrix::rowSums(group0)
 
   return(regulon.split[[n]])
 
