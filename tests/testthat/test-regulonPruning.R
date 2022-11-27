@@ -41,7 +41,8 @@ test_that("pruneRegulon calculates p-values with binomial test correctly", {
   regulon.p <- pruneRegulon(regulon = regulon,
                             expMatrix = geneM,
                             peakMatrix = peakM,
-                            regulon_cutoff = 2)
+                            regulon_cutoff = 2,
+                            test = "binom")
   expect_identical(regulon.p$pval_all, pvals, tolerance = 1e-3)
 })
 
@@ -92,8 +93,12 @@ for(i in 1:4){
 }
 
 test_that("pruneRegulon calculates cluster p-values with binomial test correctly", {
-  regulon.p <- pruneRegulon(regulon = regulon, expMatrix = geneM, peakMatrix = peakM, regulon_cutoff = 2,
-                            clusters = rep(c("C1", "C2"), each = 50))
+  regulon.p <- pruneRegulon(regulon = regulon,
+                            expMatrix = geneM,
+                            peakMatrix = peakM,
+                            regulon_cutoff = 2,
+                            clusters = rep(c("C1", "C2"), each = 50),
+                            test = "binom")
   expect_identical(regulon.p$pval_C1, pvals_C1, tolerance = 1e-3)
   expect_identical(regulon.p$pval_C2, pvals_C2, tolerance = 1e-3)
 })
