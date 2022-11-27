@@ -137,13 +137,13 @@ pruneRegulon <- function(regulon,
 
 
 
-  # clean up regulon
+  # clean up regulons by removing tf and targets not found in regulons
   regulon <- regulon[regulon$tf %in% rownames(expMatrix),]
   regulon <- regulon[regulon$target %in% rownames(expMatrix),]
   regulon <- regulon[order(regulon$tf),]
 
 
-  # binarize matrices according to cutoff
+  # binarize peak and expression matrices according to cutoff
   message("binarizing matrices")
   peakMatrix.bi <- binarize_matrix(peakMatrix, peak_cutoff)
   expMatrix.bi <- tfMatrix.bi <- binarize_matrix(expMatrix, exp_cutoff)
