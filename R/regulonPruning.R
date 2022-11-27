@@ -30,8 +30,6 @@
 #' @param aggregate A logical indicating whether to collapse the regulatory elements of the
 #' same genes and use them as a whole. Note that checking with the `peak_cutoff`
 #' is made before the collapse.
-#' @param downsize A logical specifying whether the cluster size is set to minimum
-#' value across all clusters
 #' @param BPPARAM A BiocParallelParam object specifying whether calculation should be parallelized.
 #' Default is set to BiocParallel::MulticoreParam()
 #
@@ -64,11 +62,6 @@
 #' the probability otherwise is 1- P(TF, RE) * P(TG). The observed cell count for the active category is the number of cells
 #' jointly expressing all three elements, and the cell count for the inactive category is n - n_triple.
 #'
-#' When conducting cluster-specific pruning, we provide an option to normalize the cell number to the size of the smallest cluster.
-#' When `downsize` is set to `TRUE`, the sample size `n` is set to the size of the smallest cluster.
-#' The number of successes is scaled proportionally and rounded to integer.
-#'
-
 #'
 #'
 #' @export
@@ -99,6 +92,7 @@
 #' pruned.regulon <- pruneRegulon(expMatrix = gene_sce,
 #' exp_assay = "logcounts", peakMatrix = peak_sce, peak_assay = "counts",
 #' regulon = regulon, clusters = gene_sce$Treatment, aggregate = FALSE, regulon_cutoff = 0.5)
+
 #'
 #' @author Xiaosai Yao, Tomasz Wlodarczyk
 
@@ -110,7 +104,7 @@ pruneRegulon <- function(regulon,
                          exp_assay = "logcounts",
                          peak_assay = "PeakMatrix",
                          chromvar_assay = NULL,
-                         test = c("binom","chi.sq"),
+                         test = c("chi.sq","binom"),
                          clusters = NULL,
                          exp_cutoff = 1,
                          peak_cutoff = 0,
@@ -119,7 +113,6 @@ pruneRegulon <- function(regulon,
                          p_adj = TRUE,
                          prune_value = "pval",
                          aggregate = FALSE,
-                         downsize = FALSE,
                          BPPARAM = BiocParallel::SerialParam(progressbar = TRUE)){
 
   # choose test method
@@ -154,15 +147,9 @@ pruneRegulon <- function(regulon,
   message("binarizing matrices")
   peakMatrix.bi <- binarize_matrix(peakMatrix, peak_cutoff)
   expMatrix.bi <- tfMatrix.bi <- binarize_matrix(expMatrix, exp_cutoff)
-  if(!is.null(chromvarMatrix)) {
-    tfMatrix.bi <- binarize_matrix(chromvarMatrix, chromvar_cutoff)
-  }
+
 
   unique_clusters <- c("all", as.character(sort(unique(clusters))))
-
-  if(!is.null(clusters)) n_min <- min(table(clusters))
-  else n_min <- ncol(expMatrix)
-
 
   res <- list()
   regulon.split <- split(regulon, regulon$tf)
@@ -179,9 +166,9 @@ pruneRegulon <- function(regulon,
       tfMatrix.bi,
       clusters,
       unique_clusters,
-      downsize,
-      n_min,
-      BPPARAM = BPPARAM)
+      BPPARAM = BPPARAM
+      )
+
 
 
   } else if (test == "chi.sq") {
@@ -195,9 +182,8 @@ pruneRegulon <- function(regulon,
       tfMatrix.bi,
       clusters,
       unique_clusters,
-      downsize,
-      n_min,
-      BPPARAM = BPPARAM)
+      BPPARAM = BPPARAM
+      )
 
   } else {
 
@@ -225,8 +211,15 @@ pruneRegulon <- function(regulon,
 
   # prune by p-value
   regulon.prune_value <- regulon.combined[,grepl(prune_value, colnames(regulon.combined)), drop = FALSE]
-  prune_value_min <- apply(regulon.prune_value, 1, function(x) min(x, na.rm = TRUE))
+  prune_value_min <- apply(regulon.prune_value, 1, function (x){
+    if (sum(is.na(x)) == length(x))
+     Inf
+    else
+      min(x, na.rm = TRUE)
+  })
   regulon.combined <- regulon.combined[which(prune_value_min < regulon_cutoff),]
+
+  function(x) {if (length(x)>0) min(x) else Inf}
 
   # if aggregate is true, collapse regulatory elements to have regulons containing tf and target
   if (aggregate == TRUE){
@@ -250,13 +243,17 @@ pruneRegulon <- function(regulon,
 
 
 binarize_matrix <- function(matrix_obj, cutoff){
-  matrix_obj.bi.index <- Matrix::which(matrix_obj > cutoff, arr.ind = TRUE)
-  Matrix::sparseMatrix(x = rep(1, nrow(matrix_obj.bi.index)),
-                       i = matrix_obj.bi.index[,1],
-                       j =  matrix_obj.bi.index[,2],
-                       dims = dim(matrix_obj),
-                       dimnames = dimnames(matrix_obj))
-
+  if (is(matrix_obj, "dgCMatrix")) {
+    matrix_obj@x <- as.double(matrix_obj@x > cutoff)
+    matrix_obj
+  } else {
+    matrix_obj.bi.index <- Matrix::which(matrix_obj > cutoff, arr.ind = TRUE)
+    Matrix::sparseMatrix(x = rep(1, nrow(matrix_obj.bi.index)),
+                         i = matrix_obj.bi.index[,1],
+                         j =  matrix_obj.bi.index[,2],
+                         dims = dim(matrix_obj),
+                         dimnames = dimnames(matrix_obj))
+  }
 }
 
 
@@ -267,55 +264,68 @@ binom_bp <- function(n,
                      tfMatrix.bi,
                      clusters,
                      unique_clusters,
-                     downsize,
-                     n_min){
+                     BPPARAM = BPPARAM
+                     ){
 
+  full_ncells <- ncol(peakMatrix.bi)
+  has_tf <- tfMatrix.bi[regulon.split[[n]]$tf[1],] == 1
+  expMatrix.bi <- expMatrix.bi[regulon.split[[n]]$target,, drop=FALSE]
+  expMatrix.tf.bi <- expMatrix.bi[, has_tf, drop=FALSE]
+  peakMatrix.bi <- peakMatrix.bi[regulon.split[[n]]$idxATAC, has_tf, drop=FALSE]
 
-
-  expMatrix.bi <- expMatrix.bi[regulon.split[[n]]$target, , drop=FALSE]
-  peakMatrix.bi <- peakMatrix.bi[regulon.split[[n]]$idxATAC, , drop=FALSE]
-  tfMatrix.bi <- tfMatrix.bi[regulon.split[[n]]$tf,, drop=FALSE]
-
-  triple.bi <- peakMatrix.bi * expMatrix.bi * tfMatrix.bi
-  tf_re.bi <- peakMatrix.bi * tfMatrix.bi
+  triple.bi <- peakMatrix.bi * expMatrix.tf.bi
+  tf_re.bi <- peakMatrix.bi
 
   res <- list()
 
   for (selected_cluster in unique_clusters){
+    if(selected_cluster != "all"){
+      is_current_cluster <- clusters == selected_cluster
+      expCurrent <- as.vector(expMatrix.bi %*% is_current_cluster)
+      n_cells <- sum(is_current_cluster)
 
-    if(selected_cluster == "all"){
-      cluster_index <- seq_len(ncol(peakMatrix.bi))
-    }
-    else{
-      cluster_index <- which(clusters==selected_cluster)
-    }
-
-    n_clusters <- length(cluster_index)
-    null.probability <- Matrix::rowSums(tf_re.bi[, cluster_index, drop=FALSE]) *
-      Matrix::rowSums(expMatrix.bi[, cluster_index, drop=FALSE]) / n_clusters ^2
-
-    if (downsize == TRUE & selected_cluster != "all") {
-      n_triple <- floor(Matrix::rowSums(triple.bi[, cluster_index, drop=FALSE]) * n_min / n_clusters)
-      n_cells <- rep(n_min, length(Matrix::rowSums(triple.bi[, cluster_index, drop=FALSE])))
+      #subset is_current_cluster to only cells with tf greater than cutoff
+      is_current_cluster <- is_current_cluster[has_tf]
+      tf_reCurrent <- as.vector(tf_re.bi %*% is_current_cluster)
+      n_triple <- as.vector(triple.bi %*% is_current_cluster)
 
     } else {
-      n_triple <- Matrix::rowSums(triple.bi[, cluster_index, drop=FALSE])
-      n_cells <- rep(n_clusters,
-                    length(Matrix::rowSums(triple.bi[, cluster_index, drop=FALSE])))
+      expCurrent <- Matrix::rowSums(expMatrix.bi)
+      n_triple <- Matrix::rowSums(triple.bi)
+      tf_reCurrent <- Matrix::rowSums(tf_re.bi)
+      n_cells <- full_ncells
     }
 
-    res[[selected_cluster]] <- t(mapply(binom_test,
-                                        n_triple = n_triple,
-                                        n_cells = n_cells,
-                                        null_probability =  null.probability))
-    colnames(res[[selected_cluster]]) <- c(paste0("pval_",selected_cluster), paste0("stats_", selected_cluster))
-    res[[selected_cluster]]
+    null_probability <- tf_reCurrent * expCurrent / n_cells ^ 2
+    p.value <- binomTest(n_triple, n_cells, p=null_probability)
+    z_score <- stats::qnorm(p.value/2) * sign(null_probability - n_triple/n_cells)
 
+    res[[selected_cluster]] <- cbind(p.value, z_score)
+    colnames(res[[selected_cluster]]) <- c(paste0("pval_",selected_cluster), paste0("stats_", selected_cluster))
   }
 
   res <- do.call("cbind", res)
 
 
+}
+
+binomTest <- function (k, size, p) {
+  if (size >= 10000) {
+    e1 <- p * size
+    e2 <- size - e1
+    chi <- (k - e1)^2 / e1 + (size - k - e2)^2 / e2
+    return(stats::pchisq(chi, df = 1, lower.tail = FALSE))
+  }
+
+  p.value <- rep_len(1, length(k))
+  for (ip in unique(p)) {
+      current <- p == ip
+      d <- stats::dbinom(0:size, prob = ip, size = size)
+      o <- order(d)
+      cumsump <- cumsum(d[o])[order(o)]
+      p.value[current] <- cumsump[k[current] + 1]
+  }
+  p.value
 }
 
 
@@ -327,52 +337,41 @@ chisq_bp <- function(n,
                      tfMatrix.bi,
                      clusters,
                      unique_clusters,
-                     downsize,
-                     n_min){
+                     BPPARAM = BPPARAM
+                     ){
 
+  full_ncells <- ncol(peakMatrix.bi)
+  has_tf <- tfMatrix.bi[regulon.split[[n]]$tf[1],] == 1
+  expMatrix.bi <- expMatrix.bi[regulon.split[[n]]$target,, drop=FALSE]
+  expMatrix.tf.bi <- expMatrix.bi[, has_tf, drop=FALSE]
+  peakMatrix.bi <- peakMatrix.bi[regulon.split[[n]]$idxATAC, has_tf, drop=FALSE]
 
-
-
-  expMatrix.bi <- expMatrix.bi[regulon.split[[n]]$target, , drop=FALSE]
-  peakMatrix.bi <- peakMatrix.bi[regulon.split[[n]]$idxATAC, , drop=FALSE]
-  tfMatrix.bi <- tfMatrix.bi[regulon.split[[n]]$tf,, drop=FALSE]
-
-  triple.bi <- peakMatrix.bi * expMatrix.bi * tfMatrix.bi
-  tf_re.bi <- peakMatrix.bi * tfMatrix.bi
+  triple.bi <- peakMatrix.bi * expMatrix.tf.bi
+  tf_re.bi <- peakMatrix.bi
 
   res <- list()
 
   for (selected_cluster in unique_clusters){
+    if(selected_cluster != "all"){
+      is_current_cluster <- clusters == selected_cluster
+      expCurrent <- as.vector(expMatrix.bi %*% is_current_cluster)
+      n_cells <- sum(is_current_cluster)
 
-    if(selected_cluster == "all"){
-      cluster_index <- seq_len(ncol(peakMatrix.bi))
-    }
-    else{
-      cluster_index <- which(clusters==selected_cluster)
-    }
-
-    n_clusters <- length(cluster_index)
-    null.probability <- Matrix::rowSums(tf_re.bi[, cluster_index, drop=FALSE]) *
-      Matrix::rowSums(expMatrix.bi[, cluster_index, drop=FALSE]) / n_clusters ^2
-
-    if (downsize == TRUE & selected_cluster != "all") {
-      n_triple <- floor(Matrix::rowSums(triple.bi[, cluster_index, drop=FALSE]) * n_min / n_clusters)
-      n_cells <- rep(n_min, length(Matrix::rowSums(triple.bi[, cluster_index, drop=FALSE])))
+      #subset is_current_cluster to only cells with tf greater than cutoff
+      is_current_cluster <- is_current_cluster[has_tf]
+      tf_reCurrent <- as.vector(tf_re.bi %*% is_current_cluster)
+      n_triple <- as.vector(triple.bi %*% is_current_cluster)
 
     } else {
-      n_triple <- Matrix::rowSums(triple.bi[, cluster_index, drop=FALSE])
-      n_cells <- rep(n_clusters,
-                    length(Matrix::rowSums(triple.bi[, cluster_index, drop=FALSE])))
-
+      expCurrent <- Matrix::rowSums(expMatrix.bi)
+      n_triple <- Matrix::rowSums(triple.bi)
+      tf_reCurrent <- Matrix::rowSums(tf_re.bi)
+      n_cells <- full_ncells
     }
 
-    res[[selected_cluster]] <- t(mapply(chisq_test,
-                                        n_triple = n_triple,
-                                        n_cells = n_cells,
-                                        null_probability =  null.probability))
+    null_probability <- tf_reCurrent * expCurrent / n_cells ^ 2
+    res[[selected_cluster]] <- chisqTest(k = n_triple, size = n_cells, p = null_probability)
     colnames(res[[selected_cluster]]) <- c(paste0("pval_",selected_cluster), paste0("stats_", selected_cluster))
-    res[[selected_cluster]]
-
   }
 
   res <- do.call("cbind", res)
@@ -380,19 +379,15 @@ chisq_bp <- function(n,
 
 }
 
-binom_test <- function(n_triple, n_cells, null_probability){
-  binom_res <- stats::binom.test(x = n_triple, n = n_cells, p = null_probability)
-  z_score <- stats::qnorm(binom_res$p.value/2)*sign(null_probability - binom_res$estimate)
-  c(p = binom_res$p.value, z = z_score)
-}
+chisqTest <- function (k, size, p) {
+
+  e1 <- p * size
+  e2 <- size - e1
+  chi <- (k - e1)^2 / e1 + (size - k - e2)^2 / e2
+  df <- cbind(p = stats::pchisq(chi, df = 1, lower.tail = FALSE), stats = chi)
+  return(df)
 
 
-
-
-chisq_test <- function(n_triple, n_cells, null_probability){
-  chiseq_res <- suppressWarnings(stats::chisq.test(x = c(n_triple, (n_cells - n_triple)),
-                                                   p = c(null_probability, 1 - null_probability)))
-  c(p = chiseq_res$p.value, stats = chiseq_res$statistic)
 }
 
 
