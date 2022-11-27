@@ -125,7 +125,7 @@ addWeights <- function(regulon,
     expMatrix <- assays(averages.se.exp)$average
 
     # remove genes whose expressions are NA for all pseudobulks
-    expMatrix <- expMatrix[!rowSums(is.na(expMatrix)) == ncol(expMatrix), ]
+    expMatrix <- expMatrix[!Matrix::rowSums(is.na(expMatrix)) == ncol(expMatrix), ]
 
 
     if (tf_re.merge) {
@@ -209,17 +209,23 @@ addWeights <- function(regulon,
   } else if (method == "logFC") {
 
 
-    output_df <- BiocParallel::bplapply(X = seq_len(length(regulon.split)),
+    output_df <- #BiocParallel::bp
+    lapply(X = seq_len(length(regulon.split)),
                                         FUN = compare_logFC_bp,
                                         regulon.split,
                                         expMatrix,
                                         tfMatrix,
-                                        peakMatrix,
-                                        BPPARAM = BPPARAM)
+                                        peakMatrix#,
+                                        #BPPARAM = BPPARAM
+           )
 
   } else if (method == "wilcoxon") {
     message("calculating rank...")
     tg_rank <- t(apply(expMatrix, 1, rank, ties.method = "average"))
+    tie <- apply(tg_rank, 1, function(x){
+      freq <- table(x)
+      sum((freq^3 - freq)/12)
+    })
     message("performing Mann-Whitney U-Test...")
     output_df <- BiocParallel::bplapply(X = seq_len(length(regulon.split)),
                                         FUN = compare_wilcox_bp,
@@ -228,8 +234,8 @@ addWeights <- function(regulon,
                                         tfMatrix,
                                         peakMatrix,
                                         tg_rank,
-                                        BPPARAM = BPPARAM
-           )
+                                        tie,
+                                        BPPARAM = BPPARAM)
 
 
 
@@ -328,6 +334,7 @@ use_lmfit_method <- function(n,
 }
 
 
+
 compare_logFC_bp <- function(n,
                              regulon.split,
                              expMatrix,
@@ -341,7 +348,8 @@ compare_logFC_bp <- function(n,
   group1 <- tf_reMatrix
   group0 <- (1-tf_reMatrix)
 
-  regulon.split[[n]]$weight <- Matrix::rowSums(expMatrix * group1) / Matrix::rowSums(group1) - Matrix::rowSums(expMatrix * group0) / Matrix::rowSums(group0)
+  regulon.split[[n]]$weight <- Matrix::rowSums(expMatrix * group1) / Matrix::rowSums(group1) -
+    Matrix::rowSums(expMatrix * group0) / Matrix::rowSums(group0)
 
   return(regulon.split[[n]])
 
@@ -353,13 +361,15 @@ compare_wilcox_bp <- function(n,
                               expMatrix,
                               tfMatrix,
                               peakMatrix,
-                              tg_rank){
+                              tg_rank,
+                              tie){
   expMatrix <- expMatrix[regulon.split[[n]]$target,,drop = FALSE]
   tf_reMatrix <- tfMatrix[regulon.split[[n]]$tf,,drop = FALSE] *
     peakMatrix[regulon.split[[n]]$idxATAC,,drop = FALSE]
 
   tg_rank <- tg_rank[regulon.split[[n]]$target,,drop = FALSE]
-  regulon.split[[n]]$weight <- wilcoxTest(tf_reMatrix, tg_rank)
+  tie <- tie[regulon.split[[n]]$target]
+  regulon.split[[n]]$weight <- wilcoxTest(tf_reMatrix, tg_rank, tie)
   return(regulon.split[[n]])
 }
 
@@ -381,7 +391,7 @@ compare_wilcox_bp <- function(n,
 #
 # wilcox_stats <- wilcox(tf_reMatrix, tg_rank)
 
-wilcoxTest <- function(tf_reMatrix, tg_rank) {
+wilcoxTest <- function(tf_reMatrix, tg_rank, tie) {
 
   n <- ncol(tf_reMatrix)
   n1 <- Matrix::rowSums(tf_reMatrix)
@@ -399,11 +409,6 @@ wilcoxTest <- function(tf_reMatrix, tg_rank) {
 
   mu <- n1*n2/2
 
-
-  tie <- apply(tg_rank, 1, function(x){
-    freq <- table(x)
-    sum((freq^3 - freq)/12)
-  })
 
   sigma <- sqrt(n1*n2/n/(n-1)) * sqrt((n^3-n)/12 - tie)
   stats <- (U-mu)/sigma * sign(U1-U2)
