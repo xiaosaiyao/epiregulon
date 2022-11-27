@@ -8,20 +8,16 @@ pruneRegulon(
   regulon,
   expMatrix = NULL,
   peakMatrix = NULL,
-  chromvarMatrix = NULL,
   exp_assay = "logcounts",
   peak_assay = "PeakMatrix",
-  chromvar_assay = NULL,
-  test = c("binom", "chi.sq"),
+  test = c("chi.sq", "binom"),
   clusters = NULL,
   exp_cutoff = 1,
   peak_cutoff = 0,
-  chromvar_cutoff = 0,
   regulon_cutoff = 0.05,
   p_adj = TRUE,
   prune_value = "pval",
   aggregate = FALSE,
-  downsize = FALSE,
   BPPARAM = BiocParallel::SerialParam(progressbar = TRUE)
 )
 }
@@ -36,14 +32,9 @@ genes in the rows and cells in the columns}
 \item{peakMatrix}{A SingleCellExperiment object or matrix containing peak accessibility with
 peaks in the rows and cells in the columns}
 
-\item{chromvarMatrix}{A SingleCellExperiment object or matrix containing averaged accessibility at the TF
-binding sites with tfs in the rows and cells in the columns. This can be used as an alternative to TF expression}
-
 \item{exp_assay}{String indicating the name of the assay in expMatrix for gene expression}
 
 \item{peak_assay}{String indicating the name of the assay in peakMatrix for chromatin accessibility}
-
-\item{chromvar_assay}{String indicating the name of the assay in chromvarMatrix for chromatin accessibility}
 
 \item{test}{String indicating whether \code{binom} or \code{chi.sq} test should be performed}
 
@@ -58,9 +49,6 @@ factors and target genes.}
 \item{peak_cutoff}{A scalar indicating the minimum peak accessibility above which peak is
 considered open. Default value is 0}
 
-\item{chromvar_cutoff}{A scalar indicating the minimum chromvar values for a tf to be
-considered active. Default value is 0}
-
 \item{regulon_cutoff}{A scalar indicating the maximal value for p-value for a tf-idxATAC-target trio
 to be retained in the pruned regulon.}
 
@@ -71,9 +59,6 @@ to be retained in the pruned regulon.}
 \item{aggregate}{A logical indicating whether to collapse the regulatory elements of the
 same genes and use them as a whole. Note that checking with the \code{peak_cutoff}
 is made before the collapse.}
-
-\item{downsize}{A logical specifying whether the cluster size is set to minimum
-value across all clusters}
 
 \item{BPPARAM}{A BiocParallelParam object specifying whether calculation should be parallelized.
 Default is set to BiocParallel::MulticoreParam()}
@@ -110,10 +95,6 @@ and the observed successes is the number of cells jointly expressing all three e
 In the chi-square test, the expected probability for having all 3 elements active is also P(TF, RE) * P(TG) and
 the probability otherwise is 1- P(TF, RE) * P(TG). The observed cell count for the active category is the number of cells
 jointly expressing all three elements, and the cell count for the inactive category is n - n_triple.
-
-When conducting cluster-specific pruning, we provide an option to normalize the cell number to the size of the smallest cluster.
-When \code{downsize} is set to \code{TRUE}, the sample size \code{n} is set to the size of the smallest cluster.
-The number of successes is scaled proportionally and rounded to integer.
 }
 \examples{
 # create a mock singleCellExperiment object for gene expMatrixession matrix
