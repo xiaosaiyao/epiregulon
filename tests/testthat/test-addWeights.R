@@ -19,6 +19,7 @@ tf_re <- tfMatrix * peakMatrix
 weights <- numeric(20)
 for(i in 1:20){
   weights[i] <- coin::wilcox_test(targetMatrix[i,]~factor(tf_re[i,], levels = c(1,0)))@statistic@teststatistic
+
 }
 
 
@@ -49,7 +50,7 @@ test_that("addWeights works correctly using 'logFC' method", {
                           method = "logFC",
                           peakMatrix = peakMatrix,
                           min_targets = 1)
-  expect_identical(regulon.w$weight, regulon$weight)
+  expect_identical(regulon.w$weight, regulon$weight, tolerance = 1e-3)
 })
 
 # prepare dataset for testing MI method
