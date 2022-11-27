@@ -91,12 +91,11 @@ addWeights <- function(regulon,
 
   # choose method
   method <- match.arg(method)
-  message("adding weights using ", method)
+  message("adding weights using ", method, "...")
 
   # extract matrices from SE
   if (checkmate::test_class(expMatrix,classes = "SummarizedExperiment")){
     expMatrix <- assay(expMatrix, exp_assay)
-    expMatrix <- as(expMatrix, "dgCMatrix")
   }
 
   if (checkmate::test_class(peakMatrix, classes = "SummarizedExperiment")){
@@ -184,21 +183,17 @@ addWeights <- function(regulon,
 
     n_pseudobulk <- length(unique(clusters))
 
-    if (n_pseudobulk < 5) {
-      stop("Too few clusters for mutual information calculation. Need at least 5 clusters")
+    output_df <- BiocParallel::bplapply(
+      X = seq_len(length(regulon.split)),
+      FUN = use_MI_method,
+      regulon.split,
+      expMatrix,
+      peakMatrix,
+      tf_re.merge,
+      n_pseudobulk,
+      BPPARAM = BPPARAM
+    )
 
-    } else{
-
-      output_df <- BiocParallel::bplapply(
-        X = seq_len(length(regulon.split)),
-        FUN = use_MI_method,
-        regulon.split,
-        expMatrix,
-        peakMatrix,
-        tf_re.merge,
-        n_pseudobulk,
-        BPPARAM = BPPARAM)
-    }
 
   } else if (method == "lmfit") {
 
@@ -223,15 +218,18 @@ addWeights <- function(regulon,
                                         BPPARAM = BPPARAM)
 
   } else if (method == "wilcoxon") {
-
-
+    message("calculating rank...")
+    tg_rank <- t(apply(expMatrix, 1, rank, ties.method = "average"))
+    message("performing Mann-Whitney U-Test...")
     output_df <- BiocParallel::bplapply(X = seq_len(length(regulon.split)),
                                         FUN = compare_wilcox_bp,
                                         regulon.split,
                                         expMatrix,
                                         tfMatrix,
                                         peakMatrix,
-                                        BPPARAM = BPPARAM)
+                                        tg_rank,
+                                        BPPARAM = BPPARAM
+           )
 
 
 
@@ -255,7 +253,7 @@ addWeights <- function(regulon,
   }
 
 
-  ## Aggregate by REs
+  ## Aggregate by REs to have only TF-TG weights
   regulon <- stats::aggregate(weight~tf+target, FUN = aggregation_function, na.rm = TRUE, data = output_df)
   regulon[order(regulon$tf),]
 
@@ -290,8 +288,7 @@ use_MI_method <- function(n,
                           expMatrix,
                           peakMatrix,
                           tf_re.merge,
-                          n_pseudobulk,
-                          BPPARAM = BPPARAM){
+                          n_pseudobulk){
 
   if (tf_re.merge){
     tf_re <- expMatrix[regulon.split[[n]]$tf, , drop = FALSE] * peakMatrix[regulon.split[[n]]$idxATAC, , drop = FALSE]
@@ -318,8 +315,7 @@ use_lmfit_method <- function(n,
                             regulon.split,
                             expMatrix,
                             peakMatrix,
-                            tf_re.merge,
-                            BPPARAM = BPPARAM){
+                            tf_re.merge){
 
   if (tf_re.merge){
     tf_re <- expMatrix[regulon.split[[n]]$tf, , drop = FALSE] * peakMatrix[regulon.split[[n]]$idxATAC, , drop = FALSE]
@@ -356,25 +352,63 @@ compare_wilcox_bp <- function(n,
                               regulon.split,
                               expMatrix,
                               tfMatrix,
-                              peakMatrix){
-
+                              peakMatrix,
+                              tg_rank){
   expMatrix <- expMatrix[regulon.split[[n]]$target,,drop = FALSE]
   tf_reMatrix <- tfMatrix[regulon.split[[n]]$tf,,drop = FALSE] *
     peakMatrix[regulon.split[[n]]$idxATAC,,drop = FALSE]
 
-  # assign weights to 0 if no cells pass cutoff
-  weights <- rep(0, nrow(tf_reMatrix))
-  tf_reMatrix_rowSums <- Matrix::rowSums(tf_reMatrix)
-
-  for (i in which(tf_reMatrix_rowSums > 0)){
-    groups <- factor(tf_reMatrix[i,], levels = c(1, 0))
-    weights[i] <- coin::wilcox_test(expMatrix[i,] ~ groups)@statistic@teststatistic
-  }
-
-  regulon.split[[n]]$weight <- weights
+  tg_rank <- tg_rank[regulon.split[[n]]$target,,drop = FALSE]
+  regulon.split[[n]]$weight <- wilcoxTest(tf_reMatrix, tg_rank)
   return(regulon.split[[n]])
 }
 
+# expMatrix <- scuttle::mockSCE()
+# expMatrix <- scuttle::logNormCounts(expMatrix)
+# expMatrix <- SingleCellExperiment::logcounts(expMatrix)
+# expMatrix <- as(expMatrix, "dgCMatrix")
+# tg_rank <- t(apply(expMatrix,1, rank, ties.method = "average"))
+#
+# regulon <- data.frame(tf = c(rep("Gene_0001",5), rep("Gene_0002",10)),
+#                       idxATAC = 1:15,
+#                       target = c(paste0("Gene_000",2:6), paste0("Gene_00",11:20)))
+# tg_rank <- tg_rank[regulon$target,]
+#
+# tf_reMatrix <- as(matrix(rbinom(15*200,1,0.1), 15,200),"dgCMatrix")
+# rownames(tf_reMatrix) <- rownames(tg_rank)
+# colnames(tf_reMatrix) <- rownames(colnames)
+#
+#
+# wilcox_stats <- wilcox(tf_reMatrix, tg_rank)
+
+wilcoxTest <- function(tf_reMatrix, tg_rank) {
+
+  n <- ncol(tf_reMatrix)
+  n1 <- Matrix::rowSums(tf_reMatrix)
+  n2 <- n - n1
+
+  T1 <- Matrix::rowSums(tg_rank * tf_reMatrix)
+  T2 <- Matrix::rowSums(tg_rank * (1-tf_reMatrix))
+
+  U1 <- n1*n2 + n1*(n1+1)/2 - T1
+  U2 <- n1*n2 + n2*(n2+1)/2 - T2
+
+
+  U <- cbind(U1, U2)
+  U <- apply(U, 1, min)
+
+  mu <- n1*n2/2
+
+
+  tie <- apply(tg_rank, 1, function(x){
+    freq <- table(x)
+    sum((freq^3 - freq)/12)
+  })
+
+  sigma <- sqrt(n1*n2/n/(n-1)) * sqrt((n^3-n)/12 - tie)
+  stats <- (U-mu)/sigma * sign(U1-U2)
+
+}
 
 
 
