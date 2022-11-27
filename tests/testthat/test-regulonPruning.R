@@ -8,7 +8,7 @@ geneM["A",][c(1:30)*3] <- 0
 geneM["B", c(6,10,19,20)] <- 1.5 # decrease p-val for A-2-B triplet, cluster 1
 geneM <- as(geneM, "sparseMatrix")
 
-peakM <- matrix(0, nrow = 4, ncol =100, dimnames = list(LETTERS[1:4], NULL))
+peakM <- matrix(0, nrow = 4, ncol = 100, dimnames = list(LETTERS[1:4], NULL))
 peakM[c(1,2),] <- rep(c(0,1), 50)
 peakM[3,] <- rep(c(1,0,0,0),25)
 peakM[2, 1:50] <- rep(c(0,1,1,0,1,1,0,0,0,0),5)
@@ -42,7 +42,7 @@ test_that("pruneRegulon calculates p-values with binomial test correctly", {
                             expMatrix = geneM,
                             peakMatrix = peakM,
                             regulon_cutoff = 2)
-  expect_identical(regulon.p$pval_all, pvals)
+  expect_identical(regulon.p$pval_all, pvals, tolerance = 1e-3)
 })
 
 pvals <- c()
@@ -58,7 +58,7 @@ test_that("pruneRegulon calculates p-values with chi-square test correctly", {
                             regulon_cutoff = 2,
                             test ="chi.sq")
 
-  expect_identical(regulon.p$pval_all, pvals[is.finite(pvals)])
+  expect_identical(na.omit(regulon.p$pval_all), pvals[is.finite(pvals)], tolerance = 1e-3)
 })
 
 # calculating results for the cluster 1
@@ -88,14 +88,14 @@ target_n_C2 <- Matrix::rowSums(target.b_C2)
 null_probs_C2 <- tf_re_n_C2*target_n_C2/50^2
 pvals_C2 <- c()
 for(i in 1:4){
-  pvals_C2[i]<-binom.test(triplet_n_C2[i], 50, null_probs_C2[i])$p.val
+  pvals_C2[i] <- binom.test(triplet_n_C2[i], 50, null_probs_C2[i])$p.val
 }
 
 test_that("pruneRegulon calculates cluster p-values with binomial test correctly", {
   regulon.p <- pruneRegulon(regulon = regulon, expMatrix = geneM, peakMatrix = peakM, regulon_cutoff = 2,
                             clusters = rep(c("C1", "C2"), each = 50))
-  expect_identical(regulon.p$pval_C1, pvals_C1)
-  expect_identical(regulon.p$pval_C2, pvals_C2)
+  expect_identical(regulon.p$pval_C1, pvals_C1, tolerance = 1e-3)
+  expect_identical(regulon.p$pval_C2, pvals_C2, tolerance = 1e-3)
 })
 
 pvals_C1 <- c()
@@ -124,17 +124,21 @@ test_that("pruneRegulon calculates cluster p-values with chi-square test correct
                             clusters = rep(c("C1", "C2"), each = 50),
                             test = "chi.sq")
   print(regulon.p)
-  expect_identical(regulon.p$pval_C1, pvals$C1)
-  expect_identical(regulon.p$pval_C2, pvals$C2)
+  expect_identical(regulon.p$pval_C1, pvals$C1, tolerance = 1e-3)
+  expect_identical(regulon.p$pval_C2, pvals$C2, tolerance = 1e-3)
 })
 
 selected_rows <- apply(pvals, 1, function(x) min(x, na.rm = TRUE)<0.05)
 pvals <- pvals[selected_rows,]
 
 test_that("pruneRegulon correctly applies 'regulon_cutoff'", {
-  regulon.p <- pruneRegulon(regulon = regulon, expMatrix = geneM, peakMatrix = peakM, regulon_cutoff = 0.05,
-                            clusters = rep(c("C1", "C2"), each = 50), test = "chi.sq")
+  regulon.p <- pruneRegulon(regulon = regulon,
+                            expMatrix = geneM,
+                            peakMatrix = peakM,
+                            regulon_cutoff = 0.05,
+                            clusters = rep(c("C1", "C2"), each = 50),
+                            test = "chi.sq")
   print(regulon.p)
-  expect_identical(regulon.p$pval_C1, pvals$C1)
-  expect_identical(regulon.p$pval_C2, pvals$C2)
+  expect_identical(regulon.p$pval_C1, pvals$C1, tolerance = 1e-3)
+  expect_identical(regulon.p$pval_C2, pvals$C2, tolerance = 1e-3)
 })
