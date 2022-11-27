@@ -179,8 +179,7 @@ calculateP2G <- function(peakMatrix = NULL,
                             as.data.frame(t(expCorMatrix)),
                             as.data.frame(t(peakCorMatrix)))
 
-    o$VarATAC <- matrixStats::rowVars(peakCorMatrix)
-    o$VarRNA <- matrixStats::rowVars(expCorMatrix)
+
     o$TStat <- (o$Correlation /
                   sqrt((pmax(1 - o$Correlation ^ 2, 0.00000000000000001, na.rm = TRUE))
                        / (ncol(peakCorMatrix) - 2))) #T-statistic P-value

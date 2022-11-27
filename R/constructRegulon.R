@@ -194,7 +194,6 @@ addTFMotifInfo <- function(p2g,
 #' @return A tall format dataframe consisting of tf(regulator), target and a column indicating degree of association between TF and target such as "mor" or "corr".
 #'           example regulon:
 #'           tf      target  corr
-#' @importFrom rlang .data
 #'
 #' @export
 #'
