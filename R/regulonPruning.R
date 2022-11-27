@@ -7,11 +7,8 @@
 #' genes in the rows and cells in the columns
 #' @param peakMatrix A SingleCellExperiment object or matrix containing peak accessibility with
 #' peaks in the rows and cells in the columns
-#' @param chromvarMatrix A SingleCellExperiment object or matrix containing averaged accessibility at the TF
-#' binding sites with tfs in the rows and cells in the columns. This can be used as an alternative to TF expression
 #' @param exp_assay String indicating the name of the assay in expMatrix for gene expression
 #' @param peak_assay String indicating the name of the assay in peakMatrix for chromatin accessibility
-#' @param chromvar_assay String indicating the name of the assay in chromvarMatrix for chromatin accessibility
 #' @param test String indicating whether `binom` or `chi.sq` test should be performed
 #' @param clusters A vector corresponding to the cluster labels of the cells if
 #' cluster-specific joint probabilities are also required. If left ```NULL```, joint probabilities
@@ -21,8 +18,6 @@
 #' factors and target genes.
 #' @param peak_cutoff A scalar indicating the minimum peak accessibility above which peak is
 #' considered open. Default value is 0
-#' @param chromvar_cutoff A scalar indicating the minimum chromvar values for a tf to be
-#' considered active. Default value is 0
 #' @param regulon_cutoff A scalar indicating the maximal value for p-value for a tf-idxATAC-target trio
 #' to be retained in the pruned regulon.
 #' @param p_adj A logical indicating whether p adjustment should be performed
@@ -100,15 +95,12 @@
 pruneRegulon <- function(regulon,
                          expMatrix = NULL,
                          peakMatrix = NULL,
-                         chromvarMatrix = NULL,
                          exp_assay = "logcounts",
                          peak_assay = "PeakMatrix",
-                         chromvar_assay = NULL,
                          test = c("chi.sq","binom"),
                          clusters = NULL,
                          exp_cutoff = 1,
                          peak_cutoff = 0,
-                         chromvar_cutoff = 0,
                          regulon_cutoff = 0.05,
                          p_adj = TRUE,
                          prune_value = "pval",
@@ -129,19 +121,22 @@ pruneRegulon <- function(regulon,
     peakMatrix <- assay(peakMatrix, peak_assay)
   }
 
-  if (!is.null (chromvar_assay)){
-    if (checkmate::test_class(chromvarMatrix,classes = "SummarizedExperiment")){
-      chromvarMatrix <- assay(chromvarMatrix, chromvar_assay)
-    }
-  }
-
-
+  expMatrix <- as(expMatrix, "dgCMatrix")
+  peakMatrix <- as(peakMatrix, "dgCMatrix")
 
   # clean up regulons by removing tf and targets not found in regulons
   regulon <- regulon[regulon$tf %in% rownames(expMatrix),]
   regulon <- regulon[regulon$target %in% rownames(expMatrix),]
   regulon <- regulon[order(regulon$tf),]
 
+  # remove genes not found in regulon
+  expMatrix <- expMatrix[which(rownames(expMatrix) %in% unique(c(regulon$tf, regulon$target))),]
+
+  # name peakMatrix
+  rownames(peakMatrix) <- seq_len(nrow(peakMatrix))
+
+  # remove peaks not found in regulon
+  peakMatrix <- peakMatrix[which(rownames(peakMatrix) %in% unique(regulon$idxATAC)),]
 
   # binarize peak and expression matrices according to cutoff
   message("binarizing matrices")
@@ -201,6 +196,7 @@ pruneRegulon <- function(regulon,
   # add p-value adjustment
 
   if (p_adj){
+    "performing multiple testing correction..."
     pval_columns <- grepl("pval_", colnames(regulon.combined))
     qvalue <- apply(regulon.combined[,pval_columns, drop = FALSE], 2,
                     function(x) {stats::p.adjust(x, method = "holm", n = nrow(regulon.combined))})
@@ -248,11 +244,11 @@ binarize_matrix <- function(matrix_obj, cutoff){
     matrix_obj
   } else {
     matrix_obj.bi.index <- Matrix::which(matrix_obj > cutoff, arr.ind = TRUE)
-    Matrix::sparseMatrix(x = rep(1, nrow(matrix_obj.bi.index)),
-                         i = matrix_obj.bi.index[,1],
-                         j =  matrix_obj.bi.index[,2],
-                         dims = dim(matrix_obj),
-                         dimnames = dimnames(matrix_obj))
+    matrix_obj <- Matrix::sparseMatrix(x = rep(1, nrow(matrix_obj.bi.index)),
+                                       i = matrix_obj.bi.index[,1],
+                                       j =  matrix_obj.bi.index[,2],
+                                       dims = dim(matrix_obj),
+                                       dimnames = dimnames(matrix_obj))
   }
 }
 
@@ -271,7 +267,7 @@ binom_bp <- function(n,
   has_tf <- tfMatrix.bi[regulon.split[[n]]$tf[1],] == 1
   expMatrix.bi <- expMatrix.bi[regulon.split[[n]]$target,, drop=FALSE]
   expMatrix.tf.bi <- expMatrix.bi[, has_tf, drop=FALSE]
-  peakMatrix.bi <- peakMatrix.bi[regulon.split[[n]]$idxATAC, has_tf, drop=FALSE]
+  peakMatrix.bi <- peakMatrix.bi[as.character(regulon.split[[n]]$idxATAC), has_tf, drop=FALSE]
 
   triple.bi <- peakMatrix.bi * expMatrix.tf.bi
   tf_re.bi <- peakMatrix.bi
@@ -344,7 +340,7 @@ chisq_bp <- function(n,
   has_tf <- tfMatrix.bi[regulon.split[[n]]$tf[1],] == 1
   expMatrix.bi <- expMatrix.bi[regulon.split[[n]]$target,, drop=FALSE]
   expMatrix.tf.bi <- expMatrix.bi[, has_tf, drop=FALSE]
-  peakMatrix.bi <- peakMatrix.bi[regulon.split[[n]]$idxATAC, has_tf, drop=FALSE]
+  peakMatrix.bi <- peakMatrix.bi[as.character(regulon.split[[n]]$idxATAC), has_tf, drop=FALSE]
 
   triple.bi <- peakMatrix.bi * expMatrix.tf.bi
   tf_re.bi <- peakMatrix.bi

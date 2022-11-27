@@ -102,6 +102,34 @@ addWeights <- function(regulon,
     peakMatrix <- assay(peakMatrix, peak_assay)
   }
 
+  expMatrix <- as(expMatrix, "dgCMatrix")
+
+  # order regulon
+  regulon <- regulon[order(regulon$tf),]
+
+  # remove tfs not found in expression matrix
+  regulon <- regulon[which(regulon$tf %in% rownames(expMatrix)),]
+
+  # remove targets not found in expression matrix
+  regulon <- regulon[which(regulon$target %in% rownames(expMatrix)),]
+
+  # remove tfs with less than min_targets
+  regulon <- regulon[regulon$tf %in% names(which(table(regulon$tf) >= min_targets)),]
+
+  # remove genes not found in regulon
+  expMatrix <- expMatrix[which(rownames(expMatrix) %in% unique(c(regulon$tf, regulon$target))),]
+
+  if (!is.null(peakMatrix)) {
+
+    peakMatrix <- as(peakMatrix, "dgCMatrix")
+
+    # name peakMatrix
+    rownames(peakMatrix) <- seq_len(nrow(peakMatrix))
+
+    # remove peaks not found in regulon
+    peakMatrix <- peakMatrix[which(rownames(peakMatrix) %in% unique(regulon$idxATAC)),]
+
+  }
 
 
   if (method %in% c("corr", "MI", "lmfit")){
@@ -147,21 +175,6 @@ addWeights <- function(regulon,
     peakMatrix <- binarize_matrix(peakMatrix, peak_cutoff)
     tfMatrix <- binarize_matrix(expMatrix, exp_cutoff)
   }
-
-  # order regulon
-
-
-  regulon <- regulon[order(regulon$tf),]
-
-  # remove tfs not found in expression matrix
-  regulon <- regulon[which(regulon$tf %in% rownames(expMatrix)),]
-
-  # remove targets not found in expression matrix
-  regulon <- regulon[which(regulon$target %in% rownames(expMatrix)),]
-
-  # remove tfs with less than min_targets
-  regulon <- regulon[regulon$tf %in% names(which(table(regulon$tf) >= min_targets)),]
-
 
 
   regulon.split <- split(regulon, regulon$tf)
@@ -209,14 +222,13 @@ addWeights <- function(regulon,
   } else if (method == "logFC") {
 
 
-    output_df <- #BiocParallel::bp
-    lapply(X = seq_len(length(regulon.split)),
+    output_df <- BiocParallel::bplapply(X = seq_len(length(regulon.split)),
                                         FUN = compare_logFC_bp,
                                         regulon.split,
                                         expMatrix,
                                         tfMatrix,
-                                        peakMatrix#,
-                                        #BPPARAM = BPPARAM
+                                        peakMatrix,
+                                        BPPARAM = BPPARAM
            )
 
   } else if (method == "wilcoxon") {
@@ -235,7 +247,8 @@ addWeights <- function(regulon,
                                         peakMatrix,
                                         tg_rank,
                                         tie,
-                                        BPPARAM = BPPARAM)
+                                        BPPARAM = BPPARAM
+           )
 
 
 
@@ -278,7 +291,7 @@ use_corr_method <- function(n,
                             BPPARAM = BPPARAM){
 
   if (tf_re.merge){
-    tf_re <- expMatrix[regulon.split[[n]]$tf, , drop = FALSE] * peakMatrix[regulon.split[[n]]$idxATAC, , drop = FALSE]
+    tf_re <- expMatrix[regulon.split[[n]]$tf, , drop = FALSE] * peakMatrix[as.character(regulon.split[[n]]$idxATAC), , drop = FALSE]
   } else {
     tf_re <- expMatrix[regulon.split[[n]]$tf, , drop = FALSE]
   }
@@ -297,7 +310,7 @@ use_MI_method <- function(n,
                           n_pseudobulk){
 
   if (tf_re.merge){
-    tf_re <- expMatrix[regulon.split[[n]]$tf, , drop = FALSE] * peakMatrix[regulon.split[[n]]$idxATAC, , drop = FALSE]
+    tf_re <- expMatrix[regulon.split[[n]]$tf, , drop = FALSE] * peakMatrix[as.character(regulon.split[[n]]$idxATAC), , drop = FALSE]
   } else {
     tf_re <- expMatrix[regulon.split[[n]]$tf, , drop = FALSE]
   }
@@ -324,7 +337,7 @@ use_lmfit_method <- function(n,
                             tf_re.merge){
 
   if (tf_re.merge){
-    tf_re <- expMatrix[regulon.split[[n]]$tf, , drop = FALSE] * peakMatrix[regulon.split[[n]]$idxATAC, , drop = FALSE]
+    tf_re <- expMatrix[regulon.split[[n]]$tf, , drop = FALSE] * peakMatrix[as.character(regulon.split[[n]]$idxATAC), , drop = FALSE]
   } else {
     tf_re <- expMatrix[regulon.split[[n]]$tf, , drop = FALSE]
   }
@@ -343,7 +356,7 @@ compare_logFC_bp <- function(n,
 
   expMatrix <- expMatrix[regulon.split[[n]]$target,,drop = FALSE]
   tf_reMatrix <- tfMatrix[regulon.split[[n]]$tf,,drop = FALSE] *
-    peakMatrix[regulon.split[[n]]$idxATAC,,drop = FALSE]
+    peakMatrix[as.character(regulon.split[[n]]$idxATAC),,drop = FALSE]
 
   group1 <- tf_reMatrix
   group0 <- (1-tf_reMatrix)
@@ -365,7 +378,7 @@ compare_wilcox_bp <- function(n,
                               tie){
   expMatrix <- expMatrix[regulon.split[[n]]$target,,drop = FALSE]
   tf_reMatrix <- tfMatrix[regulon.split[[n]]$tf,,drop = FALSE] *
-    peakMatrix[regulon.split[[n]]$idxATAC,,drop = FALSE]
+    peakMatrix[as.character(regulon.split[[n]]$idxATAC),,drop = FALSE]
 
   tg_rank <- tg_rank[regulon.split[[n]]$target,,drop = FALSE]
   tie <- tie[regulon.split[[n]]$target]
