@@ -72,90 +72,106 @@
 #' list.edge.attributes graph_from_adjacency_matrix get.adjacency list.vertex.attributes
 #' vertex_attr delete.edges delete_vertices
 #' @export
-buildGraph <-function(regulon, mode = "tripartite", weights = "corr",
-                       aggregation_function = mean){
-    stopifnot(mode %in% c("tg", "re", "tripartite", "pairs"))
+buildGraph <- function(regulon,
+                      mode = c("tripartite", "tg", "re", "pairs"),
+                      weights = "corr",
+                      aggregation_function = mean){
 
-    # give names to the peaks and target genes which will be easy to extract
-    regulon$idxATAC <- paste0(as.character(regulon$idxATAC), "_peak")
-    regulon$target <- paste0(regulon$target, "_gene")
+  mode <- match.arg(mode)
 
-    vertex_columns <- switch(mode,
-                             "re" = c("tf", "idxATAC"),
-                             "pairs" = c("tf", "idxATAC", "target"),
-                             "tripartite" = c("idxATAC", "target"),
-                             "tg" = c("tf", "target"))
+  regulon[,weights][is.na(regulon[,weights])] <- 0
 
-    graph_data <- regulon[,c(vertex_columns, weights)]
-    if (mode =="tripartite"){
-        # add tf-re data
-        colnames(graph_data) <- c("from", "to", weights)
-        graph_data_tf_re <- data.frame(from = regulon$tf, to = regulon$idxATAC)
-        if (!is.null(weights)) graph_data_tf_re[,weights] <- regulon[,weights]
-        graph_data <- rbind(graph_data, graph_data_tf_re)
-        rm(graph_data_tf_re)
-        vertex_columns <- c("from", "to")
+  # give names to the peaks and target genes which will be easy to extract
+  regulon$idxATAC <- paste0(as.character(regulon$idxATAC), "_peak")
+  regulon$target <- paste0(regulon$target, "_gene")
+
+  vertex_columns <- switch(mode,
+                           "re" = c("tf", "idxATAC"),
+                           "pairs" = c("tf", "idxATAC", "target"),
+                           "tripartite" = c("idxATAC", "target"),
+                           "tg" = c("tf", "target"))
+
+  graph_data <- regulon[,c(vertex_columns, weights)]
+  if (mode == "tripartite"){
+    # add tf-re data
+    colnames(graph_data) <- c("from", "to", weights)
+    graph_data_tf_re <- data.frame(from = regulon$tf,
+                                   to = regulon$idxATAC)
+    if (!is.null(weights)) {
+      graph_data_tf_re[,weights] <- regulon[,weights]
+      graph_data <- rbind(graph_data, graph_data_tf_re)
+      rm(graph_data_tf_re)
+      vertex_columns <- c("from", "to")
     }
-    if (mode == "pairs"){
-        # create node names corresponding to re-tg pairs
-        graph_data$target <- paste(graph_data$idxATAC, graph_data$target, sep ="@")
-        graph_data <- graph_data[, c("tf", "target", weights)]
-        vertex_columns <- c("tf", "target")
-    }
 
-    if (is.null(weights))
-        graph_data <- unique(graph_data)
-    else{
-        colnames(graph_data)[colnames(graph_data) == weights] <- "weight"
-        grouping_factors <- paste(vertex_columns, collapse="+")
-        aggregation_formula <- eval(parse(text=paste0("weight~", grouping_factors)))
-        graph_data <- stats::aggregate(graph_data, aggregation_formula, aggregation_function)
-    }
-    epiregulon_graph <- graph_from_data_frame(graph_data)
-    if (mode == "tripartite"){
-        layer_numb <- rep(1, vcount(epiregulon_graph))
-        layer_numb[grepl("_gene$", V(epiregulon_graph)$name)] <- 2
-        layer_numb[grepl("_peak$", V(epiregulon_graph)$name)] <- 3
-        V(epiregulon_graph)$layer <- layer_numb
-    }
-    # set 'type' attribute for vertices required by bipartite graphs
-    vertex_type <- rep("transcription factor", vcount(epiregulon_graph))
-    vertex_type[grepl("_peak$", V(epiregulon_graph)$name)] <- "regulatory element"
-    vertex_type[grepl("_gene$", V(epiregulon_graph)$name)] <- "target gene"
-    V(epiregulon_graph)$type <- vertex_type
-    # transform character constants to numeric values for later use by graphics functions
-    V(epiregulon_graph)$type.num <- match(V(epiregulon_graph)$type,
-                                                  c("transcription factor", "peak", "target gene"))
+  }
 
-    # restore original names
-    V(epiregulon_graph)$name <- gsub("_gene|_peak", "", V(epiregulon_graph)$name)
-    epiregulon_graph
+  if (mode == "pairs"){
+    # create node names corresponding to re-tg pairs
+    graph_data$target <- paste(graph_data$idxATAC, graph_data$target, sep ="@")
+    graph_data <- graph_data[, c("tf", "target", weights)]
+    vertex_columns <- c("tf", "target")
+  }
+
+  if (is.null(weights)) {
+    graph_data <- unique(graph_data)
+  } else{
+    colnames(graph_data)[colnames(graph_data) == weights] <- "weight"
+    grouping_factors <- paste(vertex_columns, collapse="+")
+    aggregation_formula <- eval(parse(text=paste0("weight~", grouping_factors)))
+    graph_data <- stats::aggregate(graph_data,
+                                   aggregation_formula,
+                                   aggregation_function,
+                                   na.rm = TRUE)
+  }
+
+  epiregulon_graph <- graph_from_data_frame(graph_data)
+  if (mode == "tripartite"){
+    layer_numb <- rep(1, vcount(epiregulon_graph))
+    layer_numb[grepl("_gene$", V(epiregulon_graph)$name)] <- 2
+    layer_numb[grepl("_peak$", V(epiregulon_graph)$name)] <- 3
+    V(epiregulon_graph)$layer <- layer_numb
+  }
+  # set 'type' attribute for vertices required by bipartite graphs
+  vertex_type <- rep("transcription factor", vcount(epiregulon_graph))
+  vertex_type[grepl("_peak$", V(epiregulon_graph)$name)] <- "regulatory element"
+  vertex_type[grepl("_gene$", V(epiregulon_graph)$name)] <- "target gene"
+  V(epiregulon_graph)$type <- vertex_type
+  # transform character constants to numeric values for later use by graphics functions
+  V(epiregulon_graph)$type.num <- match(V(epiregulon_graph)$type,
+                                        c("transcription factor", "peak", "target gene"))
+
+  # restore original names
+  V(epiregulon_graph)$name <- gsub("_gene|_peak", "", V(epiregulon_graph)$name)
+  epiregulon_graph
 }
 
 #' @rdname buildGraph
 #' @export
-buildDiffGraph <- function(graph_obj_1, graph_obj_2, weighted = TRUE,
-                                   abs_diff = TRUE){
-    checkmate::assertClass(graph_obj_1, "igraph")
-    checkmate::assertClass(graph_obj_2, "igraph")
-    if(!identical(V(graph_obj_1)$name, V(graph_obj_2)$name)) {
-        stop("The nodes should be the same in both graphs")}
-    transformation_function <- ifelse(abs_diff, abs, identity)
-    if(weighted) {
-        res <- graph_from_adjacency_matrix(transformation_function(get.adjacency(graph_obj_1, attr = "weight") -
-                                                 get.adjacency(graph_obj_2, attr = "weight")),
-                                           weighted = TRUE)
-        # remove zero-weight edges
-        res <- delete.edges(res, E(res)[E(res)$weight == 0])
-   } else {
-        res <- graph_from_adjacency_matrix(abs(get.adjacency(graph_obj_1) -
-                                                 get.adjacency(graph_obj_2)),
-                                           weighted = FALSE)
-    }
+buildDiffGraph <- function(graph_obj_1,
+                           graph_obj_2,
+                           weighted = TRUE,
+                           abs_diff = TRUE){
+  checkmate::assertClass(graph_obj_1, "igraph")
+  checkmate::assertClass(graph_obj_2, "igraph")
+  if(!identical(V(graph_obj_1)$name, V(graph_obj_2)$name)) {
+    stop("The nodes should be the same in both graphs")}
+  transformation_function <- ifelse(abs_diff, abs, identity)
+  if(weighted) {
+    res <- graph_from_adjacency_matrix(transformation_function(get.adjacency(graph_obj_1, attr = "weight") -
+                                                                 get.adjacency(graph_obj_2, attr = "weight")),
+                                       weighted = TRUE)
+    # remove zero-weight edges
+    res <- delete.edges(res, E(res)[E(res)$weight == 0])
+  } else {
+    res <- graph_from_adjacency_matrix(abs(get.adjacency(graph_obj_1) -
+                                             get.adjacency(graph_obj_2)),
+                                       weighted = FALSE)
+  }
 
-    if (!identical(igraph::V(graph_obj_1)$type, igraph::V(graph_obj_2)$type)) {
-        warning("Types of nodes differ between graphs. Only those from the first graph are used.")
-    }
+  if (!identical(igraph::V(graph_obj_1)$type, igraph::V(graph_obj_2)$type)) {
+    warning("Types of nodes differ between graphs. Only those from the first graph are used.")
+  }
   igraph::V(res)$type <- igraph::V(graph_obj_1)$type
   igraph::V(res)$type.num <- igraph::V(graph_obj_1)$type.num
 
