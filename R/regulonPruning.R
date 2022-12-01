@@ -317,7 +317,7 @@ binomTest <- function (k, size, p) {
   p.value <- rep_len(1, length(k))
   for (ip in unique(p)) {
       current <- p == ip
-      d <- stats::dbinom(0:size, prob = ip, size = size)
+      d <- binom_distribution(p = ip, n = size)
       o <- order(d)
       cumsump <- cumsum(d[o])[order(o)]
       p.value[current] <- cumsump[k[current] + 1]
@@ -325,6 +325,17 @@ binomTest <- function (k, size, p) {
   p.value
 }
 
+
+binom_distribution <- function(n,p){
+  res <- rep(0,n+1)
+  # minimum value of k for which probability is greater than 0
+  first_sig_k <- stats::qbinom(.Machine$double.xmin, size = n, prob = p)
+  # maximum value of k generating increase in density mass function
+  last_sig_k <- stats::qbinom(.Machine$double.xmin, size = n, prob = p, lower.tail = FALSE)
+  # skip calculation for k that give zero probability
+  res[(first_sig_k+1):(last_sig_k+1)] <- stats::dbinom(first_sig_k:last_sig_k, prob = p, size = n)
+  res
+}
 
 
 chisq_bp <- function(n,
