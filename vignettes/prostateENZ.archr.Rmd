@@ -19,6 +19,7 @@ vignette: >
 knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>",
+  warning = FALSE,
   eval = FALSE)
 ```
 
@@ -29,8 +30,9 @@ This tutorial walks through an example of TF activity inference in unpaired scAT
 
 Epiregulon is currently available on R/dev
 
-```{r, message=FALSE, results='hide'}
-library(epiregulon)
+```{r, results = "hide", warning = FALSE, message = FALSE, echo = FALSE}
+#library(epiregulon)
+devtools::load_all()
 library(ArchR, quietly = TRUE)
 ```
 
@@ -58,7 +60,7 @@ b. For multiome data, use addGeneExpressionMatrix. See [multiome](https://greenl
 Copy this ArchR project into your own directory
 ```{r, message = FALSE}
 archR_project_path <- "/gstore/project/lineage/prostate/GSE168667/OUTPUT/multiome/"
-proj <- loadArchRProject(path = archR_project_path, showLogo = F)
+proj <- loadArchRProject(path = archR_project_path, showLogo = FALSE)
 
 ```
 
@@ -70,7 +72,7 @@ getAvailableMatrices(proj)
 
 We will use the joint reducedDims - "LSI_Combined" and  joint embeddings - "UMAP_Combined"
 ```{r}
-head(getReducedDims(proj, reducedDims = "iLSI_Combined"))
+head(getReducedDims(proj, reducedDims = "iLSI_Combined")[,1:5])
 head(getEmbedding(proj, embedding = "UMAP_Combined"))
 
 ```
@@ -116,14 +118,20 @@ reducedDim(GeneExpressionMatrix, "UMAP_Combined") <- getEmbedding(ArchRProj = pr
                                                                   returnDF = TRUE)[colnames(GeneExpressionMatrix),]
 colData(GeneExpressionMatrix) <- getCellColData(proj)[colnames(GeneExpressionMatrix),]
 rownames(GeneExpressionMatrix) <- rowData(GeneExpressionMatrix)$name
+
+# add cell label
+GeneExpressionMatrix$label <- GeneExpressionMatrix$Cells
+GeneExpressionMatrix$label[GeneExpressionMatrix$Treatment == "enzalutamide 48h"] <- "LNCaP–ENZ48"
+GeneExpressionMatrix$label <- factor(GeneExpressionMatrix$label, 
+                                     levels = c("LNCaP", "LNCaP–ENZ48", "LNCaP RES-A", "LNCaP RES-B"))
 ```
 
 Visualize singleCellExperiment by UMAP
 ```{r}
 scater::plotReducedDim(GeneExpressionMatrix, 
                        dimred = "UMAP_Combined", 
-                       text_by = "Treatment", 
-                       colour_by = "Treatment")
+                       text_by = "label", 
+                       colour_by = "label")
 ```
 
 
@@ -147,7 +155,8 @@ to supply a path to an ArchR project already containing peak and gene matrices, 
 # path to ArchR project
 p2g <- calculateP2G(ArchR_path = archR_project_path, 
                     useDim = "iLSI_Combined", 
-                    useMatrix = "GeneIntegrationMatrix")
+                    useMatrix = "GeneIntegrationMatrix",
+                    threads = 1)
 head(p2g)
 ```
 
@@ -172,34 +181,86 @@ regulon <- getRegulon(p2g = p2g, overlap = overlap, aggregate = FALSE)
 head(regulon)
 ```
 
-```{r}
+```{r pruning,  results = "hide", warning = FALSE, message = FALSE, echo = FALSE}
 
 pruned.regulon <- pruneRegulon(expMatrix = GeneExpressionMatrix,
                                peakMatrix = PeakMatrix,
                                peak_assay = "counts",
-                               regulon = regulon[regulon$tf %in% c("AR","FOXA1"),],
+                               test = "chi.sq",
+                               regulon = regulon,
                                clusters = GeneExpressionMatrix$Sample,
                                prune_value = "pval",
                                regulon_cutoff = 0.05,
-                               BPPARAM = BiocParallel::MulticoreParam(progressbar = TRUE))
+                               BPPARAM = BiocParallel::MulticoreParam())
 ```
 
-Epiregulon computes weights using either correlation, linear regression, mutual information, log fold change or wilcoxon rank sum test. In this case, we chose logFC and set `tf_re.merge = TRUE` because the drug enzalutamide acts to alter chromatin accessibility of AR but less so AR expression.
+Epiregulon computes weights using either correlation, linear regression, mutual information, log fold change or wilcoxon rank sum test. The choice of methods depends on the datasets. Correlation works best when increased TF activity results from increased TF expression, such in the case of normal development. The user has a choice between computing the correlation of TF expression vs target gene expression by setting `method = "corr"`, or the product of TF expression and chromatin accessibility at TF-bound regulatory elements vs target gene expression  by setting `method = "corr"` and `"tf_re.merge = TRUE`. 
 
-```{r addWeights, results = "hide", warning=FALSE}
+In the case of drug treatment, however, the activity of TF is suppressed often not by downregulation of the TF gene expression, but by direct interference of the TF protein function. In this dataset, the drug enzalutamide blocks the ligand binding domain of the androgen receptor and prevents it from binding to the chromatin. As a result, while the AR gene expression stays the same, the chromatin accessibility of AR, as computed by chromVar in the ArchR package, is greatly reduced by 48 hour treatment of enzalutamide. 
 
-regulon.w <- addWeights(regulon = pruned.regulon,
+First, we visualize the AR expression and observed that enzalutamide did not decrease AR expression.
+
+```{r}
+
+plotActivityDim(sce = GeneExpressionMatrix,
+                activity_matrix = assay(GeneExpressionMatrix), 
+                tf = "AR", 
+                dimtype = "UMAP_Combined", 
+                label = "label", 
+                point_size = 1,
+                legend.label = "gene expression")
+
+```
+
+Then we extract the chromVarMatrix from ArchR project and then visualize the chromatin accessibility at AR bound sites. We can see that 48 hour of enzalutamide treatment reduced chromatin accessibility at AR bound sites
+
+```{r}
+chromVarMatrix <- getMatrixFromProject(
+    ArchRProj = proj,
+    useMatrix = "MotifMatrix",
+    useSeqnames = NULL,
+    verbose = TRUE,
+    binarize = FALSE,
+    threads = 1
+)
+
+plotActivityDim(sce = GeneExpressionMatrix,
+                activity_matrix = assay(chromVarMatrix, "z"), 
+                tf = "AR_689", 
+                dimtype = "UMAP_Combined", 
+                label = "label", 
+                point_size = 1,
+                legend.label = "chromVar")
+```
+
+
+Therefore, we consider the choice of the `wilcoxon` test which compare target gene expression in cells meeting both the TF expression and accessibility cutoffs vs cells failing either the TF expression or/and accessibility cutoffs. We also compare the output of `wilcoxon` vs `corr`.
+
+```{r addWeights, results = "hide"}
+
+regulon.w.wilcox <- addWeights(regulon = pruned.regulon,
                         expMatrix = GeneExpressionMatrix,
                         exp_assay = "logcounts",
                         peakMatrix = PeakMatrix,
                         peak_assay = "counts",
                         clusters = GeneExpressionMatrix$Sample,
-                        method = "logFC",
-                        tf_re.merge = TRUE,
-                        BPPARAM = BiocParallel::SerialParam(progressbar = TRUE))
-```
-```{r }
-head(regulon.w)
+                        method = "wilcoxon")
+regulon.w.corr <- addWeights(regulon = pruned.regulon,
+                        expMatrix = GeneExpressionMatrix,
+                        exp_assay = "logcounts",
+                        peakMatrix = PeakMatrix,
+                        peak_assay = "counts",
+                        clusters = GeneExpressionMatrix$Sample,
+                        method = "corr")
+
+regulon.w.corr.re <- addWeights(regulon = pruned.regulon,
+                        expMatrix = GeneExpressionMatrix,
+                        exp_assay = "logcounts",
+                        peakMatrix = PeakMatrix,
+                        peak_assay = "counts",
+                        clusters = GeneExpressionMatrix$Sample,
+                        method = "corr",
+                        tf_re.merge = TRUE)
 ```
 
 ## Calculate TF activity 
@@ -211,18 +272,46 @@ $n$ is the total number of targets for a TF
 $x_i$ is the log count expression of target i where i in {1,2,...,n}
 $weight_i$ is the weight of TF and target i
 
+We calculate three different activities corresponding to the different weighted regulons
+
 ```{r calculateActivity, results = "hide"}
-score.combine <- calculateActivity(expMatrix = GeneExpressionMatrix,
-                                   regulon = regulon.w,
+score.combine.wilcox <- calculateActivity(expMatrix = GeneExpressionMatrix,
+                                   regulon = regulon.w.wilcox,
+                                   normalize = TRUE,
+                                   mode = "weight",
+                                   method = "weightedMean")
+score.combine.corr <- calculateActivity(expMatrix = GeneExpressionMatrix,
+                                   regulon = regulon.w.corr,
+                                   normalize = TRUE,
+                                   mode = "weight",
+                                   method = "weightedMean")
+score.combine.corr.re <- calculateActivity(expMatrix = GeneExpressionMatrix,
+                                   regulon = regulon.w.corr.re,
                                    normalize = TRUE,
                                    mode = "weight",
                                    method = "weightedMean")
 ```
 
+We visualize the different activities side by side
+```{r}
+plotActivityViolin(activity_matrix = score.combine.wilcox, 
+                   tf = c( "AR"), 
+                   clusters = GeneExpressionMatrix$label) + ggtitle ("AR activity by wilcoxon")
+plotActivityViolin(activity_matrix = score.combine.corr, 
+                   tf = c( "AR"), 
+                   clusters = GeneExpressionMatrix$label) + ggtitle ("AR activity by corr TF vs TG")
+plotActivityViolin(activity_matrix = score.combine.corr.re, 
+                   tf = c( "AR"), 
+                   clusters = GeneExpressionMatrix$label) + ggtitle ("AR activity by corr TF*RE vs TG")
+```
+
+
+
+
 ## Perform differential activity
 ```{r differential}
-markers <- findDifferentialActivity(activity_matrix = score.combine, 
-                                    groups = GeneExpressionMatrix$Sample, 
+markers <- findDifferentialActivity(activity_matrix = score.combine.wilcox, 
+                                    groups = GeneExpressionMatrix$label, 
                                     pval.type = "some", 
                                     direction = "up", 
                                     test.type = "t")
@@ -230,39 +319,32 @@ markers <- findDifferentialActivity(activity_matrix = score.combine,
 
 Take the top TFs
 ```{r}
-markers.sig <- getSigGenes(markers, topgenes = 5 )
+markers.sig <- getSigGenes(markers, topgenes = 8 )
 ```
 ## Visualize the results
 
 First visualize the known differential TFs by bubble plot
 ```{r visualization}
-plotBubble(activity_matrix = score.combine, 
-           tf = c("AR","FOXA1"), 
-           clusters = GeneExpressionMatrix$Sample)
+plotBubble(activity_matrix = score.combine.wilcox, 
+           tf = c("AR","FOXA1", "MYC","JUN"), 
+           clusters = GeneExpressionMatrix$label)
 ```
 
 Then visualize the most differential TFs by clusters
 ```{r}
-plotBubble(activity_matrix = score.combine, 
+plotBubble(activity_matrix = score.combine.wilcox, 
            tf = markers.sig$tf, 
-           clusters = GeneExpressionMatrix$Sample)
-```
+           clusters = GeneExpressionMatrix$label)
 
-Visualize the known differential TFs by violin plot.
-
-```{r}
-plotActivityViolin(activity_matrix = score.combine, 
-                   tf = c( "AR", "FOXA1"), 
-                   clusters = GeneExpressionMatrix$Sample)
 ```
 
 Visualize the known differential TFs by UMAP
-```{r, fig.height = 8, fig.width = 12}
+```{r}
 plotActivityDim(sce = GeneExpressionMatrix,
-                activity_matrix = score.combine, 
-                tf = c( "AR", "FOXA1"), 
+                activity_matrix = score.combine.wilcox, 
+                tf = c( "AR", "FOXA1", "MYC", "JUN"), 
                 dimtype = "UMAP_Combined", 
-                label = "Sample", 
+                label = "label", 
                 point_size = 1, 
                 ncol = 2,
                 nrow = 2)
@@ -275,21 +357,24 @@ Sometimes we are interested to know what pathways are enriched in the regulon of
 
 ```{r enrichment, fig.height = 10, fig.width = 12}
 #retrieve genesets
-H <- EnrichmentBrowser::getGenesets(org = "hsa", db = "msigdb", cat = "H", gene.id.type = "SYMBOL" )
-C6 <- EnrichmentBrowser::getGenesets(org = "hsa", db = "msigdb", cat = "C6", gene.id.type = "SYMBOL" )
+H <- EnrichmentBrowser::getGenesets(org = "hsa", db = "msigdb", 
+                                    cat = "H", gene.id.type = "SYMBOL" )
+C6 <- EnrichmentBrowser::getGenesets(org = "hsa", db = "msigdb", 
+                                     cat = "C6", gene.id.type = "SYMBOL" )
 
 #combine genesets and convert genesets to be compatible with enricher
 gs <- c(H,C6)
-gs.list <- do.call(rbind,lapply(names(gs), function(x) {data.frame(gs=x, genes=gs[[x]])}))
+gs.list <- do.call(rbind,lapply(names(gs), 
+                                function(x) {data.frame(gs=x, genes=gs[[x]])}))
 
-enrichresults <- regulonEnrich(TF = c("AR","FOXA1"), 
-                               regulon = regulon.w, 
+enrichresults <- regulonEnrich(TF = c("AR", "FOXA1", "MYC", "JUN"), 
+                               regulon = regulon.w.wilcox, 
                                corr = "weight",
-                               corr_cutoff = 0.5, 
+                               corr_cutoff = 0.1, 
                                genesets = gs.list)
 
 #plot results
-enrichPlot(results = enrichresults)
+enrichPlot(results = enrichresults, ncol = 2)
 ```
 ## Network analysis
 
