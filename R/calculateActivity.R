@@ -6,7 +6,7 @@
 #' "logcounts" as the default
 #' @param regulon  A data frame consisting of tf (regulator) and target in the column names, with additional columns
 #' indicating degree of association between tf and target such as "mor" or "corr" obtained from `addWeights`.
-#' @param normalize Logical indicating whether row means should be substracted from expression matrix
+#' @param normalize Logical indicating whether row means should be subtracted from expression matrix. default is TRUE
 #' @param mode String indicating the name of column to be used as the weights
 #' @param method String indicating the method for calculating activity. Available methods are `weightedMean` or `aucell`
 #' @param ncore Integer specifying the number of cores to be used in AUCell
@@ -81,7 +81,7 @@ calculateActivity <- function (expMatrix = NULL,
 
   # convert genesets to regulon
   if (!is.null(genesets)){
-    if ( is.data.frame(genesets[[1]])) {
+    if ( is(genesets[[1]], "DFrame") | is(genesets[[1]], "data.frame")) {
       regulon <- do.call(rbind,lapply(names(genesets), function(x) {
         data.frame(tf = x, target = genesets[[x]][,1], weight = genesets[[x]][,2])}))
     } else if (is.vector(genesets[[1]])) {
