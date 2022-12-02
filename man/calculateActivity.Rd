@@ -26,7 +26,7 @@ Rownames (either gene symbols or geneID) must be consistent with the naming conv
 \item{regulon}{A data frame consisting of tf (regulator) and target in the column names, with additional columns
 indicating degree of association between tf and target such as "mor" or "corr" obtained from \code{addWeights}.}
 
-\item{normalize}{Logical indicating whether row means should be substracted from expression matrix}
+\item{normalize}{Logical indicating whether row means should be subtracted from expression matrix. default is TRUE}
 
 \item{mode}{String indicating the name of column to be used as the weights}
 
