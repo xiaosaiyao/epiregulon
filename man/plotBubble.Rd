@@ -4,7 +4,12 @@
 \alias{plotBubble}
 \title{Generate bubble plots of relative activities across cluster/group labels for a list of TFs}
 \usage{
-plotBubble(activity_matrix, tf, clusters, bubblesize = "FDR")
+plotBubble(
+  activity_matrix,
+  tf,
+  clusters,
+  bubblesize = c("FDR", "summary.logFC")
+)
 }
 \arguments{
 \item{activity_matrix}{A matrix of TF activities inferred from calculateActivity}
@@ -13,7 +18,8 @@ plotBubble(activity_matrix, tf, clusters, bubblesize = "FDR")
 
 \item{clusters}{A character or integer vector of cluster or group labels for single cells}
 
-\item{bubblesize}{String indicating the variable from findDifferentialActivity output to scale size of bubbles by. Default is FDR}
+\item{bubblesize}{String indicating the variable from findDifferentialActivity output to scale size of bubbles
+by either \code{FDR} or \code{summary.logFC}. Default is \code{FDR}.}
 }
 \value{
 A ggplot object

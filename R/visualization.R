@@ -14,7 +14,7 @@ plotActivityDim_ <- function(sce,
   sce$activity <- tf.activity
 
   g <- scater::plotReducedDim(sce, dimred = dimtype, colour_by="activity",
-                                text_by = label,...)
+                              text_by = label,...)
 
   g <- g + scale_color_gradient(low = colors[1], high = colors[2], limit = limit, oob=scales::squish) + ggtitle(tf) +
     labs(color=legend.label) +
@@ -191,7 +191,8 @@ plotActivityViolin <- function(activity_matrix,
 #' @param activity_matrix A matrix of TF activities inferred from calculateActivity
 #' @param tf A character vector indicating the names of the transcription factors to be plotted
 #' @param clusters A character or integer vector of cluster or group labels for single cells
-#' @param bubblesize String indicating the variable from findDifferentialActivity output to scale size of bubbles by. Default is FDR
+#' @param bubblesize String indicating the variable from findDifferentialActivity output to scale size of bubbles
+#' by either `FDR` or `summary.logFC`. Default is `FDR`.
 #'
 #' @return A ggplot object
 #' @export
@@ -207,7 +208,10 @@ plotActivityViolin <- function(activity_matrix,
 plotBubble <- function (activity_matrix,
                         tf,
                         clusters,
-                        bubblesize = "FDR"){
+                        bubblesize = c("FDR","summary.logFC")){
+
+  bubblesize <- match.arg(bubblesize)
+
   # give warning for genes absent in tf list
   missing <- tf[which(! tf %in% rownames(activity_matrix))]
   if (!identical(missing, character(0))) {
@@ -223,6 +227,9 @@ plotBubble <- function (activity_matrix,
   markers <- markers[which(markers$tf %in% tf), ]
   levels <- make.names(unique(tf[tf %in% markers$tf]))
   markers$tf <- make.names(markers$tf)
+  #rename markers
+  colnames(markers)[colnames(markers) == "class"] <- "clusters"
+
 
   # z normalize activity and compute mean by cluster
   tf.activity <- activity_matrix[tf, ,drop=FALSE]
@@ -233,7 +240,7 @@ plotBubble <- function (activity_matrix,
   df.plot <- suppressMessages(reshape2::melt(df.mean, id.variable="clusters", variable.name = "tf", value.name = "relative_activity"))
 
   # merge logFC, FDR and mean activity
-  df.plot <- merge(df.plot, markers)
+  df.plot <- merge(df.plot, markers, by = c("tf","clusters"))
   df.plot$tf <- factor(as.character(df.plot$tf), levels = levels )
 
   # generate bubble plots
@@ -241,17 +248,21 @@ plotBubble <- function (activity_matrix,
     logpval <- -log10(df.plot$FDR)
     max.logpval <- max(logpval[is.finite(logpval)])
     logpval <- replace(logpval, is.infinite(logpval), max.logpval)
-    g <- ggplot2::ggplot(df.plot, aes_string("clusters", "tf",
-                                             color = "relative_activity")) +
-      geom_point(stat = "identity", aes(size = logpval)) +
+    g <- ggplot2::ggplot(df.plot,
+                         aes_string("clusters", "tf", color = "relative_activity")) +
+      geom_point(stat = "identity", aes_string(size = "logpval")) +
       scale_color_viridis_c() +
-      scale_size_continuous(range = c(0, 7)) + theme_classic(base_size = 12) +
+      scale_size_continuous(range = c(0, 7)) +
+      theme_classic(base_size = 12) +
       theme(axis.text.x = element_text(angle = 45, hjust = 1))
   }
   else if (bubblesize == "summary.logFC") {
-    g <- ggplot2::ggplot(df.plot, aes_string("clusters", "tf",
-                                             color = "relative_activity")) + geom_point() + scale_color_viridis_c() +
-      scale_size_continuous(range = c(0, 7)) + theme_classic(base_size = 12) +
+    g <- ggplot2::ggplot(df.plot,
+                         aes_string("clusters", "tf", color = "relative_activity")) +
+      geom_point(stat = "identity", aes_string(size = "summary.logFC")) +
+      scale_color_viridis_c() +
+      scale_size_continuous(range = c(0, 7)) +
+      theme_classic(base_size = 12) +
       theme(axis.text.x = element_text(angle = 45, hjust = 1))
   }
   return(g)
@@ -263,8 +274,8 @@ enrichPlot_ <- function(results,
                         top) {
   results$logP.adj <- -log10(results$p.adjust)
   ggplot(results[seq_len(top), ] , aes_string(y = "logP.adj",
-                                       x = "Description",
-                                       color = "GeneRatio")) +
+                                              x = "Description",
+                                              color = "GeneRatio")) +
     scale_colour_gradient(high = "red", low = "blue") +
     geom_point(stat = 'identity', aes_string(size = "Odds.Ratio")) +
     coord_flip() +
