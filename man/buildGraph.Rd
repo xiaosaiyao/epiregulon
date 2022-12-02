@@ -10,7 +10,7 @@
 \usage{
 buildGraph(
   regulon,
-  mode = "tripartite",
+  mode = c("tripartite", "tg", "re", "pairs"),
   weights = "corr",
   aggregation_function = mean
 )
