@@ -87,7 +87,7 @@
 #' pruned.regulon <- pruneRegulon(expMatrix = gene_sce,
 #' exp_assay = "logcounts", peakMatrix = peak_sce, peak_assay = "counts",
 #' regulon = regulon, clusters = gene_sce$Treatment, aggregate = FALSE, regulon_cutoff = 0.5)
-
+#' @useDynLib epiregulon
 #'
 #' @author Xiaosai Yao, Tomasz Wlodarczyk
 
@@ -317,7 +317,7 @@ binomTest <- function (k, size, p) {
   p.value <- rep_len(1, length(k))
   for (ip in unique(p)) {
       current <- p == ip
-      d <- binom_distribution(p = ip, n = size)
+      d <- binom_distribution(n = size, p = ip)
       o <- order(d)
       cumsump <- cumsum(d[o])[order(o)]
       p.value[current] <- cumsump[k[current] + 1]
@@ -325,18 +325,23 @@ binomTest <- function (k, size, p) {
   p.value
 }
 
-
-binom_distribution <- function(n,p){
-  res <- rep(0,n+1)
-  # minimum value of k for which probability is greater than 0
-  first_sig_k <- stats::qbinom(.Machine$double.xmin, size = n, prob = p)
-  # maximum value of k generating increase in density mass function
-  last_sig_k <- stats::qbinom(.Machine$double.xmin, size = n, prob = p, lower.tail = FALSE)
-  # skip calculation for k that give zero probability
-  res[(first_sig_k+1):(last_sig_k+1)] <- stats::dbinom(first_sig_k:last_sig_k, prob = p, size = n)
-  res
+binom_distribution <- function(n, p){
+  # calculate argmax(binom_probability)
+  start_k <- as.integer(round(p*n))
+  # calculate the highest probability
+  start_dbinom <- stats::dbinom(start_k, n, p)
+  # fill distribution going to the left end
+  to_start_res <- to_start(start_dbinom, n, start_k, p)
+  # fill distribution going to the right end
+  to_end_res <- to_end(start_dbinom, n, start_k, p)
+  c(rev(to_start_res), to_end_res[2:length(to_end_res)])
 }
 
+to_start <- function(start_dbinom, n, start_k, p)
+  .Call("to_start", start_dbinom, n, start_k, p)
+
+to_end <- function(start_dbinom, n, start_k, p)
+  .Call("to_end", start_dbinom, n, start_k, p)
 
 chisq_bp <- function(n,
                      regulon.split,
