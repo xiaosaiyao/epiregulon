@@ -224,7 +224,7 @@ plotActivityDim(sce = sce,
                 activity_matrix = score.combine, 
                 tf = c("FOXA1","GATA3","SOX9", "SPI1"), 
                 dimtype = "TSNE", 
-                combine = T)
+                combine = TRUE)
 ```
 
 Violin plots:
