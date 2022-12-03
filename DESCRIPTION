@@ -1,4 +1,5 @@
 Package: epiregulon
+Type: Package
 Title: Gene regulatory network inference from single cell epigenomic data
 Version: 1.0.21
 Date: 2022-12-2
