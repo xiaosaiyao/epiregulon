@@ -1,6 +1,8 @@
 #include <R.h>
 #include <Rdefines.h>
 #include <stdio.h>
+#include <R_ext/Rdynload.h>
+
 
 SEXP to_start(SEXP start_val, SEXP n, SEXP start_k, SEXP prob){
   int k_st, N, k;
@@ -43,4 +45,17 @@ SEXP to_end(SEXP start_val, SEXP n, SEXP start_k, SEXP prob){
     }
     UNPROTECT(1);
     return(vec);
+  }
+
+static const R_CallMethodDef callMethods[]  = {
+  {"to_start", (DL_FUNC) &to_start, 4},
+  {"to_end", (DL_FUNC) &to_end, 4},
+  {NULL, NULL, 0}
+};
+
+void
+  R_init_binom(DllInfo *info)
+  {
+    R_registerRoutines(info, NULL, callMethods, NULL, NULL);
+    R_useDynamicSymbols(info, FALSE);
   }
