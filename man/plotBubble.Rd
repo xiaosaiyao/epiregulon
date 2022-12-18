@@ -8,7 +8,12 @@ plotBubble(
   activity_matrix,
   tf,
   clusters,
-  bubblesize = c("FDR", "summary.logFC")
+  bubblesize = c("FDR", "summary.logFC"),
+  color.theme = "viridis",
+  legend.label = "relative_activity",
+  x.label = "transcription factors",
+  y.label = "clusters",
+  title = "TF activity"
 )
 }
 \arguments{
@@ -20,6 +25,17 @@ plotBubble(
 
 \item{bubblesize}{String indicating the variable from findDifferentialActivity output to scale size of bubbles
 by either \code{FDR} or \code{summary.logFC}. Default is \code{FDR}.}
+
+\item{color.theme}{String indicating the color theme used for the bubble plot and corresponding to the color options
+in \code{scale_color_viridis_c}}
+
+\item{legend.label}{String indicating the name of legend corresponding to the color scale}
+
+\item{x.label}{String indicating the x axis label}
+
+\item{y.label}{String indicating the y axis label}
+
+\item{title}{String indicating the title of the plot}
 }
 \value{
 A ggplot object

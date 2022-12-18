@@ -9,9 +9,13 @@ plotActivityViolin(
   tf,
   clusters,
   ncol = NULL,
+  nrow = NULL,
   combine = TRUE,
   legend.label = "activity",
-  colors = NULL
+  colors = NULL,
+  title = NULL,
+  text_size = 10,
+  facet_grid_variable = NULL
 )
 }
 \arguments{
@@ -21,16 +25,24 @@ plotActivityViolin(
 
 \item{clusters}{A vector of cluster or group labels for single cells}
 
-\item{ncol}{A integer to indicate the number of columns in the combined plot, if combine == TRUE}
+\item{ncol}{A integer to indicate the number of columns in the combined plot, if \code{combine = TRUE}}
+
+\item{nrow}{A integer to indicate the number of rows in the combined plot, if \code{combine = TRUE}}
 
 \item{combine}{logical to indicate whether to combine and visualize the plots in one panel}
 
 \item{legend.label}{String indicating the name of variable to be plotted on the legend}
 
 \item{colors}{A character vector representing the names of colors}
+
+\item{title}{String indicating the title of the plot if \code{combine = TRUE}}
+
+\item{text_size}{Scalar indicating the font size of the title}
+
+\item{facet_grid_variable}{A character vector of a secondary label to split the plots by facet_grid}
 }
 \value{
-A combined ggplot object or a list of ggplots if combine == FALSE
+A combined ggplot object or a list of ggplots if \code{combine = FALSE}
 }
 \description{
 Generate violin plots of inferred activities for a list of TFs grouped by cluster/group labels
