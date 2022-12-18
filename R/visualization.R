@@ -107,10 +107,19 @@ plotActivityViolin_ <- function(activity_matrix,
                                 tf,
                                 clusters,
                                 legend.label,
-                                colors){
+                                colors,
+                                text_size,
+                                facet_grid_variable){
 
   tf.activity <- as.numeric(activity_matrix[tf,])
-  df <- data.frame(activity = tf.activity, clusters = clusters)
+
+  df <- data.frame(activity = tf.activity,
+                   clusters = clusters)
+
+  if (!is.null(facet_grid_variable)){
+    df$facet <- facet_grid_variable
+  }
+
 
   g <- ggplot2::ggplot(df, aes_string(x = "clusters",
                                       y = "activity",
@@ -120,12 +129,16 @@ plotActivityViolin_ <- function(activity_matrix,
     ggtitle(tf) + ylab(legend.label) +
     theme(legend.position = "none",
           plot.title = element_text(hjust = 0.5),
-          axis.text.x = element_text(angle = 45,hjust = 1))
+          axis.text.x = element_text(angle = 90, hjust = 1))
 
   if (!is.null(colors)){
     g <- g +  scale_fill_manual(values = colors)
   }
 
+  if (!is.null(facet_grid_variable)){
+    g <- g +  facet_grid(stats::reformulate("facet","."), scales = "free", space = "free")
+  }
+  g <- g +   theme(text = element_text(size = text_size))
   return(g)
 
 }
@@ -135,12 +148,16 @@ plotActivityViolin_ <- function(activity_matrix,
 #' @param activity_matrix A matrix of TF activities inferred from calculateActivity
 #' @param tf A character vector indicating the names of the transcription factors to be plotted
 #' @param clusters A vector of cluster or group labels for single cells
-#' @param ncol A integer to indicate the number of columns in the combined plot, if combine == TRUE
+#' @param ncol A integer to indicate the number of columns in the combined plot, if `combine = TRUE`
+#' @param nrow A integer to indicate the number of rows in the combined plot, if `combine = TRUE`
 #' @param combine logical to indicate whether to combine and visualize the plots in one panel
 #' @param legend.label String indicating the name of variable to be plotted on the legend
 #' @param colors  A character vector representing the names of colors
+#' @param title String indicating the title of the plot if `combine = TRUE`
+#' @param text_size Scalar indicating the font size of the title
+#' @param facet_grid_variable  A character vector of a secondary label to split the plots by facet_grid
 #'
-#' @return A combined ggplot object or a list of ggplots if combine == FALSE
+#' @return A combined ggplot object or a list of ggplots if `combine = FALSE`
 #' @export
 #' @import ggplot2
 #'
@@ -157,24 +174,30 @@ plotActivityViolin <- function(activity_matrix,
                                tf,
                                clusters,
                                ncol = NULL,
+                               nrow = NULL,
                                combine = TRUE,
                                legend.label = "activity",
-                               colors = NULL){
+                               colors = NULL,
+                               title = NULL,
+                               text_size = 10,
+                               facet_grid_variable = NULL){
 
   # give warning for genes absent in tf list
   missing <- tf[which(! tf %in% rownames(activity_matrix))]
   if (!identical(missing, character(0))) {
-    writeLines(paste0(missing, " not found in activity matrix. Excluded from plots"))
+    message(missing, " not found in activity matrix. Excluded from plots")
   }
   tf <- tf[which(tf %in% rownames(activity_matrix))]
 
   gs <- lapply(tf, function(x) {
-    return(plotActivityViolin_(activity_matrix, x, clusters, legend.label, colors))
+    return(plotActivityViolin_(activity_matrix, x, clusters, legend.label, colors, text_size, facet_grid_variable))
   })
 
   if (combine == TRUE) {
 
-    gs <- patchwork::wrap_plots(gs, ncol = ncol)
+    gs <- patchwork::wrap_plots(gs, ncol = ncol, nrow=nrow) +
+      patchwork::plot_annotation(title = title,
+                                 theme = theme(plot.title = element_text(hjust = 0.5)))
 
     return(gs)
 
@@ -193,6 +216,12 @@ plotActivityViolin <- function(activity_matrix,
 #' @param clusters A character or integer vector of cluster or group labels for single cells
 #' @param bubblesize String indicating the variable from findDifferentialActivity output to scale size of bubbles
 #' by either `FDR` or `summary.logFC`. Default is `FDR`.
+#' @param color.theme String indicating the color theme used for the bubble plot and corresponding to the color options
+#' in `scale_color_viridis_c`
+#' @param legend.label String indicating the name of legend corresponding to the color scale
+#' @param x.label String indicating the x axis label
+#' @param y.label String indicating the y axis label
+#' @param title String indicating the title of the plot
 #'
 #' @return A ggplot object
 #' @export
@@ -208,14 +237,19 @@ plotActivityViolin <- function(activity_matrix,
 plotBubble <- function (activity_matrix,
                         tf,
                         clusters,
-                        bubblesize = c("FDR","summary.logFC")){
+                        bubblesize = c("FDR","summary.logFC"),
+                        color.theme = "viridis",
+                        legend.label = "relative_activity",
+                        x.label = "transcription factors",
+                        y.label = "clusters",
+                        title = "TF activity"){
 
   bubblesize <- match.arg(bubblesize)
 
   # give warning for genes absent in tf list
   missing <- tf[which(! tf %in% rownames(activity_matrix))]
   if (!identical(missing, character(0))) {
-    writeLines(paste0(missing, " not found in activity matrix. Excluded from plots"))
+    message(missing, " not found in activity matrix. Excluded from plots")
   }
   tf <- tf[which(tf %in% rownames(activity_matrix))]
 
@@ -251,19 +285,25 @@ plotBubble <- function (activity_matrix,
     g <- ggplot2::ggplot(df.plot,
                          aes_string("clusters", "tf", color = "relative_activity")) +
       geom_point(stat = "identity", aes_string(size = "logpval")) +
-      scale_color_viridis_c() +
+      scale_color_viridis_c(option = color.theme) +
       scale_size_continuous(range = c(0, 7)) +
       theme_classic(base_size = 12) +
-      theme(axis.text.x = element_text(angle = 45, hjust = 1))
+      theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+      labs(color = legend.label)  + ylab(y.label) + xlab(x.label) +
+      ylab(y.label) + xlab(x.label) +
+      ggtitle(title)
   }
   else if (bubblesize == "summary.logFC") {
     g <- ggplot2::ggplot(df.plot,
                          aes_string("clusters", "tf", color = "relative_activity")) +
       geom_point(stat = "identity", aes_string(size = "summary.logFC")) +
-      scale_color_viridis_c() +
+      scale_color_viridis_c(option = color.theme) +
       scale_size_continuous(range = c(0, 7)) +
       theme_classic(base_size = 12) +
-      theme(axis.text.x = element_text(angle = 45, hjust = 1))
+      theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+      labs(color = legend.label) +
+      ylab(y.label) + xlab(x.label) +
+      ggtitle(title)
   }
   return(g)
 }
@@ -349,3 +389,179 @@ enrichPlot <- function(results,
   }
 
 }
+
+
+
+#' Plot targets genes of transcription factors in regulons
+#'
+#' @param sce A SingleCellExperiment object containing information of cell attributes
+#' @param tfs A character vector indicating the names of the transcription factors to be plotted
+#' @param regulon A dataframe of regulons containing `tf`, `targets` and a column for filtering the regulons
+#' @param regulon_column String indicating the column names to be used for filtering regulons
+#' @param regulon_cutoff A scalar indicating the minimal value to retain the regulons for plotting
+#' @param downsample Integer indicating the number of cells to sample from the matrix
+#' @param scale Logical indicating whether to scale the heatmap
+#' @param center Logical indicating whether to center the heatmap
+#' @param color_breaks 	A vector indicating numeric breaks as input to `circlize::colorRamp2`
+#' @param colors A vector of colors corresponding to values in `breaks` as input to `circlize::colorRamp2`
+#' @param cell_attributes A character vector matching the column names of `colData(sce)` to be used for plotting
+#' @param col_gap String indicating the cell attribute to split the columns of the heatmap by
+#' @param exprs_values A string specifying which assay in `assays(object)` to obtain expression values from
+#' @param use_raster Logical indicating whether to use rasterization to reduce image size
+#' @param raster_quality Integer indicating the raster quality. The higher the value, the better the resolution
+#' @param cluster_rows Logical indicating whether to cluster rows
+#' @param cluster_columns Logical indicating whether to cluster columns
+#' @param border Logical indicating whether to add border around heatmap
+#' @param show_column_names Logical indicating whether to show column names
+#' @param ... other arguments for `ComplexHeatmap::Heatmap`
+#' @return A Heatmap-class object.
+#' @export
+#' @examples
+#' example_sce <- scuttle::mockSCE()
+#' example_sce <- scuttle::logNormCounts(example_sce)
+#' example_sce$cluster <- sample(LETTERS[1:5], ncol(example_sce), replace = TRUE)
+#' regulon <- data.frame(tf=c(rep("Gene_0001",10),rep("Gene_0002",20)),
+#' target = sample(rownames(example_sce),30), weight = rnorm(30))
+#' plotHeatmapRegulon(example_sce, tfs=c("Gene_0001","Gene_0002"), regulon=regulon,
+#' cell_attributes="cluster", col_gap = "cluster")
+#' @author Xiaosai Yao
+
+plotHeatmapRegulon <- function(sce,
+                               tfs,
+                               regulon,
+                               regulon_column="weight",
+                               regulon_cutoff=0.1,
+                               downsample=1000,
+                               scale=TRUE,
+                               center=TRUE,
+                               color_breaks=c(-2,0,2),
+                               colors=c("blue", "white", "red"),
+                               cell_attributes=NULL,
+                               col_gap=NULL,
+                               exprs_values="logcounts",
+                               use_raster=TRUE,
+                               raster_quality=10,
+                               cluster_rows=FALSE,
+                               cluster_columns=FALSE,
+                               border = TRUE,
+                               show_column_names=FALSE,
+                               ...) {
+
+  downsample_seq <- seq(from=1, to=ncol(sce), by=floor(max(1, ncol(sce)/downsample)))
+  regulon <- regulon[regulon$tf %in% tfs & regulon[,regulon_column] > regulon_cutoff,]
+  regulon <- regulon[order(regulon$tf),]
+  targets <- regulon$target
+
+  sce <- sce[targets, downsample_seq]
+
+  right_annotation <- data.frame(tf=regulon$tf)
+  top_annotation <- data.frame(colData(sce)[cell_attributes])
+
+  if (!is.null(col_gap)) {
+    column_split <- top_annotation[col_gap]
+  } else {
+    column_split <- NULL
+  }
+
+
+
+  mat <- as.matrix(assay(sce, exprs_values))
+  mat <- t(scale(t(mat), scale=scale, center=center))
+
+  col_fun <- circlize::colorRamp2(color_breaks, colors)
+
+  ComplexHeatmap::Heatmap(mat,
+                          col = col_fun,
+                          top_annotation=HeatmapAnnotation(df=top_annotation),
+                          right_annotation=rowAnnotation(df=right_annotation),
+                          row_split=right_annotation,
+                          column_split= column_split,
+                          use_raster=use_raster,
+                          raster_quality=raster_quality,
+                          cluster_rows=cluster_rows,
+                          cluster_columns=cluster_columns,
+                          border = border,
+                          show_column_names=show_column_names,
+                          ...)
+}
+
+
+#' Plot transcription factor activity
+#'
+#' @param activity_matrix A SingleCellExperiment object containing information of cell attributes
+#' @param sce A SingleCellExperiment object containing information of cell attributes
+#' @param tfs A character vector indicating the names of the transcription factors to be plotted
+#' @param downsample Integer indicating the number of cells to sample from the matrix
+#' @param scale Logical indicating whether to scale the heatmap
+#' @param center Logical indicating whether to center the heatmap
+#' @param color_breaks 	A vector indicating numeric breaks as input to `circlize::colorRamp2`
+#' @param colors A vector of colors corresponding to values in `breaks` as input to `circlize::colorRamp2`
+#' @param cell_attributes A character vector matching the column names of `colData(sce)` to be used for plotting
+#' @param col_gap String indicating the cell attribute to split the columns of the heatmap by
+#' @param use_raster Logical indicating whether to use rasterization to reduce image size
+#' @param raster_quality Integer indicating the raster quality. The higher the value, the better the resolution
+#' @param cluster_rows Logical indicating whether to cluster rows
+#' @param cluster_columns Logical indicating whether to cluster columns
+#' @param border Logical indicating whether to add border around heatmap
+#' @param show_column_names Logical indicating whether to show column names
+#' @param ... other arguments for `ComplexHeatmap::Heatmap`
+#' @return A Heatmap-class object.
+#' @export
+#' @examples
+#' example_sce <- scuttle::mockSCE()
+#' example_sce <- scuttle::logNormCounts(example_sce)
+#' example_sce$cluster <- sample(LETTERS[1:5], ncol(example_sce), replace = TRUE)
+#' activity_matrix <- matrix(rnorm(10*200), nrow=10, ncol=200)
+#' rownames(activity_matrix) <- sample(rownames(example_sce),10)
+#' plotHeatmapActivity(activity_matrix=activity_matrix, sce=example_sce,
+#' tfs=rownames(activity_matrix), cell_attributes="cluster", col_gap="cluster")
+#' @author Xiaosai Yao
+plotHeatmapActivity <- function(activity_matrix,
+                                sce,
+                                tfs,
+                                downsample=1000,
+                                scale=TRUE,
+                                center=TRUE,
+                                color_breaks=c(-2,0,2),
+                                colors=c("blue", "white", "red"),
+                                cell_attributes=NULL,
+                                col_gap=NULL,
+                                use_raster=TRUE,
+                                raster_quality=10,
+                                cluster_rows=TRUE,
+                                cluster_columns=FALSE,
+                                border = TRUE,
+                                show_column_names=FALSE,
+                                ...) {
+
+
+  downsample_seq <- seq(from=1, to=ncol(sce), by=floor(max(1, ncol(sce)/downsample)))
+
+  sce <- sce[,downsample_seq]
+  top_annotation <- data.frame(colData(sce)[cell_attributes])
+
+  if (!is.null(col_gap)) {
+    column_split <- top_annotation[col_gap]
+  } else {
+    column_split <- NULL
+  }
+
+  activity_matrix <- activity_matrix[tfs,downsample_seq]
+  activity_matrix <- t(scale(t(activity_matrix), scale=scale, center=center))
+
+  col_fun <- circlize::colorRamp2(color_breaks, colors)
+
+  ComplexHeatmap::Heatmap(activity_matrix,
+                          col = col_fun,
+                          top_annotation=HeatmapAnnotation(df=top_annotation),
+                          column_split=top_annotation[col_gap],
+                          use_raster=use_raster,
+                          raster_quality=raster_quality,
+                          cluster_rows=cluster_rows,
+                          cluster_columns=cluster_columns,
+                          border = border,
+                          show_column_names=show_column_names,
+                          ...)
+
+}
+
