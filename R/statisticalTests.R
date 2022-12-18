@@ -72,7 +72,7 @@ getSigGenes <- function(da_list,
     da_genes <- da_genes[,c("p.value","FDR","summary.logFC")]
 
     if (is.null(logFC_cutoff)){
-      logFC_cutoff <- round(stats::quantile(da_genes$summary.logFC, 0.95), digits = 1)
+      logFC_cutoff <- round(stats::quantile(da_genes$summary.logFC, 0.95, na.rm=TRUE), digits = 1)
     }else {
       logFC_cutoff <- logFC_cutoff
     }
@@ -107,9 +107,9 @@ regulonEnrich_ <- function(TF,
                            corr,
                            corr_cutoff,
                            genesets){
-
+  message(TF)
   regulon.TF <- unique(regulon$target[which(regulon$tf == TF & regulon[, corr] > corr_cutoff)])
-  if (identical(regulon.TF, character(0))) {
+  if (length(regulon.TF) < 3) {
     results <- data.frame(p.adjust = NA, Description = NA, GeneRatio = 0, Odds.Ratio = NA)
   } else {
   enrichresults <- clusterProfiler::enricher(regulon.TF, TERM2GENE = genesets)
