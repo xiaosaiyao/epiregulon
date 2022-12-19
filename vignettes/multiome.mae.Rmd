@@ -141,7 +141,7 @@ Epiregulon prunes the network by performing tests of independence on the observe
 We calculate cluster-specific p-values if users supply cluster labels. This is useful if we are interested in cluster-specific networks. The pruned regulons can then be used to visualize differential networks for transcription factors of interest. See section on differential networks.
 
 
-```{r network pruning, results = "hide", message = FALSE, echo=FALSE}
+```{r network pruning, results = "hide", message = FALSE}
 
 
 pruned.regulon <- pruneRegulon(expMatrix = GeneExpressionMatrix,
@@ -163,7 +163,7 @@ While the `pruneRegulon' function provides statistics on the joint occurrence of
 
 Three measures (correlation, Wilcoxon statistics and log 2 fold difference) give both the magnitude and directionality of changes whereas mutational information is always positive. The correlation and mutual information statistics are computed on the grouped pseudobulks by user-supplied cluster labels, whereas the Wilcoxon and log fold change group cells based on the joint expression of TF, RE and TG in each single cell. 
 
-```{r addWeights, results = "hide", warning = FALSE, message = FALSE, echo=FALSE}
+```{r addWeights, results = "hide", warning = FALSE, message = FALSE}
 
 regulon.w <- addWeights(regulon = pruned.regulon,
                         expMatrix  = GeneExpressionMatrix,
@@ -247,10 +247,31 @@ plotActivityDim(sce = GeneExpressionMatrix,
                 tf = c("NKX2-1","GATA6","FOXA1","FOXA2", "AR", "SOX2"), 
                 dimtype = "UMAP_Combined", 
                 label = "Clusters", 
-                point_size = 3, 
+                point_size = 1, 
                 ncol = 3)
 ```
+Visualize the gene expression of the regulons by heatmap
+```{r}
+plotHeatmapRegulon(sce=GeneExpressionMatrix,
+                   tfs=c("GATA6","NKX2-1"),
+                   regulon=regulon.w,
+                   regulon_cutoff=0.1,
+                   downsample=1000,
+                   cell_attributes="Clusters",
+                   col_gap="Clusters",
+                   exprs_values="counts",
+                   name="regulon heatmap")
+```
 
+```{r}
+plotHeatmapActivity(activity=score.combine,
+                    sce=GeneExpressionMatrix,
+                    tfs=rownames(score.combine),
+                    downsample=5000,
+                    cell_attributes="Clusters",
+                    col_gap="Clusters",
+                    name = "Activity")
+```
 ## Geneset enrichment
 
 Sometimes we are interested to know what pathways are enriched in the regulon of a particular TF. We can perform geneset enrichment using the enricher function from [clusterProfiler](http://yulab-smu.top/biomedical-knowledge-mining-book/universal-api.html).

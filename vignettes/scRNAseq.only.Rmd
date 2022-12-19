@@ -18,24 +18,21 @@ vignette: >
 ```{r setup, include = FALSE}
 knitr::opts_chunk$set(echo = TRUE,
                       eval = FALSE)
-
-  
 ```
 Epiregulon also supports transcription factor activity inference when users only have scRNA-seq. After all, multiome or scATAC-seq data is still relatively rare. To enable TF activity inference on scRNA-seq, users can supply a pre-constructed gene regulatory network. [Dorothea](https://saezlab.github.io/dorothea/articles/dorothea.html) provides both human and mouse pre-constructed gene regulatory networks based on curated experimental and computational data. In this vignette, we bypass the regulon construction step and go straight to calculate TF activity from a Dorothea GRN.
 
 
 # Load regulon
 
-Dorothea assigns confidence level to its regulons with A being the most confident (i.e. supported by multiple lines of evidence) and E being the least confident. For this demo, we further trim the regulons to only 4 TFs.
+Dorothea assigns confidence level to its regulons with A being the most confident (i.e. supported by multiple lines of evidence) and E being the least confident. 
 
 ```{r load_regulon}
 library(dorothea)
 data(dorothea_mm, package = "dorothea")
 regulon <- dorothea_mm 
 
-#trim regulon
+#known tfs
 genes_to_plot <- c("Foxa1", "Neurod1","Pdx1","Arx")
-regulon <- regulon[regulon$tf %in% genes_to_plot, ]
 ```
 
 
@@ -79,6 +76,22 @@ score.combine <- calculateActivity(sce,
 
 ```
 
+# Perform differential activity
+```{r differential}
+
+markers <- findDifferentialActivity(activity_matrix = score.combine, 
+                                    groups = sce$label, 
+                                    pval.type = "some", 
+                                    direction = "up", 
+                                    test.type = "t")
+```
+
+Take the top TFs
+```{r}
+markers.sig <- getSigGenes(markers, topgenes = 5 )
+
+```
+
 
 # Visualize activity
 
@@ -104,9 +117,16 @@ plotActivityViolin(score.combine,
                    tf = genes_to_plot,
                    clusters = sce$label)
 
-# plot Bubble plot
+# plot bubble plot
 plotBubble(score.combine, 
            tf = genes_to_plot, 
+           clusters = sce$label)
+```
+Plot bubble plot of differential TFs
+
+```{r, fig.height=10}
+plotBubble(score.combine, 
+           tf = markers.sig$tf, 
            clusters = sce$label)
 ```
 We can adapt the epiregulon package to plot gene expression. When compared against TF activity, gene expression of Foxa1 and Arx has noisy signals and high dropout rates. 
@@ -116,7 +136,7 @@ Epiregulon enhances the signal to noise ratio of TF activity and better resolves
 
 # plot umap
 plotActivityDim(sce = sce, 
-                activity_matrix = logcounts(sce)[genes_to_plot,],
+                activity_matrix = logcounts(sce),
                 tf = genes_to_plot, 
                 legend.label = "score",
                 point_size = 0.1,
@@ -128,14 +148,37 @@ plotActivityDim(sce = sce,
                 limit = c(0,2))
 
 # plot violin plot
-plotActivityViolin(logcounts(sce)[genes_to_plot,], 
+plotActivityViolin(logcounts(sce), 
                    tf = genes_to_plot,
                    clusters = sce$label)
+```
 
+```{r, fig.height=10}
 # plot Bubble plot
-plotBubble(logcounts(sce)[genes_to_plot,], 
-           tf = genes_to_plot, 
+plotBubble(logcounts(sce), 
+           tf = markers.sig$tf, 
            clusters = sce$label)
+```
+
+We can visualize the target genes for transcription factors of interest
+```{r, fig.width=12}
+plotHeatmapRegulon(sce=sce,
+                   tfs=genes_to_plot,
+                   regulon=regulon.ms,
+                   regulon_cutoff=0.5,
+                   downsample=1000,
+                   cell_attributes="label",
+                   col_gap="label",
+                   exprs_values="logcounts",
+                   name="regulon heatmap")
+
+plotHeatmapActivity(activity_matrix = score.combine,
+                    sce=sce,
+                    tfs=genes_to_plot,
+                    downsample=1000,
+                    cell_attributes="label",
+                    col_gap="label",
+                    name="regulon heatmap")
 ```
 # Pathway enrichment
 

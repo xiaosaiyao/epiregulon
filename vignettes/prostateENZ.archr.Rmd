@@ -352,6 +352,45 @@ plotActivityDim(sce = GeneExpressionMatrix,
 
 ```
 
+Visualize the newly discovered differential TFs by UMAP
+```{r}
+plotActivityDim(sce = GeneExpressionMatrix,
+                activity_matrix = score.combine.wilcox, 
+                tf = c("AFF4","ASH1L","DAXX","MXD4"), 
+                dimtype = "UMAP_Combined", 
+                label = "label", 
+                point_size = 1, 
+                ncol = 2,
+                nrow = 2)
+ 
+
+```
+
+Visualize regulons by heatmap
+```{r}
+
+rowData(GeneExpressionMatrix) <- NULL
+
+plotHeatmapRegulon(sce=GeneExpressionMatrix,
+                   tfs= c( "AR", "FOXA1", "MYC", "JUN"),
+                   regulon=regulon.w.wilcox,
+                   regulon_cutoff=0.1,
+                   downsample=1000,
+                   cell_attributes="label",
+                   col_gap="label",
+                   exprs_values="logcounts",
+                   name="regulon heatmap")
+```
+
+```{r}
+plotHeatmapActivity(activity=score.combine.wilcox,
+                    sce=GeneExpressionMatrix,
+                    tfs=rownames(score.combine.wilcox),
+                    downsample=1000,
+                    cell_attributes="label",
+                    col_gap="label",
+                    name = "transcription factor activity")
+```
 ## Geneset enrichment
 Sometimes we are interested to know what pathways are enriched in the regulon of a particular TF. We can perform geneset enrichment using the enricher function from [clusterProfiler](http://yulab-smu.top/biomedical-knowledge-mining-book/universal-api.html).
 
@@ -386,13 +425,21 @@ plotGseaNetwork(tf = names(enrichresults),
                 ntop_pathways = 10)
 
 ```
-
-differential networks
-
-```{r network pruning}
-
-
+```{r}
+enrichresults <- regulonEnrich(TF = c("AFF4","ASH1L","DAXX","MXD4","CDC73","REPIN1",
+                                      "BCLAF1","RBM34","CERS6","TOP2B","ATF5","PITX1",
+                                      "EWSR1","TOP2A"), 
+                               regulon = regulon.w.wilcox, 
+                               corr = "weight",
+                               corr_cutoff = 0.1, 
+                               genesets = gs.list)
+plotGseaNetwork(tf = names(enrichresults), 
+                enrichresults = enrichresults, 
+                p.adj_cutoff = 0.1, 
+                ntop_pathways = 10)
 ```
+
+
 # Session Info
 
 ```{r}
