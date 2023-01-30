@@ -450,6 +450,8 @@ plotHeatmapRegulon <- function(sce,
   downsample_seq <- seq(from=1, to=ncol(sce), by=floor(max(1, ncol(sce)/downsample)))
   regulon <- regulon[regulon$tf %in% tfs & regulon[,regulon_column] > regulon_cutoff,]
   regulon <- regulon[order(regulon$tf),]
+  #remove targets not found in sce
+  regulon <- regulon[regulon$target %in% rownames(sce),]
   targets <- regulon$target
 
   sce <- sce[targets, downsample_seq]
@@ -472,7 +474,8 @@ plotHeatmapRegulon <- function(sce,
 
   ComplexHeatmap::Heatmap(mat,
                           col = col_fun,
-                          top_annotation=ComplexHeatmap::HeatmapAnnotation(df=top_annotation),
+                          top_annotation=ComplexHeatmap::HeatmapAnnotation(df=top_annotation,
+                                                                           annotation_name_gp= gpar(fontsize = 8)),
                           right_annotation=ComplexHeatmap::rowAnnotation(df=right_annotation),
                           row_split=right_annotation,
                           column_split= column_split,
