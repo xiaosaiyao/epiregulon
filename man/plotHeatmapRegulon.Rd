@@ -80,8 +80,9 @@ example_sce <- scuttle::logNormCounts(example_sce)
 example_sce$cluster <- sample(LETTERS[1:5], ncol(example_sce), replace = TRUE)
 regulon <- data.frame(tf=c(rep("Gene_0001",10),rep("Gene_0002",20)),
 target = sample(rownames(example_sce),30), weight = rnorm(30))
+#plot heatmap and rotate labels
 plotHeatmapRegulon(example_sce, tfs=c("Gene_0001","Gene_0002"), regulon=regulon,
-cell_attributes="cluster", col_gap = "cluster")
+cell_attributes="cluster", col_gap = "cluster", column_title_rot = 90)
 }
 \author{
 Xiaosai Yao

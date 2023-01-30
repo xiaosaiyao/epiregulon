@@ -422,8 +422,9 @@ enrichPlot <- function(results,
 #' example_sce$cluster <- sample(LETTERS[1:5], ncol(example_sce), replace = TRUE)
 #' regulon <- data.frame(tf=c(rep("Gene_0001",10),rep("Gene_0002",20)),
 #' target = sample(rownames(example_sce),30), weight = rnorm(30))
+#' #plot heatmap and rotate labels
 #' plotHeatmapRegulon(example_sce, tfs=c("Gene_0001","Gene_0002"), regulon=regulon,
-#' cell_attributes="cluster", col_gap = "cluster")
+#' cell_attributes="cluster", col_gap = "cluster", column_title_rot = 90)
 #' @author Xiaosai Yao
 
 plotHeatmapRegulon <- function(sce,
@@ -474,8 +475,7 @@ plotHeatmapRegulon <- function(sce,
 
   ComplexHeatmap::Heatmap(mat,
                           col = col_fun,
-                          top_annotation=ComplexHeatmap::HeatmapAnnotation(df=top_annotation,
-                                                                           annotation_name_gp= gpar(fontsize = 8)),
+                          top_annotation=ComplexHeatmap::HeatmapAnnotation(df=top_annotation),
                           right_annotation=ComplexHeatmap::rowAnnotation(df=right_annotation),
                           row_split=right_annotation,
                           column_split= column_split,
