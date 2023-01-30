@@ -244,12 +244,28 @@ Visualize the known differential TFs by UMAP
 
 plotActivityDim(sce = GeneExpressionMatrix, 
                 activity_matrix = score.combine, 
-                tf = c("NKX2-1","GATA6","FOXA1","FOXA2", "AR", "SOX2"), 
+                tf = c("NKX2-1","GATA6","AR", "FOXA1","FOXA2","SOX2"), 
                 dimtype = "UMAP_Combined", 
                 label = "Clusters", 
                 point_size = 1, 
                 ncol = 3)
 ```
+
+In contrast, the gene expression of the TFs is very sparse
+```{r, fig.height = 8, fig.width = 12}
+
+plotActivityDim(sce = GeneExpressionMatrix, 
+                activity_matrix = counts(GeneExpressionMatrix), 
+                tf = c("NKX2-1","GATA6","AR","FOXA1","FOXA2", "SOX2"), 
+                dimtype = "UMAP_Combined", 
+                label = "Clusters", 
+                point_size = 1, 
+                ncol = 3,
+                limit = c(0,2),
+                colors = c("grey","blue"),
+                legend.label = "GEX")
+```
+
 Visualize the gene expression of the regulons by heatmap
 ```{r}
 plotHeatmapRegulon(sce=GeneExpressionMatrix,
