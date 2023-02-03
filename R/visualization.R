@@ -437,7 +437,7 @@ plotHeatmapRegulon <- function(sce,
                                center=TRUE,
                                color_breaks=c(-2,0,2),
                                colors=c("blue", "white", "red"),
-                               cell_attributes=NULL,
+                               cell_attributes,
                                col_gap=NULL,
                                exprs_values="logcounts",
                                use_raster=TRUE,
@@ -449,9 +449,17 @@ plotHeatmapRegulon <- function(sce,
                                ...) {
 
   downsample_seq <- seq(from=1, to=ncol(sce), by=floor(max(1, ncol(sce)/downsample)))
+
+  # keep only targets belonging to TFs and meeting cutoff
   regulon <- regulon[regulon$tf %in% tfs & regulon[,regulon_column] > regulon_cutoff,]
   regulon <- regulon[order(regulon$tf),]
-  #remove targets not found in sce
+
+  # remove duplicated genes from each tf
+  for (tf in unique(regulon$tf)) {
+   regulon <- regulon[!duplicated(regulon$target[regulon$tf == tf]),]
+  }
+
+  # remove targets not found in sce
   regulon <- regulon[regulon$target %in% rownames(sce),]
   targets <- regulon$target
 

@@ -72,24 +72,38 @@ calculateActivity <- function (expMatrix = NULL,
   method <- match.arg(method)
 
 
+
   if (checkmate::test_class(expMatrix,classes = "SummarizedExperiment")){
     expMatrix <- assay(expMatrix, exp_assay)
     expMatrix <- as(expMatrix, "dgCMatrix")
   }
 
-
+  # check that rownames match regulon
+  fraction_genes <- length(which(regulon$target %in% rownames(expMatrix)))/ length(regulon$target)
+  if (fraction_genes <  0.01) {
+    stop("Less than 1% of target genes in the regulon are found in expression matrix. Check rownames of gene expression matrix ")
+  }
 
   # convert genesets to regulon
   if (!is.null(genesets)){
-    if ( is(genesets[[1]], "DFrame") | is(genesets[[1]], "data.frame")) {
-      regulon <- do.call(rbind,lapply(names(genesets), function(x) {
-        data.frame(tf = x, target = genesets[[x]][,1], weight = genesets[[x]][,2])}))
-    } else if (is.vector(genesets[[1]])) {
-      regulon <- do.call(rbind,lapply(names(genesets), function(x) {
-        data.frame(tf = x, target = genesets[[x]], weight = 1)}))
+    if (is.list(genesets)){
+      for (i in seq_len(length(genesets))){
+        if ( is(genesets[[i]], "DFrame") | is(genesets[[i]], "data.frame")) {
+          genesets[[i]] <- data.frame(tf = names(genesets)[i],
+                                      target = genesets[[i]][,1],
+                                      weight = genesets[[i]][,2])
+        } else if (is.vector(genesets[[i]])) {
+          genesets[[i]] <- data.frame(tf = names(genesets)[i],
+                                      target = genesets[[i]],
+                                      weight = 1)
+        }
+      }
+      args <- list(make.row.names = FALSE)
+      regulon <- do.call(rbind, args = c(genesets,  args))
     } else {
       stop("genesets should be a list of data frames or character vectors")
     }
+
 
   }
 
