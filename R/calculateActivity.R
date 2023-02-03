@@ -72,12 +72,17 @@ calculateActivity <- function (expMatrix = NULL,
   method <- match.arg(method)
 
 
+
   if (checkmate::test_class(expMatrix,classes = "SummarizedExperiment")){
     expMatrix <- assay(expMatrix, exp_assay)
     expMatrix <- as(expMatrix, "dgCMatrix")
   }
 
-
+  # check that rownames match regulon
+  fraction_genes <- length(which(regulon$target %in% rownames(expMatrix)))/ length(regulon$target)
+  if (fraction_genes <  0.01) {
+    stop("Less than 1% of target genes in the regulon are found in expression matrix. Check rownames of gene expression matrix ")
+  }
 
   # convert genesets to regulon
   if (!is.null(genesets)){
