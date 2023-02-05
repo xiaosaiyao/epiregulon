@@ -15,7 +15,7 @@ plotHeatmapRegulon(
   center = TRUE,
   color_breaks = c(-2, 0, 2),
   colors = c("blue", "white", "red"),
-  cell_attributes = NULL,
+  cell_attributes,
   col_gap = NULL,
   exprs_values = "logcounts",
   use_raster = TRUE,
