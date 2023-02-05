@@ -22,7 +22,7 @@ addWeights(
 )
 }
 \arguments{
-\item{regulon}{A data frame consisting of tf (regulator) and target in the column names.}
+\item{regulon}{A DataFrame consisting of tf (regulator) and target in the column names.}
 
 \item{expMatrix}{A SingleCellExperiment object containing gene expression information}
 
@@ -56,7 +56,7 @@ many regulatory elements.}
 serial evaluation and use BiocParallel::MulticoreParam() for parallel evaluation}
 }
 \value{
-A data frame with columns of corr and/or MI added to the regulon. TFs not found in the expression matrix and regulons not
+A DataFrame with columns of corr and/or MI added to the regulon. TFs not found in the expression matrix and regulons not
 meeting the minimal number of targets were filtered out.
 }
 \description{

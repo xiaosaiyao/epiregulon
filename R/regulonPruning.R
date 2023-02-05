@@ -189,8 +189,11 @@ pruneRegulon <- function(regulon,
 
   # append test stats to regulon
 
-  pvalue <- res[,grep("pval_",colnames(res)), drop = FALSE]
-  stats <- res[,grep("stats_",colnames(res)), drop = FALSE]
+  pvalue <- res[,grep("^pval_",colnames(res)), drop = FALSE]
+  stats <- res[,grep("^stats_",colnames(res)), drop = FALSE]
+
+  colnames(pvalue) <- unique_clusters
+  colnames(stats) <- unique_clusters
 
   regulon.combined  <- S4Vectors::DataFrame(regulon, pval=I(pvalue), stats=I(stats))
 
@@ -202,7 +205,7 @@ pruneRegulon <- function(regulon,
 
     qvalue <- apply(regulon.combined$pval, 2,
                     function(x) {stats::p.adjust(x, method = "holm", n = nrow(regulon.combined))})
-    colnames(qvalue) <- gsub("pval_", "padj_", colnames(regulon.combined$pval))
+    colnames(qvalue) <- unique_clusters
     regulon.combined <- S4Vectors::DataFrame(regulon.combined, qval=I(qvalue))
   }
 

@@ -56,16 +56,13 @@ to be retained in the pruned regulon.}
 
 \item{prune_value}{String indicating whether to filter regulon based on \code{pval} or \code{padj}.}
 
-\item{aggregate}{A logical indicating whether to collapse the regulatory elements of the
-same genes and use them as a whole. Note that checking with the \code{peak_cutoff}
-is made before the collapse.}
-
 \item{BPPARAM}{A BiocParallelParam object specifying whether calculation should be parallelized.
 Default is set to BiocParallel::MulticoreParam()}
 }
 \value{
-A dataframe of a pruned regulon with p-values indicating the probability of independence
-either for all cells or for individual clusters
+A DataFrame of pruned regulons with p-values indicating the probability of independence
+either for all cells or for individual clusters, z-score statistics for binomial tests or chi-square statistics
+for chi-square test and q-adjusted values.
 }
 \description{
 Prune regulons for true transcription factor - regulatory elements - target genes relationships
