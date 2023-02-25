@@ -25,7 +25,7 @@ Rownames (either gene symbols or geneID) must be consistent with the naming conv
 \item{exp_assay}{String specifying the name of the assay to be retrieved from the SingleCellExperiment object. Set to
 "logcounts" as the default}
 
-\item{regulon}{A data frame consisting of tf (regulator) and target in the column names, with additional columns
+\item{regulon}{A DataFrame object consisting of tf (regulator) and target in the column names, with additional columns
 indicating degree of association between tf and target such as "mor" or "corr" obtained from \code{addWeights}.}
 
 \item{normalize}{Logical indicating whether row means should be subtracted from expression matrix. default is FALSE}

@@ -22,7 +22,7 @@ addWeights(
 )
 }
 \arguments{
-\item{regulon}{A DataFrame consisting of tf (regulator) and target in the column names.}
+\item{regulon}{A DataFrame object consisting of tf (regulator) and target in the column names.}
 
 \item{expMatrix}{A SingleCellExperiment object containing gene expression information}
 
