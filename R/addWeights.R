@@ -1,6 +1,6 @@
 #' Calculate weights for the regulons by computing co-association between TF and target gene expression
 #'
-#' @param regulon A DataFrame consisting of tf (regulator) and target in the column names.
+#' @param regulon A DataFrame object consisting of tf (regulator) and target in the column names.
 #' @param expMatrix A SingleCellExperiment object containing gene expression information
 #' @param peakMatrix A SingleCellExperiment object or matrix containing peak accessibility with
 #' peaks in the rows and cells in the columns

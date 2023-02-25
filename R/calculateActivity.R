@@ -4,7 +4,7 @@
 #' Rownames (either gene symbols or geneID) must be consistent with the naming convention in the regulon.
 #' @param exp_assay String specifying the name of the assay to be retrieved from the SingleCellExperiment object. Set to
 #' "logcounts" as the default
-#' @param regulon  A data frame consisting of tf (regulator) and target in the column names, with additional columns
+#' @param regulon  A DataFrame object consisting of tf (regulator) and target in the column names, with additional columns
 #' indicating degree of association between tf and target such as "mor" or "corr" obtained from `addWeights`.
 #' @param normalize Logical indicating whether row means should be subtracted from expression matrix. default is FALSE
 #' @param mode String indicating the name of column to be used as the weights
