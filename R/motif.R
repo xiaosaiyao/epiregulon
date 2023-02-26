@@ -1,7 +1,7 @@
 #' Add Motif Scores
 #'
 #' @param regulon A DataFrame consisting of tf (regulator) and target in the column names.
-#' @param ArchR_path Character string indicating the path of the ArchR project to retrieve motif information if
+#' @param archr_path Character string indicating the path of the ArchR project to retrieve motif information if
 #' motif enrichment was already performed. If no motif enrichment has been performed, first annotate the ArchR using
 #' `addMotifAnnotations`. If no ArchR project is provided, the user can also provide peaks in the form of GRanges and
 #' this function will annotate the peaks with Cisbp
@@ -26,7 +26,7 @@
 
 
 addMotifScore <- function(regulon,
-                          ArchR_path=NULL,
+                          archr_path=NULL,
                           peaks=NULL,
                           pwms=NULL,
                           species=c("human","mouse"),
@@ -35,17 +35,17 @@ addMotifScore <- function(regulon,
   species <- match.arg(species)
   genome <- match.arg(genome)
 
-  if (!is.null(ArchR_path) & is.null(peaks)) {
+  if (!is.null(archr_path) & is.null(peaks)) {
     message("retrieving motif information from ArchR project")
     ArchProj <-
-      ArchR::loadArchRProject(path = ArchR_path, showLogo = FALSE)
+      ArchR::loadArchRProject(path = archr_path, showLogo = FALSE)
     matches <- ArchR::getMatches(ArchProj)
     motifs <- assay(matches, "matches")
 
     # Convert motifs to gene names
     colnames(motifs) <- lapply(strsplit(colnames(motifs), split="_"), "[", 3)
 
-  } else if (is.null(ArchR_path) & !is.null(peaks)) {
+  } else if (is.null(archr_path) & !is.null(peaks)) {
     message ("annotating peaks with motifs")
     opts <- list()
 

@@ -6,7 +6,7 @@
 \usage{
 addMotifScore(
   regulon,
-  ArchR_path = NULL,
+  archr_path = NULL,
   peaks = NULL,
   pwms = NULL,
   species = c("human", "mouse"),
@@ -16,7 +16,7 @@ addMotifScore(
 \arguments{
 \item{regulon}{A DataFrame consisting of tf (regulator) and target in the column names.}
 
-\item{ArchR_path}{Character string indicating the path of the ArchR project to retrieve motif information if
+\item{archr_path}{Character string indicating the path of the ArchR project to retrieve motif information if
 motif enrichment was already performed. If no motif enrichment has been performed, first annotate the ArchR using
 \code{addMotifAnnotations}. If no ArchR project is provided, the user can also provide peaks in the form of GRanges and
 this function will annotate the peaks with Cisbp}
