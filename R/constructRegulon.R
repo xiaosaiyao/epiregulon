@@ -76,11 +76,39 @@ getTFMotifInfo <- scMultiome::tfBinding
 #' Add TF binding motif occupancy information to the peak2gene object
 #'
 #' @param p2g A Peak2Gene dataframe created by ArchR or getP2Glinks() function
-#' @param grl GRangeList object containing reference TF binding information
+#' @param grl GRangeList object containing reference TF binding information. We recommend retrieving `grl` from `getTFMotifInfo` which
+#' contains TF occupancy data derived from public and ENCODE ChIP-seq peaks. Alternatively, if the users would like to provide a GRangeList
+#' of motif annotations. This can be derived using `motifmatchr::matchMotifs`. See details
 #' @param peakMatrix A matrix of scATAC-seq peak regions with peak ids as rows
 #' @param archR_project_path Path to an ArchR project that have performed LSI dimensionality reduction and scRNA-seq integration
 #'
-#' @return A dataframe containing overlapping ids of scATAC-seq peak regions and reference TF binding regions
+#' @return A data frame containing overlapping ids of scATAC-seq peak regions and reference TF binding regions
+#' @details This function annotates each regulatory element with possible transcription factors. We can either provide a GRangeList of known ChIP-seq
+#' binding sites (TF occupancy) or positions of TF motifs (TF motifs). While public ChIP-seq data may not fully align with the ground truth TF occupancy in users' data
+#' (due to technical challenges of ChIP-seq or cell type nature of TF occupancy), it does offer a few important advantages over TF motif information:
+#' \enumerate{
+#' \item{TF occupancy allows co-activators to be included. Co-activators are chromatin modifiers that do not directly bind to DNA but nonetheless play an important role
+#' in gene regulation}
+#' \item{TF occupancy can distinguish between members of the same class that may share similar motifs but that may have drastically different binding sites}
+#' }
+#' If multiple ChIP-seq are available for the same TF, we merge the ChIP-seq data to represent an universal set of possible binding sites. The predicted TF
+#' occupancy is further refined by \code{\link{pruneRegulon}}.
+#'
+#' If the users prefer to use TF motifs instead of TF occupancy, the users can create a GRangeList of motif annotation using `motifmatchr::matchMotifs`.
+#' Here, we demonstrate how to annotate peaks with cisbp motif database
+#' ```
+#' library(motifmatchr)
+#' library(chromVARmotifs)
+#' data("human_pwms_v1")
+#' peaks <- GenomicRanges::GRanges(seqnames = c("chr1","chr2","chr2"),
+#'                                ranges = IRanges::IRanges(start = c(76585873,42772928, 100183786),
+#'                                                          width = 500))
+#' grl <- matchMotifs(human_pwms_v1, peaks, genome = "hg38", out = "positions")
+#' # retain only TF symbols. TF symbols need to be consistent with gene names in regulon
+#' names(grl) <- sapply(strsplit(names(grl), "_"), "[",3)
+#' ```
+#'
+#'
 #' @export
 #'
 #' @examples
@@ -136,13 +164,13 @@ addTFMotifInfo <- function(p2g,
 }
 
 
-#' Combine the TF binding motif info and peak to gene correlations to generate regulons
+#' Combine the TF binding info and peak to gene correlations to generate regulons
 #'
-#' @param p2g A Peak2Gene dataframe created by ArchR or getP2Glinks() function
-#' @param overlap A dataframe storing overlaps between the regions of the peak matrix with the bulk TF ChIP-seq binding sites computed from addTFMotifInfo
+#' @param p2g A Peak2Gene data frame created by ArchR or getP2Glinks() function
+#' @param overlap A data frame storing overlaps between the regions of the peak matrix with the bulk TF ChIP-seq binding sites computed from addTFMotifInfo
 #' @param aggregate logical to specify whether peak and gene ids are kept in regulon output or not
 #'
-#' @return A tall format dataframe consisting of tf(regulator), target and a column indicating degree of association between TF and target such as "mor" or "corr".
+#' @return A tall format data frame consisting of tf(regulator), target and a column indicating degree of association between TF and target such as "mor" or "corr".
 #'           example regulon:
 #'           tf      target  corr
 #'
