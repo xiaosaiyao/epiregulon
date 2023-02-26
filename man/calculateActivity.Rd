@@ -53,7 +53,7 @@ A matrix of inferred transcription factor (row) activities in single cells (colu
 Calculate the per cell activity of master regulators based on a regulon
 }
 \details{
-This function calculates activity score from a regulon that is a data frame consisting of a tf column,
+This function calculates activity score from a regulon that is a DataFrame consisting of a tf column,
 a target column and a weight column. Alternatively, instead of a regulon, this function also accepts weighted
 signature sets where each gene set or signature is a data frame or unweighted signature sets where each gene set is a character vector.
 The user has the option of computing signature score by weighted mean of target gene expression or
