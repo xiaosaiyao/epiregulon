@@ -1,6 +1,6 @@
 #' Calculate weights for the regulons by computing co-association between TF and target gene expression
 #'
-#' @param regulon A data frame consisting of tf (regulator) and target in the column names.
+#' @param regulon A DataFrame object consisting of tf (regulator) and target in the column names.
 #' @param expMatrix A SingleCellExperiment object containing gene expression information
 #' @param peakMatrix A SingleCellExperiment object or matrix containing peak accessibility with
 #' peaks in the rows and cells in the columns
@@ -20,7 +20,7 @@
 #' @param BPPARAM A BiocParallelParam object specifying whether summation should be parallelized. Use BiocParallel::SerialParam() for
 #' serial evaluation and use BiocParallel::MulticoreParam() for parallel evaluation
 #'
-#' @return A data frame with columns of corr and/or MI added to the regulon. TFs not found in the expression matrix and regulons not
+#' @return A DataFrame with columns of corr and/or MI added to the regulon. TFs not found in the expression matrix and regulons not
 #' meeting the minimal number of targets were filtered out.
 #' @import SummarizedExperiment
 #' @details
@@ -176,7 +176,7 @@ addWeights <- function(regulon,
     tfMatrix <- binarize_matrix(expMatrix, exp_cutoff)
   }
 
-
+  regulon$weight <- NA
   regulon.split <- split(regulon, regulon$tf)
 
 
@@ -222,14 +222,14 @@ addWeights <- function(regulon,
   } else if (method == "logFC") {
 
 
-    output_df <- BiocParallel::bplapply(X = seq_len(length(regulon.split)),
+    output_df <- lapply(X = seq_len(length(regulon.split)),
                                         FUN = compare_logFC_bp,
                                         regulon.split,
                                         expMatrix,
                                         tfMatrix,
-                                        peakMatrix,
-                                        BPPARAM = BPPARAM
-           )
+                                        peakMatrix#,
+                                        #BPPARAM = BPPARAM
+                        )
 
   } else if (method == "wilcoxon") {
     message("calculating rank...")
@@ -273,12 +273,13 @@ addWeights <- function(regulon,
 
 
   ## Aggregate by REs to have only TF-TG weights
-  regulon <- stats::aggregate(weight~tf+target, FUN = aggregation_function, na.rm = TRUE, data = output_df)
-  regulon[order(regulon$tf),]
+  #regulon <- stats::aggregate(weight~tf+target, FUN = aggregation_function, na.rm = TRUE, data = output_df)
+  #regulon[order(regulon$tf),]
 
-  regulon <- output_df
+  #regulon <- output_df
 
-  return(regulon)
+  #return(regulon)
+  regulon <- S4Vectors::DataFrame(output_df)
 }
 
 #' @keywords internal
@@ -348,6 +349,8 @@ use_lmfit_method <- function(n,
 
 
 
+
+
 compare_logFC_bp <- function(n,
                              regulon.split,
                              expMatrix,
@@ -386,23 +389,7 @@ compare_wilcox_bp <- function(n,
   return(regulon.split[[n]])
 }
 
-# expMatrix <- scuttle::mockSCE()
-# expMatrix <- scuttle::logNormCounts(expMatrix)
-# expMatrix <- SingleCellExperiment::logcounts(expMatrix)
-# expMatrix <- as(expMatrix, "dgCMatrix")
-# tg_rank <- t(apply(expMatrix,1, rank, ties.method = "average"))
-#
-# regulon <- data.frame(tf = c(rep("Gene_0001",5), rep("Gene_0002",10)),
-#                       idxATAC = 1:15,
-#                       target = c(paste0("Gene_000",2:6), paste0("Gene_00",11:20)))
-# tg_rank <- tg_rank[regulon$target,]
-#
-# tf_reMatrix <- as(matrix(rbinom(15*200,1,0.1), 15,200),"dgCMatrix")
-# rownames(tf_reMatrix) <- rownames(tg_rank)
-# colnames(tf_reMatrix) <- rownames(colnames)
-#
-#
-# wilcox_stats <- wilcox(tf_reMatrix, tg_rank)
+
 
 wilcoxTest <- function(tf_reMatrix, tg_rank, tie) {
 

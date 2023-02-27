@@ -13,7 +13,7 @@
 #' @param maxDist An integer to specify the base pair extension from transcription start start for overlap with peak regions
 #' @param ... other parameters to pass to addPeak2GeneLinks from ArchR package
 #'
-#' @return A Peak2Gene correlation dataframe
+#' @return A Peak2Gene correlation data frame
 #' @import SummarizedExperiment SingleCellExperiment GenomicRanges
 #' @export
 #'

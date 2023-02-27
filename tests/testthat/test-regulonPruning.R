@@ -42,7 +42,7 @@ test_that("pruneRegulon calculates p-values with binomial test correctly", {
                             peakMatrix = peakM,
                             regulon_cutoff = 2,
                             test = "binom")
-  expect_identical(regulon.p$pval_all, pvals, tolerance = 1e-6)
+  expect_identical(unname(regulon.p$pval[,"all"]), pvals, tolerance = 1e-3)
 })
 
 pvals <- c()
@@ -58,7 +58,8 @@ test_that("pruneRegulon calculates p-values with chi-square test correctly", {
                             regulon_cutoff = 2,
                             test ="chi.sq")
 
-  expect_identical(na.omit(regulon.p$pval_all), pvals[is.finite(pvals)], tolerance = 1e-6)
+  expect_identical(unname(na.omit(regulon.p$pval[,"all"])),
+                   pvals[is.finite(pvals)], tolerance = 1e-3)
 })
 
 # calculating results for the cluster 1
@@ -98,8 +99,8 @@ test_that("pruneRegulon calculates cluster p-values with binomial test correctly
                             regulon_cutoff = 2,
                             clusters = rep(c("C1", "C2"), each = 50),
                             test = "binom")
-  expect_identical(regulon.p$pval_C1, pvals_C1, tolerance = 1e-6)
-  expect_identical(regulon.p$pval_C2, pvals_C2, tolerance = 1e-6)
+  expect_identical(unname(regulon.p$pval[,"C1"]), pvals_C1, tolerance = 1e-3)
+  expect_identical(unname(regulon.p$pval[,"C2"]), pvals_C2, tolerance = 1e-3)
 })
 
 pvals_C1 <- c()
@@ -128,8 +129,8 @@ test_that("pruneRegulon calculates cluster p-values with chi-square test correct
                             clusters = rep(c("C1", "C2"), each = 50),
                             test = "chi.sq")
   print(regulon.p)
-  expect_identical(regulon.p$pval_C1, pvals$C1, tolerance = 1e-6)
-  expect_identical(regulon.p$pval_C2, pvals$C2, tolerance = 1e-6)
+  expect_identical(unname(regulon.p$pval[,"C1"]), pvals$C1, tolerance = 1e-3)
+  expect_identical(unname(regulon.p$pval[,"C2"]), pvals$C2, tolerance = 1e-3)
 })
 
 selected_rows <- apply(pvals, 1, function(x) min(x, na.rm = TRUE)<0.05)

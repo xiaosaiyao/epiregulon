@@ -22,14 +22,12 @@
 #' to be retained in the pruned regulon.
 #' @param p_adj A logical indicating whether p adjustment should be performed
 #' @param prune_value String indicating whether to filter regulon based on `pval` or `padj`.
-#' @param aggregate A logical indicating whether to collapse the regulatory elements of the
-#' same genes and use them as a whole. Note that checking with the `peak_cutoff`
-#' is made before the collapse.
 #' @param BPPARAM A BiocParallelParam object specifying whether calculation should be parallelized.
 #' Default is set to BiocParallel::MulticoreParam()
 #
-#' @return A dataframe of a pruned regulon with p-values indicating the probability of independence
-#' either for all cells or for individual clusters
+#' @return A DataFrame of pruned regulons with p-values indicating the probability of independence
+#' either for all cells or for individual clusters, z-score statistics for binomial tests or chi-square statistics
+#' for chi-square test and q-adjusted values.
 #'
 #' @details
 #' The function prunes the network by performing tests of independence on the observed number of cells
@@ -190,24 +188,29 @@ pruneRegulon <- function(regulon,
 
 
   # append test stats to regulon
-  regulon.combined  <- cbind(regulon, res[,grep("pval_",colnames(res)), drop = FALSE],
-                             res[,grep("stats_",colnames(res)), drop = FALSE])
+
+  pvalue <- res[,grep("^pval_",colnames(res)), drop = FALSE]
+  stats <- res[,grep("^stats_",colnames(res)), drop = FALSE]
+
+  colnames(pvalue) <- unique_clusters
+  colnames(stats) <- unique_clusters
+
+  regulon.combined  <- S4Vectors::DataFrame(regulon, pval=I(pvalue), stats=I(stats))
 
 
   # add p-value adjustment
 
   if (p_adj){
     "performing multiple testing correction..."
-    pval_columns <- grepl("pval_", colnames(regulon.combined))
-    qvalue <- apply(regulon.combined[,pval_columns, drop = FALSE], 2,
+
+    qvalue <- apply(regulon.combined$pval, 2,
                     function(x) {stats::p.adjust(x, method = "holm", n = nrow(regulon.combined))})
-    qval_columns <- gsub("pval_", "padj_", colnames(regulon.combined)[pval_columns])
-    colnames(qvalue) <- qval_columns
-    regulon.combined <- cbind(regulon.combined, qvalue)
+    colnames(qvalue) <- unique_clusters
+    regulon.combined <- S4Vectors::DataFrame(regulon.combined, qval=I(qvalue))
   }
 
   # prune by p-value
-  regulon.prune_value <- regulon.combined[,grepl(prune_value, colnames(regulon.combined)), drop = FALSE]
+  regulon.prune_value <- regulon.combined[,prune_value, drop = FALSE]
   prune_value_min <- apply(regulon.prune_value, 1, function (x){
     if (sum(is.na(x)) == length(x))
      Inf
@@ -217,20 +220,6 @@ pruneRegulon <- function(regulon,
   regulon.combined <- regulon.combined[which(prune_value_min < regulon_cutoff),]
 
   function(x) {if (length(x)>0) min(x) else Inf}
-
-  # if aggregate is true, collapse regulatory elements to have regulons containing tf and target
-  if (aggregate == TRUE){
-    message("aggregating regulons...")
-    aggregate_by <- colnames(regulon.combined)[grep("stats|pval|padj",
-                                                    colnames(regulon.combined))]
-
-    regulon.combined <- stats::aggregate(regulon.combined[aggregate_by],
-                                         by = regulon.combined[c("tf", "target")],
-                                         FUN = mean, na.rm = TRUE)
-
-
-  }
-
 
   return(regulon.combined)
 

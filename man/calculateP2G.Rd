@@ -41,7 +41,7 @@ Default correlation cutoff is 0.5.}
 \item{...}{other parameters to pass to addPeak2GeneLinks from ArchR package}
 }
 \value{
-A Peak2Gene correlation dataframe
+A Peak2Gene correlation data frame
 }
 \description{
 Establish peak to gene links based on correlations between ATAC-seq peaks and RNA-seq genes
