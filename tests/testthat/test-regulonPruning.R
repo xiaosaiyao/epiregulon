@@ -19,7 +19,6 @@ peakM[2, c(10,17,19,20, 47)] <- 2 # decrease p-val for A-2-B triplet, cluster 1
 peakM <- as(peakM, "sparseMatrix")
 
 
-
 regulon <- data.frame(tf = c("A","A","A","C"), target = c("B", "B", "C", "B"), idxATAC = c(1:4))
 
 peakM.b <- peakM > 0
@@ -145,6 +144,34 @@ test_that("pruneRegulon correctly applies 'regulon_cutoff'", {
                             clusters = rep(c("C1", "C2"), each = 50),
                             test = "chi.sq")
   print(regulon.p)
-  expect_identical(unname(regulon.p$pval[,"C1"]), pvals$C1, tolerance = 1e-3)
-  expect_identical(unname(regulon.p$pval[,"C2"]), pvals$C2, tolerance = 1e-3)
+  expect_identical(regulon.p$pval_C1, pvals$C1, tolerance = 1e-6)
+  expect_identical(regulon.p$pval_C2, pvals$C2, tolerance = 1e-6)
+})
+
+
+# applying moving cutoff
+peakM.b <- peakM > rowMeans(as.matrix(peakM))
+geneM.b <- geneM > rowMeans(as.matrix(geneM))
+tf_re.b <- geneM.b[regulon$tf,]*peakM.b[regulon$idxATAC,]
+triplets.b <- tf_re.b*geneM.b[regulon$target,]
+target.b <- geneM.b[regulon$target,]
+triplet_n <- Matrix::rowSums(triplets.b)
+tf_re_n <- Matrix::rowSums(tf_re.b)
+target_n <- Matrix::rowSums(target.b)
+null_probs <-target_n*tf_re_n/100^2
+pvals <- c()
+for(i in 1:4){
+  pvals[i] <- stats::binom.test(triplet_n[i], 100, null_probs[i])$p.val
+}
+
+
+test_that("pruneRegulon calculates p-values with binomial test correctly when using moving cutoffs", {
+  regulon.p <- pruneRegulon(regulon = regulon,
+                            expMatrix = geneM,
+                            peakMatrix = peakM,
+                            regulon_cutoff = 2,
+                            test = "binom",
+                            peak_cutoff = NULL,
+                            exp_cutoff = NULL)
+  expect_identical(regulon.p$pval_all, pvals, tolerance = 1e-6)
 })

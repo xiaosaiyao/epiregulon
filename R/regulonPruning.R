@@ -226,13 +226,14 @@ pruneRegulon <- function(regulon,
 }
 
 
-
-
-binarize_matrix <- function(matrix_obj, cutoff){
+binarize_matrix <- function(matrix_obj, cutoff = NULL){
+  if(is.null(cutoff)) cutoff <- Matrix::rowMeans(matrix_obj)
+  else cutoff <- rep(cutoff, nrow(matrix_obj))
   if (is(matrix_obj, "dgCMatrix")) {
-    matrix_obj@x <- as.double(matrix_obj@x > cutoff)
+    matrix_obj@x <- as.double(matrix_obj@x > cutoff[matrix_obj@i+1])
     matrix_obj
   } else {
+    cutoff <- rep(cutoff, ncol(matrix_obj))
     matrix_obj.bi.index <- Matrix::which(matrix_obj > cutoff, arr.ind = TRUE)
     matrix_obj <- Matrix::sparseMatrix(x = rep(1, nrow(matrix_obj.bi.index)),
                                        i = matrix_obj.bi.index[,1],
