@@ -14,6 +14,8 @@ calculateP2G(
   maxDist = 250000,
   cor_cutoff = 0.5,
   cellNum = 200,
+  exp_assay = "logcounts",
+  peak_assay = "PeakMatrix",
   ...
 )
 }
@@ -37,6 +39,10 @@ It is often called the "GeneExpressionMatrix" for multiome and "GeneIntegrationM
 Default correlation cutoff is 0.5.}
 
 \item{cellNum}{An integer to specify the number of cells to include in each K-means cluster. Default is 200 cells.}
+
+\item{exp_assay}{String indicating the name of the assay in expMatrix for gene expression}
+
+\item{peak_assay}{String indicating the name of the assay in peakMatrix for chromatin accessibility}
 
 \item{...}{other parameters to pass to addPeak2GeneLinks from ArchR package}
 }

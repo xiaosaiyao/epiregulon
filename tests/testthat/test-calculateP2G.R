@@ -62,9 +62,13 @@ attr(overlap, "row.names") <- overlap$row_numb
 
 set.seed(1100)
 test_that("calculateP2G works correctly", {
-  P2G <- calculateP2G(peakMatrix = peak_sce, expMatrix = gene_sce,
-               reducedDim = reducedDimMatrix, cellNum = 10,
-               maxDist = 5000)
+  P2G <- calculateP2G(peakMatrix = peak_sce,
+                      peak_assay = "counts",
+                      expMatrix = gene_sce,
+                      exp_assay = "logcounts",
+                      reducedDim = reducedDimMatrix,
+                      cellNum = 10,
+                      maxDist = 5000)
   expect_equal(P2G[,c("Correlation", "FDR")], overlap[,c("Correlation", "FDR")], tolerance = 1e-10)
   expect_equal(P2G[,c("distance","target","chr","start","end")], overlap[,c("distance","target","chr","start","end")])
 })

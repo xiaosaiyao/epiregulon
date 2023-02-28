@@ -11,6 +11,8 @@
 #' It is often called the "GeneExpressionMatrix" for multiome and "GeneIntegrationMatrix" for unpaired data in ArchR project.
 #' @param cellNum An integer to specify the number of cells to include in each K-means cluster. Default is 200 cells.
 #' @param maxDist An integer to specify the base pair extension from transcription start start for overlap with peak regions
+#' @param exp_assay String indicating the name of the assay in expMatrix for gene expression
+#' @param peak_assay String indicating the name of the assay in peakMatrix for chromatin accessibility
 #' @param ... other parameters to pass to addPeak2GeneLinks from ArchR package
 #'
 #' @return A Peak2Gene correlation data frame
@@ -53,6 +55,8 @@ calculateP2G <- function(peakMatrix = NULL,
                         maxDist = 250000,
                         cor_cutoff = 0.5,
                         cellNum = 200,
+                        exp_assay = "logcounts",
+                        peak_assay = "PeakMatrix",
                         ...) {
 
 
@@ -105,7 +109,7 @@ calculateP2G <- function(peakMatrix = NULL,
     writeLines("Using epiregulon to compute peak to gene links...")
 
     # Package expression matrix and peak matrix into a single sce
-    sce <- SingleCellExperiment(list(counts = assay(expMatrix)),
+    sce <- SingleCellExperiment(list(counts = assay(expMatrix, exp_assay)),
                                 altExps = list(peakMatrix = peakMatrix))
 
     # add reduced dimension information to sce object
@@ -116,7 +120,7 @@ calculateP2G <- function(peakMatrix = NULL,
     # K-means clustering
     kNum <- trunc(ncol(sce) / cellNum)
     kclusters <- scran::clusterCells(sce,
-                                     use.dimred =useDim,
+                                     use.dimred = useDim,
                                      BLUSPARAM = bluster::KmeansParam
                                      (centers = kNum, iter.max = 5000))
     kclusters <- as.character(kclusters)
@@ -141,11 +145,11 @@ calculateP2G <- function(peakMatrix = NULL,
 
     # remove genes and peaks that are equal to 0
     sce_grouped <- sce_grouped[which(rowSums(assay(sce_grouped)) != 0),]
-    altExp(sce_grouped) <- altExp(sce_grouped)[which(rowSums(assay(altExp(sce_grouped))) != 0),]
+    altExp(sce_grouped) <- altExp(sce_grouped)[which(rowSums(assay(altExp(sce_grouped), peak_assay)) != 0),]
 
     # extract gene expression and peak matrix
-    expGroupMatrix <- assay(sce_grouped)
-    peakGroupMatrix <- assay(altExp(sce_grouped))
+    expGroupMatrix <- assay(sce_grouped, "counts")
+    peakGroupMatrix <- assay(altExp(sce_grouped), peak_assay)
 
 
     # get gene information
