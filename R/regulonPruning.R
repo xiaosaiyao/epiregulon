@@ -267,7 +267,7 @@ binom_bp <- function(n,
 
   for (selected_cluster in unique_clusters){
     if(selected_cluster != "all"){
-      is_current_cluster <- clusters == selected_cluster
+      is_current_cluster <- as.logical(clusters == selected_cluster)
       expCurrent <- as.vector(expMatrix.bi %*% is_current_cluster)
       n_cells <- sum(is_current_cluster)
 
@@ -356,7 +356,7 @@ chisq_bp <- function(n,
 
   for (selected_cluster in unique_clusters){
     if(selected_cluster != "all"){
-      is_current_cluster <- clusters == selected_cluster
+      is_current_cluster <- as.logical(clusters == selected_cluster)
       expCurrent <- as.vector(expMatrix.bi %*% is_current_cluster)
       n_cells <- sum(is_current_cluster)
 

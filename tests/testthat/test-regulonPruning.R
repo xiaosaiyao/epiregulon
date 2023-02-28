@@ -144,8 +144,8 @@ test_that("pruneRegulon correctly applies 'regulon_cutoff'", {
                             clusters = rep(c("C1", "C2"), each = 50),
                             test = "chi.sq")
   print(regulon.p)
-  expect_identical(regulon.p$pval_C1, pvals$C1, tolerance = 1e-6)
-  expect_identical(regulon.p$pval_C2, pvals$C2, tolerance = 1e-6)
+  expect_identical(unname(regulon.p$pval[,"C1"]), pvals$C1, tolerance = 1e-6)
+  expect_identical(unname(regulon.p$pval[,"C2"]), pvals$C2, tolerance = 1e-6)
 })
 
 
@@ -173,5 +173,5 @@ test_that("pruneRegulon calculates p-values with binomial test correctly when us
                             test = "binom",
                             peak_cutoff = NULL,
                             exp_cutoff = NULL)
-  expect_identical(regulon.p$pval_all, pvals, tolerance = 1e-6)
+  expect_identical(unname(regulon.p$pval[,"all"]), pvals, tolerance = 1e-6)
 })
