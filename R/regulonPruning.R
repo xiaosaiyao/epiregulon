@@ -219,8 +219,6 @@ pruneRegulon <- function(regulon,
   })
   regulon.combined <- regulon.combined[which(prune_value_min < regulon_cutoff),]
 
-  function(x) {if (length(x)>0) min(x) else Inf}
-
   return(regulon.combined)
 
 }
