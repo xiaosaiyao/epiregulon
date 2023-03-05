@@ -15,16 +15,20 @@ calculateP2G(
   cor_cutoff = 0.5,
   cellNum = 200,
   exp_assay = "logcounts",
-  peak_assay = "PeakMatrix",
+  peak_assay = "counts",
+  gene_symbol = "name",
+  clusters = NULL,
   ...
 )
 }
 \arguments{
-\item{peakMatrix}{A SingleCellExperiment object containing counts of chromatin accessibility at each peak region or genomic bin from scATAC-seq}
+\item{peakMatrix}{A SingleCellExperiment object containing counts of chromatin accessibility at each peak region or genomic bin from scATAC-seq.
+\code{rowRanges} should contain genomic positions of the peaks in the form of \code{GRanges}.}
 
-\item{expMatrix}{A SingleCellExperiment object containing gene expression counts from scRNA-seq}
+\item{expMatrix}{A SingleCellExperiment object containing gene expression counts from scRNA-seq. \code{rowRanges} should contain genomic positions of
+the genes in the form of \code{GRanges}. \code{rowData} should contain a column of gene symbols with column name matching the \code{gene_symbol} argument.}
 
-\item{reducedDim}{A matrix of dimension reduced values, for example derived from IterativeLSI algorithm of ArchR}
+\item{reducedDim}{A matrix of dimension reduced values}
 
 \item{ArchR_path}{String specifying the path to an ArchR project if ArchR's implementation of addPeak2GeneLinks is desired}
 
@@ -44,13 +48,23 @@ Default correlation cutoff is 0.5.}
 
 \item{peak_assay}{String indicating the name of the assay in peakMatrix for chromatin accessibility}
 
+\item{gene_symbol}{String indicating the column name in the rowData of expMatrix that corresponds to gene symbol}
+
+\item{clusters}{A vector corresponding to the cluster labels for calculation of correlations within each cluster. If left NULL, correlation is calculated across
+all clusters. See details for the use of clusters}
+
 \item{...}{other parameters to pass to addPeak2GeneLinks from ArchR package}
 }
 \value{
-A Peak2Gene correlation data frame
+A DataFrame of Peak to Gene correlation
 }
 \description{
 Establish peak to gene links based on correlations between ATAC-seq peaks and RNA-seq genes
+}
+\details{
+Cluster information is sometimes helpful to avoid the \href{https://en.wikipedia.org/wiki/Simpson\%27s_paradox}{Simpsons's paradox} in which baseline differences
+between cell lines or cell types can create artificial or even inverse correlations between peak accessibility and gene expression. If Cluster information is provided,
+correlation is performed within cell aggregates of each cluster.
 }
 \examples{
 # create a mock singleCellExperiment object for gene expression matrix
@@ -75,7 +89,7 @@ rownames(peak_sce) <- paste0("peak",1:10)
 # create a mock reducedDim matrix
 reducedDim_mat <- matrix(runif(ncol(gene_sce)*50, min = 0, max = 1), nrow = ncol(gene_sce), 50)
 p2g <- calculateP2G(peakMatrix = peak_sce, expMatrix = gene_sce, reducedDim = reducedDim_mat,
-                    cellNum = 20)
+                    cellNum = 20, clusters = gene_sce$Treatment)
 }
 \author{
 Xiaosai Yao, Shang-yang Chen
