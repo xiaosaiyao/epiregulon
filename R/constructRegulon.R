@@ -169,10 +169,9 @@ addTFMotifInfo <- function(p2g,
 #' @param p2g A Peak2Gene data frame created by ArchR or getP2Glinks() function
 #' @param overlap A data frame storing overlaps between the regions of the peak matrix with the bulk TF ChIP-seq binding sites computed from addTFMotifInfo
 #' @param aggregate logical to specify whether peak and gene ids are kept in regulon output or not
+#' @param FUN function to aggregate the weights
 #'
-#' @return A tall format data frame consisting of tf(regulator), target and a column indicating degree of association between TF and target such as "mor" or "corr".
-#'           example regulon:
-#'           tf      target  corr
+#' @return A DataFrame consisting of tf(regulator), target and a column indicating degree of association between TF and target such as "mor" or "corr".
 #'
 #' @export
 #'
@@ -205,26 +204,52 @@ addTFMotifInfo <- function(p2g,
 #' utils::head(overlap)
 #'
 #' # aggregate gene expression if the gene is bound by the same TF at regulatory elements
-#' regulon <- getRegulon(p2g, overlap, aggregate = TRUE)
+#' regulon <- getRegulon(p2g, overlap, aggregate = FALSE)
 #' @author Xiaosai Yao, Shang-yang Chen
 
 getRegulon <- function(p2g,
                        overlap,
-                       aggregate = TRUE){
+                       aggregate=FALSE,
+                       FUN=colMeans){
 
-  regulon_df <- merge(overlap, p2g, by="idxATAC")
+  p2g <- S4Vectors::DataFrame(p2g)
+  regulon_df <- S4Vectors::merge(p2g, overlap, by="idxATAC")
+
+  Correlation.rownames <- colnames(regulon_df)[grep("Correlation.|Correlation", colnames(regulon_df))]
+  corr_matrix <- regulon_df[,Correlation.rownames, drop=FALSE]
+
+  if (any(grepl("Correlation.", Correlation.rownames))){
+    colnames(corr_matrix) <- gsub("Correlation.","", Correlation.rownames)
+  }
+
+  regulon_df[,grep("Correlation.",colnames(regulon_df))] <- NULL
+  regulon_df$Correlation <- as.matrix(corr_matrix)
+
 
   if (aggregate) {
-    regulon_df <- regulon_df[, c("tf", "target", "Correlation")]
-    colnames(regulon_df) <- c("tf", "target", "corr")
-    regulon_df <- stats::aggregate(corr ~ tf + target,
-                                   data = regulon_df,
-                                   FUN = mean,
-                                   na.rm = TRUE)
-  } else {
-    colnames(regulon_df) <- c("idxATAC", "idxTF", "tf",  "chr", "start", "end", "idxRNA", "target", "corr", "distance" , "FDR")
-
+    "aggregating regulon ..."
+    regulon_df <- aggregateMatrix.DF(regulon_df[,c("tf","target","Correlation")], "Correlation", colMeans)
   }
+  colnames(regulon_df)[colnames(regulon_df) == "Correlation"] <- "corr"
   return(regulon_df)
 
+}
+
+
+aggregateMatrix.DF <- function(regulon, mode, FUN){
+  regulon$tf <- as.factor(regulon$tf)
+  regulon$target <- as.factor(regulon$target)
+  groupings <- interaction(regulon$tf,regulon$target, sep = '_')
+  index <- order(groupings)
+  regulon <- regulon[index,]
+  breaks <- which(!duplicated(groupings[index]))
+  aggregated <- lapply(seq_len(length(breaks)-1), function(i){
+    FUN(as.matrix(regulon[breaks[i]:(breaks[i+1]-1), mode, drop=FALSE]))})
+
+  aggregated[[length(breaks)]] <-
+    FUN(as.matrix(regulon[breaks[length(breaks)]:nrow(regulon), mode, drop=FALSE]))
+  aggregated <- do.call(rbind, aggregated)
+  aggregated <- S4Vectors::DataFrame(tf=regulon$tf[breaks],
+                                     target=regulon$target[breaks],
+                                     Correlation=I(aggregated))
 }
