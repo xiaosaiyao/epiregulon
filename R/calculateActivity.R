@@ -147,7 +147,7 @@ calculateActivity <- function (expMatrix = NULL,
             # convert regulon to a matrix of tf * targets for matrix multiplication
             tf_target_mat <- reshape2::dcast(aggregated.regulon,
                                              target ~ tf,
-                                             value.var = paste0(mode, ".", cluster_name))
+                                             value.var = paste0("weight.", cluster_name))
             rownames(tf_target_mat) <- tf_target_mat$target
             tf_target_mat <- tf_target_mat[, -1]
             # convert NA to 0
@@ -162,7 +162,7 @@ calculateActivity <- function (expMatrix = NULL,
       for (cluster_name in sort(unique(clusters))){
         score.combine[[cluster_name]] <-
           Matrix::t(expMatrix)[, rownames(tf_target_mat[[cluster_name]]), drop = FALSE] %*%
-                            tf_target_mat[[cluster_name]]
+          tf_target_mat[[cluster_name]]
         #normalize genes
         if(normalize){
           mean_activity <- meanExpr %*% tf_target_mat[[cluster_name]]
@@ -254,8 +254,8 @@ aggregateMatrix <- function(regulon, mode, FUN){
 
   aggregated[[length(breaks)]] <-
     FUN(as.matrix(regulon[breaks[length(breaks)]:nrow(regulon), mode, drop=FALSE]))
-  aggregated <- do.call(rbind,aggregated)
+  aggregated <- do.call(rbind, aggregated)
   aggregated <- data.frame(tf=regulon$tf[breaks],
-                           target = regulon$target[breaks],
-                           aggregated)
+                          target = regulon$target[breaks],
+                          weight = aggregated)
 }
