@@ -53,40 +53,40 @@
 #' # create a mock singleCellExperiment object for gene expression matrix
 #' expMatrix <- scuttle::mockSCE()
 #' expMatrix <- scuttle::logNormCounts(expMatrix)
-#' expMatrix$cluster <- sample(LETTERS[1:5], ncol(expMatrix), replace = TRUE)
+#' expMatrix$cluster <- sample(LETTERS[1:5], ncol(expMatrix), replace=TRUE)
 #'
 #' # create a mock singleCellExperiment object for peak matrix
 #' peakMatrix <- scuttle::mockSCE()
 #' rownames(peakMatrix) <- 1:2000
 #'
 #' # create a mock regulon
-#' regulon <- data.frame(tf = c(rep("Gene_0001",5), rep("Gene_0002",10)),
-#'                       idxATAC = 1:15,
-#'                       target = c(paste0("Gene_000",2:6), paste0("Gene_00",11:20)))
+#' regulon <- DataFrame(tf=c(rep("Gene_0001",5), rep("Gene_0002",10)),
+#'                       idxATAC=1:15,
+#'                       target=c(paste0("Gene_000",2:6), paste0("Gene_00",11:20)))
 #'
 #' # add weights to regulon
-#' regulon.w <- addWeights(regulon = regulon, expMatrix = expMatrix, exp_assay = "logcounts",
-#' peakMatrix = peakMatrix, peak_assay = "counts", clusters = expMatrix$cluster,
-#' min_targets = 5, method = "logFC")
+#' regulon.w <- addWeights(regulon=regulon, expMatrix=expMatrix, exp_assay="logcounts",
+#' peakMatrix=peakMatrix, peak_assay="counts", clusters=expMatrix$cluster,
+#' min_targets=5, method="logFC")
 #
 
 #' @author Xiaosai Yao, Shang-yang Chen, Tomasz Wlodarczyk
 
 
 addWeights <- function(regulon,
-                       expMatrix = NULL,
-                       peakMatrix = NULL,
-                       exp_assay = "logcounts",
-                       peak_assay = "PeakMatrix",
-                       method = c("corr", "MI", "lmfit","logFC","wilcoxon"),
-                       clusters,
-                       exp_cutoff = 1,
-                       peak_cutoff = 0,
-                       block_factor = NULL,
-                       aggregation_function = mean,
-                       min_targets = 10,
-                       tf_re.merge = FALSE,
-                       BPPARAM = BiocParallel::SerialParam(progressbar = TRUE)){
+                       expMatrix=NULL,
+                       peakMatrix=NULL,
+                       exp_assay="logcounts",
+                       peak_assay="PeakMatrix",
+                       method=c("corr", "MI", "lmfit","logFC","wilcoxon"),
+                       clusters=NULL,
+                       exp_cutoff=1,
+                       peak_cutoff=0,
+                       block_factor=NULL,
+                       aggregation_function=mean,
+                       min_targets=10,
+                       tf_re.merge=FALSE,
+                       BPPARAM=BiocParallel::SerialParam(progressbar=TRUE)){
 
 
   # choose method
@@ -94,15 +94,17 @@ addWeights <- function(regulon,
   message("adding weights using ", method, "...")
 
   # extract matrices from SE
-  if (checkmate::test_class(expMatrix,classes = "SummarizedExperiment")){
+  if (checkmate::test_class(expMatrix,classes="SummarizedExperiment")){
     expMatrix <- assay(expMatrix, exp_assay)
   }
 
-  if (checkmate::test_class(peakMatrix, classes = "SummarizedExperiment")){
+  if (checkmate::test_class(peakMatrix, classes="SummarizedExperiment")){
     peakMatrix <- assay(peakMatrix, peak_assay)
   }
 
   expMatrix <- as(expMatrix, "dgCMatrix")
+
+  regulon <- S4Vectors::DataFrame(regulon)
 
   # order regulon
   regulon <- regulon[order(regulon$tf),]
@@ -118,6 +120,25 @@ addWeights <- function(regulon,
 
   # remove genes not found in regulon
   expMatrix <- expMatrix[which(rownames(expMatrix) %in% unique(c(regulon$tf, regulon$target))),]
+
+  # if a cluster is named "all", replace it to distinguish from all cells
+  if (!is.null(clusters)){
+    clusters[clusters == "all"] <- "clusters_all"
+    unique_clusters <- sort(unique(clusters))
+  }
+
+  # define weight matrix
+  if (method %in%  c("corr", "MI", "lmfit")) {
+    regulon$weight <- NA
+    regulon.split <- split(regulon, regulon$tf)
+  }  else if (method %in% c("logFC", "wilcoxon")){
+    regulon$weight <- matrix(NA, nrow=nrow(regulon), ncol=(length(unique_clusters) + 1))
+    colnames(regulon$weight) <-  c("all", unique_clusters)
+    regulon.split <- split(regulon, regulon$tf)
+  }
+
+
+
 
   if (!is.null(peakMatrix)) {
 
@@ -136,7 +157,7 @@ addWeights <- function(regulon,
     message("calculating average expression across clusters...")
 
     # define groupings
-    groupings <- S4Vectors::DataFrame(cluster = clusters)
+    groupings <- S4Vectors::DataFrame(cluster=clusters)
     if (!is.null(block_factor)) {
       groupings$block <- colData(expMatrix)[block_factor]
     }
@@ -170,49 +191,43 @@ addWeights <- function(regulon,
     }
 
 
-  } else if (method %in% c("logFC", "wilcoxon")){
-    message("binarizing matrices...")
-    peakMatrix <- binarize_matrix(peakMatrix, peak_cutoff)
-    tfMatrix <- binarize_matrix(expMatrix, exp_cutoff)
   }
 
-  regulon$weight <- NA
-  regulon.split <- split(regulon, regulon$tf)
 
 
   message("computing weights...")
   if (method == "corr") {
 
     output_df <- BiocParallel::bplapply(
-      X = seq_len(length(regulon.split)),
-      FUN = use_corr_method,
+      X=seq_len(length(regulon.split)),
+      FUN=use_corr_method,
       regulon.split,
       expMatrix,
       peakMatrix,
       tf_re.merge,
-      BPPARAM = BPPARAM)
+      BPPARAM=BPPARAM)
 
   } else if (method == "MI") {
 
     n_pseudobulk <- length(unique(clusters))
 
     output_df <- BiocParallel::bplapply(
-      X = seq_len(length(regulon.split)),
-      FUN = use_MI_method,
+      X=seq_len(length(regulon.split)),
+      FUN=use_MI_method,
       regulon.split,
       expMatrix,
       peakMatrix,
       tf_re.merge,
       n_pseudobulk,
-      BPPARAM = BPPARAM
+      BPPARAM=BPPARAM
     )
 
 
   } else if (method == "lmfit") {
 
     output_df <- BiocParallel::bplapply(
-      X = seq_len(length(regulon.split)),
-      FUN = use_lmfit_method,
+      X=seq_len(length(regulon.split)),
+      FUN=use_lmfit_method,
       regulon.split,
       expMatrix,
       peakMatrix,
@@ -221,36 +236,64 @@ addWeights <- function(regulon,
 
   } else if (method == "logFC") {
 
+    for (cluster in c("all", unique_clusters)){
 
-    output_df <- lapply(X = seq_len(length(regulon.split)),
-                                        FUN = compare_logFC_bp,
-                                        regulon.split,
-                                        expMatrix,
-                                        tfMatrix,
-                                        peakMatrix#,
-                                        #BPPARAM = BPPARAM
-                        )
+      if (cluster == "all"){
+        cluster.current <- unique_clusters
+        } else {
+        cluster.current <- cluster
+        regulon.split <- output_df
+        }
+
+      peakMatrix.bi <- binarize_matrix(peakMatrix[,clusters %in% cluster.current], peak_cutoff)
+      expMatrix.bi <- tfMatrix.bi <- binarize_matrix(expMatrix[,clusters %in% cluster.current], exp_cutoff)
+      output_df <- bplapply(X=seq_len(length(regulon.split)),
+                          FUN=compare_logFC_bp,
+                          regulon.split,
+                          expMatrix.bi,
+                          tfMatrix.bi,
+                          peakMatrix.bi,
+                          cluster,
+                          BPPARAM=BPPARAM
+      )
+    }
+
 
   } else if (method == "wilcoxon") {
-    message("calculating rank...")
-    tg_rank <- t(apply(expMatrix, 1, rank, ties.method = "average"))
-    tie <- apply(tg_rank, 1, function(x){
-      freq <- table(x)
-      sum((freq^3 - freq)/12)
-    })
-    message("performing Mann-Whitney U-Test...")
-    output_df <- BiocParallel::bplapply(X = seq_len(length(regulon.split)),
-                                        FUN = compare_wilcox_bp,
-                                        regulon.split,
-                                        expMatrix,
-                                        tfMatrix,
-                                        peakMatrix,
-                                        tg_rank,
-                                        tie,
-                                        BPPARAM = BPPARAM
-           )
 
 
+    for (cluster in c("all", unique_clusters)) {
+      if (cluster == "all"){
+        cluster.current <- unique_clusters
+      } else {
+        cluster.current <- cluster
+        regulon.split <- output_df
+      }
+
+      message("calculating rank of cluster ", cluster, "...")
+      tg_rank <- t(apply(expMatrix[,clusters %in% cluster.current], 1, rank, ties.method = "average"))
+      tie <- apply(tg_rank, 1, function(x){
+        freq <- table(x)
+        sum((freq^3 - freq)/12)})
+
+      message("performing Mann-Whitney U-Test of cluster ", cluster, "...")
+
+
+
+      peakMatrix.bi <- binarize_matrix(peakMatrix[,clusters %in% cluster.current], peak_cutoff)
+      expMatrix.bi <- tfMatrix.bi <- binarize_matrix(expMatrix[,clusters %in%  cluster.current], exp_cutoff)
+      output_df <- BiocParallel::bplapply(X=seq_len(length(regulon.split)),
+                                          FUN=compare_wilcox_bp,
+                                          regulon.split,
+                                          expMatrix.bi,
+                                          tfMatrix.bi,
+                                          peakMatrix.bi,
+                                          tg_rank,
+                                          tie,
+                                          cluster,
+                                          BPPARAM=BPPARAM
+      )
+    }
 
   } else {
 
@@ -264,10 +307,14 @@ addWeights <- function(regulon,
   if (method == "wilcoxon") {
     # Calculate effect size for wilcoxon
     n_cells <- ncol(expMatrix)
-    # if groups have the same ranks the result will be NaN
-    output_df$weight[is.nan(output_df$weight)] <- 0
-    # transform z-scores to effect size
-    output_df$weight <- output_df$weight/sqrt(n_cells)
+
+    for (cluster in c("all", unique_clusters)) {
+      # if groups have the same ranks the result will be NaN
+      output_df$weight[is.nan(output_df$weight[,cluster]),cluster] <- 0
+      # transform z-scores to effect size
+      output_df$weight[, cluster] <- output_df$weight[, cluster]/sqrt(n_cells)
+    }
+
 
   }
 
@@ -278,8 +325,8 @@ addWeights <- function(regulon,
 
   #regulon <- output_df
 
-  #return(regulon)
-  regulon <- S4Vectors::DataFrame(output_df)
+  return(output_df)
+
 }
 
 #' @keywords internal
@@ -292,12 +339,12 @@ use_corr_method <- function(n,
                             BPPARAM = BPPARAM){
 
   if (tf_re.merge){
-    tf_re <- expMatrix[regulon.split[[n]]$tf, , drop = FALSE] * peakMatrix[as.character(regulon.split[[n]]$idxATAC), , drop = FALSE]
+    tf_re <- expMatrix[regulon.split[[n]]$tf, , drop=FALSE] * peakMatrix[as.character(regulon.split[[n]]$idxATAC), , drop=FALSE]
   } else {
-    tf_re <- expMatrix[regulon.split[[n]]$tf, , drop = FALSE]
+    tf_re <- expMatrix[regulon.split[[n]]$tf, , drop=FALSE]
   }
-  tg <- expMatrix[regulon.split[[n]]$target, , drop = FALSE]
-  regulon.split[[n]]$weight <- mapply(stats::cor, as.data.frame(t(tf_re)), as.data.frame(t(tg)), use = "everything")
+  tg <- expMatrix[regulon.split[[n]]$target, , drop=FALSE]
+  regulon.split[[n]]$weight <- mapply(stats::cor, as.data.frame(t(tf_re)), as.data.frame(t(tg)), use="everything")
   regulon.split[[n]]
 }
 
@@ -311,11 +358,11 @@ use_MI_method <- function(n,
                           n_pseudobulk){
 
   if (tf_re.merge){
-    tf_re <- expMatrix[regulon.split[[n]]$tf, , drop = FALSE] * peakMatrix[as.character(regulon.split[[n]]$idxATAC), , drop = FALSE]
+    tf_re <- expMatrix[regulon.split[[n]]$tf, , drop=FALSE] * peakMatrix[as.character(regulon.split[[n]]$idxATAC), , drop=FALSE]
   } else {
-    tf_re <- expMatrix[regulon.split[[n]]$tf, , drop = FALSE]
+    tf_re <- expMatrix[regulon.split[[n]]$tf, , drop=FALSE]
   }
-  tg <- expMatrix[regulon.split[[n]]$target, , drop = FALSE]
+  tg <- expMatrix[regulon.split[[n]]$target, , drop=FALSE]
 
   regulon.split[[n]]$weight <- mapply(MI_per_row, as.data.frame(t(tf_re)), as.data.frame(t(tg)))
   regulon.split[[n]]
@@ -324,8 +371,8 @@ use_MI_method <- function(n,
 MI_per_row <- function (tf_re, tg){
   y2d <- entropy::discretize2d(tf_re,
                                tg,
-                               numBins1 =  max(10, unique(tf_re)),
-                               numBins2 =  max(10, unique(tg)))
+                               numBins1=max(10, unique(tf_re)),
+                               numBins2=max(10, unique(tg)))
   MI <- entropy::mi.empirical(y2d)
 }
 
@@ -338,11 +385,11 @@ use_lmfit_method <- function(n,
                             tf_re.merge){
 
   if (tf_re.merge){
-    tf_re <- expMatrix[regulon.split[[n]]$tf, , drop = FALSE] * peakMatrix[as.character(regulon.split[[n]]$idxATAC), , drop = FALSE]
+    tf_re <- expMatrix[regulon.split[[n]]$tf, , drop=FALSE] * peakMatrix[as.character(regulon.split[[n]]$idxATAC), , drop = FALSE]
   } else {
-    tf_re <- expMatrix[regulon.split[[n]]$tf, , drop = FALSE]
+    tf_re <- expMatrix[regulon.split[[n]]$tf, , drop=FALSE]
   }
-  tg <- expMatrix[regulon.split[[n]]$target, , drop = FALSE]
+  tg <- expMatrix[regulon.split[[n]]$target, , drop=FALSE]
   regulon.split[[n]]$weight <- mapply(function(y,x) {stats::cov(x,y)/stats::var(x)}, as.data.frame(t(tf_re)), as.data.frame(t(tg)))
   regulon.split[[n]]
 }
@@ -355,16 +402,17 @@ compare_logFC_bp <- function(n,
                              regulon.split,
                              expMatrix,
                              tfMatrix,
-                             peakMatrix){
+                             peakMatrix,
+                             cluster){
 
-  expMatrix <- expMatrix[regulon.split[[n]]$target,,drop = FALSE]
-  tf_reMatrix <- tfMatrix[regulon.split[[n]]$tf,,drop = FALSE] *
-    peakMatrix[as.character(regulon.split[[n]]$idxATAC),,drop = FALSE]
+  expMatrix <- expMatrix[regulon.split[[n]]$target,,drop=FALSE]
+  tf_reMatrix <- tfMatrix[regulon.split[[n]]$tf,,drop=FALSE] *
+    peakMatrix[as.character(regulon.split[[n]]$idxATAC),,drop=FALSE]
 
   group1 <- tf_reMatrix
   group0 <- (1-tf_reMatrix)
 
-  regulon.split[[n]]$weight <- Matrix::rowSums(expMatrix * group1) / Matrix::rowSums(group1) -
+  regulon.split[[n]]$weight[,cluster] <- Matrix::rowSums(expMatrix * group1) / Matrix::rowSums(group1) -
     Matrix::rowSums(expMatrix * group0) / Matrix::rowSums(group0)
 
   return(regulon.split[[n]])
@@ -378,14 +426,15 @@ compare_wilcox_bp <- function(n,
                               tfMatrix,
                               peakMatrix,
                               tg_rank,
-                              tie){
-  expMatrix <- expMatrix[regulon.split[[n]]$target,,drop = FALSE]
-  tf_reMatrix <- tfMatrix[regulon.split[[n]]$tf,,drop = FALSE] *
-    peakMatrix[as.character(regulon.split[[n]]$idxATAC),,drop = FALSE]
+                              tie,
+                              cluster){
+  expMatrix <- expMatrix[regulon.split[[n]]$target,,drop=FALSE]
+  tf_reMatrix <- tfMatrix[regulon.split[[n]]$tf,,drop=FALSE] *
+    peakMatrix[as.character(regulon.split[[n]]$idxATAC),,drop=FALSE]
 
-  tg_rank <- tg_rank[regulon.split[[n]]$target,,drop = FALSE]
+  tg_rank <- tg_rank[regulon.split[[n]]$target,,drop=FALSE]
   tie <- tie[regulon.split[[n]]$target]
-  regulon.split[[n]]$weight <- wilcoxTest(tf_reMatrix, tg_rank, tie)
+  regulon.split[[n]]$weight[,cluster] <- wilcoxTest(tf_reMatrix, tg_rank, tie)
   return(regulon.split[[n]])
 }
 
