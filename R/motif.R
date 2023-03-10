@@ -5,6 +5,7 @@
 #' motif enrichment was already performed. If no motif enrichment has been performed, first annotate the ArchR using
 #' `addMotifAnnotations`. If no ArchR project is provided, the user can also provide peaks in the form of GRanges and
 #' this function will annotate the peaks with Cisbp
+#' @param motif_name Character string	indicating name of the peakAnnotation object (i.e. Motifs) to retrieve from the designated ArchRProject.
 #' @param peaks A GRanges object indicating the peaks to perform motif annotation on if ArchR project is not provided.
 #' The peak indices should match the `re` column in the regulon
 #' @param pwms A PWMatrixList for annotation of motifs using 'motifmatchr::matchMotifs'
@@ -17,7 +18,7 @@
 #'
 #' @examples
 #' regulon <- S4Vectors::DataFrame(tf = c("AR","AR","AR","ESR1","ESR1"),
-#' re = 1:5)
+#' idxATAC = 1:5)
 #' peaks <- GRanges(seqnames = c("chr12","chr19","chr19","chr11","chr6"),
 #' ranges = IRanges(start = c(124914563,50850844, 50850844, 101034172, 151616327),
 #' end = c(124914662,50850929, 50850929, 101034277, 151616394)))
@@ -27,6 +28,8 @@
 
 addMotifScore <- function(regulon,
                           archr_path=NULL,
+                          field_name="motif",
+                          motif_name="Motif",
                           peaks=NULL,
                           pwms=NULL,
                           species=c("human","mouse"),
@@ -39,11 +42,11 @@ addMotifScore <- function(regulon,
     message("retrieving motif information from ArchR project")
     ArchProj <-
       ArchR::loadArchRProject(path = archr_path, showLogo = FALSE)
-    matches <- ArchR::getMatches(ArchProj)
+    matches <- ArchR::getMatches(ArchProj, name = motif_name)
     motifs <- assay(matches, "matches")
 
     # Convert motifs to gene names
-    colnames(motifs) <- lapply(strsplit(colnames(motifs), split="_"), "[", 3)
+    colnames(motifs) <- unlist(lapply(strsplit(colnames(motifs), split="_"), "[", 1))
 
   } else if (is.null(archr_path) & !is.null(peaks)) {
     message ("annotating peaks with motifs")
@@ -66,31 +69,32 @@ addMotifScore <- function(regulon,
                                        subject=peaks,
                                        genome=genome)
     motifs <- assay(motifs,"motifMatches")
+    # Convert motifs to gene names
+    colnames(motifs) <- lapply(strsplit(colnames(motifs), split="_|\\."), "[", 3)
 
   } else {
 
     stop("specify either an ArchR project path OR supply a GenomicRanges object for peaks")
   }
 
-  # Convert motifs to gene names
-  colnames(motifs) <- lapply(strsplit(colnames(motifs), split="_|\\."), "[", 3)
+
 
   # Remove motifs not found in regulon
   motifs <- motifs[, colnames(motifs) %in% unique(regulon$tf)]
 
   # Add motif information
-  regulon$motif <- NA
+  regulon[,field_name] <- NA
   regulon.split <- split(regulon, f=regulon$tf)
 
   tfs_with_motif <- match(colnames(motifs), names(regulon.split))
 
   for (i in tfs_with_motif ){
-    regulon.split[[i]]$motif <- motifs[regulon.split[[i]]$re, names(regulon.split)[i]]
+    regulon.split[[i]][,field_name] <- motifs[regulon.split[[i]]$idxATAC, names(regulon.split)[i]]
   }
 
-  regulon <- unsplit(regulon.split, regulon$tf)
+  regulon <- do.call("rbind", as.list(regulon.split))
 
-  regulon$motif <- as.numeric(regulon$motif)
+  regulon[,field_name] <- as.numeric(regulon[,field_name])
 
   regulon
 
