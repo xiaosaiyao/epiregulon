@@ -128,26 +128,12 @@ calculateP2G <- function(peakMatrix = NULL,
       stop("colData of expMatrix does not contain ", gene_symbol)
     }
 
-    # convert expMatrix and peakMatrix in case they weren't already so
-    expMatrix <- as(expMatrix,"SingleCellExperiment")
-    peakMatrix <- as(peakMatrix,"SingleCellExperiment")
-
-
-    # assay of peakMatrix needs to be named as counts
-    names(assays(peakMatrix)[peak_assay]) <- "counts"
 
     # Package expression matrix and peak matrix into a single sce
-    sce <- SingleCellExperiment(list(counts = assay(expMatrix, exp_assay)),
-                                altExps = list(peakMatrix = peakMatrix))
+    sce <- combineSCE(expMatrix, exp_assay, peakMatrix, peak_assay, reducedDim, useDim)
 
-    rowRanges(sce) <- rowRanges(expMatrix)
-    rowRanges(altExp(sce)) <- rowRanges(peakMatrix)
+    message("performing k means clustering to form metacells")
 
-    # add reduced dimension information to sce object
-    reducedDim(sce,useDim) <- reducedDim
-
-
-    writeLines("performing k means clustering to form metacells")
     # K-means clustering
     kNum <- trunc(ncol(sce) / cellNum)
     kclusters <- scran::clusterCells(sce,
@@ -163,14 +149,8 @@ calculateP2G <- function(peakMatrix = NULL,
                             ids = kclusters,
                             statistics = "mean")
 
-    # some sces has strand information in metadata that conflicts with genomic ranges
+    # some sces have strand information in metadata that conflicts with genomic ranges
     mcols(expMatrix)$strand <- NULL
-
-    # transfer rowRanges(expMatrix) to rowranges(sce_grouped)
-    rowRanges(sce_grouped) <- rowRanges(expMatrix)
-
-
-    # rowRanges(altExp(sce_grouped)) already preserved
 
     # keep track of original ATAC and expression indices
     rowData(sce_grouped)$old.idxRNA <- seq_len(nrow(sce_grouped))
@@ -220,45 +200,31 @@ calculateP2G <- function(peakMatrix = NULL,
 
     writeLines("Computing correlation")
 
-
-
     # if a cluster is named "all", replace it to distinguish from all cells
-
-    if (!is.null(clusters)){
-      clusters[clusters == "all"] <- "clusters_all"}
+    clusters <- renameCluster(clusters)
 
     unique_clusters <- sort(unique(clusters))
 
-    o$Correlation <- matrix(NA, nrow = nrow(expCorMatrix), ncol = length(unique_clusters) + 1)
-    colnames(o$Correlation) <- c("all", unique_clusters)
+    o$Correlation <- initiateMatCluster(clusters, nrow = nrow(expCorMatrix))
 
     o$Correlation[,"all"] <- mapply(stats::cor,
                                     as.data.frame(t(expCorMatrix)),
                                     as.data.frame(t(peakCorMatrix)))
 
+    # compute correlation within each cluster
     if (!is.null(clusters)) {
       # composition of kcluster
       cluster_composition <- table(clusters, kclusters)
       cluster_composition <- sweep(cluster_composition, 2, STATS=colSums(cluster_composition), FUN="/")
 
       for (cluster in unique_clusters) {
-        clusters_idx <- colnames(cluster_composition)[cluster_composition[cluster,] > 1/length(unique_clusters)]
+        clusters_idx <- colnames(cluster_composition)[cluster_composition[cluster,] >= 1/length(unique_clusters)]
         o$Correlation[, cluster] <- mapply(stats::cor,
                                            as.data.frame(t(expCorMatrix[,clusters_idx])),
                                            as.data.frame(t(peakCorMatrix[,clusters_idx])))
       }
 
     }
-
-
-
-    # o$TStat <- (o$Correlation /
-    #               sqrt((pmax(1 - o$Correlation ^ 2, 0.00000000000000001, na.rm = TRUE))
-    #                    / (ncol(peakCorMatrix) - 2))) #T-statistic P-value
-    # o$Pval <- 2 * stats::pt(-abs(o$TStat), ncol(peakCorMatrix) - 2)
-    # o$FDR <- stats::p.adjust(o$Pval, method = "fdr")
-
-
 
 
     p2g_merged <- o[, c("old.idxATAC", "chr","start","end", "old.idxRNA", "Gene", "Correlation", "distance")]
@@ -279,3 +245,5 @@ calculateP2G <- function(peakMatrix = NULL,
   return(p2g_merged)
 
 }
+
+
