@@ -69,8 +69,8 @@
 #'                               exp_assay = "logcounts")
 #'
 #' # calculate cluster-specific activity if cluster-specific weights are supplied
-#' regulon.w$weight <- data.frame(treat1=runif(nrow(regulon.w), -1,1),
-#'                                treat2=runif(nrow(regulon.w), -1,1))
+#' regulon.w$weight <- matrix(runif(nrow(regulon.w)*2, -1,1), nrow(regulon.w),2)
+#' colnames(regulon.w$weight) <- c("treat1","treat2")
 #'
 #' activity.cluster <- calculateActivity(gene_sce,
 #' regulon = regulon.w, clusters = gene_sce$Treatment,
@@ -104,8 +104,7 @@ calculateActivity <- function (expMatrix = NULL,
   method <- tolower(method)
   method <- match.arg(method)
 
-
-
+  # convert expMatrix to dgCMatrix
   if (checkmate::test_class(expMatrix,classes = "SummarizedExperiment")){
     expMatrix <- assay(expMatrix, exp_assay)
     expMatrix <- as(expMatrix, "dgCMatrix")
@@ -140,29 +139,36 @@ calculateActivity <- function (expMatrix = NULL,
     # compute total activity by summation of cluster-specific activity
     if (!is.null(clusters)) {
 
+      # aggregate weights across the same tf-target pairs
+      regulon[,mode] <- I(as.matrix(regulon[,mode]))
       aggregated.regulon <- aggregateMatrix(regulon, mode, FUN)
-      tf_target_mat <-
-        lapply(sort(unique(clusters)), function(cluster_name) {
-          local({
-            # convert regulon to a matrix of tf * targets for matrix multiplication
-            tf_target_mat <- reshape2::dcast(aggregated.regulon,
-                                             target ~ tf,
-                                             value.var = paste0("weight.", cluster_name))
-            rownames(tf_target_mat) <- tf_target_mat$target
-            tf_target_mat <- tf_target_mat[, -1]
-            # convert NA to 0
-            tf_target_mat[is.na(tf_target_mat)] <- 0
-            tf_target_mat <- as(as.matrix(tf_target_mat), "dgCMatrix")
-          })
-        })
+
+      # create a cluster-specific tf x target weight matrix
+      tf_target_mat <-  lapply(sort(unique(clusters)), function(cluster_name) {
+        createTfTgMat(aggregated.regulon, mode = paste0("weight.", cluster_name))})
+
       names(tf_target_mat) <- sort(unique(clusters))
+
+      # if normalize gene expression (taking the mean across all cells)
       if(normalize) meanExpr <- Matrix::rowMeans(expMatrix[rownames(tf_target_mat[[1]]),])
 
+
+      # Calculate the number of targets per cluster
+      freq <- initiateMatCluster(clusters, nrow = length(unique(regulon$tf)))
+      rownames(freq) <- unique(regulon$tf)
+      for (cluster in colnames(regulon$weight)){
+        freq_counts <- table(regulon$tf[which(regulon$weight[, cluster] != 0) ])
+        freq[names(freq_counts), cluster] <- freq_counts }
+
+
+      # Calculating scores
       score.combine <- list()
+
       for (cluster_name in sort(unique(clusters))){
         score.combine[[cluster_name]] <-
           Matrix::t(expMatrix)[, rownames(tf_target_mat[[cluster_name]]), drop = FALSE] %*%
           tf_target_mat[[cluster_name]]
+
         #normalize genes
         if(normalize){
           mean_activity <- meanExpr %*% tf_target_mat[[cluster_name]]
@@ -171,44 +177,50 @@ calculateActivity <- function (expMatrix = NULL,
 
         }
 
+        # normalize by the number of target genes
+        score.combine[[cluster_name]] <- sweep(score.combine[[cluster_name]], 2,
+                                               freq[colnames(score.combine[[cluster_name]]), cluster_name], "/")
 
         # nullify cells not belonging to this cluster
         score.combine[[cluster_name]][which(clusters != cluster_name),] <- 0
 
+
+
       }
       score.combine <- Reduce("+", score.combine)
 
+      score.combine <- Matrix::t(score.combine)
 
-    } else {
+
+    } else if (is.null(clusters)) {
       # if no cluster information is provided, calculate activity for all cells
       # convert regulon to a matrix of tf * targets for matrix multiplication
-      tf_target_mat <- reshape2::dcast(data.frame(regulon),
-                                       target ~ tf,
-                                       fun.aggregate = FUN,
-                                       ...,
-                                       value.var = mode)
-      rownames(tf_target_mat) <- tf_target_mat$target
-      tf_target_mat <- tf_target_mat[,-1]
-      # convert NA to 0
-      tf_target_mat[is.na(tf_target_mat)] <- 0
-      tf_target_mat <- as(as.matrix(tf_target_mat), "dgCMatrix")
+      regulon[, mode] <- as.numeric(regulon[, mode])
+      aggregated.regulon <- aggregateMatrix(regulon, mode, FUN)
+
+      tf_target_mat <- createTfTgMat(aggregated.regulon, mode)
+
       # cross product of expMatrix and tf_target matrix
       score.combine <- Matrix::t(expMatrix)[,rownames(tf_target_mat), drop = FALSE] %*%
         tf_target_mat
+
+      # need to normalize
       if(normalize){
         meanExpr <- Matrix::rowMeans(expMatrix[rownames(tf_target_mat),])
         mean_activity <- meanExpr %*% tf_target_mat
         score.combine <- sweep(score.combine, 2, mean_activity, "-")
       }
-      # need to normalize
-    }
-    score.combine <- Matrix::t(score.combine)
-    #normalize by number of targets
-    freq <- table(regulon$tf)
-    score.combine <- apply(score.combine, 2, function(x) {x/freq[rownames(score.combine)]})
 
-  }
-  else if (method == "aucell") {
+
+
+      #normalize by number of targets
+      freq <- table(regulon$tf)
+      score.combine <- sweep(score.combine, 2, freq[colnames(score.combine)], "/")
+
+      score.combine <- Matrix::t(score.combine)
+
+    }
+  }else if (method == "aucell") {
     message("calculating TF activity from regulon using ", method)
     geneSets <- split(regulon$target, regulon$tf)
     message("ranking cells...")
@@ -220,7 +232,7 @@ calculateActivity <- function (expMatrix = NULL,
     cells_AUC <- AUCell::AUCell_calcAUC(geneSets,
                                         rankings = cells_rankings,
                                         nCores = ncore)
-    #score.combine = data.frame(AUCell::getAUC(cells_AUC))
+
     score.combine <- AUCell::getAUC(cells_AUC)
   }
   return(score.combine)
@@ -229,33 +241,17 @@ calculateActivity <- function (expMatrix = NULL,
 genesets2regulon <- function (genesets){
   for (i in seq_len(length(genesets))){
     if ( is(genesets[[i]], "DFrame") | is(genesets[[i]], "data.frame")) {
-      genesets[[i]] <- data.frame(tf = names(genesets)[i],
-                                  target = genesets[[i]][,1],
-                                  weight = genesets[[i]][,2])
+      genesets[[i]] <- S4Vectors::DataFrame(tf = names(genesets)[i],
+                                           target = genesets[[i]][,1],
+                                           weight = genesets[[i]][,2])
     } else if (is.vector(genesets[[i]])) {
-      genesets[[i]] <- data.frame(tf = names(genesets)[i],
-                                  target = genesets[[i]],
-                                  weight = 1)
+      genesets[[i]] <- S4Vectors::DataFrame(tf = names(genesets)[i],
+                                           target = genesets[[i]],
+                                           weight = 1)
     }
   }
   args <- list(make.row.names = FALSE)
   regulon <- do.call(rbind, args = c(genesets,  args))
 }
 
-aggregateMatrix <- function(regulon, mode, FUN){
-  regulon$tf <- as.factor(regulon$tf)
-  regulon$target <- as.factor(regulon$target)
-  groupings <- interaction(regulon$tf,regulon$target, sep = '_')
-  index <- order(groupings)
-  regulon <- regulon[index,]
-  breaks <- which(!duplicated(groupings[index]))
-  aggregated <- lapply(seq_len(length(breaks)-1), function(i){
-    FUN(as.matrix(regulon[breaks[i]:(breaks[i+1]-1), mode, drop=FALSE]))})
 
-  aggregated[[length(breaks)]] <-
-    FUN(as.matrix(regulon[breaks[length(breaks)]:nrow(regulon), mode, drop=FALSE]))
-  aggregated <- do.call(rbind, aggregated)
-  aggregated <- data.frame(tf=regulon$tf[breaks],
-                          target = regulon$target[breaks],
-                          weight = aggregated)
-}
