@@ -455,7 +455,7 @@ plotHeatmapRegulon <- function(sce,
   regulon <- regulon[order(regulon$tf),]
 
   # remove duplicated genes from each tf
-  for (tf in unique(regulon$tf)) {
+  for (tf in na.omit(unique(regulon$tf))) {
    regulon <- regulon[!duplicated(regulon$target[regulon$tf == tf]),]
   }
 
