@@ -124,16 +124,17 @@ addWeights <- function(regulon,
   # if a cluster is named "all", replace it to distinguish from all cells
   if (!is.null(clusters)){
     clusters[clusters == "all"] <- "clusters_all"
-    unique_clusters <- sort(unique(clusters))
+
   }
+  unique_clusters <- sort(unique(clusters))
 
   # define weight matrix
   if (method %in%  c("corr", "MI", "lmfit")) {
     regulon$weight <- NA
     regulon.split <- split(regulon, regulon$tf)
+
   }  else if (method %in% c("logFC", "wilcoxon")){
-    regulon$weight <- matrix(NA, nrow=nrow(regulon), ncol=(length(unique_clusters) + 1))
-    colnames(regulon$weight) <-  c("all", unique_clusters)
+    regulon$weight <- initiateMatCluster(clusters, nrow = nrow(regulon))
     regulon.split <- split(regulon, regulon$tf)
   }
 
@@ -236,25 +237,28 @@ addWeights <- function(regulon,
 
   } else if (method == "logFC") {
 
-    for (cluster in c("all", unique_clusters)){
 
-      if (cluster == "all"){
+    for (cluster in c("all", unique_clusters)) {
+      if (cluster == "all" & !is.null(clusters)){
         cluster.current <- unique_clusters
-        } else {
+      } else if (cluster == "all" & is.null(clusters)) {
+        cluster.current <- "all"
+        clusters <- rep("all", ncol(expMatrix))
+      } else if (cluster != "all"){
         cluster.current <- cluster
         regulon.split <- output_df
-        }
+      }
 
       peakMatrix.bi <- binarize_matrix(peakMatrix[,clusters %in% cluster.current], peak_cutoff)
       expMatrix.bi <- tfMatrix.bi <- binarize_matrix(expMatrix[,clusters %in% cluster.current], exp_cutoff)
       output_df <- bplapply(X=seq_len(length(regulon.split)),
-                          FUN=compare_logFC_bp,
-                          regulon.split,
-                          expMatrix.bi,
-                          tfMatrix.bi,
-                          peakMatrix.bi,
-                          cluster,
-                          BPPARAM=BPPARAM
+                            FUN=compare_logFC_bp,
+                            regulon.split,
+                            expMatrix.bi,
+                            tfMatrix.bi,
+                            peakMatrix.bi,
+                            cluster,
+                            BPPARAM=BPPARAM
       )
     }
 
@@ -263,9 +267,12 @@ addWeights <- function(regulon,
 
 
     for (cluster in c("all", unique_clusters)) {
-      if (cluster == "all"){
+      if (cluster == "all" & !is.null(clusters)){
         cluster.current <- unique_clusters
-      } else {
+      } else if (cluster == "all" & is.null(clusters)) {
+        cluster.current <- "all"
+        clusters <- rep("all", ncol(expMatrix))
+      } else if (cluster != "all"){
         cluster.current <- cluster
         regulon.split <- output_df
       }
@@ -379,10 +386,10 @@ MI_per_row <- function (tf_re, tg){
 
 
 use_lmfit_method <- function(n,
-                            regulon.split,
-                            expMatrix,
-                            peakMatrix,
-                            tf_re.merge){
+                             regulon.split,
+                             expMatrix,
+                             peakMatrix,
+                             tf_re.merge){
 
   if (tf_re.merge){
     tf_re <- expMatrix[regulon.split[[n]]$tf, , drop=FALSE] * peakMatrix[as.character(regulon.split[[n]]$idxATAC), , drop = FALSE]
