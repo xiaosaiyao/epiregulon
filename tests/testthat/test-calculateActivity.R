@@ -22,9 +22,9 @@ activity_matrix <- activity_matrix/3
 sce <- SingleCellExperiment(assay = list(counts = geneExpressionMatrix))
 
 test_that("calculateActivity works correctly", {
-  expect_equal(calculateActivity(sce,
+  expect_equal(as.matrix(calculateActivity(sce,
                                  regulon = regulon,
-                                 exp_assay = "counts"),
+                                 exp_assay = "counts")),
                activity_matrix)
 })
 
@@ -60,11 +60,11 @@ regulon2$weight <- regulon[,c("weight_C1","weight_C2")]
 colnames(regulon2$weight) <- c("C1","C2")
 
 test_that("calculateActivity works correctly with clusters", {
-  expect_equal(calculateActivity(sce,
+  expect_equal(as.matrix(calculateActivity(sce,
                                  regulon = regulon2,
                                  exp_assay = "counts",
                                  clusters = clusters,
-                                 FUN = colSums),
+                                 FUN = colSums)),
                activity_matrix)
 })
 
@@ -78,10 +78,10 @@ activity_matrix <- as.matrix(Matrix::t(Matrix::t(geneExpressionMatrix)
 activity_matrix <- activity_matrix/3
 
 test_that("calculateActivity normalizes correctly (zero-centering)", {
-  expect_equal(calculateActivity(sce,
+  expect_equal(as.matrix(calculateActivity(sce,
                                  regulon = regulon,
                                  exp_assay = "counts",
-                                 normalize = TRUE),
+                                 normalize = TRUE)),
                activity_matrix)
 })
 
