@@ -250,11 +250,11 @@ addWeights <- function(regulon,
       }
 
       peakMatrix.bi <- binarize_matrix(peakMatrix[,clusters %in% cluster.current], peak_cutoff)
-      expMatrix.bi <- tfMatrix.bi <- binarize_matrix(expMatrix[,clusters %in% cluster.current], exp_cutoff)
+      tfMatrix.bi <- binarize_matrix(expMatrix[,clusters %in% cluster.current], exp_cutoff)
       output_df <- bplapply(X=seq_len(length(regulon.split)),
                             FUN=compare_logFC_bp,
                             regulon.split,
-                            expMatrix.bi,
+                            expMatrix[,clusters %in% cluster.current],
                             tfMatrix.bi,
                             peakMatrix.bi,
                             cluster,
@@ -288,11 +288,10 @@ addWeights <- function(regulon,
 
 
       peakMatrix.bi <- binarize_matrix(peakMatrix[,clusters %in% cluster.current], peak_cutoff)
-      expMatrix.bi <- tfMatrix.bi <- binarize_matrix(expMatrix[,clusters %in%  cluster.current], exp_cutoff)
+      tfMatrix.bi <- binarize_matrix(expMatrix[,clusters %in%  cluster.current], exp_cutoff)
       output_df <- BiocParallel::bplapply(X=seq_len(length(regulon.split)),
                                           FUN=compare_wilcox_bp,
                                           regulon.split,
-                                          expMatrix.bi,
                                           tfMatrix.bi,
                                           peakMatrix.bi,
                                           tg_rank,
@@ -429,13 +428,12 @@ compare_logFC_bp <- function(n,
 
 compare_wilcox_bp <- function(n,
                               regulon.split,
-                              expMatrix,
                               tfMatrix,
                               peakMatrix,
                               tg_rank,
                               tie,
                               cluster){
-  expMatrix <- expMatrix[regulon.split[[n]]$target,,drop=FALSE]
+
   tf_reMatrix <- tfMatrix[regulon.split[[n]]$tf,,drop=FALSE] *
     peakMatrix[as.character(regulon.split[[n]]$idxATAC),,drop=FALSE]
 

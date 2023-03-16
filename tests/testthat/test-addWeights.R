@@ -1,4 +1,5 @@
 # prepare dataset for testing Wilcoxon method
+library(BiocParallel)
 regulon <- data.frame(tf = rep(LETTERS[1:10], each =2),
                       idxATAC = 1:20,
                       target = c(rep(letters[1:6],3), letters[4:5]))
@@ -33,7 +34,7 @@ test_that("addWeights works correctly using Wilcoxon test", {
                           method = "wilcoxon",
                           peakMatrix = peakMatrix,
                           min_targets = 0)
-  expect_identical(regulon.w$weight, regulon$weight)
+  expect_identical(as.vector(regulon.w$weight), regulon$weight)
 })
 
 # prepare expected data for logFC method
@@ -50,7 +51,7 @@ test_that("addWeights works correctly using 'logFC' method", {
                           method = "logFC",
                           peakMatrix = peakMatrix,
                           min_targets = 1)
-  expect_identical(regulon.w$weight, regulon$weight, tolerance = 1e-3)
+  expect_identical(as.vector(regulon.w$weight), regulon$weight, tolerance = 1e-3)
 })
 
 # prepare dataset for testing MI method
@@ -89,7 +90,7 @@ test_that("addWeights works correctly using mutual information method", {
                                            method = "MI",
                                            clusters = groupings,
                                            min_targets = 0))
-  expect_identical(regulon.w$weight, regulon$weight)
+  expect_identical(as.vector(regulon.w$weight), regulon$weight)
 })
 
 # prepare expected data for corr method
@@ -99,7 +100,7 @@ regulon$weight <- diag(stats::cor(t(geneExpr), t(tfMatrix)))
 test_that("addWeights works correctly using 'corr' method", {
   regulon.w <- addWeights(regulon = regulon, expMatrix = expMatrix.sce, method = "corr",
                           clusters = groupings, min_targets = 0)
-  expect_identical(regulon.w$weight, regulon$weight)
+  expect_identical(as.vector(regulon.w$weight), regulon$weight)
 })
 
 
