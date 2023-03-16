@@ -19,7 +19,7 @@ for (i in seq_len(nrow(regulon))){
 }
 
 # replace NA with 0 in tf_tg_matrix
-tf_tg_matrix[which(is.na(tf_tg_matrix))] <- 0
+tf_tg_matrix[is.na(tf_tg_matrix)] <- 0
 
 tf_tg_matrix2 <- createTfTgMat(regulon, "weight", clusters=NULL)
 
@@ -34,7 +34,7 @@ activity_matrix <- as.matrix(Matrix::t(Matrix::t(geneExpressionMatrix) %*%
 activity_matrix2 <- calculateScore(geneExpressionMatrix, tf_tg_matrix2)
 
 test_that("calculateScore works correctly", {
-  expect_equal(as.matrix(t(activity_matrix2)), activity_matrix)
+  expect_equal(as.matrix(Matrix::t(activity_matrix2)), activity_matrix)
 })
 
 ### test calculateFrequency
@@ -53,7 +53,7 @@ test_that("calculateFrequency works correctly", {
 activity_matrix.norm <- activity_matrix/c(1,1,3,4,5)
 activity_matrix.norm2 <- normalizeByFrequency(activity_matrix2, freq2)
 test_that("normalizeByFrequency works correctly", {
-  expect_equal( as.matrix(t(activity_matrix.norm2)), activity_matrix.norm)
+  expect_equal( as.matrix(Matrix::t(activity_matrix.norm2)), activity_matrix.norm)
 })
 
 ### test calculateActivity
@@ -134,7 +134,7 @@ activity_matrix4 <- as(activity_matrix4, "dgCMatrix")
 activity_matrix4 <- calculateScore(geneExpressionMatrix, tf_tg_matrix4, clusters=clusters, activity_matrix4)
 
 test_that("calculateScore works correctly with clusters", {
-  expect_equal(t(activity_matrix4), activity_matrix3)
+  expect_equal(Matrix::t(activity_matrix4), activity_matrix3)
 })
 
 
@@ -157,7 +157,7 @@ activity_matrix.norm3[,51:100] <- activity_matrix3[,51:100]/freq3[,"C2"]
 activity_matrix.norm4 <- normalizeByFrequency(activity_matrix4, freq4, clusters)
 
 test_that("normalizeByFrequency works correctly with clusters", {
-  expect_equal( as.matrix(t(activity_matrix.norm4)), as.matrix(activity_matrix.norm3))
+  expect_equal( as.matrix(Matrix::t(activity_matrix.norm4)), as.matrix(activity_matrix.norm3))
 })
 
 
