@@ -134,75 +134,27 @@ calculateActivity <- function (expMatrix = NULL,
   if (method == "weightedmean") {
     message("calculating TF activity from regulon using ", method)
 
+    # aggregate weights across the same tf-target pairs
+    if (!is.null(clusters)) {
+      regulon[, mode] <- I(as.matrix(regulon[, mode]))
+    }
+
+
+    aggregated.regulon <- aggregateMatrix(regulon, mode, FUN, ...)
+
+
+    # create tf x target matrix of weights
+
+    tf_target_mat <- createTfTgMat(aggregated.regulon, mode, clusters=clusters)
+
 
     # if cluster information is provided and if there are cluster-specific weights provided,
     # compute total activity by summation of cluster-specific activity
-    if (!is.null(clusters)) {
-
-      # aggregate weights across the same tf-target pairs
-      regulon[,mode] <- I(as.matrix(regulon[,mode]))
-      aggregated.regulon <- aggregateMatrix(regulon, mode, FUN)
-
-      # create a cluster-specific tf x target weight matrix
-      tf_target_mat <-  lapply(sort(unique(clusters)), function(cluster_name) {
-        createTfTgMat(aggregated.regulon, mode = paste0("weight.", cluster_name))})
-
-      names(tf_target_mat) <- sort(unique(clusters))
-
-      # if normalize gene expression (taking the mean across all cells)
-      if(normalize) meanExpr <- Matrix::rowMeans(expMatrix[rownames(tf_target_mat[[1]]),])
-
-
-      # Calculate the number of targets per cluster
-      freq <- initiateMatCluster(clusters, nrow = length(unique(regulon$tf)))
-      rownames(freq) <- unique(regulon$tf)
-      for (cluster in colnames(regulon$weight)){
-        freq_counts <- table(regulon$tf[which(regulon$weight[, cluster] != 0) ])
-        freq[names(freq_counts), cluster] <- freq_counts }
-
-
-      # Calculating scores
-      score.combine <- list()
-
-      for (cluster_name in sort(unique(clusters))){
-        score.combine[[cluster_name]] <-
-          Matrix::t(expMatrix)[, rownames(tf_target_mat[[cluster_name]]), drop = FALSE] %*%
-          tf_target_mat[[cluster_name]]
-
-        #normalize genes
-        if(normalize){
-          mean_activity <- meanExpr %*% tf_target_mat[[cluster_name]]
-          score.combine[[cluster_name]] <- sweep(score.combine[[cluster_name]],
-                                                 2, mean_activity, "-")
-
-        }
-
-        # normalize by the number of target genes
-        score.combine[[cluster_name]] <- sweep(score.combine[[cluster_name]], 2,
-                                               freq[colnames(score.combine[[cluster_name]]), cluster_name], "/")
-
-        # nullify cells not belonging to this cluster
-        score.combine[[cluster_name]][which(clusters != cluster_name),] <- 0
-
-
-
-      }
-      score.combine <- Reduce("+", score.combine)
-
-      score.combine <- Matrix::t(score.combine)
-
-
-    } else if (is.null(clusters)) {
+    if (is.null(clusters)) {
       # if no cluster information is provided, calculate activity for all cells
-      # convert regulon to a matrix of tf * targets for matrix multiplication
-      regulon[, mode] <- as.numeric(regulon[, mode])
-      aggregated.regulon <- aggregateMatrix(regulon, mode, FUN)
-
-      tf_target_mat <- createTfTgMat(aggregated.regulon, mode)
 
       # cross product of expMatrix and tf_target matrix
-      score.combine <- Matrix::t(expMatrix)[,rownames(tf_target_mat), drop = FALSE] %*%
-        tf_target_mat
+      score.combine <- calculateScore(expMatrix, tf_target_mat)
 
       # need to normalize
       if(normalize){
@@ -211,15 +163,44 @@ calculateActivity <- function (expMatrix = NULL,
         score.combine <- sweep(score.combine, 2, mean_activity, "-")
       }
 
-
-
       #normalize by number of targets
-      freq <- table(regulon$tf)
-      score.combine <- sweep(score.combine, 2, freq[colnames(score.combine)], "/")
+      freq <- calculateFrequency(regulon=aggregated.regulon, mode=mode)
+      score.combine <- normalizeByFrequency(score.combine, freq)
 
-      score.combine <- Matrix::t(score.combine)
+    } else if (!is.null(clusters)) {
+
+      # Calculate the number of targets per cluster
+      # freq is a table of tf x clusters and the elements represent the number of targets per tf
+      freq <- initiateMatCluster(clusters, nrow = length(unique(regulon$tf)), value = 1)
+      rownames(freq) <- unique(regulon$tf)
+
+      freq <- calculateFrequency(freq, aggregated.regulon, mode=mode)
+
+      # Calculating scores
+      score.combine <- matrix(NA, nrow=ncol(expMatrix), ncol=length(unique(regulon$tf)))
+      rownames(score.combine) <- colnames(expMatrix)
+      colnames(score.combine) <- colnames(tf_target_mat[[1]])
+      score.combine <- as(score.combine, "dgCMatrix")
+
+      score.combine <- calculateScore(expMatrix, tf_target_mat, clusters=clusters, score.combine)
+
+
+      # if normalize gene expression (taking the mean across all cells)
+      if(normalize){
+        meanExpr <- Matrix::rowMeans(expMatrix[rownames(tf_target_mat[[1]]),])
+        for (cluster in sort(unique(clusters))){
+          mean_activity <- meanExpr %*% tf_target_mat[[cluster]]
+          score.combine[clusters == cluster,] <- sweep(score.combine[clusters == cluster,],
+                                                       2, mean_activity, "-")
+        }
+      }
+
+      # normalize by the number of target genes
+      score.combine <- normalizeByFrequency(score.combine, freq, clusters=clusters)
 
     }
+    score.combine <- Matrix::t(score.combine)
+
   }else if (method == "aucell") {
     message("calculating TF activity from regulon using ", method)
     geneSets <- split(regulon$target, regulon$tf)
@@ -255,3 +236,86 @@ genesets2regulon <- function (genesets){
 }
 
 
+
+createTfTgMat <- function(regulon, mode, clusters=NULL){
+
+  regulon$tfidx <- as.numeric(as.factor(regulon$tf))
+  regulon$targetidx <- as.numeric(as.factor(regulon$target))
+
+  n_target <- length(unique(regulon$target))
+  n_tf <- length(unique(regulon$tf))
+
+  if (is.null(clusters)){
+    tf_target_mat <- Matrix::sparseMatrix(x = as.vector(regulon[,mode]),
+                                          i = regulon$targetidx,
+                                          j =  regulon$tfidx,
+                                          dims = c(n_target, n_tf))
+
+    colnames(tf_target_mat) <- levels(as.factor(regulon$tf))
+    rownames(tf_target_mat) <- levels(as.factor(regulon$target))
+    tf_target_mat[is.na(tf_target_mat)] <- 0
+
+  } else if (!is.null(clusters)) {
+    tf_target_mat <- list()
+    for (cluster in unique(clusters)) {
+      tf_target_mat[[cluster]] <- Matrix::sparseMatrix(x = as.vector(regulon[,mode][,cluster]),
+                                                       i = regulon$targetidx,
+                                                       j =  regulon$tfidx,
+                                                       dims =  c(n_target, n_tf))
+
+      colnames(tf_target_mat[[cluster]]) <- levels(as.factor(regulon$tf))
+      rownames(tf_target_mat[[cluster]]) <- levels(as.factor(regulon$target))
+      tf_target_mat[[cluster]][is.na(tf_target_mat[[cluster]])] <- 0
+    }
+  }
+
+  tf_target_mat
+}
+
+
+
+calculateScore <- function(expMatrix, tf_target_mat, clusters=NULL, score.combine=NULL){
+  if (is.null(clusters)){
+    score.combine <- Matrix::t(expMatrix[rownames(tf_target_mat),, drop = FALSE]) %*%
+      tf_target_mat
+
+    rownames(score.combine) <- colnames(expMatrix)
+    colnames(score.combine) <- colnames(tf_target_mat)
+
+  } else {
+
+    for (cluster in sort(unique(clusters))){
+      score.combine[clusters == cluster,] <- Matrix::t(expMatrix[rownames(tf_target_mat[[cluster]]), clusters == cluster, drop = FALSE]) %*%
+        tf_target_mat[[cluster]]
+    }
+
+  }
+  score.combine
+}
+
+calculateFrequency <- function(freq=NULL, regulon, mode) {
+
+  if (any(is.null(ncol(regulon[,mode])), ncol(regulon[,mode]) == 1)) {
+    freq <- table(regulon$tf[as.vector(regulon[,mode]) != 0])
+    freq[freq==0 | is.na(freq)] <- 1
+  }else {
+    for (cluster in colnames(regulon[,mode])){
+      freq_counts <- table(regulon$tf[which(regulon[,mode][, cluster] != 0) ])
+      freq_counts[freq_counts==0] <- 1
+      freq[names(freq_counts), cluster] <- freq_counts }
+  }
+
+  freq
+}
+
+normalizeByFrequency <- function(score.combine, freq, clusters=NULL) {
+  if (is.null(clusters)) {
+    score.combine[, names(freq)] <- sweep(score.combine[,names(freq)], 2, freq, "/")
+  } else{
+    for (cluster in unique(clusters)) {
+      score.combine[clusters == cluster, rownames(freq)] <- sweep(score.combine[clusters == cluster, rownames(freq)], 2,
+                                                                  freq[, cluster], "/")
+    }
+  }
+  score.combine
+}
