@@ -33,7 +33,8 @@ findDifferentialActivity <- function(activity_matrix,
                                      ...){
 
   activity_matrix <- stats::na.omit(as.matrix(activity_matrix))
-  tf_markers <- scran::findMarkers(activity_matrix, groups, test.type = "t", pval.type = "some", direction="up", ...)
+  tf_markers <- scran::findMarkers(activity_matrix, groups, test.type=test.type,
+                                   pval.type=pval.type, direction=direction, ...)
   return(tf_markers)
 
 }
@@ -77,7 +78,7 @@ getSigGenes <- function(da_list,
       logFC_cutoff <- logFC_cutoff
     }
     message ("Using a logFC cutoff of ", logFC_cutoff, " for class ", classes[i])
-    da_genes <- da_genes[which(da_genes[,"FDR"] < fdr_cutoff & da_genes[, "summary.logFC"] > logFC_cutoff), ]
+    da_genes <- da_genes[which(da_genes[,"FDR"] < fdr_cutoff & da_genes[, 3] > logFC_cutoff), ]
 
     if (nrow(da_genes) != 0){
       da_genes$class <- classes[[i]]
@@ -86,9 +87,9 @@ getSigGenes <- function(da_list,
 
     if (is.null(topgenes)){
 
-      da_genes <- da_genes[order(da_genes$FDR, -(da_genes$summary.logFC)),]
+      da_genes <- da_genes[order(da_genes$FDR, -(da_genes[, 3])),]
     } else {
-      da_genes <- da_genes[head(order(da_genes$FDR, -(da_genes$summary.logFC)), topgenes),]
+      da_genes <- da_genes[head(order(da_genes$FDR, -(da_genes[, 3])), topgenes),]
     }
     #print(da_genes)
 

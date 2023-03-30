@@ -242,7 +242,8 @@ plotBubble <- function (activity_matrix,
                         legend.label = "relative_activity",
                         x.label = "transcription factors",
                         y.label = "clusters",
-                        title = "TF activity"){
+                        title = "TF activity",
+                        ...){
 
   bubblesize <- match.arg(bubblesize)
 
@@ -255,7 +256,7 @@ plotBubble <- function (activity_matrix,
 
   #find logFC and FDR of TFs
   markers <- findDifferentialActivity(activity_matrix, clusters,
-                                      pval.type = "some", direction = "up", test.type = "t")
+                                      ...)
   markers <- suppressMessages(getSigGenes(markers, fdr_cutoff = 1.5,
                                           logFC_cutoff = -100))
   markers <- markers[which(markers$tf %in% tf), ]
