@@ -1,19 +1,21 @@
-aggregateMatrix <- function(regulon, mode, FUN,...){
-  regulon$tf <- as.factor(regulon$tf)
-  regulon$target <- as.factor(regulon$target)
-  groupings <- interaction(regulon$tf,regulon$target, sep = '_')
-  index <- order(groupings)
-  regulon <- regulon[index,]
-  breaks <- which(!duplicated(groupings[index]))
-  aggregated <- lapply(seq_len(length(breaks)-1), function(i){
-    FUN(as.matrix(regulon[breaks[i]:(breaks[i+1]-1), mode, drop=FALSE]), ...)})
+aggregateMatrix <- function(regulon, mode, FUN){
 
-  aggregated[[length(breaks)]] <-
-    FUN(as.matrix(regulon[breaks[length(breaks)]:nrow(regulon), mode, drop=FALSE]))
-  aggregated <- do.call(rbind, aggregated)
-  aggregated <- S4Vectors::DataFrame(tf=regulon$tf[breaks],
-                                     target = regulon$target[breaks],
-                                     weight = I(aggregated))
+  groupings <- paste(regulon$tf,regulon$target, sep = '#')
+  groupings <- factor(groupings, levels = unique(groupings))
+
+  weights <- regulon[, mode]
+  agg.weights <- rowsum(weights, groupings, reorder = FALSE)
+
+  if (FUN == "mean") {
+    num <- table(groupings)
+    agg.weights <- agg.weights / as.integer(num[rownames(agg.weights)])
+  }
+
+
+  rownames.split <- do.call(rbind,strsplit(rownames(agg.weights), "#"))
+  aggregated <- S4Vectors::DataFrame(tf=rownames.split[,1],
+                                     target = rownames.split[,2],
+                                     weight = I(agg.weights))
   colnames(aggregated)[3] <- mode
   aggregated
 }
@@ -37,27 +39,7 @@ initiateMatCluster <- function(clusters, nrow, value=NA) {
 
 
 
-combineSCE <- function(expMatrix, exp_assay, peakMatrix, peak_assay, reducedDim, useDim) {
 
-  # convert expMatrix and peakMatrix in case they weren't already so
-  expMatrix <- as(expMatrix,"SingleCellExperiment")
-  peakMatrix <- as(peakMatrix,"SingleCellExperiment")
-
-  # assay of peakMatrix needs to be named as counts
-  names(assays(peakMatrix)[peak_assay]) <- "counts"
-
-  sce <- SingleCellExperiment(list(counts = assay(expMatrix, exp_assay)),
-                              altExps = list(peakMatrix = peakMatrix))
-
-  rowRanges(sce) <- rowRanges(expMatrix)
-  rowRanges(altExp(sce)) <- rowRanges(peakMatrix)
-
-  # add reduced dimension information to sce object
-  reducedDim(sce, useDim) <- reducedDim
-
-  sce
-
-}
 
 #' @import ggplot2
 plotDiagnostic <- function(idx,regulon, expMatrix,exp_assay, exp_cutoff=1, peakMatrix, peak_assay, peak_cutoff=0, clusters){
