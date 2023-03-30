@@ -167,7 +167,7 @@ activity_matrix.norm5 <- calculateActivity(sce,
                                            regulon = regulon,
                                            exp_assay = "counts",
                                            clusters = clusters,
-                                           FUN = colMeans)
+                                           FUN = "mean")
 test_that("calculateActivity works correctly with clusters", {
   expect_equal(activity_matrix.norm5,
                activity_matrix.norm3)
