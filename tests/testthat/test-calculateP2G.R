@@ -1,4 +1,5 @@
 set.seed(1010)
+# set up expression and peak matrices
 n_cells <- 100
 geneExpMatrix <- matrix(abs(rnorm(1e4)), ncol = n_cells,
                         dimnames = list(NULL, paste0("Cell_", seq_len(n_cells))))
@@ -25,23 +26,73 @@ rowRanges(gene_sce) <- gene.ranges
 set.seed(1100)
 clusters <- kmeans(reducedDimMatrix, 10)$cluster
 
+
+
+### test pseudobulk
+
+sce_combined <- combineSCE(gene_sce, "logcounts", peak_sce, "counts", reducedDimMatrix, "reducedDim")
+sce_grouped <- applySCE(sce_combined,
+                        scuttle::aggregateAcrossCells,
+                        ids = clusters,
+                        statistics = "mean")
+
+
+# extract gene expression and peak matrix
+expGroupMatrix <- assay(sce_grouped, "counts")
+peakGroupMatrix <- assay(altExp(sce_grouped), "counts")
+
+
 geneExpMatrix.avg <- t(apply(geneExpMatrix, 1, function(x) tapply(x,clusters, mean)))
+peakMatrix.avg <- t(apply(peakMatrix, 1, function(x) tapply(x,clusters, mean)))
+
+
+test_that("pseudobulk works correctly", {
+  expect_equal(expGroupMatrix, geneExpMatrix.avg)
+  expect_equal(peakGroupMatrix, peakMatrix.avg)
+})
+
+
+### test overlap
+
+
 # remove genes that are equal to 0
 non.zero.genes <- which(rowSums(geneExpMatrix.avg) != 0)
-peakMatrix.avg <- t(apply(peakMatrix, 1, function(x) tapply(x,clusters, mean)))
+non.zero.peaks <- which(rowSums(peakMatrix.avg) != 0)
+
 gene.start <- promoters(gene.ranges[non.zero.genes,])
+peak.ranges <- peak.ranges[non.zero.peaks,]
 overlap <- S4Vectors::DataFrame(findOverlaps(resize(gene.start, 5000, "center"),
                                        peak.ranges))
 
-# save row numbers to later set them as row names for compatibility with
-# calculateP2G output
-overlap$row_numb <- seq_len(nrow(overlap))
+# remove genes and peaks that are equal to 0
+sce_grouped <- sce_grouped[which(rowSums(assay(sce_grouped)) != 0),]
+altExp(sce_grouped) <- altExp(sce_grouped)[which(rowSums(assay(altExp(sce_grouped), "counts")) != 0),]
 
+# get gene information
+geneSet <- rowRanges(sce_grouped)
+geneStart <- promoters(geneSet)
+
+# get peak range information
+peakSet <- rowRanges(altExp(sce_grouped))
+
+# find overlap after resizing
+o <- S4Vectors::DataFrame(findOverlaps(resize(geneStart, 5000, "center"),
+                                       peakSet,
+                                       ignore.strand = TRUE))
+
+
+
+test_that("overlap works correctly", {
+  expect_equal(o, overlap)
+})
+
+
+### test calculateP2G
 overlap$Correlation <- mapply(cor, asplit(geneExpMatrix.avg[non.zero.genes,][overlap[,1],],1),
-                              asplit(peakMatrix.avg[overlap[,2],],1))
+                              asplit(peakMatrix.avg[non.zero.peaks,][overlap[,2],],1))
 
 overlap$Correlation <- mapply(cor, as.data.frame(t(geneExpMatrix.avg[non.zero.genes,][overlap[,1],])),
-                              as.data.frame(t(peakMatrix.avg[overlap[,2],])))
+                              as.data.frame(t(peakMatrix.avg[non.zero.peaks,][overlap[,2],])))
 
 overlap$distance <- distance(gene.start[overlap[,1], ], peak.ranges[overlap[,2], ])
 
@@ -58,19 +109,22 @@ overlap$end <- GenomicRanges::end(peak.ranges[overlap[,2], ])
 overlap <- overlap[order(overlap[,2], overlap[,1]),]
 overlap <- overlap[overlap$Correlation > 0.5,]
 overlap <- as.data.frame(overlap)
-attr(overlap, "row.names") <- overlap$row_numb
+
 
 set.seed(1100)
+P2G <- calculateP2G(peakMatrix = peak_sce,
+                    peak_assay = "counts",
+                    expMatrix = gene_sce,
+                    exp_assay = "logcounts",
+                    reducedDim = reducedDimMatrix,
+                    cellNum = 10,
+                    maxDist = 5000,
+                    cor_cutoff = 0.5)
+
 test_that("calculateP2G works correctly", {
-  P2G <- calculateP2G(peakMatrix = peak_sce,
-                      peak_assay = "counts",
-                      expMatrix = gene_sce,
-                      exp_assay = "logcounts",
-                      reducedDim = reducedDimMatrix,
-                      cellNum = 10,
-                      maxDist = 5000)
-  expect_equal(P2G[,c("Correlation", "FDR")], overlap[,c("Correlation", "FDR")], tolerance = 1e-10)
-  expect_equal(P2G[,c("distance","target","chr","start","end")], overlap[,c("distance","target","chr","start","end")])
+
+  expect_equal(as.vector(P2G$Correlation), as.vector(overlap$Correlation), tolerance = 1e-10)
+  expect_equal(data.frame(P2G[,c("distance","target","chr","start","end")]), overlap[,c("distance","target","chr","start","end")])
 })
 
 

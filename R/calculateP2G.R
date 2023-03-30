@@ -162,7 +162,7 @@ calculateP2G <- function(peakMatrix = NULL,
 
     # extract gene expression and peak matrix
     expGroupMatrix <- assay(sce_grouped, "counts")
-    peakGroupMatrix <- assay(altExp(sce_grouped), peak_assay)
+    peakGroupMatrix <- assay(altExp(sce_grouped), "counts")
 
 
     # get gene information
@@ -247,3 +247,24 @@ calculateP2G <- function(peakMatrix = NULL,
 }
 
 
+combineSCE <- function(expMatrix, exp_assay, peakMatrix, peak_assay, reducedDim, useDim) {
+
+  # convert expMatrix and peakMatrix in case they weren't already so
+  expMatrix <- as(expMatrix,"SingleCellExperiment")
+  peakMatrix <- as(peakMatrix,"SingleCellExperiment")
+
+  # assay of peakMatrix needs to be named as counts
+  names(assays(peakMatrix)[peak_assay]) <- "counts"
+
+  sce <- SingleCellExperiment(list(counts = assay(expMatrix, exp_assay)),
+                              altExps = list(peakMatrix = peakMatrix))
+
+  rowRanges(sce) <- rowRanges(expMatrix)
+  rowRanges(altExp(sce)) <- rowRanges(peakMatrix)
+
+  # add reduced dimension information to sce object
+  reducedDim(sce, useDim) <- reducedDim
+
+  sce
+
+}

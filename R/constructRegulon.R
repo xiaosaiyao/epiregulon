@@ -228,7 +228,7 @@ getRegulon <- function(p2g,
 
   if (aggregate) {
     "aggregating regulon ..."
-    regulon_df <- aggregateMatrix.DF(regulon_df[,c("tf","target","Correlation")], "Correlation", colMeans)
+    regulon_df <- aggregateMatrix(regulon_df[,c("tf","target","Correlation")], "Correlation")
   }
   colnames(regulon_df)[colnames(regulon_df) == "Correlation"] <- "corr"
   return(regulon_df)
@@ -236,20 +236,3 @@ getRegulon <- function(p2g,
 }
 
 
-aggregateMatrix.DF <- function(regulon, mode, FUN){
-  regulon$tf <- as.factor(regulon$tf)
-  regulon$target <- as.factor(regulon$target)
-  groupings <- interaction(regulon$tf,regulon$target, sep = '_')
-  index <- order(groupings)
-  regulon <- regulon[index,]
-  breaks <- which(!duplicated(groupings[index]))
-  aggregated <- lapply(seq_len(length(breaks)-1), function(i){
-    FUN(as.matrix(regulon[breaks[i]:(breaks[i+1]-1), mode, drop=FALSE]))})
-
-  aggregated[[length(breaks)]] <-
-    FUN(as.matrix(regulon[breaks[length(breaks)]:nrow(regulon), mode, drop=FALSE]))
-  aggregated <- do.call(rbind, aggregated)
-  aggregated <- S4Vectors::DataFrame(tf=regulon$tf[breaks],
-                                     target=regulon$target[breaks],
-                                     Correlation=I(aggregated))
-}
