@@ -52,7 +52,7 @@ addMotifScore <- function(regulon,
     message ("annotating peaks with motifs")
     opts <- list()
 
-
+    require(chromVARmotifs)
     data("human_pwms_v1")
     data("mouse_pwms_v1")
 
@@ -80,19 +80,16 @@ addMotifScore <- function(regulon,
 
 
   # Remove motifs not found in regulon
-  motifs <- motifs[, colnames(motifs) %in% unique(regulon$tf)]
+  motifs <- motifs[, colnames(motifs) %in% unique(regulon$tf), drop=FALSE]
 
   # Add motif information
   regulon[,field_name] <- NA
-  regulon.split <- split(regulon, f=regulon$tf)
 
-  tfs_with_motif <- match(colnames(motifs), names(regulon.split))
+  tfs_with_motif <- intersect(colnames(motifs), unique(regulon$tf))
 
-  for (i in tfs_with_motif ){
-    regulon.split[[i]][,field_name] <- motifs[regulon.split[[i]]$idxATAC, names(regulon.split)[i]]
+  for (tf in tfs_with_motif){
+    regulon[which(regulon$tf ==tf), field_name] <- motifs[regulon$idxATAC[which(regulon$tf ==tf)],tf]
   }
-
-  regulon <- do.call("rbind", as.list(regulon.split))
 
   regulon[,field_name] <- as.numeric(regulon[,field_name])
 
