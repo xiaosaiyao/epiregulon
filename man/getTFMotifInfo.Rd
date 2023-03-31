@@ -2,12 +2,14 @@
 % Please edit documentation in R/constructRegulon.R
 \name{getTFMotifInfo}
 \alias{getTFMotifInfo}
-\title{An accessor function to retrieve TF motif info from \href{https://github.com/xiaosaiyao/scMultiome/blob/master/R/tfBinding.R}{scMultiome}}
+\title{Retrieve TF binding sites or motif positions}
 \usage{
 getTFMotifInfo(
   genome = c("hg38", "hg19", "mm10"),
   source = c("atlas", "cistrome"),
-  metadata = FALSE
+  metadata = FALSE,
+  mode = c("occupancy", "motif"),
+  peaks = NULL
 )
 }
 \arguments{
@@ -16,6 +18,10 @@ getTFMotifInfo(
 \item{source}{character string specifying the ChIP-seq data source}
 
 \item{metadata}{logical flag specifying whether to return data or metadata only}
+
+\item{mode}{a string indicating whether to download a GRangelist of TF binding sites ("occupancy") or motif matches ("motif").
+TF binding information is retrieved from \href{https://github.com/xiaosaiyao/scMultiome/blob/devel/R/tfBinding.R}{scMultiome} whereas
+motif information is annotated by cisbp from \href{https://github.com/GreenleafLab/chromVARmotifs}{chromVARmotifs}}
 }
 \value{
 A list of TF binding sites as a \code{GrangesList} object.
@@ -25,9 +31,16 @@ Combined transcription factor ChIP-seq data from ChIP-Atlas and ENCODE or
 from CistromeDB and ENCODE.
 }
 \examples{
+# retrieve TF binding info
 \dontrun{
 getTFMotifInfo("mm10", "atlas")
 }
+
+# retrieve motif info
+peaks <- GRanges(seqnames = c("chr12","chr19","chr19","chr11","chr6"),
+ranges = IRanges(start = c(124914563,50850844, 50850844, 101034172, 151616327),
+end = c(124914662,50850929, 50850929, 101034277, 151616394)))
+grl <- getTFMotifInfo(genome = "hg38", mode = "motif", peaks=peaks)
 
 }
 \references{

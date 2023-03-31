@@ -14,8 +14,7 @@ calculateActivity(
   ncore = 1,
   genesets = NULL,
   clusters = NULL,
-  FUN = mean,
-  ...
+  FUN = c("mean", "sum")
 )
 }
 \arguments{
@@ -102,12 +101,12 @@ activity <- calculateActivity(expMatrix = gene_sce,
                               exp_assay = "logcounts")
 
 # calculate cluster-specific activity if cluster-specific weights are supplied
-regulon.w$weight <- data.frame(treat1=runif(nrow(regulon.w), -1,1),
-                               treat2=runif(nrow(regulon.w), -1,1))
+regulon.w$weight <- matrix(runif(nrow(regulon.w)*2, -1,1), nrow(regulon.w),2)
+colnames(regulon.w$weight) <- c("treat1","treat2")
 
 activity.cluster <- calculateActivity(gene_sce,
 regulon = regulon.w, clusters = gene_sce$Treatment,
-exp_assay = "logcounts", FUN = colMeans)
+exp_assay = "logcounts", FUN = "mean")
 
 # compute signature scores from weighted genesets
 weighted_genesets <- list(set1 = data.frame(genes = c("Gene_1", "Gene_2", "Gene_3"),

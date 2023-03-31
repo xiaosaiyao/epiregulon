@@ -7,6 +7,8 @@
 addMotifScore(
   regulon,
   archr_path = NULL,
+  field_name = "motif",
+  motif_name = "Motif",
   peaks = NULL,
   pwms = NULL,
   species = c("human", "mouse"),
@@ -20,6 +22,8 @@ addMotifScore(
 motif enrichment was already performed. If no motif enrichment has been performed, first annotate the ArchR using
 \code{addMotifAnnotations}. If no ArchR project is provided, the user can also provide peaks in the form of GRanges and
 this function will annotate the peaks with Cisbp}
+
+\item{motif_name}{Character string    indicating name of the peakAnnotation object (i.e. Motifs) to retrieve from the designated ArchRProject.}
 
 \item{peaks}{A GRanges object indicating the peaks to perform motif annotation on if ArchR project is not provided.
 The peak indices should match the \code{re} column in the regulon}
@@ -39,7 +43,7 @@ Add Motif Scores
 }
 \examples{
 regulon <- S4Vectors::DataFrame(tf = c("AR","AR","AR","ESR1","ESR1"),
-re = 1:5)
+idxATAC = 1:5)
 peaks <- GRanges(seqnames = c("chr12","chr19","chr19","chr11","chr6"),
 ranges = IRanges(start = c(124914563,50850844, 50850844, 101034172, 151616327),
 end = c(124914662,50850929, 50850929, 101034277, 151616394)))

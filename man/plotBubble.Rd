@@ -13,7 +13,8 @@ plotBubble(
   legend.label = "relative_activity",
   x.label = "transcription factors",
   y.label = "clusters",
-  title = "TF activity"
+  title = "TF activity",
+  ...
 )
 }
 \arguments{
