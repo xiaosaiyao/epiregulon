@@ -19,6 +19,7 @@
 #' @examples
 #' regulon <- S4Vectors::DataFrame(tf = c("AR","AR","AR","ESR1","ESR1"),
 #' idxATAC = 1:5)
+
 #' peaks <- GRanges(seqnames = c("chr12","chr19","chr19","chr11","chr6"),
 #' ranges = IRanges(start = c(124914563,50850844, 50850844, 101034172, 151616327),
 #' end = c(124914662,50850929, 50850929, 101034277, 151616394)))
@@ -50,24 +51,8 @@ addMotifScore <- function(regulon,
 
   } else if (is.null(archr_path) & !is.null(peaks)) {
     message ("annotating peaks with motifs")
-    opts <- list()
 
-    require(chromVARmotifs)
-    data("human_pwms_v1")
-    data("mouse_pwms_v1")
-
-    species_motif <- function(species) {
-      switch(species,
-             human=human_pwms_v1,
-             mouse=mouse_pwms_v1)
-    }
-
-    if (is.null(pwms)){
-      pwms <- species_motif(species)
-    }
-    motifs <- motifmatchr::matchMotifs(pwms=pwms,
-                                       subject=peaks,
-                                       genome=genome)
+    motifs <- annotateMotif(species, peaks, genome, pwms)
     motifs <- assay(motifs,"motifMatches")
     # Convert motifs to gene names
     colnames(motifs) <- lapply(strsplit(colnames(motifs), split="_|\\."), "[", 3)
@@ -97,3 +82,26 @@ addMotifScore <- function(regulon,
 
 
 }
+
+species_motif <- function(species) {
+  switch(species,
+         human=human_pwms_v1,
+         mouse=mouse_pwms_v1)
+}
+
+annotateMotif <- function(species, peaks, genome, pwms = NULL, ...) {
+  require(chromVARmotifs)
+  data("human_pwms_v1")
+  data("mouse_pwms_v1")
+
+
+  if (is.null(pwms)){
+    pwms <- species_motif(species)
+  }
+  motifs <- motifmatchr::matchMotifs(pwms=pwms,
+                                     subject=peaks,
+                                     genome=genome,
+                                     ...)
+
+}
+
