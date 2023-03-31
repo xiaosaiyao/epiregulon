@@ -59,19 +59,56 @@ getP2Glinks <- function(archr_path,
 }
 
 
-#' An accessor function to retrieve TF motif info from [scMultiome](https://github.com/xiaosaiyao/scMultiome/blob/master/R/tfBinding.R)
+#' Retrieve TF binding sites or motif positions
 #'
 #' Combined transcription factor ChIP-seq data from ChIP-Atlas and ENCODE or
 #' from CistromeDB and ENCODE.
+#' @param mode a string indicating whether to download a GRangelist of TF binding sites ("occupancy") or motif matches ("motif").
+#' TF binding information is retrieved from [scMultiome](https://github.com/xiaosaiyao/scMultiome/blob/devel/R/tfBinding.R) whereas
+#' motif information is annotated by cisbp from [chromVARmotifs](https://github.com/GreenleafLab/chromVARmotifs)
 #' @inherit scMultiome::tfBinding params return references
 #' @examples
+#' # retrieve TF binding info
 #' \dontrun{
 #' getTFMotifInfo("mm10", "atlas")
 #' }
 #'
+#' # retrieve motif info
+#' peaks <- GRanges(seqnames = c("chr12","chr19","chr19","chr11","chr6"),
+#' ranges = IRanges(start = c(124914563,50850844, 50850844, 101034172, 151616327),
+#' end = c(124914662,50850929, 50850929, 101034277, 151616394)))
+#' grl <- getTFMotifInfo(genome = "hg38", mode = "motif", peaks=peaks)
+#'
 #' @export
 #'
-getTFMotifInfo <- scMultiome::tfBinding
+getTFMotifInfo <- function (genome = c("hg38", "hg19", "mm10"),
+                            source = c("atlas", "cistrome"),
+                            metadata = FALSE,
+                            mode = c("occupancy","motif"),
+                            peaks = NULL) {
+  genome <- match.arg(genome)
+  source <- match.arg(source)
+  mode <- match.arg(mode)
+
+  if (mode == "occupancy") {
+    grl <- scMultiome::tfBinding(genome, source, metadata)
+  } else if (mode == "motif") {
+    species <- switch(genome,
+                      hg38 = "human",
+                      hg19 = "human",
+                      mm10 = "mouse")
+    message("keeping only standard chromosomes..")
+    peaks <- GenomeInfoDb::keepStandardChromosomes(peaks, pruning.mode = "coarse")
+    
+    message("annotating peaks with motifs")
+    grl <- annotateMotif(species, peaks, genome, out = "positions")
+    names(grl) <- lapply(strsplit(names(grl), split="_|\\."), "[", 3)
+  }
+
+  grl
+}
+
+
 
 #' Add TF binding motif occupancy information to the peak2gene object
 #'
