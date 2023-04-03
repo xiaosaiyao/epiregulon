@@ -34,11 +34,11 @@ Imports:
     scales,
     igraph,
     GSVA,
-    ArchR,
     checkmate,
     ggraph,
     ComplexHeatmap,
-    circlize
+    circlize,
+    Rcpp
 Depends: 
     R (>= 4.2.0),
     SingleCellExperiment
@@ -53,6 +53,7 @@ Suggests:
     BiocStyle,
     testthat (>= 3.0.0),
     coin
+LinkingTo: Rcpp
 VignetteBuilder: knitr
 URL:
 biocViews: Software, NetworkInference, Epigenetics, SingleCell, GeneRegulation, Network

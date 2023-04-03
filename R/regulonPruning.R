@@ -87,10 +87,8 @@
 #' pruned.regulon <- pruneRegulon(expMatrix = gene_sce,
 #' exp_assay = "logcounts", peakMatrix = peak_sce, peak_assay = "counts",
 #' regulon = regulon, clusters = gene_sce$Treatment, aggregate = FALSE, regulon_cutoff = 0.5)
-#' @useDynLib epiregulon
 #'
 #' @author Xiaosai Yao, Tomasz Wlodarczyk
-
 
 pruneRegulon <- function(regulon,
                          expMatrix = NULL,
@@ -123,34 +121,34 @@ pruneRegulon <- function(regulon,
 
   expMatrix <- as(expMatrix, "dgCMatrix")
   peakMatrix <- as(peakMatrix, "dgCMatrix")
-
-  # clean up regulons by removing tf and targets not found in regulons
-  regulon <- regulon[regulon$tf %in% rownames(expMatrix),]
-  regulon <- regulon[regulon$target %in% rownames(expMatrix),]
-  regulon <- regulon[order(regulon$tf),]
-
-  # remove genes not found in regulon
-  expMatrix <- expMatrix[which(rownames(expMatrix) %in% unique(c(regulon$tf, regulon$target))),]
-
-  # name peakMatrix
-  rownames(peakMatrix) <- seq_len(nrow(peakMatrix))
-
-  # remove peaks not found in regulon
-  peakMatrix <- peakMatrix[which(rownames(peakMatrix) %in% unique(regulon$idxATAC)),]
-
-  # binarize peak and expression matrices according to cutoff
-  message("binarizing matrices")
-  peakMatrix.bi <- binarize_matrix(peakMatrix, peak_cutoff)
-  expMatrix.bi <- tfMatrix.bi <- binarize_matrix(expMatrix, exp_cutoff)
-
-
-  unique_clusters <- c("all", as.character(sort(unique(clusters))))
-
-  res <- list()
-  regulon.split <- split(regulon, regulon$tf)
-
+  
   message("pruning regulons")
   if (test == "binom") {
+    # clean up regulons by removing tf and targets not found in regulons
+    regulon <- regulon[regulon$tf %in% rownames(expMatrix),]
+    regulon <- regulon[regulon$target %in% rownames(expMatrix),]
+    regulon <- regulon[order(regulon$tf),]
+  
+    # remove genes not found in regulon
+    expMatrix <- expMatrix[which(rownames(expMatrix) %in% unique(c(regulon$tf, regulon$target))),]
+  
+    # name peakMatrix
+    rownames(peakMatrix) <- seq_len(nrow(peakMatrix))
+  
+    # remove peaks not found in regulon
+    peakMatrix <- peakMatrix[which(rownames(peakMatrix) %in% unique(regulon$idxATAC)),]
+  
+    # binarize peak and expression matrices according to cutoff
+    message("binarizing matrices")
+    peakMatrix.bi <- binarize_matrix(peakMatrix, peak_cutoff)
+    expMatrix.bi <- tfMatrix.bi <- binarize_matrix(expMatrix, exp_cutoff)
+  
+  
+    unique_clusters <- c("all", as.character(sort(unique(clusters))))
+  
+    res <- list()
+    regulon.split <- split(regulon, regulon$tf)
+  
     # Perform binomial test
     res <- BiocParallel::bplapply(
       X = seq_len(length(regulon.split)),
@@ -164,29 +162,89 @@ pruneRegulon <- function(regulon,
       BPPARAM = BPPARAM
       )
 
-
+    res <- do.call("rbind", res)
 
   } else if (test == "chi.sq") {
     # Perform chi-square test
-    res <- BiocParallel::bplapply(
-      X = seq_len(length(regulon.split)),
-      FUN = chisq_bp,
-      regulon.split,
-      expMatrix.bi,
-      peakMatrix.bi,
-      tfMatrix.bi,
-      clusters,
-      unique_clusters,
-      BPPARAM = BPPARAM
-      )
+#    res <- BiocParallel::bplapply(
+#      X = seq_len(length(regulon.split)),
+#      FUN = chisq_bp,
+#      regulon.split,
+#      expMatrix.bi,
+#      peakMatrix.bi,
+#      tfMatrix.bi,
+#      clusters,
+#      unique_clusters,
+#      BPPARAM = BPPARAM
+#      )
+
+    peak_id <- regulon$idxATAC
+    target_id <- factor(regulon$target, levels=rownames(expMatrix))
+    tf_id <- factor(regulon$tf, levels=rownames(expMatrix))
+
+    p_o <- order(peak_id, tf_id, target_id)
+    p_peak_id <- as.integer(peak_id[p_o]) - 1L
+    p_target_id <- as.integer(target_id[p_o]) - 1L 
+    p_tf_id <- as.integer(tf_id[p_o]) - 1L
+
+    t_o <- order(target_id)
+    t_target_id <- as.integer(target_id[t_o]) - 1L 
+
+    if (is.null(clusters)) {
+       cluster_id <- factor(integer(ncol(peakMatrix)))
+    } else {
+       cluster_id <- factor(clusters)
+    }
+    cluster_id2 <- as.integer(cluster_id) - 1L
+
+    stats <- fast_chisq(
+      peak_ordered = p_peak_id, 
+      tf_by_peak = p_tf_id, 
+      target_by_peak = p_target_id,
+
+      target_ordered = t_target_id,
+
+      npeaks = nrow(peakMatrix),
+      peakmat_x = peakMatrix@x,
+      peakmat_i = peakMatrix@i,
+      peakmat_p = peakMatrix@p,
+      peak_cutoff = peak_cutoff,
+
+      ngenes = nrow(expMatrix),
+      expmat_x = expMatrix@x,
+      expmat_i = expMatrix@i,
+      expmat_p = expMatrix@p,
+      exp_cutoff = exp_cutoff,
+
+      nclusters = nlevels(cluster_id),
+      clusters = cluster_id2
+    )
+
+    stats$peak[p_o,] <- stats$peak
+    stats$triple[p_o,] <- stats$triple
+    stats$target[t_o,] <- stats$target
+
+    stats$peak <- cbind(rowSums(stats$peak), stats$peak)
+    stats$triple <- cbind(rowSums(stats$triple), stats$triple)
+    stats$target <- cbind(rowSums(stats$target), stats$target)
+    
+    cluster_freq <- c(length(cluster_id), as.numeric(table(cluster_id)))
+    cluster_freq <- matrix(nrow=nrow(regulon), ncol=length(cluster_freq), cluster_freq, byrow=TRUE)
+    peak.prop <- stats$peak / cluster_freq
+    target.prop <- stats$target / cluster_freq
+    null_probability <- peak.prop * target.prop
+
+    res <- chisqTest(k = peak$triple, size = cluster_freq, p = null_probability)
+    dim(res$p) <- dim(cluster_freq)
+    dim(res$stats) <- dim(cluster_freq)
+    colnames(res$p) <- sprintf("pval_%s", levels(cluster_id))
+    colnames(res$stat) <- sprintf("stat_%s", levels(cluster_id))
+    res <- cbind(res$p, res$stat)
 
   } else {
 
     stop("test must be either binom or chi.sq")
   }
-
-
-  res <- do.call("rbind", res)
 
 
   # append test stats to regulon
