@@ -234,11 +234,9 @@ pruneRegulon <- function(regulon,
     target.prop <- stats$target / cluster_freq
     null_probability <- peak.prop * target.prop
 
-    res <- chisqTest(k = peak$triple, size = cluster_freq, p = null_probability)
-    dim(res$p) <- dim(cluster_freq)
-    dim(res$stats) <- dim(cluster_freq)
-    colnames(res$p) <- sprintf("pval_%s", levels(cluster_id))
-    colnames(res$stat) <- sprintf("stat_%s", levels(cluster_id))
+    res <- chisqTest(k = stats$triple, size = cluster_freq, p = null_probability)
+    colnames(res$p) <- sprintf("pval_%s", c("all", levels(cluster_id)))
+    colnames(res$stat) <- sprintf("stat_%s", c("all", levels(cluster_id)))
     res <- cbind(res$p, res$stat)
 
   } else {
@@ -451,15 +449,9 @@ chisq_bp <- function(n,
 }
 
 chisqTest <- function (k, size, p) {
-
   e1 <- p * size
   e2 <- size - e1
   chi <- (k - e1)^2 / e1 + (size - k - e2)^2 / e2
-  df <- cbind(p = stats::pchisq(chi, df = 1, lower.tail = FALSE), stats = chi)
-  return(df)
-
-
+  list(p = stats::pchisq(chi, df = 1, lower.tail = FALSE), stats = chi)
 }
-
-
 

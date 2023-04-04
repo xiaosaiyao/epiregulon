@@ -21,7 +21,6 @@ Imports:
     methods,
     utils,
     S4Vectors,
-    genomitory,
     scran,
     patchwork,
     clusterProfiler,

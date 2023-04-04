@@ -9,13 +9,13 @@ Rcpp::List fast_chisq(
 
     int npeaks,
     Rcpp::NumericVector peakmat_x, // tatami in flux so we'll just drag the vectors in.
-    Rcpp::LogicalVector peakmat_i, 
+    Rcpp::IntegerVector peakmat_i, 
     Rcpp::IntegerVector peakmat_p, 
     double peak_cutoff,
 
     int ngenes,
     Rcpp::NumericVector expmat_x,
-    Rcpp::LogicalVector expmat_i, 
+    Rcpp::IntegerVector expmat_i, 
     Rcpp::IntegerVector expmat_p,
     double exp_cutoff,
 
@@ -79,6 +79,9 @@ Rcpp::List fast_chisq(
 
     for (int c = 0; c < ncols; ++c) {
         int clust = clusters[c];
+        double* trptr = output_triple.begin() + clust * nrows;
+        double* pkptr = output_peak.begin() + clust * nrows;
+        double* taptr = output_target.begin() + clust * nrows;
 
         // First pass to tag each gene for whether it's expressed.
         int exstart = expmat_p[c];
@@ -101,9 +104,9 @@ Rcpp::List fast_chisq(
 
                 for (size_t j = regstart; j < regend; ++j) {
                     if (exists_in_exp[tf_by_peak[j]]) {
-                        ++output_peak(j, clust);
+                        ++pkptr[j];
                         if (exists_in_exp[target_by_peak[j]]) {
-                            ++output_triple(j, clust);
+                            ++trptr[j];
                         }
                     }
                 }
@@ -118,7 +121,7 @@ Rcpp::List fast_chisq(
                 auto regend = target_end[index];
 
                 for (size_t j = regstart; j < regend; ++j) {
-                    ++output_target(j, clust);
+                    ++taptr[j];
                 }
 
                 // Also resetting the buffer while we're here.
