@@ -5,12 +5,14 @@
 #' motif enrichment was already performed. If no motif enrichment has been performed, first annotate the ArchR using
 #' `addMotifAnnotations`. If no ArchR project is provided, the user can also provide peaks in the form of GRanges and
 #' this function will annotate the peaks with Cisbp
+#' @param field_name Character string	indicating the column name of the regulon to add the motif information to
 #' @param motif_name Character string	indicating name of the peakAnnotation object (i.e. Motifs) to retrieve from the designated ArchRProject.
 #' @param peaks A GRanges object indicating the peaks to perform motif annotation on if ArchR project is not provided.
 #' The peak indices should match the `re` column in the regulon
 #' @param pwms A PWMatrixList for annotation of motifs using 'motifmatchr::matchMotifs'
 #' @param species Character string indicating species. Currently supported species is human or mouse
 #' @param genome Character string indicating the genomic build
+#' @param ... Additional arguments to pass into motifmatchr::matchMotifs
 #'
 #' @return A DataFrame with motif matches added with 1s indicating the presence of motifs and
 #' 0s indicating the absence of motifs
@@ -52,7 +54,7 @@ addMotifScore <- function(regulon,
   } else if (is.null(archr_path) & !is.null(peaks)) {
     message ("annotating peaks with motifs")
 
-    motifs <- annotateMotif(species, peaks, genome, pwms)
+    motifs <- annotateMotif(species, peaks, genome, pwms, ...)
     motifs <- assay(motifs,"motifMatches")
     # Convert motifs to gene names
     colnames(motifs) <- lapply(strsplit(colnames(motifs), split="_|\\."), "[", 3)

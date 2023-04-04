@@ -66,6 +66,14 @@ getP2Glinks <- function(archr_path,
 #' @param mode a string indicating whether to download a GRangelist of TF binding sites ("occupancy") or motif matches ("motif").
 #' TF binding information is retrieved from [scMultiome](https://github.com/xiaosaiyao/scMultiome/blob/devel/R/tfBinding.R) whereas
 #' motif information is annotated by cisbp from [chromVARmotifs](https://github.com/GreenleafLab/chromVARmotifs)
+#' @param archr_path Character string indicating the path of the ArchR project to retrieve motif information if
+#' motif enrichment was already performed. If no motif enrichment has been performed, first annotate the ArchR using
+#' `addMotifAnnotations`. If no ArchR project is provided, the user can also provide peaks in the form of GRanges and
+#' this function will annotate the peaks with Cisbp
+#' @param motif_name Character string	indicating name of the peakAnnotation object (i.e. Motifs) to retrieve from the designated ArchRProject.
+#' @param peaks A GRanges object indicating the peaks to perform motif annotation on if ArchR project is not provided.
+#' The peak indices should match the `re` column in the regulon
+
 #' @inherit scMultiome::tfBinding params return references
 #' @examples
 #' # retrieve TF binding info
@@ -85,6 +93,8 @@ getTFMotifInfo <- function (genome = c("hg38", "hg19", "mm10"),
                             source = c("atlas", "cistrome"),
                             metadata = FALSE,
                             mode = c("occupancy","motif"),
+                            archr_path = NULL,
+                            motif_name = "Motif",
                             peaks = NULL) {
   genome <- match.arg(genome)
   source <- match.arg(source)
@@ -93,16 +103,34 @@ getTFMotifInfo <- function (genome = c("hg38", "hg19", "mm10"),
   if (mode == "occupancy") {
     grl <- scMultiome::tfBinding(genome, source, metadata)
   } else if (mode == "motif") {
-    species <- switch(genome,
-                      hg38 = "human",
-                      hg19 = "human",
-                      mm10 = "mouse")
-    message("keeping only standard chromosomes..")
-    peaks <- GenomeInfoDb::keepStandardChromosomes(peaks, pruning.mode = "coarse")
-    
-    message("annotating peaks with motifs")
-    grl <- annotateMotif(species, peaks, genome, out = "positions")
-    names(grl) <- lapply(strsplit(names(grl), split="_|\\."), "[", 3)
+
+    if (!is.null(archr_path)) {
+      message("retrieving previously annotated motif from ArchR project")
+      ArchProj <-
+        ArchR::loadArchRProject(path = archr_path, showLogo = FALSE)
+      matches <- ArchR::getMatches(ArchProj, name = motif_name)
+      motifs <- assay(matches, "matches")
+
+      grl <- list()
+      for (tf in colnames(motifs)){
+        grl[[tf]] <- SummarizedExperiment::rowRanges(matches[motifs[,tf],])
+      }
+      grl <- GenomicRanges::GRangesList(grl)
+      names(grl) <- unlist(lapply(strsplit(names(grl), split="_|\\."), "[", 1))
+
+    } else {
+      species <- switch(genome,
+                        hg38 = "human",
+                        hg19 = "human",
+                        mm10 = "mouse")
+      message("keeping only standard chromosomes..")
+      peaks <- GenomeInfoDb::keepStandardChromosomes(peaks, pruning.mode = "coarse")
+
+      message("annotating peaks with motifs")
+      grl <- annotateMotif(species, peaks, genome, out = "positions")
+      names(grl) <- lapply(strsplit(names(grl), split="_|\\."), "[", 3)
+      }
+
   }
 
   grl
