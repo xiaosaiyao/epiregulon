@@ -9,17 +9,45 @@ addTFMotifInfo(p2g, grl, peakMatrix = NULL, archR_project_path = NULL)
 \arguments{
 \item{p2g}{A Peak2Gene dataframe created by ArchR or getP2Glinks() function}
 
-\item{grl}{GRangeList object containing reference TF binding information}
+\item{grl}{GRangeList object containing reference TF binding information. We recommend retrieving \code{grl} from \code{getTFMotifInfo} which
+contains TF occupancy data derived from public and ENCODE ChIP-seq peaks. Alternatively, if the users would like to provide a GRangeList
+of motif annotations. This can be derived using \code{motifmatchr::matchMotifs}. See details}
 
 \item{peakMatrix}{A matrix of scATAC-seq peak regions with peak ids as rows}
 
 \item{archR_project_path}{Path to an ArchR project that have performed LSI dimensionality reduction and scRNA-seq integration}
 }
 \value{
-A dataframe containing overlapping ids of scATAC-seq peak regions and reference TF binding regions
+A data frame containing overlapping ids of scATAC-seq peak regions and reference TF binding regions
 }
 \description{
 Add TF binding motif occupancy information to the peak2gene object
+}
+\details{
+This function annotates each regulatory element with possible transcription factors. We can either provide a GRangeList of known ChIP-seq
+binding sites (TF occupancy) or positions of TF motifs (TF motifs). While public ChIP-seq data may not fully align with the ground truth TF occupancy in users' data
+(due to technical challenges of ChIP-seq or cell type nature of TF occupancy), it does offer a few important advantages over TF motif information:
+\enumerate{
+\item{TF occupancy allows co-activators to be included. Co-activators are chromatin modifiers that do not directly bind to DNA but nonetheless play an important role
+in gene regulation}
+\item{TF occupancy can distinguish between members of the same class that may share similar motifs but that may have drastically different binding sites}
+}
+If multiple ChIP-seq are available for the same TF, we merge the ChIP-seq data to represent an universal set of possible binding sites. The predicted TF
+occupancy is further refined by \code{\link{pruneRegulon}}.
+
+If the users prefer to use TF motifs instead of TF occupancy, the users can create a GRangeList of motif annotation using \code{motifmatchr::matchMotifs}.
+Here, we demonstrate how to annotate peaks with cisbp motif database
+
+\if{html}{\out{<div class="sourceCode">}}\preformatted{library(motifmatchr)
+library(chromVARmotifs)
+data("human_pwms_v1")
+peaks <- GenomicRanges::GRanges(seqnames = c("chr1","chr2","chr2"),
+                               ranges = IRanges::IRanges(start = c(76585873,42772928, 100183786),
+                                                         width = 500))
+grl <- matchMotifs(human_pwms_v1, peaks, genome = "hg38", out = "positions")
+# retain only TF symbols. TF symbols need to be consistent with gene names in regulon
+names(grl) <- sapply(strsplit(names(grl), "_"), "[",3)
+}\if{html}{\out{</div>}}
 }
 \examples{
 set.seed(1)

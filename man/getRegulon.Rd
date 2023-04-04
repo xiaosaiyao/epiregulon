@@ -2,24 +2,24 @@
 % Please edit documentation in R/constructRegulon.R
 \name{getRegulon}
 \alias{getRegulon}
-\title{Combine the TF binding motif info and peak to gene correlations to generate regulons}
+\title{Combine the TF binding info and peak to gene correlations to generate regulons}
 \usage{
-getRegulon(p2g, overlap, aggregate = TRUE)
+getRegulon(p2g, overlap, aggregate = FALSE, FUN = colMeans)
 }
 \arguments{
-\item{p2g}{A Peak2Gene dataframe created by ArchR or getP2Glinks() function}
+\item{p2g}{A Peak2Gene data frame created by ArchR or getP2Glinks() function}
 
-\item{overlap}{A dataframe storing overlaps between the regions of the peak matrix with the bulk TF ChIP-seq binding sites computed from addTFMotifInfo}
+\item{overlap}{A data frame storing overlaps between the regions of the peak matrix with the bulk TF ChIP-seq binding sites computed from addTFMotifInfo}
 
 \item{aggregate}{logical to specify whether peak and gene ids are kept in regulon output or not}
+
+\item{FUN}{function to aggregate the weights}
 }
 \value{
-A tall format dataframe consisting of tf(regulator), target and a column indicating degree of association between TF and target such as "mor" or "corr".
-example regulon:
-tf      target  corr
+A DataFrame consisting of tf(regulator), target and a column indicating degree of association between TF and target such as "mor" or "corr".
 }
 \description{
-Combine the TF binding motif info and peak to gene correlations to generate regulons
+Combine the TF binding info and peak to gene correlations to generate regulons
 }
 \examples{
 set.seed(1)
@@ -49,7 +49,7 @@ overlap <- addTFMotifInfo(p2g, grl, peakMatrix = peak_sce)
 utils::head(overlap)
 
 # aggregate gene expression if the gene is bound by the same TF at regulatory elements
-regulon <- getRegulon(p2g, overlap, aggregate = TRUE)
+regulon <- getRegulon(p2g, overlap, aggregate = FALSE)
 }
 \author{
 Xiaosai Yao, Shang-yang Chen

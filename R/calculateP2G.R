@@ -1,8 +1,10 @@
 #' Establish peak to gene links based on correlations between ATAC-seq peaks and RNA-seq genes
 #'
-#' @param peakMatrix A SingleCellExperiment object containing counts of chromatin accessibility at each peak region or genomic bin from scATAC-seq
-#' @param expMatrix A SingleCellExperiment object containing gene expression counts from scRNA-seq
-#' @param reducedDim A matrix of dimension reduced values, for example derived from IterativeLSI algorithm of ArchR
+#' @param peakMatrix A SingleCellExperiment object containing counts of chromatin accessibility at each peak region or genomic bin from scATAC-seq.
+#' `rowRanges` should contain genomic positions of the peaks in the form of `GRanges`.
+#' @param expMatrix A SingleCellExperiment object containing gene expression counts from scRNA-seq. `rowRanges` should contain genomic positions of
+#' the genes in the form of `GRanges`. `rowData` should contain a column of gene symbols with column name matching the `gene_symbol` argument.
+#' @param reducedDim A matrix of dimension reduced values
 #' @param ArchR_path String specifying the path to an ArchR project if ArchR's implementation of addPeak2GeneLinks is desired
 #' @param cor_cutoff A numeric scalar to specify the correlation cutoff between ATAC-seq peaks and RNA-seq genes to assign peak to gene links.
 #'  Default correlation cutoff is 0.5.
@@ -11,9 +13,17 @@
 #' It is often called the "GeneExpressionMatrix" for multiome and "GeneIntegrationMatrix" for unpaired data in ArchR project.
 #' @param cellNum An integer to specify the number of cells to include in each K-means cluster. Default is 200 cells.
 #' @param maxDist An integer to specify the base pair extension from transcription start start for overlap with peak regions
+#' @param exp_assay String indicating the name of the assay in expMatrix for gene expression
+#' @param peak_assay String indicating the name of the assay in peakMatrix for chromatin accessibility
+#' @param gene_symbol String indicating the column name in the rowData of expMatrix that corresponds to gene symbol
+#' @param clusters A vector corresponding to the cluster labels for calculation of correlations within each cluster. If left NULL, correlation is calculated across
+#' all clusters. See details for the use of clusters
 #' @param ... other parameters to pass to addPeak2GeneLinks from ArchR package
 #'
-#' @return A Peak2Gene correlation dataframe
+#' @return A DataFrame of Peak to Gene correlation
+#' @details Cluster information is sometimes helpful to avoid the [Simpsons's paradox](https://en.wikipedia.org/wiki/Simpson%27s_paradox) in which baseline differences
+#' between cell lines or cell types can create artificial or even inverse correlations between peak accessibility and gene expression. If Cluster information is provided,
+#' correlation is performed within cell aggregates of each cluster.
 #' @import SummarizedExperiment SingleCellExperiment GenomicRanges
 #' @export
 #'
@@ -41,19 +51,23 @@
 #' # create a mock reducedDim matrix
 #' reducedDim_mat <- matrix(runif(ncol(gene_sce)*50, min = 0, max = 1), nrow = ncol(gene_sce), 50)
 #' p2g <- calculateP2G(peakMatrix = peak_sce, expMatrix = gene_sce, reducedDim = reducedDim_mat,
-#'                     cellNum = 20)
+#'                     cellNum = 20, clusters = gene_sce$Treatment)
 #' @author Xiaosai Yao, Shang-yang Chen
 
 calculateP2G <- function(peakMatrix = NULL,
-                        expMatrix = NULL,
-                        reducedDim = NULL,
-                        ArchR_path = NULL,
-                        useDim = "IterativeLSI",
-                        useMatrix = "GeneIntegrationMatrix",
-                        maxDist = 250000,
-                        cor_cutoff = 0.5,
-                        cellNum = 200,
-                        ...) {
+                         expMatrix = NULL,
+                         reducedDim = NULL,
+                         ArchR_path = NULL,
+                         useDim = "IterativeLSI",
+                         useMatrix = "GeneIntegrationMatrix",
+                         maxDist = 250000,
+                         cor_cutoff = 0.5,
+                         cellNum = 200,
+                         exp_assay = "logcounts",
+                         peak_assay = "counts",
+                         gene_symbol = "name",
+                         clusters = NULL,
+                         ...) {
 
 
   if (!is.null(ArchR_path)) {
@@ -85,7 +99,6 @@ calculateP2G <- function(peakMatrix = NULL,
     gene_metadata$idxRNA <- seq_along(rownames(gene_metadata))
 
     # Add gene names and peak positions to dataframe
-    p2g <- as.data.frame(p2g)
     p2g_merged <- merge(p2g, gene_metadata, by = "idxRNA") # merge by gene ID
     p2g_merged <- merge(p2g_merged, peak_metadata, by = "idxATAC") # merge by peak ID
 
@@ -93,8 +106,8 @@ calculateP2G <- function(peakMatrix = NULL,
     p2g_merged$distance <- abs((p2g_merged$start.y + p2g_merged$end.y)/2 - (p2g_merged$start.x + p2g_merged$end.x)/2)
 
     # Extract relevant columns
-    p2g_merged <- p2g_merged[, c("idxATAC", "seqnames.y", "start.y","end.y", "idxRNA", "name", "Correlation", "distance","FDR")]
-    colnames(p2g_merged) <- c("idxATAC", "chr", "start","end", "idxRNA", "target", "Correlation", "distance","FDR")
+    p2g_merged <- p2g_merged[, c("idxATAC", "seqnames.y", "start.y","end.y", "idxRNA", "name", "Correlation", "distance")]
+    colnames(p2g_merged) <- c("idxATAC", "chr", "start","end", "idxRNA", "target", "Correlation", "distance")
 
 
 
@@ -104,22 +117,31 @@ calculateP2G <- function(peakMatrix = NULL,
 
     writeLines("Using epiregulon to compute peak to gene links...")
 
+    if (is.null(rowRanges(peakMatrix))) {
+      stop("peakMatrix must contain rowRanges")
+    }
+    if (is.null(rowRanges(expMatrix))) {
+      stop("expMatrix must contain rowRanges")
+    }
+
+    if (! gene_symbol %in% colnames(rowData(expMatrix))) {
+      stop("colData of expMatrix does not contain ", gene_symbol)
+    }
+
+
     # Package expression matrix and peak matrix into a single sce
-    sce <- SingleCellExperiment(list(counts = assay(expMatrix)),
-                                altExps = list(peakMatrix = peakMatrix))
+    sce <- combineSCE(expMatrix, exp_assay, peakMatrix, peak_assay, reducedDim, useDim)
 
-    # add reduced dimension information to sce object
-    reducedDim(sce,useDim) <- reducedDim
+    message("performing k means clustering to form metacells")
 
-
-    writeLines("performing k means clustering to form metacells")
     # K-means clustering
     kNum <- trunc(ncol(sce) / cellNum)
     kclusters <- scran::clusterCells(sce,
-                                     use.dimred =useDim,
+                                     use.dimred = useDim,
                                      BLUSPARAM = bluster::KmeansParam
                                      (centers = kNum, iter.max = 5000))
     kclusters <- as.character(kclusters)
+
 
     # aggregate sce by k-means clusters
     sce_grouped <- applySCE(sce,
@@ -127,13 +149,8 @@ calculateP2G <- function(peakMatrix = NULL,
                             ids = kclusters,
                             statistics = "mean")
 
-    # some sces has strand information in metadata that conflicts with genomic ranges
+    # some sces have strand information in metadata that conflicts with genomic ranges
     mcols(expMatrix)$strand <- NULL
-
-    # transfer rowRanges(expMatrix) to rowranges(sce_grouped)
-    rowRanges(sce_grouped) <- rowRanges(expMatrix)
-
-    # rowRanges(altExp(sce_grouped)) already preserved
 
     # keep track of original ATAC and expression indices
     rowData(sce_grouped)$old.idxRNA <- seq_len(nrow(sce_grouped))
@@ -141,11 +158,11 @@ calculateP2G <- function(peakMatrix = NULL,
 
     # remove genes and peaks that are equal to 0
     sce_grouped <- sce_grouped[which(rowSums(assay(sce_grouped)) != 0),]
-    altExp(sce_grouped) <- altExp(sce_grouped)[which(rowSums(assay(altExp(sce_grouped))) != 0),]
+    altExp(sce_grouped) <- altExp(sce_grouped)[which(rowSums(assay(altExp(sce_grouped), "counts")) != 0),]
 
     # extract gene expression and peak matrix
-    expGroupMatrix <- assay(sce_grouped)
-    peakGroupMatrix <- assay(altExp(sce_grouped))
+    expGroupMatrix <- assay(sce_grouped, "counts")
+    peakGroupMatrix <- assay(altExp(sce_grouped), "counts")
 
 
     # get gene information
@@ -157,8 +174,9 @@ calculateP2G <- function(peakMatrix = NULL,
 
     # find overlap after resizing
     o <- S4Vectors::DataFrame(findOverlaps(resize(geneStart, maxDist, "center"),
-                                peakSet,
-                                ignore.strand = TRUE))
+                                           peakSet,
+                                           ignore.strand = TRUE))
+
 
 
     #Get Distance from Fixed point A B
@@ -170,43 +188,82 @@ calculateP2G <- function(peakMatrix = NULL,
     o$old.idxRNA <- rowData(sce_grouped)[o[,1],"old.idxRNA"]
     o$old.idxATAC <- rowData(altExp(sce_grouped))[o[,2],"old.idxATAC"]
 
-    # Calculate correlation
-    expCorMatrix <- expGroupMatrix[as.integer(o$RNA), ]
-    peakCorMatrix <- peakGroupMatrix[as.integer(o$ATAC), ]
-
-    writeLines("Computing correlation")
-    o$Correlation <- mapply(stats::cor,
-                            as.data.frame(t(expCorMatrix)),
-                            as.data.frame(t(peakCorMatrix)))
-
-
-    o$TStat <- (o$Correlation /
-                  sqrt((pmax(1 - o$Correlation ^ 2, 0.00000000000000001, na.rm = TRUE))
-                       / (ncol(peakCorMatrix) - 2))) #T-statistic P-value
-    o$Pval <- 2 * stats::pt(-abs(o$TStat), ncol(peakCorMatrix) - 2)
-    o$FDR <- stats::p.adjust(o$Pval, method = "fdr")
-
     #add metadata to o
     o$Gene <-  rowData(sce_grouped)[o[,1],"name"]
     o$chr <- as.character(seqnames(rowRanges(altExp(sce_grouped))[o[,2]]))
     o$start <- GenomicRanges::start(rowRanges(altExp(sce_grouped))[o[,2],])
     o$end <- GenomicRanges::end(rowRanges(altExp(sce_grouped))[o[,2],])
 
-    o <- data.frame(o)
+    # Calculate correlation
+    expCorMatrix <- expGroupMatrix[as.integer(o$RNA), ]
+    peakCorMatrix <- peakGroupMatrix[as.integer(o$ATAC), ]
 
-    p2g_merged <- o[, c("old.idxATAC", "chr","start","end", "old.idxRNA", "Gene", "Correlation", "distance", "FDR")]
-    colnames(p2g_merged) <- c("idxATAC", "chr", "start","end", "idxRNA", "target", "Correlation", "distance", "FDR")
-    p2g_merged <- p2g_merged[p2g_merged$Correlation > cor_cutoff,,drop=FALSE]
+    writeLines("Computing correlation")
+
+    # if a cluster is named "all", replace it to distinguish from all cells
+    clusters <- renameCluster(clusters)
+
+    unique_clusters <- sort(unique(clusters))
+
+    o$Correlation <- initiateMatCluster(clusters, nrow = nrow(expCorMatrix))
+
+    o$Correlation[,"all"] <- mapply(stats::cor,
+                                    as.data.frame(t(expCorMatrix)),
+                                    as.data.frame(t(peakCorMatrix)))
+
+    # compute correlation within each cluster
+    if (!is.null(clusters)) {
+      # composition of kcluster
+      cluster_composition <- table(clusters, kclusters)
+      cluster_composition <- sweep(cluster_composition, 2, STATS=colSums(cluster_composition), FUN="/")
+
+      for (cluster in unique_clusters) {
+        clusters_idx <- colnames(cluster_composition)[cluster_composition[cluster,] >= 1/length(unique_clusters)]
+        o$Correlation[, cluster] <- mapply(stats::cor,
+                                           as.data.frame(t(expCorMatrix[,clusters_idx])),
+                                           as.data.frame(t(peakCorMatrix[,clusters_idx])))
+      }
+
+    }
+
+
+    p2g_merged <- o[, c("old.idxATAC", "chr","start","end", "old.idxRNA", "Gene", "Correlation", "distance")]
+    colnames(p2g_merged) <- c("idxATAC", "chr", "start","end", "idxRNA", "target", "Correlation", "distance")
+
+    correlation_max <- apply(p2g_merged$Correlation, 1, max, na.rm = TRUE)
+    p2g_merged <- p2g_merged[correlation_max > cor_cutoff,,drop=FALSE]
 
 
 
   } else {
     stop(
-      "Input obj must be either 'ArchR' or all of the 3 matrices: gene expression, chromatin accessibility and dimensionality reduction"
+      "Input obj must be either an 'ArchR' path or all 3 matrices: gene expression, chromatin accessibility and dimensionality reduction"
     )
 
   }
   p2g_merged <- p2g_merged[order(p2g_merged$idxATAC, p2g_merged$idxRNA),,drop=FALSE]
   return(p2g_merged)
+
+}
+
+
+combineSCE <- function(expMatrix, exp_assay, peakMatrix, peak_assay, reducedDim, useDim) {
+
+  # convert expMatrix and peakMatrix in case they weren't already so
+  expMatrix <- as(expMatrix,"SingleCellExperiment")
+  peakMatrix <- as(peakMatrix,"SingleCellExperiment")
+
+
+  sce <- SingleCellExperiment(list(counts = assay(expMatrix, exp_assay)),
+                              altExps = list(peakMatrix =
+                                               SingleCellExperiment(list(counts = assay(peakMatrix, peak_assay)))))
+
+  rowRanges(sce) <- rowRanges(expMatrix)
+  rowRanges(altExp(sce)) <- rowRanges(peakMatrix)
+
+  # add reduced dimension information to sce object
+  reducedDim(sce, useDim) <- reducedDim
+
+  sce
 
 }

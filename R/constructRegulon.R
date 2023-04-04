@@ -59,77 +59,121 @@ getP2Glinks <- function(archr_path,
 }
 
 
-#' An accessor function to retrieve TF motif info from genomitory repository
+#' Retrieve TF binding sites or motif positions
 #'
-#' @param genome String specifying the genomic build for bed files. Currently supporting `hg19`, `hg38` and `mm10`.
-#' For legacy version with cistrome DB, use `hg19_old`, `hg38_old` and `mm10_old`
-#' @importFrom SummarizedExperiment rowRanges
-#' @return A GRangeList object containing binding site information of transcription factor chipseq combined from Cistrome database and ENCODE
+#' Combined transcription factor ChIP-seq data from ChIP-Atlas and ENCODE or
+#' from CistromeDB and ENCODE.
+#' @param mode a string indicating whether to download a GRangelist of TF binding sites ("occupancy") or motif matches ("motif").
+#' TF binding information is retrieved from [scMultiome](https://github.com/xiaosaiyao/scMultiome/blob/devel/R/tfBinding.R) whereas
+#' motif information is annotated by cisbp from [chromVARmotifs](https://github.com/GreenleafLab/chromVARmotifs)
+#' @param archr_path Character string indicating the path of the ArchR project to retrieve motif information if
+#' motif enrichment was already performed. If no motif enrichment has been performed, first annotate the ArchR using
+#' `addMotifAnnotations`. If no ArchR project is provided, the user can also provide peaks in the form of GRanges and
+#' this function will annotate the peaks with Cisbp
+#' @param motif_name Character string	indicating name of the peakAnnotation object (i.e. Motifs) to retrieve from the designated ArchRProject.
+#' @param peaks A GRanges object indicating the peaks to perform motif annotation on if ArchR project is not provided.
+#' The peak indices should match the `re` column in the regulon
+
+#' @inherit scMultiome::tfBinding params return references
+#' @examples
+#' # retrieve TF binding info
+#' \dontrun{
+#' getTFMotifInfo("mm10", "atlas")
+#' }
+#'
+#' # retrieve motif info
+#' peaks <- GRanges(seqnames = c("chr12","chr19","chr19","chr11","chr6"),
+#' ranges = IRanges(start = c(124914563,50850844, 50850844, 101034172, 151616327),
+#' end = c(124914662,50850929, 50850929, 101034277, 151616394)))
+#' grl <- getTFMotifInfo(genome = "hg38", mode = "motif", peaks=peaks)
+#'
 #' @export
-#' @details We obtain ChIP-seq files from ENCODE and ChIP-Atlas. Public ChIP-seq files were processed using a
-#' standardized pipeline by [ChIP-Atlas](https://github.com/inutano/chip-atlas/wiki).
-#' The ENCODE and ChIP-Atlas bed files were then merged to give a list of non-overlapping binding regions per TF.
-#' When the number of merged cell lines is large, these binding sites represent a set of universal/tissue-
-#' agnostic binding sites.
-#' TF binding sites from Cistrome were replaced with ChIP-Atlas due to restriction on data usage. To retrieve
-#' Cistrome data, set genome to `hg38_old`, `hg19_old` or `mm10_old`
 #'
-#' @author Shang-yang Chen and Xiaosai Yao
+getTFMotifInfo <- function (genome = c("hg38", "hg19", "mm10"),
+                            source = c("atlas", "cistrome"),
+                            metadata = FALSE,
+                            mode = c("occupancy","motif"),
+                            archr_path = NULL,
+                            motif_name = "Motif",
+                            peaks = NULL) {
+  genome <- match.arg(genome)
+  source <- match.arg(source)
+  mode <- match.arg(mode)
 
-getTFMotifInfo <- function(genome = c("hg38","hg19","mm10")){
+  if (mode == "occupancy") {
+    grl <- scMultiome::tfBinding(genome, source, metadata)
+  } else if (mode == "motif") {
 
-  if (genome == 'hg19'){
+    if (!is.null(archr_path)) {
+      message("retrieving previously annotated motif from ArchR project")
+      ArchProj <-
+        ArchR::loadArchRProject(path = archr_path, showLogo = FALSE)
+      matches <- ArchR::getMatches(ArchProj, name = motif_name)
+      motifs <- assay(matches, "matches")
 
-    id <- genomitory::packID("GMTY156", # project name
-                             "hg19_motif_bed_granges", # path within the project
-                             "REVISION-5") # version
-    grl <- genomitory::getFeatures(id)
+      grl <- list()
+      for (tf in colnames(motifs)){
+        grl[[tf]] <- SummarizedExperiment::rowRanges(matches[motifs[,tf],])
+      }
+      grl <- GenomicRanges::GRangesList(grl)
+      names(grl) <- unlist(lapply(strsplit(names(grl), split="_|\\."), "[", 1))
 
-  } else if (genome == "hg38") {
+    } else {
+      species <- switch(genome,
+                        hg38 = "human",
+                        hg19 = "human",
+                        mm10 = "mouse")
+      message("keeping only standard chromosomes..")
+      peaks <- GenomeInfoDb::keepStandardChromosomes(peaks, pruning.mode = "coarse")
 
-    id <- genomitory::packID("GMTY162", # project name
-                             "hg38_motif_bed_granges", # path within the project
-                             "REVISION-4") # version
-    grl <- genomitory::getFeatures(id)
+      message("annotating peaks with motifs")
+      grl <- annotateMotif(species, peaks, genome, out = "positions")
+      names(grl) <- lapply(strsplit(names(grl), split="_|\\."), "[", 3)
+      }
 
-  } else if (genome == "mm10"){
-    id <- genomitory::packID("GMTY181", # project name
-                             "mm10_motif_bed_granges", # path within the project
-                             "REVISION-5") # version
-    grl <- genomitory::getFeatures(id)
   }
-  if (genome == 'hg19_old'){
 
-    id <- genomitory::packID("GMTY156", # project name
-                             "hg19_motif_bed_granges", # path within the project
-                             "REVISION-4") # version
-    grl <- genomitory::getFeatures(id)
-
-  } else if (genome == "hg38_old") {
-
-    id <- genomitory::packID("GMTY162", # project name
-                             "hg38_motif_bed_granges", # path within the project
-                             "REVISION-3") # version
-    grl <- genomitory::getFeatures(id)
-
-  } else if (genome == "mm10_old"){
-    id <- genomitory::packID("GMTY181", # project name
-                             "mm10_motif_bed_granges", # path within the project
-                             "REVISION-4") # version
-    grl <- genomitory::getFeatures(id)
-  }
-
-  return(grl)
+  grl
 }
+
+
 
 #' Add TF binding motif occupancy information to the peak2gene object
 #'
 #' @param p2g A Peak2Gene dataframe created by ArchR or getP2Glinks() function
-#' @param grl GRangeList object containing reference TF binding information
+#' @param grl GRangeList object containing reference TF binding information. We recommend retrieving `grl` from `getTFMotifInfo` which
+#' contains TF occupancy data derived from public and ENCODE ChIP-seq peaks. Alternatively, if the users would like to provide a GRangeList
+#' of motif annotations. This can be derived using `motifmatchr::matchMotifs`. See details
 #' @param peakMatrix A matrix of scATAC-seq peak regions with peak ids as rows
 #' @param archR_project_path Path to an ArchR project that have performed LSI dimensionality reduction and scRNA-seq integration
 #'
-#' @return A dataframe containing overlapping ids of scATAC-seq peak regions and reference TF binding regions
+#' @return A data frame containing overlapping ids of scATAC-seq peak regions and reference TF binding regions
+#' @details This function annotates each regulatory element with possible transcription factors. We can either provide a GRangeList of known ChIP-seq
+#' binding sites (TF occupancy) or positions of TF motifs (TF motifs). While public ChIP-seq data may not fully align with the ground truth TF occupancy in users' data
+#' (due to technical challenges of ChIP-seq or cell type nature of TF occupancy), it does offer a few important advantages over TF motif information:
+#' \enumerate{
+#' \item{TF occupancy allows co-activators to be included. Co-activators are chromatin modifiers that do not directly bind to DNA but nonetheless play an important role
+#' in gene regulation}
+#' \item{TF occupancy can distinguish between members of the same class that may share similar motifs but that may have drastically different binding sites}
+#' }
+#' If multiple ChIP-seq are available for the same TF, we merge the ChIP-seq data to represent an universal set of possible binding sites. The predicted TF
+#' occupancy is further refined by \code{\link{pruneRegulon}}.
+#'
+#' If the users prefer to use TF motifs instead of TF occupancy, the users can create a GRangeList of motif annotation using `motifmatchr::matchMotifs`.
+#' Here, we demonstrate how to annotate peaks with cisbp motif database
+#' ```
+#' library(motifmatchr)
+#' library(chromVARmotifs)
+#' data("human_pwms_v1")
+#' peaks <- GenomicRanges::GRanges(seqnames = c("chr1","chr2","chr2"),
+#'                                ranges = IRanges::IRanges(start = c(76585873,42772928, 100183786),
+#'                                                          width = 500))
+#' grl <- matchMotifs(human_pwms_v1, peaks, genome = "hg38", out = "positions")
+#' # retain only TF symbols. TF symbols need to be consistent with gene names in regulon
+#' names(grl) <- sapply(strsplit(names(grl), "_"), "[",3)
+#' ```
+#'
+#'
 #' @export
 #'
 #' @examples
@@ -185,15 +229,14 @@ addTFMotifInfo <- function(p2g,
 }
 
 
-#' Combine the TF binding motif info and peak to gene correlations to generate regulons
+#' Combine the TF binding info and peak to gene correlations to generate regulons
 #'
-#' @param p2g A Peak2Gene dataframe created by ArchR or getP2Glinks() function
-#' @param overlap A dataframe storing overlaps between the regions of the peak matrix with the bulk TF ChIP-seq binding sites computed from addTFMotifInfo
+#' @param p2g A Peak2Gene data frame created by ArchR or getP2Glinks() function
+#' @param overlap A data frame storing overlaps between the regions of the peak matrix with the bulk TF ChIP-seq binding sites computed from addTFMotifInfo
 #' @param aggregate logical to specify whether peak and gene ids are kept in regulon output or not
+#' @param FUN function to aggregate the weights
 #'
-#' @return A tall format dataframe consisting of tf(regulator), target and a column indicating degree of association between TF and target such as "mor" or "corr".
-#'           example regulon:
-#'           tf      target  corr
+#' @return A DataFrame consisting of tf(regulator), target and a column indicating degree of association between TF and target such as "mor" or "corr".
 #'
 #' @export
 #'
@@ -226,26 +269,35 @@ addTFMotifInfo <- function(p2g,
 #' utils::head(overlap)
 #'
 #' # aggregate gene expression if the gene is bound by the same TF at regulatory elements
-#' regulon <- getRegulon(p2g, overlap, aggregate = TRUE)
+#' regulon <- getRegulon(p2g, overlap, aggregate = FALSE)
 #' @author Xiaosai Yao, Shang-yang Chen
 
 getRegulon <- function(p2g,
                        overlap,
-                       aggregate = TRUE){
+                       aggregate=FALSE,
+                       FUN=colMeans){
 
-  regulon_df <- merge(overlap, p2g, by="idxATAC")
+  p2g <- S4Vectors::DataFrame(p2g)
+  regulon_df <- S4Vectors::merge(p2g, overlap, by="idxATAC")
+
+  Correlation.rownames <- colnames(regulon_df)[grep("Correlation.|Correlation", colnames(regulon_df))]
+  corr_matrix <- regulon_df[,Correlation.rownames, drop=FALSE]
+
+  if (any(grepl("Correlation.", Correlation.rownames))){
+    colnames(corr_matrix) <- gsub("Correlation.","", Correlation.rownames)
+  }
+
+  regulon_df[,grep("Correlation.",colnames(regulon_df))] <- NULL
+  regulon_df$Correlation <- as.matrix(corr_matrix)
+
 
   if (aggregate) {
-    regulon_df <- regulon_df[, c("tf", "target", "Correlation")]
-    colnames(regulon_df) <- c("tf", "target", "corr")
-    regulon_df <- stats::aggregate(corr ~ tf + target,
-                                   data = regulon_df,
-                                   FUN = mean,
-                                   na.rm = TRUE)
-  } else {
-    colnames(regulon_df) <- c("idxATAC", "idxTF", "tf",  "chr", "start", "end", "idxRNA", "target", "corr", "distance" , "FDR")
-
+    "aggregating regulon ..."
+    regulon_df <- aggregateMatrix(regulon_df[,c("tf","target","Correlation")], "Correlation")
   }
+  colnames(regulon_df)[colnames(regulon_df) == "Correlation"] <- "corr"
   return(regulon_df)
 
 }
+
+

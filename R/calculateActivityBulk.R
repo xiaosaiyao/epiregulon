@@ -1,7 +1,7 @@
 #' Calculate transcriptional activity from a matrix of gene expression and regulon
 #'
-#' @param expMatrix a SummarizedExperiment object or matrix of gene expression with gene names matching those of the regulon
-#' @param regulon Matrix consisting of tf(regulator), target and a column indicating degree of association between TF and target
+#' @param expMatrix A SummarizedExperiment object or matrix of gene expression with gene names matching those of the regulon
+#' @param regulon A DataFrame object consisting of tf(regulator), target and a column indicating degree of association between TF and target
 #'                 such as "mor" or "corr".
 #'                 example regulon:
 #'                 tf      target  corr

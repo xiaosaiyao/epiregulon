@@ -22,9 +22,9 @@ calculateActivityBulk(
 )
 }
 \arguments{
-\item{expMatrix}{a SummarizedExperiment object or matrix of gene expression with gene names matching those of the regulon}
+\item{expMatrix}{A SummarizedExperiment object or matrix of gene expression with gene names matching those of the regulon}
 
-\item{regulon}{Matrix consisting of tf(regulator), target and a column indicating degree of association between TF and target
+\item{regulon}{A DataFrame object consisting of tf(regulator), target and a column indicating degree of association between TF and target
 such as "mor" or "corr".
 example regulon:
 tf      target  corr
