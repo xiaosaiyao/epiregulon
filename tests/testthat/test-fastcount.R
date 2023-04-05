@@ -1,3 +1,4 @@
+# set up matrices and regulon
 peakMatrix <- matrix(rbinom(1000*1000,1,0.01), 1000, 1000)
 rownames(peakMatrix) <- paste("peak", 1:1000, sep="_")
 colnames(peakMatrix) <- paste("cell", 1:1000, sep="_")
@@ -23,27 +24,16 @@ if (is.null(clusters)) {
   cluster_id <- factor(clusters)
 }
 
+######## C++
 # if cluster information is provided
 stats_fast <- countCells(regulon, expMatrix, peakMatrix, cluster_id, peak_cutoff=0, exp_cutoff=1)
 
-# if cluster information is not provided
-clusters <- NULL
-if (is.null(clusters)) {
-  cluster_id <- factor(integer(ncol(peakMatrix)))
-} else {
-  cluster_id <- factor(clusters)
-}
-stats_fast <- countCells(regulon, expMatrix, peakMatrix, cluster_id, peak_cutoff=0, exp_cutoff=1)
 
 
-
+######## old R code
 peakMatrix.bi <- binarize_matrix(peakMatrix, cutoff = 0)
 expMatrix.bi <- tfMatrix.bi <- binarize_matrix(expMatrix, cutoff = 1)
-
-
-
 regulon.split <- split(regulon, regulon$tf)
-
 
 chisq_bp_test <- function (n,
                            regulon.split,
@@ -138,3 +128,15 @@ test_that("peak", {
 test_that("target", {
   expect_identical(as.matrix(combined_stats_slow$triple), as.matrix(stats_fast$triple))
 })
+
+
+############ C++
+# if cluster information is not provided
+clusters <- NULL
+if (is.null(clusters)) {
+  cluster_id <- factor(integer(ncol(peakMatrix)))
+} else {
+  cluster_id <- factor(clusters)
+}
+stats_fast_no_cluster <- countCells(regulon, expMatrix, peakMatrix, cluster_id, peak_cutoff=0, exp_cutoff=1)
+head(stats_fast_no_cluster$triple)
