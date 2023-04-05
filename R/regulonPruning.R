@@ -169,18 +169,22 @@ pruneRegulon <- function(regulon,
     } else {
       cluster_id <- factor(clusters, levels = as.character(sort(unique(clusters))) )
     }
-    stats <- countCells(regulon, expMatrix, peakMatrix, cluster_id, peak_cutoff, exp_cutoff)
+    stats <- countCells(regulon, expMatrix, peakMatrix, cluster_id, peak_cutoff, exp_cutoff, clusters)
 
+    if (is.null(clusters)){
+      cluster_freq <- length(cluster_id)
+    } else {
+      cluster_freq <- c(length(cluster_id), as.numeric(table(cluster_id)))
+    }
 
-    cluster_freq <- c(length(cluster_id), as.numeric(table(cluster_id)))
     cluster_freq <- matrix(nrow=nrow(regulon), ncol=length(cluster_freq), cluster_freq, byrow=TRUE)
     peak.prop <- stats$peak / cluster_freq
     target.prop <- stats$target / cluster_freq
     null_probability <- peak.prop * target.prop
 
     res <- chisqTest(k = stats$triple, size = cluster_freq, p = null_probability)
-    colnames(res$p) <- sprintf("pval_%s", c("all", levels(cluster_id)))
-    colnames(res$stat) <- sprintf("stats_%s", c("all", levels(cluster_id)))
+    colnames(res$p) <- sprintf("pval_%s", unique_clusters)
+    colnames(res$stat) <- sprintf("stats_%s", unique_clusters)
     res <- cbind(res$p, res$stat)
 
   } else {
@@ -342,7 +346,8 @@ countCells <- function(regulon,
                        peakMatrix,
                        cluster_id,
                        peak_cutoff,
-                       exp_cutoff) {
+                       exp_cutoff,
+                       clusters) {
   peak_id <- regulon$idxATAC
   target_id <- factor(regulon$target, levels=rownames(expMatrix))
   tf_id <- factor(regulon$tf, levels=rownames(expMatrix))
@@ -384,9 +389,11 @@ countCells <- function(regulon,
   stats$triple[p_o,] <- stats$triple
   stats$target[t_o,] <- stats$target
 
-  stats$peak <- cbind(rowSums(stats$peak), stats$peak)
-  stats$triple <- cbind(rowSums(stats$triple), stats$triple)
-  stats$target <- cbind(rowSums(stats$target), stats$target)
+  if (!is.null(clusters)) {
+    stats$peak <- cbind(rowSums(stats$peak), stats$peak)
+    stats$triple <- cbind(rowSums(stats$triple), stats$triple)
+    stats$target <- cbind(rowSums(stats$target), stats$target)
+  }
 
   stats
 }
