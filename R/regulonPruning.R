@@ -119,34 +119,33 @@ pruneRegulon <- function(regulon,
 
   expMatrix <- as(expMatrix, "dgCMatrix")
   peakMatrix <- as(peakMatrix, "dgCMatrix")
-  
+
   message("pruning regulons")
+  unique_clusters <- c("all", as.character(sort(unique(clusters))))
+
   if (test == "binom") {
     # clean up regulons by removing tf and targets not found in regulons
     regulon <- regulon[regulon$tf %in% rownames(expMatrix),]
     regulon <- regulon[regulon$target %in% rownames(expMatrix),]
     regulon <- regulon[order(regulon$tf),]
-  
+
     # remove genes not found in regulon
     expMatrix <- expMatrix[which(rownames(expMatrix) %in% unique(c(regulon$tf, regulon$target))),]
-  
+
     # name peakMatrix
     rownames(peakMatrix) <- seq_len(nrow(peakMatrix))
-  
+
     # remove peaks not found in regulon
     peakMatrix <- peakMatrix[which(rownames(peakMatrix) %in% unique(regulon$idxATAC)),]
-  
+
     # binarize peak and expression matrices according to cutoff
     message("binarizing matrices")
     peakMatrix.bi <- binarize_matrix(peakMatrix, peak_cutoff)
     expMatrix.bi <- tfMatrix.bi <- binarize_matrix(expMatrix, exp_cutoff)
-  
-  
-    unique_clusters <- c("all", as.character(sort(unique(clusters))))
-  
+
     res <- list()
     regulon.split <- split(regulon, regulon$tf)
-  
+
     # Perform binomial test
     res <- BiocParallel::bplapply(
       X = seq_len(length(regulon.split)),
@@ -164,68 +163,15 @@ pruneRegulon <- function(regulon,
 
   } else if (test == "chi.sq") {
     # Perform chi-square test
-#    res <- BiocParallel::bplapply(
-#      X = seq_len(length(regulon.split)),
-#      FUN = chisq_bp,
-#      regulon.split,
-#      expMatrix.bi,
-#      peakMatrix.bi,
-#      tfMatrix.bi,
-#      clusters,
-#      unique_clusters,
-#      BPPARAM = BPPARAM
-#      )
-
-    peak_id <- regulon$idxATAC
-    target_id <- factor(regulon$target, levels=rownames(expMatrix))
-    tf_id <- factor(regulon$tf, levels=rownames(expMatrix))
-
-    p_o <- order(peak_id, tf_id, target_id)
-    p_peak_id <- as.integer(peak_id[p_o]) - 1L
-    p_target_id <- as.integer(target_id[p_o]) - 1L 
-    p_tf_id <- as.integer(tf_id[p_o]) - 1L
-
-    t_o <- order(target_id)
-    t_target_id <- as.integer(target_id[t_o]) - 1L 
 
     if (is.null(clusters)) {
-       cluster_id <- factor(integer(ncol(peakMatrix)))
+      cluster_id <- factor(integer(ncol(peakMatrix)))
     } else {
-       cluster_id <- factor(clusters)
+      cluster_id <- factor(clusters, levels = as.character(sort(unique(clusters))) )
     }
-    cluster_id2 <- as.integer(cluster_id) - 1L
+    stats <- countCells(regulon, expMatrix, peakMatrix, cluster_id, peak_cutoff, exp_cutoff)
 
-    stats <- fast_chisq(
-      peak_ordered = p_peak_id, 
-      tf_by_peak = p_tf_id, 
-      target_by_peak = p_target_id,
 
-      target_ordered = t_target_id,
-
-      npeaks = nrow(peakMatrix),
-      peakmat_x = peakMatrix@x,
-      peakmat_i = peakMatrix@i,
-      peakmat_p = peakMatrix@p,
-      peak_cutoff = peak_cutoff,
-
-      ngenes = nrow(expMatrix),
-      expmat_x = expMatrix@x,
-      expmat_i = expMatrix@i,
-      expmat_p = expMatrix@p,
-      exp_cutoff = exp_cutoff,
-
-      nclusters = nlevels(cluster_id),
-      clusters = cluster_id2
-    )
-
-    stats$peak[p_o,] <- stats$peak
-    stats$triple[p_o,] <- stats$triple
-    stats$target[t_o,] <- stats$target
-
-    stats$peak <- cbind(rowSums(stats$peak), stats$peak)
-    stats$triple <- cbind(rowSums(stats$triple), stats$triple)
-    stats$target <- cbind(rowSums(stats$target), stats$target)
-    
     cluster_freq <- c(length(cluster_id), as.numeric(table(cluster_id)))
     cluster_freq <- matrix(nrow=nrow(regulon), ncol=length(cluster_freq), cluster_freq, byrow=TRUE)
     peak.prop <- stats$peak / cluster_freq
@@ -234,7 +180,7 @@ pruneRegulon <- function(regulon,
 
     res <- chisqTest(k = stats$triple, size = cluster_freq, p = null_probability)
     colnames(res$p) <- sprintf("pval_%s", c("all", levels(cluster_id)))
-    colnames(res$stat) <- sprintf("stat_%s", c("all", levels(cluster_id)))
+    colnames(res$stat) <- sprintf("stats_%s", c("all", levels(cluster_id)))
     res <- cbind(res$p, res$stat)
 
   } else {
@@ -387,53 +333,62 @@ to_start <- function(start_dbinom, n, start_k, p)
 to_end <- function(start_dbinom, n, start_k, p)
   .Call("to_end", start_dbinom, n, start_k, p)
 
-chisq_bp <- function(n,
-                     regulon.split,
-                     expMatrix.bi,
-                     peakMatrix.bi,
-                     tfMatrix.bi,
-                     clusters,
-                     unique_clusters,
-                     BPPARAM = BPPARAM
-                     ){
-
-  full_ncells <- ncol(peakMatrix.bi)
-  has_tf <- tfMatrix.bi[regulon.split[[n]]$tf[1],] == 1
-  expMatrix.bi <- expMatrix.bi[regulon.split[[n]]$target,, drop=FALSE]
-  expMatrix.tf.bi <- expMatrix.bi[, has_tf, drop=FALSE]
-  peakMatrix.bi <- peakMatrix.bi[as.character(regulon.split[[n]]$idxATAC), has_tf, drop=FALSE]
-
-  triple.bi <- peakMatrix.bi * expMatrix.tf.bi
-  tf_re.bi <- peakMatrix.bi
-
-  res <- list()
-
-  for (selected_cluster in unique_clusters){
-    if(selected_cluster != "all"){
-      is_current_cluster <- as.logical(clusters == selected_cluster)
-      expCurrent <- as.vector(expMatrix.bi %*% is_current_cluster)
-      n_cells <- sum(is_current_cluster)
-
-      #subset is_current_cluster to only cells with tf greater than cutoff
-      is_current_cluster <- is_current_cluster[has_tf]
-      tf_reCurrent <- as.vector(tf_re.bi %*% is_current_cluster)
-      n_triple <- as.vector(triple.bi %*% is_current_cluster)
-
-    } else {
-      expCurrent <- Matrix::rowSums(expMatrix.bi)
-      n_triple <- Matrix::rowSums(triple.bi)
-      tf_reCurrent <- Matrix::rowSums(tf_re.bi)
-      n_cells <- full_ncells
-    }
-
-    null_probability <- tf_reCurrent * expCurrent / n_cells ^ 2
-    res[[selected_cluster]] <- chisqTest(k = n_triple, size = n_cells, p = null_probability)
-    colnames(res[[selected_cluster]]) <- c(paste0("pval_",selected_cluster), paste0("stats_", selected_cluster))
-  }
-
-  res <- do.call("cbind", res)
 
 
+
+
+countCells <- function(regulon,
+                       expMatrix,
+                       peakMatrix,
+                       cluster_id,
+                       peak_cutoff,
+                       exp_cutoff) {
+  peak_id <- regulon$idxATAC
+  target_id <- factor(regulon$target, levels=rownames(expMatrix))
+  tf_id <- factor(regulon$tf, levels=rownames(expMatrix))
+
+  p_o <- order(peak_id, tf_id, target_id)
+  p_peak_id <- as.integer(peak_id[p_o]) - 1L
+  p_target_id <- as.integer(target_id[p_o]) - 1L
+  p_tf_id <- as.integer(tf_id[p_o]) - 1L
+
+  t_o <- order(target_id)
+  t_target_id <- as.integer(target_id[t_o]) - 1L
+
+
+  cluster_id2 <- as.integer(cluster_id) - 1L
+
+  stats <- fast_chisq(
+    peak_ordered = p_peak_id,
+    tf_by_peak = p_tf_id,
+    target_by_peak = p_target_id,
+
+    target_ordered = t_target_id,
+
+    npeaks = nrow(peakMatrix),
+    peakmat_x = peakMatrix@x,
+    peakmat_i = peakMatrix@i,
+    peakmat_p = peakMatrix@p,
+    peak_cutoff = peak_cutoff,
+
+    ngenes = nrow(expMatrix),
+    expmat_x = expMatrix@x,
+    expmat_i = expMatrix@i,
+    expmat_p = expMatrix@p,
+    exp_cutoff = exp_cutoff,
+
+    nclusters = nlevels(cluster_id),
+    clusters = cluster_id2
+  )
+  stats$peak[p_o,] <- stats$peak
+  stats$triple[p_o,] <- stats$triple
+  stats$target[t_o,] <- stats$target
+
+  stats$peak <- cbind(rowSums(stats$peak), stats$peak)
+  stats$triple <- cbind(rowSums(stats$triple), stats$triple)
+  stats$target <- cbind(rowSums(stats$target), stats$target)
+
+  stats
 }
 
 chisqTest <- function (k, size, p) {
