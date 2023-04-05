@@ -26,7 +26,7 @@ if (is.null(clusters)) {
 
 ######## C++
 # if cluster information is provided
-stats_fast <- countCells(regulon, expMatrix, peakMatrix, cluster_id, peak_cutoff=0, exp_cutoff=1)
+stats_fast <- countCells(regulon, expMatrix, peakMatrix, cluster_id, peak_cutoff=0, exp_cutoff=1, clusters)
 
 
 
@@ -138,5 +138,5 @@ if (is.null(clusters)) {
 } else {
   cluster_id <- factor(clusters)
 }
-stats_fast_no_cluster <- countCells(regulon, expMatrix, peakMatrix, cluster_id, peak_cutoff=0, exp_cutoff=1)
+stats_fast_no_cluster <- countCells(regulon, expMatrix, peakMatrix, cluster_id, peak_cutoff=0, exp_cutoff=1, clusters)
 head(stats_fast_no_cluster$triple)
