@@ -120,14 +120,17 @@ pruneRegulon <- function(regulon,
   expMatrix <- as(expMatrix, "dgCMatrix")
   peakMatrix <- as(peakMatrix, "dgCMatrix")
 
-  message("pruning regulons")
+
   unique_clusters <- c("all", as.character(sort(unique(clusters))))
 
+  # clean up regulons by removing tf and targets not found in regulons
+  regulon <- regulon[regulon$tf %in% rownames(expMatrix),]
+  regulon <- regulon[regulon$target %in% rownames(expMatrix),]
+  regulon <- regulon[order(regulon$tf),]
+
+  message("pruning regulons")
   if (test == "binom") {
-    # clean up regulons by removing tf and targets not found in regulons
-    regulon <- regulon[regulon$tf %in% rownames(expMatrix),]
-    regulon <- regulon[regulon$target %in% rownames(expMatrix),]
-    regulon <- regulon[order(regulon$tf),]
+
 
     # remove genes not found in regulon
     expMatrix <- expMatrix[which(rownames(expMatrix) %in% unique(c(regulon$tf, regulon$target))),]
