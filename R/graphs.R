@@ -323,9 +323,9 @@ plotEpiregulonNetwork <-
 #' graph edge weights.
 #' @param tf a character vector storing the names of transcription factors to be
 #' included in the graph
-#' @param groups a character indicating levels of the grouping factor; should
-#' correspond to columns of `regulon` to be used as `weight`
-#' variable in the long format of `epiregulon` data frame.
+#' @param weight a string indicating the name of the column in the regulon to be used as
+#' the weight of the edges
+#' @param clusters a character vector indicating the clusters to be plotted
 #' @param layout a layout specification. Any values that are valid for
 #' \link[ggraph]{ggraph} or \link[ggraph]{create_layout} will work.
 #' @author Xiaodai Yao, Tomasz Wlodarczyk
@@ -346,23 +346,23 @@ plotEpiregulonNetwork <-
 #' @export
 
 plotDiffNetwork <- function(regulon,
-                                    cutoff = 0.01,
-                                    tf = NULL,
-                                    groups  = NULL,
-                                    layout = "stress"){
+                            cutoff=0.01,
+                            tf=NULL,
+                            weight="weight",
+                            clusters,
+                            layout="stress"){
   regulon.tf <- list()
-  for (group in groups) {
-    regulon_group <- regulon[regulon$tf %in% tf, c("tf","target", group)]
-
+  for (cluster in clusters) {
     #apply cutoff
-    regulon_group <- regulon_group[regulon_group[, group] > cutoff, ]
+    idx <- which(regulon$tf %in% tf & regulon[, weight][,cluster] > cutoff)
+    regulon_cluster <- regulon[idx, c("tf","target", weight)]
 
     #rename colnames as weight to be consistent across all groups
-    colnames(regulon_group)[colnames(regulon_group) == group] <- "weight"
+    regulon_cluster$weight <- regulon_cluster[, weight][,cluster]
 
-    #rename tf to be tf_group
-    regulon_group[,"tf"] <- paste0(regulon_group[,"tf"], "_", group)
-    regulon.tf[[group]] <- regulon_group
+    #rename tf to be tf_cluster
+    regulon_cluster[,"tf"] <- paste0(regulon_cluster[,"tf"], "_", cluster)
+    regulon.tf[[cluster]] <- regulon_cluster
   }
 
   combined.regulon <- do.call("rbind", regulon.tf)
