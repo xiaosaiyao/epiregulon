@@ -37,10 +37,14 @@
 #' between transcription factors and regulatory elements.
 #' @param graph,graph_obj_1,graph_obj_2  an igraph object
 #' @param weights a character specifying which variable should be used to assign
-#' weights to edges. If set to 'NULL' then unweighted graph is built.
+#' weights to edges.
+#' @param cluster a character specifying the name of the cluster column which should be used
+#' to retrieve weight values from regulon object. Using this argument makes sense
+#' only with combination with \code{weights} parameter when it points to the regulon column
+#' that is a matrix.
 #' @param aggregation_function a function used to collapse duplicated edges
 #' @param weighted a logical indicating whether weighted graphs are used
-#' @param abs_diff a logical indicating whether absulute difference in the number
+#' @param abs_diff a logical indicating whether absolute difference in the number
 #' edges or their weights will be calculated
 #' @param FUN a function used for normalization. The input to this
 #' function is be the number of edges connected with each node (incident edges).
@@ -75,30 +79,32 @@
 buildGraph <- function(regulon,
                       mode = c("tripartite", "tg", "re", "pairs"),
                       weights = "corr",
+                      cluster = "all",
                       aggregation_function = mean){
-
   mode <- match.arg(mode)
-
-  regulon[,weights][is.na(regulon[,weights])] <- 0
-
+  if(is.matrix(regulon[,weights]))
+    weights_df <- data.frame(regulon[,weights][,cluster])
+  else
+    weights_df <- data.frame(regulon[,weights])
   # give names to the peaks and target genes which will be easy to extract
   regulon$idxATAC <- paste0(as.character(regulon$idxATAC), "_peak")
   regulon$target <- paste0(regulon$target, "_gene")
-
   vertex_columns <- switch(mode,
                            "re" = c("tf", "idxATAC"),
                            "pairs" = c("tf", "idxATAC", "target"),
                            "tripartite" = c("idxATAC", "target"),
                            "tg" = c("tf", "target"))
+  colnames(weights_df) <- weights
+  graph_data <- cbind(regulon[,vertex_columns], weights_df)
 
-  graph_data <- regulon[,c(vertex_columns, weights)]
+  message(sprintf("Building graph using %s as edge weights", weights))
   if (mode == "tripartite"){
     # add tf-re data
     colnames(graph_data) <- c("from", "to", weights)
     graph_data_tf_re <- data.frame(from = regulon$tf,
                                    to = regulon$idxATAC)
     if (!is.null(weights)) {
-      graph_data_tf_re[,weights] <- regulon[,weights]
+      graph_data_tf_re[,weights] <- weights_df[[1]]
       graph_data <- rbind(graph_data, graph_data_tf_re)
       rm(graph_data_tf_re)
       vertex_columns <- c("from", "to")
