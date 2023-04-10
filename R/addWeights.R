@@ -251,7 +251,7 @@ addWeights <- function(regulon,
 
       peakMatrix.bi <- binarize_matrix(peakMatrix[,clusters %in% cluster.current], peak_cutoff)
       tfMatrix.bi <- binarize_matrix(expMatrix[,clusters %in% cluster.current], exp_cutoff)
-      output_df <- bplapply(X=seq_len(length(regulon.split)),
+      output_df <- BiocParallel::bplapply(X=seq_len(length(regulon.split)),
                             FUN=compare_logFC_bp,
                             regulon.split,
                             expMatrix[,clusters %in% cluster.current],

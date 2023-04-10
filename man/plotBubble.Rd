@@ -37,6 +37,8 @@ in \code{scale_color_viridis_c}}
 \item{y.label}{String indicating the y axis label}
 
 \item{title}{String indicating the title of the plot}
+
+\item{...}{Additional arguments to pass to \code{findDifferentialActivity}}
 }
 \value{
 A ggplot object

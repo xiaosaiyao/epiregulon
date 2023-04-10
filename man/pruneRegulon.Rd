@@ -56,6 +56,8 @@ to be retained in the pruned regulon.}
 
 \item{prune_value}{String indicating whether to filter regulon based on \code{pval} or \code{padj}.}
 
+\item{aggregate}{logical to specify whether regulatory elements are aggregated across the same TF-target pairs}
+
 \item{BPPARAM}{A BiocParallelParam object specifying whether calculation should be parallelized.
 Default is set to BiocParallel::MulticoreParam()}
 }
@@ -117,6 +119,7 @@ regulon <- data.frame(tf = c(rep("Gene_1",10), rep("Gene_2",10)),
 pruned.regulon <- pruneRegulon(expMatrix = gene_sce,
 exp_assay = "logcounts", peakMatrix = peak_sce, peak_assay = "counts",
 regulon = regulon, clusters = gene_sce$Treatment, aggregate = FALSE, regulon_cutoff = 0.5)
+
 }
 \author{
 Xiaosai Yao, Tomasz Wlodarczyk

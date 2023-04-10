@@ -42,8 +42,6 @@ contains genes in the first column and weights in the second column. See details
 \item{clusters}{A vector indicating cluster assignment}
 
 \item{FUN}{function to aggregate the weights}
-
-\item{...}{additional arguments for FUN}
 }
 \value{
 A matrix of inferred transcription factor (row) activities in single cells (columns)

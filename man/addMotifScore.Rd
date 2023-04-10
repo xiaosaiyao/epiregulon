@@ -12,7 +12,8 @@ addMotifScore(
   peaks = NULL,
   pwms = NULL,
   species = c("human", "mouse"),
-  genome = c("hg38", "hg19", "mm10")
+  genome = c("hg38", "hg19", "mm10"),
+  ...
 )
 }
 \arguments{
@@ -22,6 +23,8 @@ addMotifScore(
 motif enrichment was already performed. If no motif enrichment has been performed, first annotate the ArchR using
 \code{addMotifAnnotations}. If no ArchR project is provided, the user can also provide peaks in the form of GRanges and
 this function will annotate the peaks with Cisbp}
+
+\item{field_name}{Character string    indicating the column name of the regulon to add the motif information to}
 
 \item{motif_name}{Character string    indicating name of the peakAnnotation object (i.e. Motifs) to retrieve from the designated ArchRProject.}
 
@@ -33,6 +36,8 @@ The peak indices should match the \code{re} column in the regulon}
 \item{species}{Character string indicating species. Currently supported species is human or mouse}
 
 \item{genome}{Character string indicating the genomic build}
+
+\item{...}{Additional arguments to pass into motifmatchr::matchMotifs}
 }
 \value{
 A DataFrame with motif matches added with 1s indicating the presence of motifs and

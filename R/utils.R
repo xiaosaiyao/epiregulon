@@ -41,7 +41,7 @@ initiateMatCluster <- function(clusters, nrow, value=NA) {
 
 
 
-#' @import ggplot2
+#' @import ggplot2 ggbeeswarm
 plotDiagnostic <- function(idx,regulon, expMatrix,exp_assay, exp_cutoff=1, peakMatrix, peak_assay, peak_cutoff=0, clusters){
 
   target <- regulon$target[idx]
@@ -66,8 +66,6 @@ plotDiagnostic <- function(idx,regulon, expMatrix,exp_assay, exp_cutoff=1, peakM
     tf_re.bi <- tf_exp.bi*peak.bi
     tf_re.bi <- factor(tf_re.bi, levels = c(0,1))
 
-    require(ggplot2)
-    require(ggbeeswarm)
     target_group <- data.frame(groups=as.vector(tf_re.bi), target=as.vector(target_exp))
     tg_plot[[cluster]] <- ggplot(target_group, aes(groups, target)) +  geom_boxplot() + geom_point(position = "jitter") +
       ggtitle(paste0("target:", target, " tf:", tf, " peak:", peak, " in ", cluster, "\n",

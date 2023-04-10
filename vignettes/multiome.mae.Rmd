@@ -31,7 +31,8 @@ This tutorial walks through the same dataset used in the "multiome tutorial - ar
 Epiregulon is currently available on R/dev
 
 ```{r, results='hide', message=FALSE}
-library(epiregulon)
+#library(epiregulon)
+devtools::load_all("/gstore/project/lineage/xiaosai/epiregulon/")
 ```
 
 Alternatively, you could install from gitlab
@@ -55,8 +56,10 @@ Multiome data can now be conveniently processed by ```initiate.archr``` and then
 
 ```{r}
 # load the MAE object
-library(SingleCellExperiment)
-mae <- dsassembly::getDataset("DS000013080")
+library(scMultiome)
+ExperimentHub::setExperimentHubOption("CACHE", "/gstore/scratch/u/yaox19/.cache/ExperimentHub")
+
+mae <- scMultiome::reprogramSeq()
 
 # peak matrix
 PeakMatrix <- mae[["PeakMatrix"]]
@@ -68,11 +71,7 @@ rownames(GeneExpressionMatrix) <- rowData(GeneExpressionMatrix)$name
 # dimensional reduction matrix
 reducedDimMatrix <- reducedDim(mae[['TileMatrix500']], "LSI_ATAC")
 
-
 ```
-
-
-
 Visualize singleCellExperiment by UMAP
 ```{r}
 # transfer UMAP_combined from TileMatrix to GeneExpressionMatrix
@@ -131,7 +130,9 @@ A long format dataframe, representing the inferred regulons, is then generated. 
 ```{r, warning=FALSE, getRegulon}
 
 regulon <- getRegulon(p2g = p2g, overlap = overlap, aggregate = FALSE)
-head(regulon)
+regulon
+
+#saveRDS(regulon, "/gstore/project/lineage/xiaosai/epiregulon_notes/regulon.dev_xs.rds")
 ```
 
 ## Network pruning (highly recommended)
@@ -143,9 +144,8 @@ We calculate cluster-specific p-values if users supply cluster labels. This is u
 
 ```{r network pruning, results = "hide", message = FALSE}
 
-
 pruned.regulon <- pruneRegulon(expMatrix = GeneExpressionMatrix,
-                               exp_assay = "counts",
+                               exp_assay = "logcounts",
                                peakMatrix = PeakMatrix,
                                peak_assay = "counts",
                                test = "chi.sq",
@@ -154,7 +154,7 @@ pruned.regulon <- pruneRegulon(expMatrix = GeneExpressionMatrix,
                                prune_value = "pval",
                                regulon_cutoff = 0.05
                                )
-
+#saveRDS(pruned.regulon, "/gstore/project/lineage/xiaosai/epiregulon_notes/pruned.regulon.chisq.dev_xs.regulon.from.master.rds")
 ```
 
 ## Add Weights
@@ -167,17 +167,17 @@ Three measures (correlation, Wilcoxon statistics and log 2 fold difference) give
 
 regulon.w <- addWeights(regulon = pruned.regulon,
                         expMatrix  = GeneExpressionMatrix,
-                        exp_assay  = "counts",
+                        exp_assay  = "logcounts",
                         peakMatrix = PeakMatrix,
                         peak_assay = "counts",
                         clusters = GeneExpressionMatrix$Clusters,
                         block_factor = NULL,
                         tf_re.merge = TRUE,
                         method = "corr")
-```
-```{r }
+
 head(regulon.w)
 
+#saveRDS(regulon.w, "/gstore/project/lineage/xiaosai/epiregulon_notes/regulon.w.dev_xs.rds")
 ```
 
 ## Calculate TF activity 
@@ -190,12 +190,14 @@ $x_i$ is the log count expression of target i where i in {1,2,...,n}
 $weights_i$ is the weight of TF and target i
 
 ```{r calculateActivity, results = "hide"}
-score.combine <- calculateActivity(expMatrix = GeneExpressionMatrix, 
+score.combine <- calculateActivity(expMatrix = GeneExpressionMatrix,
                                    regulon = regulon.w, 
                                    mode = "weight", 
                                    method = "weightedMean", 
-                                   exp_assay = "counts",
+                                   exp_assay = "logcounts",
                                    normalize = FALSE)
+
+#saveRDS(score.combine, "/gstore/project/lineage/xiaosai/epiregulon_notes/score.combine.corr.master.rds")
 
 ```
 
@@ -219,7 +221,7 @@ markers.sig <- getSigGenes(markers, topgenes = 5 )
 First visualize the known differential TFs by bubble plot
 ```{r visualization}
 plotBubble(activity_matrix = score.combine, 
-           tf = c("NKX2-1","GATA6","FOXA1","FOXA2", "AR"), 
+           tf = c("NKX2-1","GATA6","FOXA1","FOXA2", "AR", "RCOR1","CREB5"), 
            clusters = GeneExpressionMatrix$Clusters)
 ```
 
@@ -235,20 +237,21 @@ Visualize the known differential TFs by violin plot. Note there is no activity c
 
 ```{r}
 plotActivityViolin(activity_matrix = score.combine, 
-                   tf = c("NKX2-1","GATA6","FOXA1","FOXA2", "AR", "SOX2"), 
+                   tf = c("NKX2-1","GATA6","FOXA1","FOXA2", "AR", "RCOR1","CREB5"), 
                    clusters = GeneExpressionMatrix$Clusters)
 ```
 
 Visualize the known differential TFs by UMAP
 ```{r, fig.height = 8, fig.width = 12}
-
+pdf("/gstore/project/lineage/xiaosai/epiregulon_notes/dim.pdf", height = 8, width = 10)
 plotActivityDim(sce = GeneExpressionMatrix, 
                 activity_matrix = score.combine, 
-                tf = c("NKX2-1","GATA6","AR", "FOXA1","FOXA2","SOX2"), 
+                tf = c("NKX2-1","GATA6","FOXA1","FOXA2", "AR", "RCOR1","CREB5"), 
                 dimtype = "UMAP_Combined", 
                 label = "Clusters", 
                 point_size = 1, 
                 ncol = 3)
+dev.off()
 ```
 
 In contrast, the gene expression of the TFs is very sparse
@@ -256,7 +259,7 @@ In contrast, the gene expression of the TFs is very sparse
 
 plotActivityDim(sce = GeneExpressionMatrix, 
                 activity_matrix = counts(GeneExpressionMatrix), 
-                tf = c("NKX2-1","GATA6","AR","FOXA1","FOXA2", "SOX2"), 
+                tf = c("NKX2-1","GATA6","FOXA1","FOXA2", "AR", "RCOR1","CREB5"), 
                 dimtype = "UMAP_Combined", 
                 label = "Clusters", 
                 point_size = 1, 
