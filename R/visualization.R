@@ -222,6 +222,7 @@ plotActivityViolin <- function(activity_matrix,
 #' @param x.label String indicating the x axis label
 #' @param y.label String indicating the y axis label
 #' @param title String indicating the title of the plot
+#' @param ... Additional arguments to pass to `findDifferentialActivity`
 #'
 #' @return A ggplot object
 #' @export
@@ -456,7 +457,7 @@ plotHeatmapRegulon <- function(sce,
   regulon <- regulon[order(regulon$tf),]
 
   # remove duplicated genes from each tf
-  for (tf in na.omit(unique(regulon$tf))) {
+  for (tf in stats::na.omit(unique(regulon$tf))) {
    regulon <- regulon[!duplicated(regulon$target[regulon$tf == tf]),]
   }
 
@@ -559,7 +560,7 @@ plotHeatmapActivity <- function(activity_matrix,
   }
 
   activity_matrix <- activity_matrix[tfs,downsample_seq]
-  activity_matrix <- t(scale(t(activity_matrix), scale=scale, center=center))
+  activity_matrix <- Matrix::t(scale(Matrix::t(activity_matrix), scale=scale, center=center))
 
   col_fun <- circlize::colorRamp2(color_breaks, colors)
 

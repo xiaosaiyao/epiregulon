@@ -233,7 +233,7 @@ addTFMotifInfo <- function(p2g,
 #'
 #' @param p2g A Peak2Gene data frame created by ArchR or getP2Glinks() function
 #' @param overlap A data frame storing overlaps between the regions of the peak matrix with the bulk TF ChIP-seq binding sites computed from addTFMotifInfo
-#' @param aggregate logical to specify whether peak and gene ids are kept in regulon output or not
+#' @param aggregate logical to specify whether regulatory elements are aggregated across the same TF-target pairs
 #' @param FUN function to aggregate the weights
 #'
 #' @return A DataFrame consisting of tf(regulator), target and a column indicating degree of association between TF and target such as "mor" or "corr".

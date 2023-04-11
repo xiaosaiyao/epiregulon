@@ -11,7 +11,7 @@ getRegulon(p2g, overlap, aggregate = FALSE, FUN = colMeans)
 
 \item{overlap}{A data frame storing overlaps between the regions of the peak matrix with the bulk TF ChIP-seq binding sites computed from addTFMotifInfo}
 
-\item{aggregate}{logical to specify whether peak and gene ids are kept in regulon output or not}
+\item{aggregate}{logical to specify whether regulatory elements are aggregated across the same TF-target pairs}
 
 \item{FUN}{function to aggregate the weights}
 }

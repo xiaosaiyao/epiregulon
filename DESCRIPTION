@@ -29,6 +29,7 @@ Imports:
     Matrix,
     bluster,
     ggplot2,
+    ggbeeswarm,
     scuttle,
     reshape2,
     scales,
@@ -39,6 +40,12 @@ Imports:
     ComplexHeatmap,
     scMultiome,
     circlize,
+    chromVARmotifs,
+    motifmatchr,
+    GenomeInfoDb,
+    BSgenome.Hsapiens.UCSC.hg38,
+    BSgenome.Hsapiens.UCSC.hg19,
+    BSgenome.Mmusculus.UCSC.mm10,
     Rcpp
 Depends: 
     R (>= 4.2.0),

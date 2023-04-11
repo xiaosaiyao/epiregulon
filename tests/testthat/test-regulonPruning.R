@@ -58,7 +58,7 @@ test_that("pruneRegulon calculates p-values with chi-square test correctly", {
                             regulon_cutoff = 2,
                             test ="chi.sq")
 
-  expect_identical(unname(na.omit(regulon.p$pval[,"all"])),
+  expect_identical(unname(stats::na.omit(regulon.p$pval[,"all"])),
                    pvals[is.finite(pvals)], tolerance = 1e-3)
 })
 

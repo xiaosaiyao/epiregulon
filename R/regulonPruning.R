@@ -22,6 +22,7 @@
 #' to be retained in the pruned regulon.
 #' @param p_adj A logical indicating whether p adjustment should be performed
 #' @param prune_value String indicating whether to filter regulon based on `pval` or `padj`.
+#' @param aggregate logical to specify whether regulatory elements are aggregated across the same TF-target pairs
 #' @param BPPARAM A BiocParallelParam object specifying whether calculation should be parallelized.
 #' Default is set to BiocParallel::MulticoreParam()
 #

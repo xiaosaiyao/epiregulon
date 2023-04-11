@@ -132,8 +132,8 @@ regulonEnrich_ <- function(TF,
 #'
 #' @param TF  A character vector of TF names
 #' @param regulon A matrix of weighted regulon consisting of tf, targets, corr and weight
-#' @param corr String indicating the column name that should be used to filter target genes for geneset enrichment. Default is "weight".
-#' @param corr_cutoff A numeric scalar to indicate the cutoff to filter on the column specified by corr. Default is 0.5.
+#' @param weight String indicating the column name that should be used to filter target genes for geneset enrichment. Default is "weight".
+#' @param weight_cutoff A numeric scalar to indicate the cutoff to filter on the column specified by corr. Default is 0.5.
 #' @param genesets A dataframe with the first column being the name of the geneset and the second column being the name of the genes
 #'
 #' @return A dataframe showing the significantly enriched pathways
@@ -164,11 +164,11 @@ regulonEnrich_ <- function(TF,
 
 regulonEnrich <- function(TF,
                           regulon,
-                          corr = "weight",
-                          corr_cutoff = 0.5,
+                          weight = "weight",
+                          weight_cutoff = 0.5,
                           genesets) {
     regulonls <- lapply(TF, function(x) {
-      regulonEnrich_(x, regulon, corr, corr_cutoff, genesets)
+      regulonEnrich_(x, regulon, weight, weight_cutoff, genesets)
     })
     names(regulonls) <- TF
     return(regulonls)

@@ -36,7 +36,8 @@ addMotifScore <- function(regulon,
                           peaks=NULL,
                           pwms=NULL,
                           species=c("human","mouse"),
-                          genome=c("hg38","hg19","mm10")) {
+                          genome=c("hg38","hg19","mm10"),
+                          ...) {
 
   species <- match.arg(species)
   genome <- match.arg(genome)
