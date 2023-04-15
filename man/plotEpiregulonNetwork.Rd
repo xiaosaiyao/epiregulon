@@ -17,6 +17,20 @@ plotEpiregulonNetwork(
   label_nudge_y = 0.2,
   ...
 )
+
+plotEpiregulonNetwork(
+  graph,
+  layout = "stress",
+  label_size = 3,
+  tfs_to_highlight = NULL,
+  edge_alpha = 0.02,
+  point_size = 1,
+  point_border_size = 0.5,
+  label_alpha = 0.8,
+  label_nudge_x = 0.2,
+  label_nudge_y = 0.2,
+  ...
+)
 }
 \arguments{
 \item{graph}{an igraph object}
@@ -53,13 +67,32 @@ along the y axis that should be used in the force-directed layout.}
 }
 \value{
 a ggraph object
+
+a ggraph object
 }
 \description{
 This function takes an input an igraph object created by any of the following:
 \code{buildGraph}, \code{addCentrality}, \code{igraph::strength}, \code{normalizeCentrality}.
 It makes a force-directed layout plot to visualize it at a high level.
+
+This function takes an input an igraph object created by any of the following:
+\code{buildGraph}, \code{addCentrality}, \code{igraph::strength}, \code{normalizeCentrality}.
+It makes a force-directed layout plot to visualize it at a high level.
 }
 \examples{
+# create an artificial getRegulon output
+set.seed(1234)
+tf_set <- apply(expand.grid(LETTERS[seq_len(5)], LETTERS[seq_len(5)]),1,  paste, collapse = "")
+regulon <- data.frame(tf = sample(tf_set, 5e2, replace = TRUE))
+gene_set <- expand.grid(LETTERS[seq_len(5)], LETTERS[seq_len(5)], LETTERS[seq_len(5)])
+gene_set <- apply(gene_set,1,function(x) paste0(x,collapse=""))
+regulon$target <- sample(gene_set, 5e2, replace = TRUE)
+regulon$idxATAC <- seq_len(5e2)
+regulon$corr <- runif(5e2)*0.5+0.5
+#create igraph object
+graph_tripartite <- buildGraph(regulon, mode = "tripartite")
+plotEpiregulonNetwork(graph_tripartite, tfs_to_highlight = sample(unique(tf_set),3),
+edge_alpha = 0.2)
 # create an artificial getRegulon output
 set.seed(1234)
 tf_set <- apply(expand.grid(LETTERS[seq_len(5)], LETTERS[seq_len(5)]),1,  paste, collapse = "")

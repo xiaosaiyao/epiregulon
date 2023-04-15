@@ -415,6 +415,10 @@ enrichPlot <- function(results,
 #' @param cluster_columns Logical indicating whether to cluster columns
 #' @param border Logical indicating whether to add border around heatmap
 #' @param show_column_names Logical indicating whether to show column names
+#' @param column_col A list specifying the colors in the columns.
+#' See [here](https://jokergoo.github.io/ComplexHeatmap-reference/book/heatmap-annotations.html#simple-annotation)
+#' @param row_col A list specifying the colors in the rows.
+#' See [here](https://jokergoo.github.io/ComplexHeatmap-reference/book/heatmap-annotations.html#simple-annotation)
 #' @param ... other arguments for `ComplexHeatmap::Heatmap`
 #' @return A Heatmap-class object.
 #' @export
@@ -448,6 +452,8 @@ plotHeatmapRegulon <- function(sce,
                                cluster_columns=FALSE,
                                border = TRUE,
                                show_column_names=FALSE,
+                               column_col=NULL,
+                               row_col=NULL,
                                ...) {
 
   downsample_seq <- seq(from=1, to=ncol(sce), by=floor(max(1, ncol(sce)/downsample)))
@@ -485,8 +491,8 @@ plotHeatmapRegulon <- function(sce,
 
   ComplexHeatmap::Heatmap(mat,
                           col = col_fun,
-                          top_annotation=ComplexHeatmap::HeatmapAnnotation(df=top_annotation),
-                          right_annotation=ComplexHeatmap::rowAnnotation(df=right_annotation),
+                          top_annotation=ComplexHeatmap::HeatmapAnnotation(df=top_annotation, col = column_col),
+                          right_annotation=ComplexHeatmap::rowAnnotation(df=right_annotation, col = row_col),
                           row_split=right_annotation,
                           column_split= column_split,
                           use_raster=use_raster,

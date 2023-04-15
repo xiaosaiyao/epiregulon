@@ -23,6 +23,22 @@ addCentrality(graph)
 normalizeCentrality(graph, FUN = sqrt, weighted = TRUE)
 
 rankTfs(graph, type_attr = "type")
+
+buildGraph(
+  regulon,
+  mode = c("tripartite", "tg", "re", "pairs"),
+  weights = "corr",
+  cluster = "all",
+  aggregation_function = mean
+)
+
+buildDiffGraph(graph_obj_1, graph_obj_2, weighted = TRUE, abs_diff = TRUE)
+
+addCentrality(graph)
+
+normalizeCentrality(graph, FUN = sqrt, weighted = TRUE)
+
+rankTfs(graph, type_attr = "type")
 }
 \arguments{
 \item{regulon}{an object returned by the getRegulon or addWeights function}
@@ -59,8 +75,15 @@ function is be the number of edges connected with each node (incident edges).}
 
 \item{type_attr}{a character corresponding to the name of the vertex attribute
 which indicate the type of vertex}
+
+\item{na_replace}{a logical indicating whether NA values for weights should be
+replaced with zeros.}
 }
 \value{
+an igraph object
+\code{rankTfs} returns a data.frame with transcription factors sorted according
+to the value of the \code{centrality} attribute
+
 an igraph object
 \code{rankTfs} returns a data.frame with transcription factors sorted according
 to the value of the \code{centrality} attribute
@@ -89,8 +112,50 @@ are calculated from the original ones divided by
 
 \code{rankTfs} assign ranks to transcription factors according to degree
 centrality of their vertices
+
+\code{buildGraph} function creates a directed graph based on the output of
+the \code{getRegulon} function.
+
+\code{buildDiffGraph} a graph difference by subtracting the edges of \code{graph_obj_2}
+from those of the \code{graph_obj_1}. If \code{weighted} is set to \code{TRUE} then for each
+ordered pair of vertices (nodes) the difference in number of edges between \code{graph_obj_1}
+and \code{graph_obj_1} is calculated. The result is used to set the number of
+corresponding edges in output graph. Note that unless \code{abs_diff} is set to
+\code{TRUE} any non-positive difference will translate into lack of the edges
+for a corresponding ordered pair of vertices in the output graph (equivalent
+to 0 value in the respective position in adjacency matrix). In case of
+weighted graphs, the weight of the output graph is calculated as a difference
+of the corresponding weights between input graphs.
+
+\code{addCentrality} calculates degree centrality for each vertex using
+\code{igraph::strength}.
+
+With \code{normalizeCentrality} function the normalized values of centrality
+are calculated from the original ones divided by
+\code{FUN}(total number of non-zero edges associated with each node).
+
+\code{rankTfs} assign ranks to transcription factors according to degree
+centrality of their vertices
 }
 \examples{
+# create an artificial getRegulon output
+set.seed(1234)
+tf_set <- apply(expand.grid(LETTERS[1:10], LETTERS[1:10]),1,  paste, collapse = "")
+regulon <- data.frame(tf = sample(tf_set, 5e3, replace = TRUE))
+gene_set <- expand.grid(LETTERS[1:10], LETTERS[1:10], LETTERS[1:10])
+gene_set <- apply(gene_set,1,function(x) paste0(x,collapse=""))
+regulon$target <- sample(gene_set, 5e3, replace = TRUE)
+regulon$idxATAC <- 1:5e3
+regulon$corr <- runif(5e3)*0.5+0.5
+graph_tripartite <- buildGraph(regulon, mode = "tripartite")
+# build bipartite graph using regulatory element-target gene pairs
+graph_pairs_1 <- buildGraph(regulon, mode = "pairs")
+regulon$corr <- runif(5e3)*0.5+0.5
+graph_pairs_2 <- buildGraph(regulon, mode = "pairs")
+graph_diff <- buildDiffGraph(graph_pairs_1, graph_pairs_2)
+graph_diff <- addCentrality(graph_diff)
+graph_diff <- normalizeCentrality(graph_diff)
+tf_ranking <- rankTfs(graph_diff)
 # create an artificial getRegulon output
 set.seed(1234)
 tf_set <- apply(expand.grid(LETTERS[1:10], LETTERS[1:10]),1,  paste, collapse = "")
