@@ -112,7 +112,7 @@ calculateActivity <- function (expMatrix = NULL,
 
   # convert genesets to regulon
   if (!is.null(genesets)){
-    if (is.list(genesets)){
+    if (is.list(genesets) | is(genesets, "CompressedSplitDFrameList")){
       regulon <- genesets2regulon(genesets)
     } else {
       stop("genesets should be a list of data frames or character vectors")
@@ -232,19 +232,20 @@ calculateActivity <- function (expMatrix = NULL,
 }
 
 genesets2regulon <- function (genesets){
+  regulon <- list()
   for (i in seq_len(length(genesets))){
     if ( is(genesets[[i]], "DFrame") | is(genesets[[i]], "data.frame")) {
-      genesets[[i]] <- S4Vectors::DataFrame(tf = names(genesets)[i],
+      regulon[[i]] <- S4Vectors::DataFrame(tf = names(genesets)[i],
                                            target = genesets[[i]][,1],
                                            weight = genesets[[i]][,2])
     } else if (is.vector(genesets[[i]])) {
-      genesets[[i]] <- S4Vectors::DataFrame(tf = names(genesets)[i],
+      regulon[[i]] <- S4Vectors::DataFrame(tf = names(genesets)[i],
                                            target = genesets[[i]],
                                            weight = 1)
     }
   }
 
-  regulon <- do.call(rbind, as.list(genesets))
+  regulon <- do.call(rbind, as.list(regulon))
 }
 
 
