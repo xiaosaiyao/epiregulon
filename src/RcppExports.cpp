@@ -35,12 +35,33 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// fast_wilcox
+Rcpp::List fast_wilcox(Rcpp::NumericVector exprs_x, Rcpp::IntegerVector exprs_i, Rcpp::IntegerVector exprs_p, Rcpp::NumericVector peak_x, Rcpp::IntegerVector peak_i, Rcpp::IntegerVector peak_p, Rcpp::IntegerVector target_id, Rcpp::IntegerVector tf_id, Rcpp::IntegerVector peak_id, Rcpp::IntegerVector clusters, int ngroups);
+RcppExport SEXP _epiregulon_fast_wilcox(SEXP exprs_xSEXP, SEXP exprs_iSEXP, SEXP exprs_pSEXP, SEXP peak_xSEXP, SEXP peak_iSEXP, SEXP peak_pSEXP, SEXP target_idSEXP, SEXP tf_idSEXP, SEXP peak_idSEXP, SEXP clustersSEXP, SEXP ngroupsSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type exprs_x(exprs_xSEXP);
+    Rcpp::traits::input_parameter< Rcpp::IntegerVector >::type exprs_i(exprs_iSEXP);
+    Rcpp::traits::input_parameter< Rcpp::IntegerVector >::type exprs_p(exprs_pSEXP);
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type peak_x(peak_xSEXP);
+    Rcpp::traits::input_parameter< Rcpp::IntegerVector >::type peak_i(peak_iSEXP);
+    Rcpp::traits::input_parameter< Rcpp::IntegerVector >::type peak_p(peak_pSEXP);
+    Rcpp::traits::input_parameter< Rcpp::IntegerVector >::type target_id(target_idSEXP);
+    Rcpp::traits::input_parameter< Rcpp::IntegerVector >::type tf_id(tf_idSEXP);
+    Rcpp::traits::input_parameter< Rcpp::IntegerVector >::type peak_id(peak_idSEXP);
+    Rcpp::traits::input_parameter< Rcpp::IntegerVector >::type clusters(clustersSEXP);
+    Rcpp::traits::input_parameter< int >::type ngroups(ngroupsSEXP);
+    rcpp_result_gen = Rcpp::wrap(fast_wilcox(exprs_x, exprs_i, exprs_p, peak_x, peak_i, peak_p, target_id, tf_id, peak_id, clusters, ngroups));
+    return rcpp_result_gen;
+END_RCPP
+}
 
 RcppExport SEXP to_end(void *, void *, void *, void *);
 RcppExport SEXP to_start(void *, void *, void *, void *);
 
 static const R_CallMethodDef CallEntries[] = {
     {"_epiregulon_fast_chisq", (DL_FUNC) &_epiregulon_fast_chisq, 16},
+    {"_epiregulon_fast_wilcox", (DL_FUNC) &_epiregulon_fast_wilcox, 11},
     {"to_end",   (DL_FUNC) &to_end,   4},
     {"to_start", (DL_FUNC) &to_start, 4},
     {NULL, NULL, 0}
