@@ -105,6 +105,59 @@ addWeights <- function(regulon,
   expMatrix <- as(expMatrix, "dgCMatrix")
 
   regulon <- S4Vectors::DataFrame(regulon)
+  
+  if (method == "wilcoxon") {
+    keep <- regulon$tf %in% rownames(expMatrix) &
+        regulon$target %in% rownames(expMatrix) &
+        regulon$idxATAC >= 1 & regulon$idxATAC <= nrow(peakMatrix) &
+        regulon$tf %in% names(which(table(regulon$tf) >= min_targets))
+
+    regulon <- regulon[keep,]
+    copy <- regulon
+
+    all.genes <- union(unique(regulon$target), unique(regulon$tf))
+    copy$tf <- match(copy$tf, all.genes)
+    copy$target <- match(copy$target, all.genes)
+    exprs_trans <- Matrix::t(expMatrix[all.genes,,drop=FALSE])
+
+    all.peaks <- sort(unique(copy$idxATAC))
+    peak_trans <- Matrix::t(peakMatrix[all.peaks,,drop=FALSE])
+    if (!is(peak_trans, "dgCMatrix")) {
+        peak_trans <- as(peak_trans, "dgCMatrix")
+    }
+
+    reg.order <- order(copy$target, copy$tf, copy$idxATAC)
+    copy <- copy[reg.order,,drop=FALSE]
+    fclusters <- factor(clusters)
+    iclusters <- as.integer(fclusters)
+
+    output <- fast_wilcox(
+        exprs_x = exprs_trans@x, 
+        exprs_i = exprs_trans@i, 
+        exprs_p = exprs_trans@p, 
+        peak_x = peak_trans@x,
+        peak_i = peak_trans@i,
+        peak_p = peak_trans@p,
+        target_id = copy$target - 1L,
+        tf_id = copy$tf - 1L,
+        peak_id = copy$idxATAC - 1L,
+        clusters = iclusters - 1L
+    )
+
+    AUC <- output$auc
+    ties <- output$ties
+    n1 <- output$total0
+    n2 <- output$total1
+
+    prod <- n1 * n2
+    n <- n1 + n2 # technically same across all rows, but we'll just do this for simplicity.
+    sigma <- prod / 12 * (n + 1 - ties / n / (n-1))
+
+    mu <- prod/2
+    stats <- t((AUC - mu)/sigma)
+    stats[reg.order,] <- stats
+    return(stats)
+  }
 
   # order regulon
   regulon <- regulon[order(regulon$tf),]

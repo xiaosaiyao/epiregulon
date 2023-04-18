@@ -10,25 +10,29 @@ struct ComputeWorkspace {
     std::vector<double> equal1;
 };
 
-void compute_u_statistic(
+void compute_auc(
     const std::vector<std::pair<double, int> >& input, 
     const std::vector<double>& num_zeros0, 
     const std::vector<double>& num_zeros1,
     const int* clusters,
     const unsigned char* okay,
     ComputeWorkspace& work,
-    double* output)
+    double* output,
+    double* ties)
 {
     int nclusters = num_zeros0.size();
     auto& less_than = work.less_than;
     std::fill(less_than.begin(), less_than.end(), 0);
 
-    // Values == 0.
+    // Values <= 0 are all treated as ties.
     for (int c = 0; c < nclusters; ++c) {
         if (num_zeros1[c]) {
             output[c] += num_zeros1[c] * (less_than[c] + 0.5 * num_zeros0[c]);
         }
         less_than[c] += num_zeros0[c];
+
+        double total_num_zeros = num_zeros0[c] + num_zeros1[c];
+        ties[c] += total_num_zeros * total_num_zeros * (total_num_zeros - 1); 
     }
 
     // Values > 0.
@@ -65,6 +69,9 @@ void compute_u_statistic(
                     output[c] += equal1[c] * (less_than[c] + 0.5 * equal0[c]);
                 }
                 less_than[c] += equal0[c];
+
+                double total_equal = equal0[c] + equal1[c];
+                ties[c] += total_equal * total_equal * (total_equal - 1); 
             }
 
             std::fill(equal0.begin(), equal0.end(), 0);
@@ -90,10 +97,14 @@ Rcpp::List fast_wilcox(
     Rcpp::IntegerVector target_id,
     Rcpp::IntegerVector tf_id,
     Rcpp::IntegerVector peak_id,
-    Rcpp::IntegerVector clusters,
-    int ngroups)
+    Rcpp::IntegerVector clusters)
 {
     size_t ncells = clusters.size();
+    int ngroups = (ncells ? *std::max_element(clusters.begin(), clusters.end()) + 1 : 0);
+    std::vector<int> cluster_sizes(ngroups);
+    for (auto c : clusters) {
+        ++cluster_sizes[c];
+    }
 
     int last = -1;
     std::vector<std::pair<double, int> > sortspace;
@@ -110,7 +121,8 @@ Rcpp::List fast_wilcox(
     ComputeWorkspace full_workspace(1);
 
     size_t nregs = target_id.size();
-    Rcpp::NumericMatrix output_u(ngroups + 1, nregs);
+    Rcpp::NumericMatrix output_auc(ngroups + 1, nregs);
+    Rcpp::NumericMatrix output_ties(ngroups + 1, nregs);
     Rcpp::NumericMatrix output_t0(ngroups + 1, nregs);
     Rcpp::NumericMatrix output_t1(ngroups + 1, nregs);
 
@@ -166,35 +178,40 @@ Rcpp::List fast_wilcox(
                 int c = clusters[ss.second];
                 if (okay[ss.second]) {
                     ++okay_zeros[c];
-                    ++okay_total[c];
                 } else {
                     ++notokay_zeros[c];
-                    ++notokay_total[c];
                 }
+            }
+
+            for (auto x : okay_indices) {
+                ++okay_total[clusters[x]];
             }
 
             // Computing the U statistic between the cells with TF+peak, and those without both.
             for (int c = 0; c < ngroups; ++c) {
                 okay_zeros[c] = okay_total[c] - okay_zeros[c];
+                notokay_total[c] = cluster_sizes[c] - okay_total[c];
                 notokay_zeros[c] = notokay_total[c] - notokay_zeros[c];
             }
 
-            auto col_u = output_u.column(i);
-            auto output_u_ptr = static_cast<double*>(col_u.begin());
-            compute_u_statistic(sortspace, notokay_zeros, okay_zeros, clusters.begin(), okay.data(), workspace, output_u_ptr);
+            auto col_u = output_auc.column(i);
+            auto output_auc_ptr = static_cast<double*>(col_u.begin());
+            auto col_tie = output_ties.column(i);
+            auto output_tie_ptr = static_cast<double*>(col_tie.begin());
+            compute_auc(sortspace, notokay_zeros, okay_zeros, clusters.begin(), okay.data(), workspace, output_auc_ptr, output_tie_ptr);
 
             full_okay_zeros[0] = std::accumulate(okay_zeros.begin(), okay_zeros.end(), 0);
             full_notokay_zeros[0] = std::accumulate(notokay_zeros.begin(), notokay_zeros.end(), 0);
-            compute_u_statistic(sortspace, full_okay_zeros, full_notokay_zeros, full_cluster.data(), okay.data(), full_workspace, output_u_ptr + ngroups);
+            compute_auc(sortspace, full_okay_zeros, full_notokay_zeros, full_cluster.data(), okay.data(), full_workspace, output_auc_ptr + ngroups, output_tie_ptr + ngroups);
 
             // Copying the totals to the output.
             auto col_t0 = output_t0.column(i);
             std::copy(notokay_total.begin(), notokay_total.end(), col_t0.begin());
-            col_t0[ngroups] = std::accumulate(okay_total.begin(), okay_total.end(), 0);
+            col_t0[ngroups] = std::accumulate(notokay_total.begin(), notokay_total.end(), 0);
 
             auto col_t1 = output_t1.column(i);
             std::copy(okay_total.begin(), okay_total.end(), col_t1.begin());
-            col_t1[ngroups] = std::accumulate(notokay_total.begin(), notokay_total.end(), 0);
+            col_t1[ngroups] = std::accumulate(okay_total.begin(), okay_total.end(), 0);
         }
 
         // Mopping up for the next regulon triplet.
@@ -207,8 +224,9 @@ Rcpp::List fast_wilcox(
     }
 
     return Rcpp::List::create(
-        Rcpp::Named("U") = output_u,
-        Rcpp::Named("T0") = output_t0,
-        Rcpp::Named("T1") = output_t1
+        Rcpp::Named("auc") = output_auc,
+        Rcpp::Named("ties") = output_ties,
+        Rcpp::Named("total0") = output_t0,
+        Rcpp::Named("total1") = output_t1
     );
 }
