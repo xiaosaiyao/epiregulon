@@ -32,7 +32,7 @@ void compute_auc(
         less_than[c] += num_zeros0[c];
 
         double total_num_zeros = num_zeros0[c] + num_zeros1[c];
-        ties[c] += total_num_zeros * total_num_zeros * (total_num_zeros - 1); 
+        ties[c] += total_num_zeros * (total_num_zeros * total_num_zeros - 1); 
     }
 
     // Values > 0.
@@ -71,7 +71,7 @@ void compute_auc(
                 less_than[c] += equal0[c];
 
                 double total_equal = equal0[c] + equal1[c];
-                ties[c] += total_equal * total_equal * (total_equal - 1); 
+                ties[c] += total_equal * (total_equal * total_equal - 1); 
             }
 
             std::fill(equal0.begin(), equal0.end(), 0);
