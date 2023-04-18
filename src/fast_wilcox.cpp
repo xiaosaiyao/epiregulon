@@ -98,7 +98,6 @@ Rcpp::List fast_wilcox(
     int last = -1;
     std::vector<std::pair<double, int> > sortspace;
     sortspace.reserve(ncells);
-    std::vector<std::vector<std::pair<double, int> > > cluster_space(ngroups);
 
     std::vector<unsigned char> okay(ncells);
     std::vector<int> okay_indices;
@@ -204,12 +203,7 @@ Rcpp::List fast_wilcox(
                 okay[o] = 0;
             }
             okay_indices.clear();
-
-            for (auto& cs : cluster_space) {
-                cs.clear();
-            }
         }
-
     }
 
     return Rcpp::List::create(
