@@ -41,7 +41,7 @@ head(gs.list)
 library(dorothea)
 data(dorothea_hs, package = "dorothea")
 regulon <- dorothea_hs
-enrichment_results <- regulonEnrich(c("ESR1","AR"), regulon = regulon, corr = "mor",
+enrichment_results <- regulonEnrich(c("ESR1","AR"), regulon = regulon, weight = "mor",
 genesets = gs.list)
 
 }
