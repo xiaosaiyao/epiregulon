@@ -3,7 +3,7 @@ title: "Dorothea tutorial"
 author: "Xiaosai Yao"
 email: "yao.xiaosai@gene.com"
 output:
-  BiocStyle::html_document:
+  BiocStyle::pdf_document:
     toc: true
     number_section: true
     self_contained: true
@@ -170,7 +170,8 @@ plotHeatmapRegulon(sce=sce,
                    cell_attributes="label",
                    col_gap="label",
                    exprs_values="logcounts",
-                   name="regulon heatmap")
+                   name="regulon heatmap",
+                   column_title_rot = 45)
 
 plotHeatmapActivity(activity_matrix = score.combine,
                     sce=sce,
@@ -178,7 +179,8 @@ plotHeatmapActivity(activity_matrix = score.combine,
                     downsample=1000,
                     cell_attributes="label",
                     col_gap="label",
-                    name="regulon heatmap")
+                    name="regulon heatmap",
+                    column_title_rot = 45)
 ```
 # Pathway enrichment
 
@@ -196,8 +198,8 @@ gs.list <- do.call(rbind,lapply(names(gs), function(x)
 
 enrichresults <- regulonEnrich(genes_to_plot, 
                                regulon = regulon.ms, 
-                               corr = "weight",
-                               corr_cutoff = 0.5, 
+                               weight = "weight",
+                               weight_cutoff = 0.5, 
                                genesets = gs.list)
 
 #plot results
