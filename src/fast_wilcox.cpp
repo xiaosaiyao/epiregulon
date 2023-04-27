@@ -11,8 +11,8 @@ struct ComputeWorkspace {
 };
 
 void compute_auc(
-    const std::vector<std::pair<double, int> >& input, 
-    const std::vector<double>& num_zeros0, 
+    const std::vector<std::pair<double, int> >& input,
+    const std::vector<double>& num_zeros0,
     const std::vector<double>& num_zeros1,
     const int* clusters,
     const unsigned char* okay,
@@ -32,7 +32,7 @@ void compute_auc(
         less_than[c] += num_zeros0[c];
 
         double total_num_zeros = num_zeros0[c] + num_zeros1[c];
-        ties[c] += total_num_zeros * (total_num_zeros * total_num_zeros - 1); 
+        ties[c] += total_num_zeros * (total_num_zeros * total_num_zeros - 1);
     }
 
     // Values > 0.
@@ -62,7 +62,7 @@ void compute_auc(
         if (tied) {
             // Adding the current element to the tie.
             auto& equal = (self_okay ? equal1 : equal0);
-            ++equal[self_clust]; 
+            ++equal[self_clust];
 
             for (int c = 0; c < nclusters; ++c) {
                 if (equal1[c]) {
@@ -71,15 +71,19 @@ void compute_auc(
                 less_than[c] += equal0[c];
 
                 double total_equal = equal0[c] + equal1[c];
-                ties[c] += total_equal * (total_equal * total_equal - 1); 
+                ties[c] += total_equal * (total_equal * total_equal - 1);
             }
 
             std::fill(equal0.begin(), equal0.end(), 0);
             std::fill(equal1.begin(), equal1.end(), 0);
 
-        } else if (self_okay) {
+        } else {
+          if (self_okay) {
             output[self_clust] += less_than[self_clust];
+          }
+          else{
             ++less_than[self_clust];
+          }
         }
     };
 
@@ -143,7 +147,7 @@ Rcpp::List fast_wilcox(
         // Identifying the cells with TF expression + peak.
         {
             int tf_offset = exprs_p[tf_id[i]], tf_last = exprs_p[tf_id[i]+1];
-            int peak_offset = exprs_p[peak_id[i]], peak_last = exprs_p[peak_id[i]+1];
+            int peak_offset = peak_p[peak_id[i]], peak_last = peak_p[peak_id[i]+1];
             int k = peak_offset;
 
             for (int j = tf_offset; j < tf_last; ++j) {
