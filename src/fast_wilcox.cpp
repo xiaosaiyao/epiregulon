@@ -206,7 +206,7 @@ Rcpp::List fast_wilcox(
 
             full_okay_zeros[0] = std::accumulate(okay_zeros.begin(), okay_zeros.end(), 0);
             full_notokay_zeros[0] = std::accumulate(notokay_zeros.begin(), notokay_zeros.end(), 0);
-            compute_auc(sortspace, full_okay_zeros, full_notokay_zeros, full_cluster.data(), okay.data(), full_workspace, output_auc_ptr + ngroups, output_tie_ptr + ngroups);
+            compute_auc(sortspace, full_notokay_zeros, full_okay_zeros, full_cluster.data(), okay.data(), full_workspace, output_auc_ptr + ngroups, output_tie_ptr + ngroups);
 
             // Copying the totals to the output.
             auto col_t0 = output_t0.column(i);
