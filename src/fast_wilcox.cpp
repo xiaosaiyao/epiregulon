@@ -101,10 +101,20 @@ Rcpp::List fast_wilcox(
     Rcpp::IntegerVector target_id,
     Rcpp::IntegerVector tf_id,
     Rcpp::IntegerVector peak_id,
-    Rcpp::IntegerVector clusters)
+    Rcpp::IntegerVector clusters,
+    Rcpp::IntegerVector cell_numb)
 {
-    size_t ncells = clusters.size();
-    int ngroups = (ncells ? *std::max_element(clusters.begin(), clusters.end()) + 1 : 0);
+    int ncells = cell_numb[0];
+    int ngroups;
+    int ngroups_output;
+    if (clusters.size()){
+      ngroups = (ncells ? *std::max_element(clusters.begin(), clusters.end()) + 1 : 0);
+      ngroups_output = ngroups + 1;
+    }
+    else{
+      ngroups = 1;
+      ngroups_output = 1;
+    }
     std::vector<int> cluster_sizes(ngroups);
     for (auto c : clusters) {
         ++cluster_sizes[c];
@@ -116,8 +126,10 @@ Rcpp::List fast_wilcox(
 
     std::vector<unsigned char> okay(ncells);
     std::vector<int> okay_indices;
-
     std::vector<double> okay_zeros(ngroups), okay_total(ngroups), notokay_zeros(ngroups), notokay_total(ngroups);
+
+
+
     ComputeWorkspace workspace(ngroups);
 
     std::vector<int> full_cluster(ncells);
@@ -125,10 +137,10 @@ Rcpp::List fast_wilcox(
     ComputeWorkspace full_workspace(1);
 
     size_t nregs = target_id.size();
-    Rcpp::NumericMatrix output_auc(ngroups + 1, nregs);
-    Rcpp::NumericMatrix output_ties(ngroups + 1, nregs);
-    Rcpp::NumericMatrix output_t0(ngroups + 1, nregs);
-    Rcpp::NumericMatrix output_t1(ngroups + 1, nregs);
+    Rcpp::NumericMatrix output_auc(ngroups_output, nregs);
+    Rcpp::NumericMatrix output_ties(ngroups_output, nregs);
+    Rcpp::NumericMatrix output_t0(ngroups_output, nregs);
+    Rcpp::NumericMatrix output_t1(ngroups_output, nregs);
 
     for (size_t i = 0; i < nregs; ++i) {
         // Only resorting if we've moved onto a different target gene.
@@ -169,13 +181,18 @@ Rcpp::List fast_wilcox(
                     okay[icurrent] = 1;
                 }
             }
-        }
 
-        {
-            std::fill(okay_zeros.begin(), okay_zeros.end(), 0);
-            std::fill(okay_total.begin(), okay_total.end(), 0);
-            std::fill(notokay_zeros.begin(), notokay_zeros.end(), 0);
-            std::fill(notokay_total.begin(), notokay_total.end(), 0);
+        }
+        std::fill(okay_zeros.begin(), okay_zeros.end(), 0);
+        std::fill(okay_total.begin(), okay_total.end(), 0);
+        std::fill(notokay_zeros.begin(), notokay_zeros.end(), 0);
+        std::fill(notokay_total.begin(), notokay_total.end(), 0);
+        auto col_u = output_auc.column(i);
+        auto output_auc_ptr = static_cast<double*>(col_u.begin());
+        auto col_tie = output_ties.column(i);
+        auto output_tie_ptr = static_cast<double*>(col_tie.begin());
+
+        if (clusters.size()){
 
             // Looping through the sortspace and creating cluster-specific sorted vectors.
             for (const auto& ss : sortspace) {
@@ -198,15 +215,29 @@ Rcpp::List fast_wilcox(
                 notokay_zeros[c] = notokay_total[c] - notokay_zeros[c];
             }
 
-            auto col_u = output_auc.column(i);
-            auto output_auc_ptr = static_cast<double*>(col_u.begin());
-            auto col_tie = output_ties.column(i);
-            auto output_tie_ptr = static_cast<double*>(col_tie.begin());
             compute_auc(sortspace, notokay_zeros, okay_zeros, clusters.begin(), okay.data(), workspace, output_auc_ptr, output_tie_ptr);
 
             full_okay_zeros[0] = std::accumulate(okay_zeros.begin(), okay_zeros.end(), 0);
             full_notokay_zeros[0] = std::accumulate(notokay_zeros.begin(), notokay_zeros.end(), 0);
             compute_auc(sortspace, full_notokay_zeros, full_okay_zeros, full_cluster.data(), okay.data(), full_workspace, output_auc_ptr + ngroups, output_tie_ptr + ngroups);
+        }
+        else {
+          for (const auto& ss : sortspace) {
+            if (okay[ss.second]) {
+              ++okay_zeros[0];
+            } else {
+              ++notokay_zeros[0];
+            }
+          }
+          okay_total[0] = (int) okay_indices.size();
+          okay_zeros[0] = okay_total[0] - okay_zeros[0];
+          notokay_total[0] = ncells - okay_total[0];
+          notokay_zeros[0] = notokay_total[0] - notokay_zeros[0];
+
+          compute_auc(sortspace, notokay_zeros, okay_zeros, full_cluster.data(), okay.data(), workspace, output_auc_ptr, output_tie_ptr);
+        }
+        {
+
 
             // Copying the totals to the output.
             auto col_t0 = output_t0.column(i);
