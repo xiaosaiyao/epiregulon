@@ -95,6 +95,9 @@ Rcpp::List fast_wilcox(
     Rcpp::NumericVector exprs_x,
     Rcpp::IntegerVector exprs_i,
     Rcpp::IntegerVector exprs_p,
+    Rcpp::LogicalVector exprs_tf_x,
+    Rcpp::IntegerVector exprs_tf_i,
+    Rcpp::IntegerVector exprs_tf_p,
     Rcpp::NumericVector peak_x,
     Rcpp::IntegerVector peak_i,
     Rcpp::IntegerVector peak_p,
@@ -106,14 +109,11 @@ Rcpp::List fast_wilcox(
 {
     int ncells = cell_numb[0];
     int ngroups;
-    int ngroups_output;
     if (clusters.size()){
       ngroups = (ncells ? *std::max_element(clusters.begin(), clusters.end()) + 1 : 0);
-      ngroups_output = ngroups + 1;
     }
     else{
       ngroups = 1;
-      ngroups_output = 1;
     }
     std::vector<int> cluster_sizes(ngroups);
     for (auto c : clusters) {
@@ -133,14 +133,13 @@ Rcpp::List fast_wilcox(
     ComputeWorkspace workspace(ngroups);
 
     std::vector<int> full_cluster(ncells);
-    std::vector<double> full_okay_zeros(1), full_notokay_zeros(1);
     ComputeWorkspace full_workspace(1);
 
     size_t nregs = target_id.size();
-    Rcpp::NumericMatrix output_auc(ngroups_output, nregs);
-    Rcpp::NumericMatrix output_ties(ngroups_output, nregs);
-    Rcpp::NumericMatrix output_t0(ngroups_output, nregs);
-    Rcpp::NumericMatrix output_t1(ngroups_output, nregs);
+    Rcpp::NumericMatrix output_auc(ngroups, nregs);
+    Rcpp::NumericMatrix output_ties(ngroups, nregs);
+    Rcpp::NumericMatrix output_t0(ngroups, nregs);
+    Rcpp::NumericMatrix output_t1(ngroups, nregs);
 
     for (size_t i = 0; i < nregs; ++i) {
         // Only resorting if we've moved onto a different target gene.
@@ -158,16 +157,16 @@ Rcpp::List fast_wilcox(
 
         // Identifying the cells with TF expression + peak.
         {
-            int tf_offset = exprs_p[tf_id[i]], tf_last = exprs_p[tf_id[i]+1];
+            int tf_offset = exprs_tf_p[tf_id[i]], tf_last = exprs_tf_p[tf_id[i]+1];
             int peak_offset = peak_p[peak_id[i]], peak_last = peak_p[peak_id[i]+1];
             int k = peak_offset;
 
             for (int j = tf_offset; j < tf_last; ++j) {
-                if (exprs_x[j] <= 0) {
+                if (!exprs_tf_x[j]) {
                     continue;
                 }
 
-                int icurrent = exprs_i[j];
+                int icurrent = exprs_tf_i[j];
                 while (k < peak_last && peak_i[k] < icurrent) {
                     ++k;
                 }
@@ -216,10 +215,6 @@ Rcpp::List fast_wilcox(
             }
 
             compute_auc(sortspace, notokay_zeros, okay_zeros, clusters.begin(), okay.data(), workspace, output_auc_ptr, output_tie_ptr);
-
-            full_okay_zeros[0] = std::accumulate(okay_zeros.begin(), okay_zeros.end(), 0);
-            full_notokay_zeros[0] = std::accumulate(notokay_zeros.begin(), notokay_zeros.end(), 0);
-            compute_auc(sortspace, full_notokay_zeros, full_okay_zeros, full_cluster.data(), okay.data(), full_workspace, output_auc_ptr + ngroups, output_tie_ptr + ngroups);
         }
         else {
           for (const auto& ss : sortspace) {
@@ -234,7 +229,7 @@ Rcpp::List fast_wilcox(
           notokay_total[0] = ncells - okay_total[0];
           notokay_zeros[0] = notokay_total[0] - notokay_zeros[0];
 
-          compute_auc(sortspace, notokay_zeros, okay_zeros, full_cluster.data(), okay.data(), workspace, output_auc_ptr, output_tie_ptr);
+          compute_auc(sortspace, notokay_zeros, okay_zeros, full_cluster.data(), okay.data(), full_workspace, output_auc_ptr, output_tie_ptr);
         }
         {
 
@@ -242,11 +237,9 @@ Rcpp::List fast_wilcox(
             // Copying the totals to the output.
             auto col_t0 = output_t0.column(i);
             std::copy(notokay_total.begin(), notokay_total.end(), col_t0.begin());
-            col_t0[ngroups] = std::accumulate(notokay_total.begin(), notokay_total.end(), 0);
 
             auto col_t1 = output_t1.column(i);
             std::copy(okay_total.begin(), okay_total.end(), col_t1.begin());
-            col_t1[ngroups] = std::accumulate(okay_total.begin(), okay_total.end(), 0);
         }
 
         // Mopping up for the next regulon triplet.
