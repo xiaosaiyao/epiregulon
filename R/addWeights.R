@@ -98,9 +98,33 @@ addWeights <- function(regulon,
     expMatrix <- assay(expMatrix, exp_assay)
   }
 
+  if(any(dim(expMatrix)==0)) stop("expMatrix with no data")
+
   if (checkmate::test_class(peakMatrix, classes="SummarizedExperiment")){
     peakMatrix <- assay(peakMatrix, peak_assay)
   }
+
+  if(!is.null(peakMatrix)){
+    checkmate::testMultiClass(peakMatrix, c("matrix", "dgeMatrix",
+                                            "lgCMatrix", "dgCMatrix"))
+  }
+
+  checkmate::testMultiClass(regulon, c("data.frame", "DFrame"))
+
+  if(nrow(regulon) == 0) stop("Regulon with zero rows")
+
+  checkmate::assert_logical(tf_re.merge, len = 1)
+
+  if(!is.null(clusters)){
+    if(!is.character(clusters) | !is.vector(clusters))
+    tryCatch(clusters <- as.character(as.vector(clusters)), error = function(e) stop("'clusters' agrument should be coercible to a character vector"))
+  }
+
+  if(method %in% c("logFC", "wilcoxon") | tf_re.merge){
+    if(is.null(peakMatrix)) stop("Peak matrix should be provided")
+    if(any(dim(peakMatrix) == 0)) stop("Peak matrix is empty")
+  }
+
 
   expMatrix <- as(expMatrix, "dgCMatrix")
 
@@ -109,17 +133,18 @@ addWeights <- function(regulon,
   # order regulon
   regulon <- regulon[order(regulon$tf),]
 
-  # remove tfs not found in expression matrix
-  regulon <- regulon[which(regulon$tf %in% rownames(expMatrix)),]
+  # remove genes not found in regulon
+  expMatrix <- expMatrix[which(rownames(expMatrix) %in% unique(c(regulon$tf, regulon$target))),]
 
-  # remove targets not found in expression matrix
-  regulon <- regulon[which(regulon$target %in% rownames(expMatrix)),]
+  keep <- regulon$tf %in% rownames(expMatrix) &
+    regulon$target %in% rownames(expMatrix)
+
+  regulon <- regulon[keep,]
+
+  if(nrow(regulon) == 0) stop("Gene names in the regulon should match those in the expMatrix")
 
   # remove tfs with less than min_targets
   regulon <- regulon[regulon$tf %in% names(which(table(regulon$tf) >= min_targets)),]
-
-  # remove genes not found in regulon
-  expMatrix <- expMatrix[which(rownames(expMatrix) %in% unique(c(regulon$tf, regulon$target))),]
 
   # if a cluster is named "all", replace it to distinguish from all cells
   if (!is.null(clusters)){
@@ -138,21 +163,108 @@ addWeights <- function(regulon,
     regulon.split <- split(regulon, regulon$tf)
   }
 
-
-
-
   if (!is.null(peakMatrix)) {
-
     peakMatrix <- as(peakMatrix, "dgCMatrix")
-
     # name peakMatrix
     rownames(peakMatrix) <- seq_len(nrow(peakMatrix))
-
     # remove peaks not found in regulon
     peakMatrix <- peakMatrix[which(rownames(peakMatrix) %in% unique(regulon$idxATAC)),]
-
   }
 
+  if (method == "wilcoxon") {
+    keep <- regulon$idxATAC >= 1 & regulon$idxATAC <= nrow(peakMatrix)
+    regulon <- regulon[keep,]
+    peakMatrix <- binarize_matrix(peakMatrix, cutoff = peak_cutoff)
+    copy <- regulon
+    all.targets <- sort(unique(regulon$target))
+    all.tfs <- sort(unique(regulon$tf))
+    copy$tf <- match(copy$tf, all.tfs)
+    copy$target <- match(copy$target, all.targets)
+    if (!is.null(clusters)){
+      # binarize expression matrix for each cluster separately
+      expMatrix_tfs_clusters <- expMatrix[all.tfs,,drop = FALSE]
+      for(cluster in unique(clusters)){
+        cluster_ind <- which(clusters == cluster)
+        expMatrix_tfs_clusters[,cluster_ind, drop = FALSE] <- binarize_matrix(expMatrix_tfs_clusters[,cluster_ind, drop = FALSE],
+                                                                 cutoff = exp_cutoff)
+      }
+    }
+    expMatrix_tfs <- binarize_matrix(expMatrix[all.tfs,,drop = FALSE], cutoff = exp_cutoff)
+    exprs_trans_target <- Matrix::t(expMatrix[all.targets,,drop=FALSE])
+    exprs_trans_tf <- Matrix::t(expMatrix_tfs)
+    all.peaks <- sort(unique(copy$idxATAC))
+    peak_trans <- Matrix::t(peakMatrix[all.peaks,,drop=FALSE])
+    if (!is(peak_trans, "dgCMatrix")) {
+        peak_trans <- as(peak_trans, "dgCMatrix")
+    }
+    copy$idxATAC <- match(copy$idxATAC, all.peaks)
+    reg.order <- order(copy$target, copy$tf, copy$idxATAC)
+    copy <- copy[reg.order,,drop=FALSE]
+    # calculate stats for all clusters
+    output <- fast_wilcox(
+      exprs_x = exprs_trans_target@x,
+      exprs_i = exprs_trans_target@i,
+      exprs_p = exprs_trans_target@p,
+      exprs_tf_x = as.logical(exprs_trans_tf@x),
+      exprs_tf_i = exprs_trans_tf@i,
+      exprs_tf_p = exprs_trans_tf@p,
+      peak_x = peak_trans@x,
+      peak_i = peak_trans@i,
+      peak_p = peak_trans@p,
+      target_id = copy$target - 1L,
+      tf_id = copy$tf - 1L,
+      peak_id = copy$idxATAC - 1L,
+      clusters = integer(0),
+      cell_numb = nrow(exprs_trans_target)
+    )
+
+    if(!is.null(clusters)){
+      # calculate stats for each cluster separately
+      exprs_trans_tf_clusters <- Matrix::t(expMatrix_tfs_clusters)
+      fclusters <- factor(clusters)
+      fclusters_order <- order(levels(fclusters))
+      iclusters <- as.integer(fclusters)
+      output_clusters <- fast_wilcox(
+        exprs_x = exprs_trans_target@x,
+        exprs_i = exprs_trans_target@i,
+        exprs_p = exprs_trans_target@p,
+        exprs_tf_x = as.logical(exprs_trans_tf_clusters@x),
+        exprs_tf_i = exprs_trans_tf_clusters@i,
+        exprs_tf_p = exprs_trans_tf_clusters@p,
+        peak_x = peak_trans@x,
+        peak_i = peak_trans@i,
+        peak_p = peak_trans@p,
+        target_id = copy$target - 1L,
+        tf_id = copy$tf - 1L,
+        peak_id = copy$idxATAC - 1L,
+        clusters = iclusters - 1L,
+        cell_numb = nrow(exprs_trans_target)
+      )
+      output <- mapply(function(x,y) rbind(x,y), output, output_clusters, SIMPLIFY = FALSE)
+    }
+
+    AUC <- output$auc
+    ties <- output$ties
+    n1 <- output$total0
+    n2 <- output$total1
+
+    prod <- n1 * n2
+    n <- n1 + n2 # technically same across all rows, but we'll just do this for simplicity.
+    sigma <- sqrt(prod / 12 * (n + 1 - ties / n / (n-1)))
+
+    mu <- prod/2
+    stats <- (AUC - mu)/sigma
+    # set z-score to zero if the size of the of the groups is equal to 0
+    stats[n1==0 | n2==0] <- 0
+    stats[,reg.order] <- stats
+    regulon$weight <- t(stats)
+    # Calculate effect size
+    n_cells <- ncol(expMatrix)
+    n_cells <- c(n_cells, table(clusters))
+    # transform z-scores to effect size
+    regulon$weight <- t(t(regulon$weight)/sqrt(n_cells))
+    return(regulon)
+  }
 
   if (method %in% c("corr", "MI", "lmfit")){
     message("calculating average expression across clusters...")
@@ -263,44 +375,6 @@ addWeights <- function(regulon,
     }
 
 
-  } else if (method == "wilcoxon") {
-
-
-    for (cluster in c("all", unique_clusters)) {
-      if (cluster == "all" & !is.null(clusters)){
-        cluster.current <- unique_clusters
-      } else if (cluster == "all" & is.null(clusters)) {
-        cluster.current <- "all"
-        clusters <- rep("all", ncol(expMatrix))
-      } else if (cluster != "all"){
-        cluster.current <- cluster
-        regulon.split <- output_df
-      }
-
-      message("calculating rank of cluster ", cluster, "...")
-      tg_rank <- t(apply(expMatrix[,clusters %in% cluster.current], 1, rank, ties.method = "average"))
-      tie <- apply(tg_rank, 1, function(x){
-        freq <- table(x)
-        sum((freq^3 - freq)/12)})
-
-      message("performing Mann-Whitney U-Test of cluster ", cluster, "...")
-
-
-
-      peakMatrix.bi <- binarize_matrix(peakMatrix[,clusters %in% cluster.current], peak_cutoff)
-      tfMatrix.bi <- binarize_matrix(expMatrix[,clusters %in%  cluster.current], exp_cutoff)
-      output_df <- BiocParallel::bplapply(X=seq_len(length(regulon.split)),
-                                          FUN=compare_wilcox_bp,
-                                          regulon.split,
-                                          tfMatrix.bi,
-                                          peakMatrix.bi,
-                                          tg_rank,
-                                          tie,
-                                          cluster,
-                                          BPPARAM=BPPARAM
-      )
-    }
-
   } else {
 
     stop("method should be corr, MI, lmfit, logFC or wilcoxon")
@@ -309,20 +383,6 @@ addWeights <- function(regulon,
 
   output_df <- do.call(rbind, output_df)
 
-
-  if (method == "wilcoxon") {
-    # Calculate effect size for wilcoxon
-    n_cells <- ncol(expMatrix)
-
-    for (cluster in c("all", unique_clusters)) {
-      # if groups have the same ranks the result will be NaN
-      output_df$weight[is.nan(output_df$weight[,cluster]),cluster] <- 0
-      # transform z-scores to effect size
-      output_df$weight[, cluster] <- output_df$weight[, cluster]/sqrt(n_cells)
-    }
-
-
-  }
 
 
   ## Aggregate by REs to have only TF-TG weights
@@ -424,50 +484,3 @@ compare_logFC_bp <- function(n,
   return(regulon.split[[n]])
 
 }
-
-
-compare_wilcox_bp <- function(n,
-                              regulon.split,
-                              tfMatrix,
-                              peakMatrix,
-                              tg_rank,
-                              tie,
-                              cluster){
-
-  tf_reMatrix <- tfMatrix[regulon.split[[n]]$tf,,drop=FALSE] *
-    peakMatrix[as.character(regulon.split[[n]]$idxATAC),,drop=FALSE]
-
-  tg_rank <- tg_rank[regulon.split[[n]]$target,,drop=FALSE]
-  tie <- tie[regulon.split[[n]]$target]
-  regulon.split[[n]]$weight[,cluster] <- wilcoxTest(tf_reMatrix, tg_rank, tie)
-  return(regulon.split[[n]])
-}
-
-
-
-wilcoxTest <- function(tf_reMatrix, tg_rank, tie) {
-
-  n <- ncol(tf_reMatrix)
-  n1 <- Matrix::rowSums(tf_reMatrix)
-  n2 <- n - n1
-
-  T1 <- Matrix::rowSums(tg_rank * tf_reMatrix)
-  T2 <- Matrix::rowSums(tg_rank * (1-tf_reMatrix))
-
-  U1 <- n1*n2 + n1*(n1+1)/2 - T1
-  U2 <- n1*n2 + n2*(n2+1)/2 - T2
-
-
-  U <- cbind(U1, U2)
-  U <- apply(U, 1, min)
-
-  mu <- n1*n2/2
-
-
-  sigma <- sqrt(n1*n2/n/(n-1)) * sqrt((n^3-n)/12 - tie)
-  stats <- (U-mu)/sigma * sign(U1-U2)
-
-}
-
-
-
