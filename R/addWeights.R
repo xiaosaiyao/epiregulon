@@ -98,9 +98,33 @@ addWeights <- function(regulon,
     expMatrix <- assay(expMatrix, exp_assay)
   }
 
+  if(any(dim(expMatrix)==0)) stop("expMatrix with no data")
+
   if (checkmate::test_class(peakMatrix, classes="SummarizedExperiment")){
     peakMatrix <- assay(peakMatrix, peak_assay)
   }
+
+  if(!is.null(peakMatrix)){
+    checkmate::testMultiClass(peakMatrix, c("matrix", "dgeMatrix",
+                                            "lgCMatrix", "dgCMatrix"))
+  }
+
+  checkmate::testMultiClass(regulon, c("data.frame", "DFrame"))
+
+  if(nrow(regulon) == 0) stop("Regulon with zero rows")
+
+  checkmate::assert_logical(tf_re.merge, len = 1)
+
+  if(!is.null(clusters)){
+    if(!is.character(clusters) | !is.vector(clusters))
+    tryCatch(clusters <- as.character(as.vector(clusters)), error = function(e) stop("'clusters' agrument should be coercible to a character vector"))
+  }
+
+  if(method %in% c("logFC", "wilcoxon") | tf_re.merge){
+    if(is.null(peakMatrix)) stop("Peak matrix should be provided")
+    if(any(dim(peakMatrix) == 0)) stop("Peak matrix is empty")
+  }
+
 
   expMatrix <- as(expMatrix, "dgCMatrix")
 
@@ -113,10 +137,11 @@ addWeights <- function(regulon,
   expMatrix <- expMatrix[which(rownames(expMatrix) %in% unique(c(regulon$tf, regulon$target))),]
 
   keep <- regulon$tf %in% rownames(expMatrix) &
-    regulon$target %in% rownames(expMatrix) &
-    regulon$idxATAC >= 1 & regulon$idxATAC <= nrow(peakMatrix)
+    regulon$target %in% rownames(expMatrix)
 
   regulon <- regulon[keep,]
+
+  if(nrow(regulon) == 0) stop("Gene names in the regulon should match those in the expMatrix")
 
   # remove tfs with less than min_targets
   regulon <- regulon[regulon$tf %in% names(which(table(regulon$tf) >= min_targets)),]
@@ -147,6 +172,8 @@ addWeights <- function(regulon,
   }
 
   if (method == "wilcoxon") {
+    keep <- regulon$idxATAC >= 1 & regulon$idxATAC <= nrow(peakMatrix)
+    regulon <- regulon[keep,]
     peakMatrix <- binarize_matrix(peakMatrix, cutoff = peak_cutoff)
     copy <- regulon
     all.targets <- sort(unique(regulon$target))
@@ -154,6 +181,7 @@ addWeights <- function(regulon,
     copy$tf <- match(copy$tf, all.tfs)
     copy$target <- match(copy$target, all.targets)
     if (!is.null(clusters)){
+      # binarize expression matrix for each cluster separately
       expMatrix_tfs_clusters <- expMatrix[all.tfs,,drop = FALSE]
       for(cluster in unique(clusters)){
         cluster_ind <- which(clusters == cluster)
@@ -172,7 +200,7 @@ addWeights <- function(regulon,
     copy$idxATAC <- match(copy$idxATAC, all.peaks)
     reg.order <- order(copy$target, copy$tf, copy$idxATAC)
     copy <- copy[reg.order,,drop=FALSE]
-
+    # calculate stats for all clusters
     output <- fast_wilcox(
       exprs_x = exprs_trans_target@x,
       exprs_i = exprs_trans_target@i,
@@ -191,6 +219,7 @@ addWeights <- function(regulon,
     )
 
     if(!is.null(clusters)){
+      # calculate stats for each cluster separately
       exprs_trans_tf_clusters <- Matrix::t(expMatrix_tfs_clusters)
       fclusters <- factor(clusters)
       fclusters_order <- order(levels(fclusters))
@@ -214,7 +243,6 @@ addWeights <- function(regulon,
       output <- mapply(function(x,y) rbind(x,y), output, output_clusters, SIMPLIFY = FALSE)
     }
 
-
     AUC <- output$auc
     ties <- output$ties
     n1 <- output$total0
@@ -229,7 +257,7 @@ addWeights <- function(regulon,
     # set z-score to zero if the size of the of the groups is equal to 0
     stats[n1==0 | n2==0] <- 0
     stats[,reg.order] <- stats
-    regulon[,"weight"] <- t(stats)
+    regulon$weight <- t(stats)
     # Calculate effect size
     n_cells <- ncol(expMatrix)
     n_cells <- c(n_cells, table(clusters))
