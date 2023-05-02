@@ -36,13 +36,16 @@ BEGIN_RCPP
 END_RCPP
 }
 // fast_wilcox
-Rcpp::List fast_wilcox(Rcpp::NumericVector exprs_x, Rcpp::IntegerVector exprs_i, Rcpp::IntegerVector exprs_p, Rcpp::NumericVector peak_x, Rcpp::IntegerVector peak_i, Rcpp::IntegerVector peak_p, Rcpp::IntegerVector target_id, Rcpp::IntegerVector tf_id, Rcpp::IntegerVector peak_id, Rcpp::IntegerVector clusters);
-RcppExport SEXP _epiregulon_fast_wilcox(SEXP exprs_xSEXP, SEXP exprs_iSEXP, SEXP exprs_pSEXP, SEXP peak_xSEXP, SEXP peak_iSEXP, SEXP peak_pSEXP, SEXP target_idSEXP, SEXP tf_idSEXP, SEXP peak_idSEXP, SEXP clustersSEXP) {
+Rcpp::List fast_wilcox(Rcpp::NumericVector exprs_x, Rcpp::IntegerVector exprs_i, Rcpp::IntegerVector exprs_p, Rcpp::LogicalVector exprs_tf_x, Rcpp::IntegerVector exprs_tf_i, Rcpp::IntegerVector exprs_tf_p, Rcpp::NumericVector peak_x, Rcpp::IntegerVector peak_i, Rcpp::IntegerVector peak_p, Rcpp::IntegerVector target_id, Rcpp::IntegerVector tf_id, Rcpp::IntegerVector peak_id, Rcpp::IntegerVector clusters, Rcpp::IntegerVector cell_numb);
+RcppExport SEXP _epiregulon_fast_wilcox(SEXP exprs_xSEXP, SEXP exprs_iSEXP, SEXP exprs_pSEXP, SEXP exprs_tf_xSEXP, SEXP exprs_tf_iSEXP, SEXP exprs_tf_pSEXP, SEXP peak_xSEXP, SEXP peak_iSEXP, SEXP peak_pSEXP, SEXP target_idSEXP, SEXP tf_idSEXP, SEXP peak_idSEXP, SEXP clustersSEXP, SEXP cell_numbSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::traits::input_parameter< Rcpp::NumericVector >::type exprs_x(exprs_xSEXP);
     Rcpp::traits::input_parameter< Rcpp::IntegerVector >::type exprs_i(exprs_iSEXP);
     Rcpp::traits::input_parameter< Rcpp::IntegerVector >::type exprs_p(exprs_pSEXP);
+    Rcpp::traits::input_parameter< Rcpp::LogicalVector >::type exprs_tf_x(exprs_tf_xSEXP);
+    Rcpp::traits::input_parameter< Rcpp::IntegerVector >::type exprs_tf_i(exprs_tf_iSEXP);
+    Rcpp::traits::input_parameter< Rcpp::IntegerVector >::type exprs_tf_p(exprs_tf_pSEXP);
     Rcpp::traits::input_parameter< Rcpp::NumericVector >::type peak_x(peak_xSEXP);
     Rcpp::traits::input_parameter< Rcpp::IntegerVector >::type peak_i(peak_iSEXP);
     Rcpp::traits::input_parameter< Rcpp::IntegerVector >::type peak_p(peak_pSEXP);
@@ -50,7 +53,8 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< Rcpp::IntegerVector >::type tf_id(tf_idSEXP);
     Rcpp::traits::input_parameter< Rcpp::IntegerVector >::type peak_id(peak_idSEXP);
     Rcpp::traits::input_parameter< Rcpp::IntegerVector >::type clusters(clustersSEXP);
-    rcpp_result_gen = Rcpp::wrap(fast_wilcox(exprs_x, exprs_i, exprs_p, peak_x, peak_i, peak_p, target_id, tf_id, peak_id, clusters));
+    Rcpp::traits::input_parameter< Rcpp::IntegerVector >::type cell_numb(cell_numbSEXP);
+    rcpp_result_gen = Rcpp::wrap(fast_wilcox(exprs_x, exprs_i, exprs_p, exprs_tf_x, exprs_tf_i, exprs_tf_p, peak_x, peak_i, peak_p, target_id, tf_id, peak_id, clusters, cell_numb));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -60,7 +64,7 @@ RcppExport SEXP to_start(void *, void *, void *, void *);
 
 static const R_CallMethodDef CallEntries[] = {
     {"_epiregulon_fast_chisq", (DL_FUNC) &_epiregulon_fast_chisq, 16},
-    {"_epiregulon_fast_wilcox", (DL_FUNC) &_epiregulon_fast_wilcox, 10},
+    {"_epiregulon_fast_wilcox", (DL_FUNC) &_epiregulon_fast_wilcox, 14},
     {"to_end",   (DL_FUNC) &to_end,   4},
     {"to_start", (DL_FUNC) &to_start, 4},
     {NULL, NULL, 0}
