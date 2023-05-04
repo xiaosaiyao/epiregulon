@@ -251,11 +251,10 @@ addWeights <- function(regulon,
     prod <- n1 * n2
     n <- n1 + n2 # technically same across all rows, but we'll just do this for simplicity.
     sigma <- sqrt(prod / 12 * (n + 1 - ties / n / (n-1)))
-
     mu <- prod/2
     stats <- (AUC - mu)/sigma
     # set z-score to zero if the size of the of the groups is equal to 0
-    stats[n1==0 | n2==0] <- 0
+    stats[n1==0 | n2==0 | sigma ==0] <- 0
     stats[,reg.order] <- stats
     regulon$weight <- t(stats)
     # Calculate effect size
