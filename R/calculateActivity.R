@@ -122,14 +122,14 @@ calculateActivity <- function (expMatrix = NULL,
   # remove rows with zero weight
   if(is.matrix(regulon[[mode]]) & !is.null(clusters)) {
     #  check all cluster columns
-    regulon <- regulon[apply(regulon[[mode]], 1, function(x) any(x[2:length(x)]!=0)),]
+    regulon <- regulon[which(apply(regulon[[mode]], 1, function(x) any(x[2:length(x)]!=0))),]
   }
   else if(is.matrix(regulon[[mode]]) & is.null(clusters)){
     # check all cells column
-    regulon <- regulon[apply(regulon[[mode]], 1, function(x) x[1]!=0),]
+    regulon <- regulon[which(apply(regulon[[mode]], 1, function(x) x[1]!=0)),]
   }
   else{
-    regulon <- regulon[regulon[,mode]!=0,]
+    regulon <- regulon[which(regulon[,mode]!=0),]
   }
 
   # check that rownames match regulon
