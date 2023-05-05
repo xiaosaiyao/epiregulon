@@ -319,70 +319,6 @@ plotEpiregulonNetwork <-
         return(my_plot)
     }
 
-#' Plot graph according to grouping factor
-#'
-#' Plot graph with separate weights for different levels of the grouping factor
-#'
-#' @param regulon an object returned by the getRegulon or addWeights function
-#' @param cutoff a numeric used to select values of the variables passed in `groups`
-#' parameter. Values greater than `cutoff` are retained and used as
-#' graph edge weights.
-#' @param tf a character vector storing the names of transcription factors to be
-#' included in the graph
-#' @param groups a character indicating levels of the grouping factor; should
-#' correspond to columns of `regulon` to be used as `weight`
-#' variable in the long format of `epiregulon` data frame.
-#' @param layout a layout specification. Any values that are valid for
-#' \link[ggraph]{ggraph} or \link[ggraph]{create_layout} will work.
-#' @author Xiaodai Yao, Tomasz Wlodarczyk
-#' @return a ggraph object
-#' @examples
-#' #' # create an artificial getRegulon output
-#' set.seed(1234)
-#' tf_set <- apply(expand.grid(LETTERS[1:10], LETTERS[1:10]),1,  paste, collapse = "")
-#' regulon <- data.frame(tf = sample(tf_set, 5e3, replace = TRUE))
-#' gene_set <- expand.grid(LETTERS[1:10], LETTERS[1:10], LETTERS[1:10])
-#' gene_set <- apply(gene_set,1,function(x) paste0(x,collapse=""))
-#' regulon$target <- sample(gene_set, 5e3, replace = TRUE)
-#' regulon$idxATAC <- 1:5e3
-#' regulon <- cbind(regulon, data.frame(C1 = runif(5e3), C2 = runif(5e3),
-#' C3 = runif(5e3)))
-#' plotDiffNetwork(regulon, tf = unique(tf_set)[1:3],
-#' groups = c("C1", "C2", "C3"), cutoff = 0.2)
-#' @export
-
-plotDiffNetwork <- function(regulon,
-                                    cutoff = 0.01,
-                                    tf = NULL,
-                                    groups  = NULL,
-                                    layout = "stress"){
-  regulon.tf <- list()
-  for (group in groups) {
-    regulon_group <- regulon[regulon$tf %in% tf, c("tf","target", group)]
-
-    #apply cutoff
-    regulon_group <- regulon_group[regulon_group[, group] > cutoff, ]
-
-    #rename colnames as weight to be consistent across all groups
-    colnames(regulon_group)[colnames(regulon_group) == group] <- "weight"
-
-    #rename tf to be tf_group
-    regulon_group[,"tf"] <- paste0(regulon_group[,"tf"], "_", group)
-    regulon.tf[[group]] <- regulon_group
-  }
-
-  combined.regulon <- do.call("rbind", regulon.tf)
-
-  combined.graph <- buildGraph(combined.regulon, mode = "tg", weights = "weight")
-
-  plotEpiregulonNetwork(combined.graph,
-                          layout = layout,
-                          tfs_to_highlight = unique(combined.regulon$tf),
-                          label_nudge_x = 0.1,
-                          label_nudge_y = 0.1)
-}
-
-
 #' Creating graphs and related operations
 #'
 #' @description
@@ -727,7 +663,7 @@ plotEpiregulonNetwork <-
 #' regulon <- cbind(regulon, data.frame(C1 = runif(5e3), C2 = runif(5e3),
 #' C3 = runif(5e3)))
 #' plotDiffNetwork(regulon, tf = unique(tf_set)[1:3],
-#' groups = c("C1", "C2", "C3"), cutoff = 0.2)
+#' clusters = c("C1", "C2", "C3"), cutoff = 0.2)
 #' @export
 
 plotDiffNetwork <- function(regulon,

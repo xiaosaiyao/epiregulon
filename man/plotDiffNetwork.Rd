@@ -12,15 +12,6 @@ plotDiffNetwork(
   clusters,
   layout = "stress"
 )
-
-plotDiffNetwork(
-  regulon,
-  cutoff = 0.01,
-  tf = NULL,
-  weight = "weight",
-  clusters,
-  layout = "stress"
-)
 }
 \arguments{
 \item{regulon}{an object returned by the getRegulon or addWeights function}
@@ -39,19 +30,11 @@ the weight of the edges}
 
 \item{layout}{a layout specification. Any values that are valid for
 \link[ggraph]{ggraph} or \link[ggraph]{create_layout} will work.}
-
-\item{groups}{a character indicating levels of the grouping factor; should
-correspond to columns of \code{regulon} to be used as \code{weight}
-variable in the long format of \code{epiregulon} data frame.}
 }
 \value{
 a ggraph object
-
-a ggraph object
 }
 \description{
-Plot graph with separate weights for different levels of the grouping factor
-
 Plot graph with separate weights for different levels of the grouping factor
 }
 \examples{
@@ -66,19 +49,7 @@ regulon$idxATAC <- 1:5e3
 regulon <- cbind(regulon, data.frame(C1 = runif(5e3), C2 = runif(5e3),
 C3 = runif(5e3)))
 plotDiffNetwork(regulon, tf = unique(tf_set)[1:3],
-groups = c("C1", "C2", "C3"), cutoff = 0.2)
-#' # create an artificial getRegulon output
-set.seed(1234)
-tf_set <- apply(expand.grid(LETTERS[1:10], LETTERS[1:10]),1,  paste, collapse = "")
-regulon <- data.frame(tf = sample(tf_set, 5e3, replace = TRUE))
-gene_set <- expand.grid(LETTERS[1:10], LETTERS[1:10], LETTERS[1:10])
-gene_set <- apply(gene_set,1,function(x) paste0(x,collapse=""))
-regulon$target <- sample(gene_set, 5e3, replace = TRUE)
-regulon$idxATAC <- 1:5e3
-regulon <- cbind(regulon, data.frame(C1 = runif(5e3), C2 = runif(5e3),
-C3 = runif(5e3)))
-plotDiffNetwork(regulon, tf = unique(tf_set)[1:3],
-groups = c("C1", "C2", "C3"), cutoff = 0.2)
+clusters = c("C1", "C2", "C3"), cutoff = 0.2)
 }
 \author{
 Xiaodai Yao, Tomasz Wlodarczyk
