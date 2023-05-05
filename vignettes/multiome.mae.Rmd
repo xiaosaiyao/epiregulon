@@ -56,7 +56,6 @@ Multiome data can now be conveniently processed by ```initiate.archr``` and then
 ```{r}
 # load the MAE object
 library(scMultiome)
-ExperimentHub::setExperimentHubOption("CACHE", "/gstore/scratch/u/yaox19/.cache/ExperimentHub")
 
 mae <- scMultiome::reprogramSeq()
 

@@ -62,6 +62,7 @@ Even though Dorothea provides weights under the mor column, we achieved superior
 
 library(epiregulon)
 
+
 #Add weights to regulon
 regulon.ms <- addWeights(regulon = regulon,
                          expMatrix = sce,
@@ -188,8 +189,8 @@ Sometimes it is useful to understand what pathways are enriched in the regulons.
 
 ```{r enrichment, warning=FALSE, fig.height = 14}
 #retrieve genesets
-H <- EnrichmentBrowser::getGenesets(org = "mmu", db = "msigdb", cat = "H", gene.id.type = "SYMBOL" )
-C6 <- EnrichmentBrowser::getGenesets(org = "mmu", db = "msigdb", cat = "C6", gene.id.type = "SYMBOL" )
+H <- EnrichmentBrowser::getGenesets(org = "mmu", db = "msigdb", cat = "H", gene.id.type = "SYMBOL", cache = FALSE)
+C6 <- EnrichmentBrowser::getGenesets(org = "mmu", db = "msigdb", cat = "C6", gene.id.type = "SYMBOL",  cache = FALSE)
 
 #combine genesets and convert genesets to be compatible with enricher
 gs <- c(H,C6)
