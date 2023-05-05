@@ -62,7 +62,7 @@ activity_matrix.3 <- calculateActivity(sce, regulon = regulon, exp_assay = "coun
 
 test_that("calculateActivity works correctly", {
   expect_equal(as.matrix(activity_matrix.3),
-               activity_matrix.norm
+               activity_matrix.norm[Matrix:::rowSums(activity_matrix.norm)!=0,]
                )
 })
 
@@ -79,7 +79,7 @@ test_that("calculateActivity normalizes correctly (zero-centering)", {
                                            regulon = regulon,
                                            exp_assay = "counts",
                                            normalize = TRUE)),
-               activity_matrix.center.norm)
+               activity_matrix.center.norm[Matrix:::rowSums(activity_matrix.center.norm)!=0,])
 })
 
 ###################################################################################
@@ -88,8 +88,8 @@ clusters <- rep(c("C1", "C2"), each = 50)
 regulon$weight_C1 <- seq(0.9,0,length.out = 15)
 regulon$weight_C2 <- seq(0,0.7,length.out = 15)
 
-regulon$weight <- cbind(regulon$weight_C1, regulon$weight_C2)
-colnames(regulon$weight) <- c("C1", "C2")
+regulon$weight <- cbind(regulon$weight, regulon$weight_C1, regulon$weight_C2)
+colnames(regulon$weight) <- c("all", "C1", "C2")
 
 geneExpr_C1 <- geneExpressionMatrix[,1:50]
 geneExpr_C2 <- geneExpressionMatrix[,51:100]
@@ -143,6 +143,7 @@ freq3 <- freq4 <- initiateMatCluster(clusters, nrow = length(unique(regulon$tf))
 rownames(freq3) <- rownames(freq4) <- unique(regulon$tf)
 freq3[,"C1"] <- c(1,2,3,4,4)
 freq3[,"C2"] <- 1:5
+freq3[,"all"] <- c(1,1,3,4,5)
 
 freq4 <- calculateFrequency(freq4, regulon, mode="weight")
 
@@ -170,7 +171,7 @@ activity_matrix.norm5 <- calculateActivity(sce,
                                            FUN = "mean")
 test_that("calculateActivity works correctly with clusters", {
   expect_equal(activity_matrix.norm5,
-               activity_matrix.norm3)
+               activity_matrix.norm3[Matrix:::rowSums(activity_matrix.norm3)!=0,])
 })
 
 

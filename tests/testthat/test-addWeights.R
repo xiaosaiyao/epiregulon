@@ -11,7 +11,7 @@ peakMatrix <- matrix(rep(c(0,0,0,1), 100), ncol = 20, nrow=20,byrow=TRUE)
 peakMatrix <- as(peakMatrix, "sparseMatrix")
 
 # mark cells with tf expression above cutoff
-tfMatrix <- expMatrix[regulon$tf,,drop = FALSE] > rowMeans(expMatrix[regulon$tf,,drop = FALSE])
+tfMatrix <- expMatrix[regulon$tf,,drop = FALSE] > Matrix::rowMeans(expMatrix[regulon$tf,,drop = FALSE])
 targetMatrix <- expMatrix[regulon$target,]
 
 # label cells with both tf being expressed and re being open
@@ -45,7 +45,7 @@ mat.col = 1
 for(cluster in unique(clusters)){
   mat.col <- mat.col + 1
   selected_cells <- which(clusters == cluster)
-  tfMatrix.c <- expMatrix[regulon$tf,selected_cells,drop = FALSE] > rowMeans(expMatrix[regulon$tf,selected_cells,drop = FALSE])
+  tfMatrix.c <- expMatrix[regulon$tf,selected_cells,drop = FALSE] > Matrix::rowMeans(expMatrix[regulon$tf,selected_cells,drop = FALSE])
   tf_re.c <- tfMatrix.c * peakMatrix[,selected_cells]
   for(i in 1:20){
     if(length(unique(as.vector(tf_re.c[i,])))==1) weight_matrix[i,mat.col] <- 0
