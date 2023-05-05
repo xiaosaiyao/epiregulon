@@ -459,7 +459,13 @@ plotHeatmapRegulon <- function(sce,
   downsample_seq <- seq(from=1, to=ncol(sce), by=floor(max(1, ncol(sce)/downsample)))
 
   # keep only targets belonging to TFs and meeting cutoff
-  regulon <- regulon[regulon$tf %in% tfs & regulon[,regulon_column] > regulon_cutoff,]
+  if (is.matrix(regulon[[regulon_column]])){
+    regulon <- regulon[regulon$tf %in% tfs & apply(regulon[[regulon_column]],1,function(x) any(x > regulon_cutoff)),]
+  }
+  else{
+    regulon <- regulon[regulon$tf %in% tfs & regulon[,regulon_column] > regulon_cutoff,]
+  }
+
   regulon <- regulon[order(regulon$tf),]
 
   # remove duplicated genes from each tf

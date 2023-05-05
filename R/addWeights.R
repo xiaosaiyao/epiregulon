@@ -381,6 +381,7 @@ addWeights <- function(regulon,
   }
 
   output_df <- do.call(rbind, output_df)
+  output_df[["weight"]][is.na(output_df[["weight"]])] <- 0
 
 
 

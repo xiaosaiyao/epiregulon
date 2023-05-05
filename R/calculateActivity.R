@@ -119,6 +119,19 @@ calculateActivity <- function (expMatrix = NULL,
     }
   }
 
+  # remove rows with zero weight
+  if(is.matrix(regulon[[mode]]) & !is.null(clusters)) {
+    #  check all cluster columns
+    regulon <- regulon[apply(regulon[[mode]], 1, function(x) any(x[2:length(x)]!=0)),]
+  }
+  else if(is.matrix(regulon[[mode]]) & is.null(clusters)){
+    # check all cells column
+    regulon <- regulon[apply(regulon[[mode]], 1, function(x) x[1]!=0),]
+  }
+  else{
+    regulon <- regulon[regulon[,mode]!=0,]
+  }
+
   # check that rownames match regulon
   fraction_genes <- length(which(regulon$target %in% rownames(expMatrix)))/ length(regulon$target)
   if (fraction_genes <  0.01) {
