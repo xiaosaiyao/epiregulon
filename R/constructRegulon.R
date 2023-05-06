@@ -123,11 +123,16 @@ getTFMotifInfo <- function (genome = c("hg38", "hg19", "mm10"),
                         hg38 = "human",
                         hg19 = "human",
                         mm10 = "mouse")
+      BS.genome <- switch(genome,
+                          hg38 = "BSgenome.Hsapiens.UCSC.hg38",
+                          hg19 = "BSgenome.Hsapiens.UCSC.hg19",
+                          mm10 = "BSgenome.Mmusculus.UCSC.mm10")
+
       message("keeping only standard chromosomes..")
       peaks <- GenomeInfoDb::keepStandardChromosomes(peaks, pruning.mode = "coarse")
 
       message("annotating peaks with motifs")
-      grl <- annotateMotif(species, peaks, genome, out = "positions")
+      grl <- annotateMotif(species, peaks, BS.genome, out = "positions")
       names(grl) <- lapply(strsplit(names(grl), split="_|\\."), "[", 3)
       }
 

@@ -36,9 +36,7 @@ addMotifScore <- function(regulon,
                           peaks=NULL,
                           pwms=NULL,
                           species=c("human","mouse"),
-                          genome=c("BSgenome.Hsapiens.UCSC.hg38",
-                                   "BSgenome.Hsapiens.UCSC.hg19",
-                                   "BSgenome.Mmusculus.UCSC.mm10"),
+                          genome=c("hg38", "hg19", "mm10"),
                           ...) {
 
   species <- match.arg(species)
@@ -56,8 +54,12 @@ addMotifScore <- function(regulon,
 
   } else if (is.null(archr_path) & !is.null(peaks)) {
     message ("annotating peaks with motifs")
+    BS.genome <- switch(genome,
+                      hg38 = "BSgenome.Hsapiens.UCSC.hg38",
+                      hg19 = "BSgenome.Hsapiens.UCSC.hg19",
+                      mm10 = "BSgenome.Mmusculus.UCSC.mm10")
 
-    motifs <- annotateMotif(species, peaks, genome, pwms, ...)
+    motifs <- annotateMotif(species, peaks, BS.genome, pwms, ...)
     motifs <- assay(motifs,"motifMatches")
     # Convert motifs to gene names
     colnames(motifs) <- lapply(strsplit(colnames(motifs), split="_|\\."), "[", 3)
