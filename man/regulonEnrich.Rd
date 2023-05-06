@@ -4,16 +4,16 @@
 \alias{regulonEnrich}
 \title{Perform geneset enrichment of user-defined regulons}
 \usage{
-regulonEnrich(TF, regulon, corr = "weight", corr_cutoff = 0.5, genesets)
+regulonEnrich(TF, regulon, weight = "weight", weight_cutoff = 0.5, genesets)
 }
 \arguments{
 \item{TF}{A character vector of TF names}
 
 \item{regulon}{A matrix of weighted regulon consisting of tf, targets, corr and weight}
 
-\item{corr}{String indicating the column name that should be used to filter target genes for geneset enrichment. Default is "weight".}
+\item{weight}{String indicating the column name that should be used to filter target genes for geneset enrichment. Default is "weight".}
 
-\item{corr_cutoff}{A numeric scalar to indicate the cutoff to filter on the column specified by corr. Default is 0.5.}
+\item{weight_cutoff}{A numeric scalar to indicate the cutoff to filter on the column specified by corr. Default is 0.5.}
 
 \item{genesets}{A dataframe with the first column being the name of the geneset and the second column being the name of the genes}
 }
@@ -41,7 +41,7 @@ head(gs.list)
 library(dorothea)
 data(dorothea_hs, package = "dorothea")
 regulon <- dorothea_hs
-enrichment_results <- regulonEnrich(c("ESR1","AR"), regulon = regulon, corr = "mor",
+enrichment_results <- regulonEnrich(c("ESR1","AR"), regulon = regulon, weight = "mor",
 genesets = gs.list)
 
 }

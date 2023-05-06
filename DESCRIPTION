@@ -1,7 +1,7 @@
 Package: epiregulon
 Type: Package
 Title: Gene regulatory network inference from single cell epigenomic data
-Version: 1.0.22
+Version: 1.0.23
 Date: 2023-1-30
 Authors@R: 
     c(person(given = "Xiaosai", family = "Yao", role = c("aut", "cre"), email = "yao.xiaosai@gene.com", comment = c(ORCID = "0000-0001-9729-0726")),
@@ -12,33 +12,41 @@ Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.2.3
 Imports:
-    scater,
     AUCell,
+    ArchR,
+    BSgenome.Hsapiens.UCSC.hg19,
+    BSgenome.Hsapiens.UCSC.hg38,
+    BSgenome.Mmusculus.UCSC.mm10,
     BiocParallel,
-    SummarizedExperiment,
-    entropy,
-    stats,
-    methods,
-    utils,
-    S4Vectors,
-    genomitory,
-    scran,
-    patchwork,
-    clusterProfiler,
+    ComplexHeatmap,
+    GSVA,
+    GenomeInfoDb,
     GenomicRanges,
     Matrix,
+    Rcpp,
+    S4Vectors,
+    SummarizedExperiment,
     bluster,
-    ggplot2,
-    scuttle,
-    reshape2,
-    scales,
-    igraph,
-    GSVA,
-    ArchR,
     checkmate,
+    chromVARmotifs,
+    circlize,
+    clusterProfiler,
+    entropy,
+    ggbeeswarm,
+    ggplot2,
     ggraph,
-    ComplexHeatmap,
-    circlize
+    igraph,
+    methods,
+    motifmatchr,
+    patchwork,
+    reshape2,
+    scMultiome,
+    scales,
+    scater,
+    scran,
+    scuttle,
+    stats,
+    utils
 Depends: 
     R (>= 4.2.0),
     SingleCellExperiment
@@ -53,6 +61,7 @@ Suggests:
     BiocStyle,
     testthat (>= 3.0.0),
     coin
+LinkingTo: Rcpp
 VignetteBuilder: knitr
 URL:
 biocViews: Software, NetworkInference, Epigenetics, SingleCell, GeneRegulation, Network

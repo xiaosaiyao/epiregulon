@@ -3,7 +3,7 @@ title: "prostate cancer archr tutorial"
 author: "Xiaosai Yao"
 email: "yao.xiaosai@gene.com"
 output:
-  BiocStyle::html_document:
+  BiocStyle::pdf_document:
     toc: true
     number_section: true
     self_contained: true
@@ -31,8 +31,7 @@ This tutorial walks through an example of TF activity inference in unpaired scAT
 Epiregulon is currently available on R/dev
 
 ```{r, results = "hide", warning = FALSE, message = FALSE, echo = FALSE}
-#library(epiregulon)
-devtools::load_all()
+library(epiregulon)
 library(ArchR, quietly = TRUE)
 ```
 
@@ -397,9 +396,11 @@ Sometimes we are interested to know what pathways are enriched in the regulon of
 ```{r enrichment, fig.height = 10, fig.width = 12}
 #retrieve genesets
 H <- EnrichmentBrowser::getGenesets(org = "hsa", db = "msigdb", 
-                                    cat = "H", gene.id.type = "SYMBOL" )
+                                    cat = "H", gene.id.type = "SYMBOL",
+                                    cache = FALSE)
 C6 <- EnrichmentBrowser::getGenesets(org = "hsa", db = "msigdb", 
-                                     cat = "C6", gene.id.type = "SYMBOL" )
+                                     cat = "C6", gene.id.type = "SYMBOL",
+                                     cache = FALSE)
 
 #combine genesets and convert genesets to be compatible with enricher
 gs <- c(H,C6)
@@ -408,8 +409,8 @@ gs.list <- do.call(rbind,lapply(names(gs),
 
 enrichresults <- regulonEnrich(TF = c("AR", "FOXA1", "MYC", "JUN"), 
                                regulon = regulon.w.wilcox, 
-                               corr = "weight",
-                               corr_cutoff = 0.1, 
+                               weight = "weight",
+                               weight_cutoff = 0.1, 
                                genesets = gs.list)
 
 #plot results
@@ -430,8 +431,8 @@ enrichresults <- regulonEnrich(TF = c("AFF4","ASH1L","DAXX","MXD4","CDC73","REPI
                                       "BCLAF1","RBM34","CERS6","TOP2B","ATF5","PITX1",
                                       "EWSR1","TOP2A"), 
                                regulon = regulon.w.wilcox, 
-                               corr = "weight",
-                               corr_cutoff = 0.1, 
+                               weight = "weight",
+                               weight_cutoff = 0.1, 
                                genesets = gs.list)
 plotGseaNetwork(tf = names(enrichresults), 
                 enrichresults = enrichresults, 

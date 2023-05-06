@@ -2,29 +2,80 @@
 % Please edit documentation in R/constructRegulon.R
 \name{getTFMotifInfo}
 \alias{getTFMotifInfo}
-\title{An accessor function to retrieve TF motif info from genomitory repository}
+\title{Retrieve TF binding sites or motif positions}
 \usage{
-getTFMotifInfo(genome = c("hg38", "hg19", "mm10"))
+getTFMotifInfo(
+  genome = c("hg38", "hg19", "mm10"),
+  source = c("atlas", "cistrome"),
+  metadata = FALSE,
+  mode = c("occupancy", "motif"),
+  archr_path = NULL,
+  motif_name = "Motif",
+  peaks = NULL
+)
 }
 \arguments{
-\item{genome}{String specifying the genomic build for bed files. Currently supporting \code{hg19}, \code{hg38} and \code{mm10}.
-For legacy version with cistrome DB, use \code{hg19_old}, \code{hg38_old} and \code{mm10_old}}
+\item{genome}{character string specifying the genomic build}
+
+\item{source}{character string specifying the ChIP-seq data source}
+
+\item{metadata}{logical flag specifying whether to return data or metadata only}
+
+\item{mode}{a string indicating whether to download a GRangelist of TF binding sites ("occupancy") or motif matches ("motif").
+TF binding information is retrieved from \href{https://github.com/xiaosaiyao/scMultiome/blob/devel/R/tfBinding.R}{scMultiome} whereas
+motif information is annotated by cisbp from \href{https://github.com/GreenleafLab/chromVARmotifs}{chromVARmotifs}}
+
+\item{archr_path}{Character string indicating the path of the ArchR project to retrieve motif information if
+motif enrichment was already performed. If no motif enrichment has been performed, first annotate the ArchR using
+\code{addMotifAnnotations}. If no ArchR project is provided, the user can also provide peaks in the form of GRanges and
+this function will annotate the peaks with Cisbp}
+
+\item{motif_name}{Character string    indicating name of the peakAnnotation object (i.e. Motifs) to retrieve from the designated ArchRProject.}
+
+\item{peaks}{A GRanges object indicating the peaks to perform motif annotation on if ArchR project is not provided.
+The peak indices should match the \code{re} column in the regulon}
 }
 \value{
-A GRangeList object containing binding site information of transcription factor chipseq combined from Cistrome database and ENCODE
+A list of TF binding sites as a \code{GrangesList} object.
 }
 \description{
-An accessor function to retrieve TF motif info from genomitory repository
+Combined transcription factor ChIP-seq data from ChIP-Atlas and ENCODE or
+from CistromeDB and ENCODE.
 }
-\details{
-We obtain ChIP-seq files from ENCODE and ChIP-Atlas. Public ChIP-seq files were processed using a
-standardized pipeline by \href{https://github.com/inutano/chip-atlas/wiki}{ChIP-Atlas}.
-The ENCODE and ChIP-Atlas bed files were then merged to give a list of non-overlapping binding regions per TF.
-When the number of merged cell lines is large, these binding sites represent a set of universal/tissue-
-agnostic binding sites.
-TF binding sites from Cistrome were replaced with ChIP-Atlas due to restriction on data usage. To retrieve
-Cistrome data, set genome to \code{hg38_old}, \code{hg19_old} or \code{mm10_old}
+\examples{
+# retrieve TF binding info
+\dontrun{
+getTFMotifInfo("mm10", "atlas")
 }
-\author{
-Shang-yang Chen and Xiaosai Yao
+
+# retrieve motif info
+peaks <- GRanges(seqnames = c("chr12","chr19","chr19","chr11","chr6"),
+ranges = IRanges(start = c(124914563,50850844, 50850844, 101034172, 151616327),
+end = c(124914662,50850929, 50850929, 101034277, 151616394)))
+grl <- getTFMotifInfo(genome = "hg38", mode = "motif", peaks=peaks)
+
+}
+\references{
+ChIP-Atlas 2021 update: a data-mining suite for exploring epigenomic landscapes by
+fully integrating ChIP-seq, ATAC-seq and Bisulfite-seq data.
+Zou Z, Ohta T, Miura F, Oki S.
+\emph{Nucleic Acids Research. Oxford University Press (OUP);} 2022.
+\href{http://dx.doi.org/10.1093/nar/gkac199}{doi:10.1093/nar/gkac199}
+
+ChIP‐Atlas: a data‐mining suite powered by full integration of public ChIP‐seq data.
+Oki S, Ohta T, Shioi G, Hatanaka H, Ogasawara O, Okuda Y, Kawaji H, Nakaki R, Sese J, Meno C.
+\emph{EMBO}; Vol. 19, EMBO reports. 2018.
+\href{http://dx.doi.org/10.15252/embr.201846255}{doi:10.15252/embr.201846255}
+
+ENCODE: {https://www.encodeproject.org/}
+
+Cistrome Data Browser: expanded datasets and new tools for gene regulatory analysis.
+Zheng R, Wan C, Mei S, Qin Q, Wu Q, Sun H, Chen CH, Brown M, Zhang X, Meyer CA, Liu XS
+\emph{Nucleic Acids Res}, 2018 Nov 20.
+\href{https://academic.oup.com/nar/article/47/D1/D729/5193328}{doi:10.1093/nar/gky1094}
+
+Cistrome data browser: a data portal for ChIP-Seq and chromatin accessibility data in human and mouse.
+Mei S, Qin Q, Wu Q, Sun H, Zheng R, Zang C, Zhu M, Wu J, Shi X, Taing L, Liu T, Brown M, Meyer CA, Liu XS
+\emph{Nucleic Acids Res}, 2017 Jan 4;45(D1):D658-D662.
+\href{https://academic.oup.com/nar/article/45/D1/D658/2333932}{doi:10.1093/nar/gkw983}
 }

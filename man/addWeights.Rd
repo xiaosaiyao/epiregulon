@@ -11,7 +11,7 @@ addWeights(
   exp_assay = "logcounts",
   peak_assay = "PeakMatrix",
   method = c("corr", "MI", "lmfit", "logFC", "wilcoxon"),
-  clusters,
+  clusters = NULL,
   exp_cutoff = 1,
   peak_cutoff = 0,
   block_factor = NULL,
@@ -22,7 +22,7 @@ addWeights(
 )
 }
 \arguments{
-\item{regulon}{A data frame consisting of tf (regulator) and target in the column names.}
+\item{regulon}{A DataFrame object consisting of tf (regulator) and target in the column names.}
 
 \item{expMatrix}{A SingleCellExperiment object containing gene expression information}
 
@@ -56,7 +56,7 @@ many regulatory elements.}
 serial evaluation and use BiocParallel::MulticoreParam() for parallel evaluation}
 }
 \value{
-A data frame with columns of corr and/or MI added to the regulon. TFs not found in the expression matrix and regulons not
+A DataFrame with columns of corr and/or MI added to the regulon. TFs not found in the expression matrix and regulons not
 meeting the minimal number of targets were filtered out.
 }
 \description{
@@ -88,21 +88,21 @@ the gene expression and chromatin accessibility.
 # create a mock singleCellExperiment object for gene expression matrix
 expMatrix <- scuttle::mockSCE()
 expMatrix <- scuttle::logNormCounts(expMatrix)
-expMatrix$cluster <- sample(LETTERS[1:5], ncol(expMatrix), replace = TRUE)
+expMatrix$cluster <- sample(LETTERS[1:5], ncol(expMatrix), replace=TRUE)
 
 # create a mock singleCellExperiment object for peak matrix
 peakMatrix <- scuttle::mockSCE()
 rownames(peakMatrix) <- 1:2000
 
 # create a mock regulon
-regulon <- data.frame(tf = c(rep("Gene_0001",5), rep("Gene_0002",10)),
-                      idxATAC = 1:15,
-                      target = c(paste0("Gene_000",2:6), paste0("Gene_00",11:20)))
+regulon <- DataFrame(tf=c(rep("Gene_0001",5), rep("Gene_0002",10)),
+                      idxATAC=1:15,
+                      target=c(paste0("Gene_000",2:6), paste0("Gene_00",11:20)))
 
 # add weights to regulon
-regulon.w <- addWeights(regulon = regulon, expMatrix = expMatrix, exp_assay = "logcounts",
-peakMatrix = peakMatrix, peak_assay = "counts", clusters = expMatrix$cluster,
-min_targets = 5, method = "logFC")
+regulon.w <- addWeights(regulon=regulon, expMatrix=expMatrix, exp_assay="logcounts",
+peakMatrix=peakMatrix, peak_assay="counts", clusters=expMatrix$cluster,
+min_targets=5, method="logFC")
 }
 \author{
 Xiaosai Yao, Shang-yang Chen, Tomasz Wlodarczyk

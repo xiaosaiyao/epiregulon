@@ -15,7 +15,7 @@ plotHeatmapRegulon(
   center = TRUE,
   color_breaks = c(-2, 0, 2),
   colors = c("blue", "white", "red"),
-  cell_attributes = NULL,
+  cell_attributes,
   col_gap = NULL,
   exprs_values = "logcounts",
   use_raster = TRUE,
@@ -24,6 +24,8 @@ plotHeatmapRegulon(
   cluster_columns = FALSE,
   border = TRUE,
   show_column_names = FALSE,
+  column_col = NULL,
+  row_col = NULL,
   ...
 )
 }
@@ -65,6 +67,12 @@ plotHeatmapRegulon(
 \item{border}{Logical indicating whether to add border around heatmap}
 
 \item{show_column_names}{Logical indicating whether to show column names}
+
+\item{column_col}{A list specifying the colors in the columns.
+See \href{https://jokergoo.github.io/ComplexHeatmap-reference/book/heatmap-annotations.html#simple-annotation}{here}}
+
+\item{row_col}{A list specifying the colors in the rows.
+See \href{https://jokergoo.github.io/ComplexHeatmap-reference/book/heatmap-annotations.html#simple-annotation}{here}}
 
 \item{...}{other arguments for \code{ComplexHeatmap::Heatmap}}
 }

@@ -3,7 +3,7 @@ title: "Multiome tutorial - MultiAssayExperiment"
 author: "Xiaosai Yao"
 email: "yao.xiaosai@gene.com"
 output:
-  BiocStyle::html_document:
+  BiocStyle::pdf_document:
     toc: true
     number_section: true
     self_contained: true
@@ -34,7 +34,7 @@ Epiregulon is currently available on R/dev
 library(epiregulon)
 ```
 
-Alternatively, you could install from gitlab
+Alternatively, you could install from github
 
 ```{r setup, message=FALSE, eval=FALSE}
 devtools::install_github(repo ='xiaosaiyao/epiregulon')
@@ -55,8 +55,9 @@ Multiome data can now be conveniently processed by ```initiate.archr``` and then
 
 ```{r}
 # load the MAE object
-library(SingleCellExperiment)
-mae <- dsassembly::getDataset("DS000013080")
+library(scMultiome)
+
+mae <- scMultiome::reprogramSeq()
 
 # peak matrix
 PeakMatrix <- mae[["PeakMatrix"]]
@@ -68,11 +69,7 @@ rownames(GeneExpressionMatrix) <- rowData(GeneExpressionMatrix)$name
 # dimensional reduction matrix
 reducedDimMatrix <- reducedDim(mae[['TileMatrix500']], "LSI_ATAC")
 
-
 ```
-
-
-
 Visualize singleCellExperiment by UMAP
 ```{r}
 # transfer UMAP_combined from TileMatrix to GeneExpressionMatrix
@@ -100,12 +97,12 @@ head(grl)
 Next, we compute peak to gene correlations using a custom algorithm that has similar performance to ArchR's P2G function.
 
 ```{r calculateP2G}
-
+set.seed(1010)
 p2g <- calculateP2G(peakMatrix = PeakMatrix, 
                     expMatrix = GeneExpressionMatrix, 
                     reducedDim = reducedDimMatrix)
 
-head(p2g)
+p2g
 
 ```
 
@@ -131,7 +128,8 @@ A long format dataframe, representing the inferred regulons, is then generated. 
 ```{r, warning=FALSE, getRegulon}
 
 regulon <- getRegulon(p2g = p2g, overlap = overlap, aggregate = FALSE)
-head(regulon)
+regulon
+
 ```
 
 ## Network pruning (highly recommended)
@@ -143,9 +141,8 @@ We calculate cluster-specific p-values if users supply cluster labels. This is u
 
 ```{r network pruning, results = "hide", message = FALSE}
 
-
 pruned.regulon <- pruneRegulon(expMatrix = GeneExpressionMatrix,
-                               exp_assay = "counts",
+                               exp_assay = "logcounts",
                                peakMatrix = PeakMatrix,
                                peak_assay = "counts",
                                test = "chi.sq",
@@ -155,6 +152,7 @@ pruned.regulon <- pruneRegulon(expMatrix = GeneExpressionMatrix,
                                regulon_cutoff = 0.05
                                )
 
+pruned.regulon
 ```
 
 ## Add Weights
@@ -167,17 +165,33 @@ Three measures (correlation, Wilcoxon statistics and log 2 fold difference) give
 
 regulon.w <- addWeights(regulon = pruned.regulon,
                         expMatrix  = GeneExpressionMatrix,
-                        exp_assay  = "counts",
+                        exp_assay  = "logcounts",
                         peakMatrix = PeakMatrix,
                         peak_assay = "counts",
                         clusters = GeneExpressionMatrix$Clusters,
                         block_factor = NULL,
                         tf_re.merge = TRUE,
                         method = "corr")
-```
-```{r }
-head(regulon.w)
 
+regulon.w
+
+```
+
+## (Optional) Annotate with TF motifs
+
+So far the gene regulatory network was constructed from TF ChIP-seq exclusively. Some users would prefer to further annotate the regulatory elements with the presence of motifs. We provide an option to annotate peaks with motifs from the Cisbp database. If no motifs are present for this particular factor (as in the case of co-factors or chromatin modifiers), we return NA. If motifs are available for a factor and the RE contains a motif, we return 1. If motifs are available and the RE does not contain a motif, we return 0. 
+
+If the user has already performed motif annotation with ArchR, we could also retrieve the results directly. See `?addMotifScore`
+
+```{r addMotifScore}
+
+regulon.w.motif <- addMotifScore(regulon = regulon.w,
+                                 peaks = rowRanges(PeakMatrix),
+                                 species = "human",
+                                 genome = "hg38")
+
+# if desired, set weight to 0 if no motif is found
+regulon.w.motif$weight[regulon.w.motif$motif == 0] <- 0
 ```
 
 ## Calculate TF activity 
@@ -190,20 +204,19 @@ $x_i$ is the log count expression of target i where i in {1,2,...,n}
 $weights_i$ is the weight of TF and target i
 
 ```{r calculateActivity, results = "hide"}
-score.combine <- calculateActivity(expMatrix = GeneExpressionMatrix, 
+score.combine <- calculateActivity(expMatrix = GeneExpressionMatrix,
                                    regulon = regulon.w, 
                                    mode = "weight", 
                                    method = "weightedMean", 
-                                   exp_assay = "counts",
+                                   exp_assay = "logcounts",
                                    normalize = FALSE)
 
 ```
 
 ## Perform differential activity
 ```{r differential}
-
 markers <- findDifferentialActivity(activity_matrix = score.combine, 
-                                    groups = GeneExpressionMatrix$Clusters, 
+                                    groups = GeneExpressionMatrix$hash_assignment, 
                                     pval.type = "some", 
                                     direction = "up", 
                                     test.type = "t")
@@ -220,14 +233,15 @@ First visualize the known differential TFs by bubble plot
 ```{r visualization}
 plotBubble(activity_matrix = score.combine, 
            tf = c("NKX2-1","GATA6","FOXA1","FOXA2", "AR"), 
-           clusters = GeneExpressionMatrix$Clusters)
+           clusters = GeneExpressionMatrix$hash_assignment)
 ```
 
 Then visualize the most differential TFs by clusters
 ```{r}
+
 plotBubble(activity_matrix = score.combine, 
            tf = markers.sig$tf, 
-           clusters = GeneExpressionMatrix$Clusters)
+           clusters = GeneExpressionMatrix$hash_assignment)
 
 ```
 
@@ -235,20 +249,20 @@ Visualize the known differential TFs by violin plot. Note there is no activity c
 
 ```{r}
 plotActivityViolin(activity_matrix = score.combine, 
-                   tf = c("NKX2-1","GATA6","FOXA1","FOXA2", "AR", "SOX2"), 
-                   clusters = GeneExpressionMatrix$Clusters)
+                   tf = c("NKX2-1","GATA6","FOXA1","FOXA2", "AR"), 
+                   clusters = GeneExpressionMatrix$hash_assignment)
 ```
 
 Visualize the known differential TFs by UMAP
 ```{r, fig.height = 8, fig.width = 12}
-
 plotActivityDim(sce = GeneExpressionMatrix, 
                 activity_matrix = score.combine, 
-                tf = c("NKX2-1","GATA6","AR", "FOXA1","FOXA2","SOX2"), 
+                tf = c("NKX2-1","GATA6","FOXA1","FOXA2", "AR"), 
                 dimtype = "UMAP_Combined", 
                 label = "Clusters", 
                 point_size = 1, 
                 ncol = 3)
+
 ```
 
 In contrast, the gene expression of the TFs is very sparse
@@ -256,7 +270,7 @@ In contrast, the gene expression of the TFs is very sparse
 
 plotActivityDim(sce = GeneExpressionMatrix, 
                 activity_matrix = counts(GeneExpressionMatrix), 
-                tf = c("NKX2-1","GATA6","AR","FOXA1","FOXA2", "SOX2"), 
+                tf = c("NKX2-1","GATA6","FOXA1","FOXA2", "AR"), 
                 dimtype = "UMAP_Combined", 
                 label = "Clusters", 
                 point_size = 1, 
@@ -296,22 +310,24 @@ Sometimes we are interested to know what pathways are enriched in the regulon of
 #retrieve genesets
 H <- EnrichmentBrowser::getGenesets(org = "hsa", db = "msigdb", cat = "H", 
                                     gene.id.type = "SYMBOL" )
+C2 <- EnrichmentBrowser::getGenesets(org = "hsa", db = "msigdb", cat = "C2",
+                                     gene.id.type = "SYMBOL" )
 C6 <- EnrichmentBrowser::getGenesets(org = "hsa", db = "msigdb", cat = "C6",
                                      gene.id.type = "SYMBOL" )
 
 #combine genesets and convert genesets to be compatible with enricher
-gs <- c(H,C6)
+gs <- c(H, C2, C6)
 gs.list <- do.call(rbind,lapply(names(gs), function(x) 
   {data.frame(gs=x, genes=gs[[x]])}))
 
-enrichresults <- regulonEnrich(TF = c("GATA6","AR"), 
+enrichresults <- regulonEnrich(TF = c("GATA6","NKX2-1"), 
                                regulon = regulon.w, 
-                               corr = "weight",
-                               corr_cutoff = 0.1, 
+                               weight = "weight",
+                               weight_cutoff = 0, 
                                genesets = gs.list)
 
 #plot results
-enrichPlot(results = enrichresults, )
+enrichPlot(results = enrichresults )
 ```
 ## Network analysis
 
@@ -335,13 +351,15 @@ We are interested in understanding the differential networks between two conditi
 plotDiffNetwork(pruned.regulon,
                 cutoff = 1,
                 tf = c("GATA6"),
-                groups  = c("stats_C1","stats_C5"),
+                weight = "stats",
+                clusters = c("C1","C5"),
                 layout = "stress")
 
 plotDiffNetwork(pruned.regulon,
                 cutoff = 1,
                 tf = c("NKX2-1"),
-                groups  = c("stats_C3","stats_C5"),
+                weight = "stats",
+                clusters = c("C3","C5"),
                 layout = "stress")
 
 
@@ -351,9 +369,12 @@ plotDiffNetwork(pruned.regulon,
 We can also visualize how transcription factors relate to other transcription factors in each cluster.
 ```{r}
 
-C1_network <- buildGraph(pruned.regulon[pruned.regulon$stats_C1>1 & pruned.regulon$tf %in% c("GATA6","FOXA1","AR"),], weights = "stats_C1")
-C5_network <- buildGraph(pruned.regulon[pruned.regulon$stats_C5>1 & pruned.regulon$tf %in% c("GATA6","FOXA1","AR"),], weights = "stats_C5")
-
+C1_network <- buildGraph(pruned.regulon[which(pruned.regulon$stats[,"C1"]> 1 & pruned.regulon$tf %in% c("GATA6","FOXA1","AR")),], 
+                         weights = "stats", 
+                         cluster = "C1")
+C5_network <- buildGraph(pruned.regulon[which(pruned.regulon$stats[,"C5"]> 1 & pruned.regulon$tf %in% c("GATA6","FOXA1","AR")),], 
+                         weights = "stats", 
+                         cluster = "C5")
 plotEpiregulonNetwork(C1_network,
                         layout = "sugiyama",
                         tfs_to_highlight = c("GATA6","FOXA1","AR")) + ggplot2::ggtitle ("C1")
@@ -366,11 +387,11 @@ plotEpiregulonNetwork(C5_network,
 To systematically examine the differential network topology between two clusters, we perform an edge subtraction between two graphs, using weights computed by `pruneRegulon`. We then calculate the degree centrality of the weighted differential graphs and if desired, normalize the differential centrality against the total number of edges. The default normalization function is `sqrt` as it preserves both the difference in the number of edges (but scaled by sqrt) and the differences in the weights. If the user only wants to examine the differences in the averaged weights, the `FUN` argument can be changed to `identity`. Finally, we rank the transcription factors by (normalized) differential centrality.
 
 
-```{r}
+```{r, eval=FALSE}
 
 # rank by differential centrality
-C1_network <- buildGraph(pruned.regulon, weights = "stats_C1")
-C5_network <- buildGraph(pruned.regulon, weights = "stats_C5")
+C1_network <- buildGraph(pruned.regulon, weights = "stats", cluster="C1")
+C5_network <- buildGraph(pruned.regulon, weights = "stats", cluster="C5")
 
 diff_graph <- buildDiffGraph(C1_network, C5_network)
 diff_graph <- addCentrality(diff_graph)

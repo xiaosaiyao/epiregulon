@@ -33,7 +33,8 @@ findDifferentialActivity <- function(activity_matrix,
                                      ...){
 
   activity_matrix <- stats::na.omit(as.matrix(activity_matrix))
-  tf_markers <- scran::findMarkers(activity_matrix, groups, test.type = "t", pval.type = "some", direction="up", ...)
+  tf_markers <- scran::findMarkers(activity_matrix, groups, test.type=test.type,
+                                   pval.type=pval.type, direction=direction, ...)
   return(tf_markers)
 
 }
@@ -77,7 +78,7 @@ getSigGenes <- function(da_list,
       logFC_cutoff <- logFC_cutoff
     }
     message ("Using a logFC cutoff of ", logFC_cutoff, " for class ", classes[i])
-    da_genes <- da_genes[which(da_genes[,"FDR"] < fdr_cutoff & da_genes[, "summary.logFC"] > logFC_cutoff), ]
+    da_genes <- da_genes[which(da_genes[,"FDR"] < fdr_cutoff & da_genes[, 3] > logFC_cutoff), ]
 
     if (nrow(da_genes) != 0){
       da_genes$class <- classes[[i]]
@@ -86,9 +87,9 @@ getSigGenes <- function(da_list,
 
     if (is.null(topgenes)){
 
-      da_genes <- da_genes[order(da_genes$FDR, -(da_genes$summary.logFC)),]
+      da_genes <- da_genes[order(da_genes$FDR, -(da_genes[, 3])),]
     } else {
-      da_genes <- da_genes[head(order(da_genes$FDR, -(da_genes$summary.logFC)), topgenes),]
+      da_genes <- da_genes[head(order(da_genes$FDR, -(da_genes[, 3])), topgenes),]
     }
     #print(da_genes)
 
@@ -131,8 +132,8 @@ regulonEnrich_ <- function(TF,
 #'
 #' @param TF  A character vector of TF names
 #' @param regulon A matrix of weighted regulon consisting of tf, targets, corr and weight
-#' @param corr String indicating the column name that should be used to filter target genes for geneset enrichment. Default is "weight".
-#' @param corr_cutoff A numeric scalar to indicate the cutoff to filter on the column specified by corr. Default is 0.5.
+#' @param weight String indicating the column name that should be used to filter target genes for geneset enrichment. Default is "weight".
+#' @param weight_cutoff A numeric scalar to indicate the cutoff to filter on the column specified by corr. Default is 0.5.
 #' @param genesets A dataframe with the first column being the name of the geneset and the second column being the name of the genes
 #'
 #' @return A dataframe showing the significantly enriched pathways
@@ -156,18 +157,18 @@ regulonEnrich_ <- function(TF,
 #' library(dorothea)
 #' data(dorothea_hs, package = "dorothea")
 #' regulon <- dorothea_hs
-#' enrichment_results <- regulonEnrich(c("ESR1","AR"), regulon = regulon, corr = "mor",
+#' enrichment_results <- regulonEnrich(c("ESR1","AR"), regulon = regulon, weight = "mor",
 #' genesets = gs.list)
 #'
 #' @author Xiaosai Yao
 
 regulonEnrich <- function(TF,
                           regulon,
-                          corr = "weight",
-                          corr_cutoff = 0.5,
+                          weight = "weight",
+                          weight_cutoff = 0.5,
                           genesets) {
     regulonls <- lapply(TF, function(x) {
-      regulonEnrich_(x, regulon, corr, corr_cutoff, genesets)
+      regulonEnrich_(x, regulon, weight, weight_cutoff, genesets)
     })
     names(regulonls) <- TF
     return(regulonls)

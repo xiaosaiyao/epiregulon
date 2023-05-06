@@ -222,6 +222,7 @@ plotActivityViolin <- function(activity_matrix,
 #' @param x.label String indicating the x axis label
 #' @param y.label String indicating the y axis label
 #' @param title String indicating the title of the plot
+#' @param ... Additional arguments to pass to `findDifferentialActivity`
 #'
 #' @return A ggplot object
 #' @export
@@ -242,7 +243,8 @@ plotBubble <- function (activity_matrix,
                         legend.label = "relative_activity",
                         x.label = "transcription factors",
                         y.label = "clusters",
-                        title = "TF activity"){
+                        title = "TF activity",
+                        ...){
 
   bubblesize <- match.arg(bubblesize)
 
@@ -255,7 +257,7 @@ plotBubble <- function (activity_matrix,
 
   #find logFC and FDR of TFs
   markers <- findDifferentialActivity(activity_matrix, clusters,
-                                      pval.type = "some", direction = "up", test.type = "t")
+                                      ...)
   markers <- suppressMessages(getSigGenes(markers, fdr_cutoff = 1.5,
                                           logFC_cutoff = -100))
   markers <- markers[which(markers$tf %in% tf), ]
@@ -360,7 +362,7 @@ enrichPlot_ <- function(results,
 #' library(dorothea)
 #' data(dorothea_hs, package = "dorothea")
 #' regulon <- dorothea_hs
-#' enrichment_results <- regulonEnrich(c("ESR1","AR"), regulon = regulon, corr = "mor",
+#' enrichment_results <- regulonEnrich(c("ESR1","AR"), regulon = regulon, weight = "mor",
 #' genesets = gs.list)
 #'
 #' # plot graph
@@ -413,6 +415,10 @@ enrichPlot <- function(results,
 #' @param cluster_columns Logical indicating whether to cluster columns
 #' @param border Logical indicating whether to add border around heatmap
 #' @param show_column_names Logical indicating whether to show column names
+#' @param column_col A list specifying the colors in the columns.
+#' See [here](https://jokergoo.github.io/ComplexHeatmap-reference/book/heatmap-annotations.html#simple-annotation)
+#' @param row_col A list specifying the colors in the rows.
+#' See [here](https://jokergoo.github.io/ComplexHeatmap-reference/book/heatmap-annotations.html#simple-annotation)
 #' @param ... other arguments for `ComplexHeatmap::Heatmap`
 #' @return A Heatmap-class object.
 #' @export
@@ -446,16 +452,24 @@ plotHeatmapRegulon <- function(sce,
                                cluster_columns=FALSE,
                                border = TRUE,
                                show_column_names=FALSE,
+                               column_col=NULL,
+                               row_col=NULL,
                                ...) {
 
   downsample_seq <- seq(from=1, to=ncol(sce), by=floor(max(1, ncol(sce)/downsample)))
 
   # keep only targets belonging to TFs and meeting cutoff
-  regulon <- regulon[regulon$tf %in% tfs & regulon[,regulon_column] > regulon_cutoff,]
+  if (is.matrix(regulon[[regulon_column]])){
+    regulon <- regulon[regulon$tf %in% tfs & apply(regulon[[regulon_column]],1,function(x) any(x > regulon_cutoff)),]
+  }
+  else{
+    regulon <- regulon[regulon$tf %in% tfs & regulon[,regulon_column] > regulon_cutoff,]
+  }
+
   regulon <- regulon[order(regulon$tf),]
 
   # remove duplicated genes from each tf
-  for (tf in unique(regulon$tf)) {
+  for (tf in stats::na.omit(unique(regulon$tf))) {
    regulon <- regulon[!duplicated(regulon$target[regulon$tf == tf]),]
   }
 
@@ -483,8 +497,8 @@ plotHeatmapRegulon <- function(sce,
 
   ComplexHeatmap::Heatmap(mat,
                           col = col_fun,
-                          top_annotation=ComplexHeatmap::HeatmapAnnotation(df=top_annotation),
-                          right_annotation=ComplexHeatmap::rowAnnotation(df=right_annotation),
+                          top_annotation=ComplexHeatmap::HeatmapAnnotation(df=top_annotation, col = column_col),
+                          right_annotation=ComplexHeatmap::rowAnnotation(df=right_annotation, col = row_col),
                           row_split=right_annotation,
                           column_split= column_split,
                           use_raster=use_raster,
@@ -558,7 +572,7 @@ plotHeatmapActivity <- function(activity_matrix,
   }
 
   activity_matrix <- activity_matrix[tfs,downsample_seq]
-  activity_matrix <- t(scale(t(activity_matrix), scale=scale, center=center))
+  activity_matrix <- Matrix::t(scale(Matrix::t(activity_matrix), scale=scale, center=center))
 
   col_fun <- circlize::colorRamp2(color_breaks, colors)
 

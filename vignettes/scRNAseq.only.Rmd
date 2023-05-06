@@ -3,7 +3,7 @@ title: "Dorothea tutorial"
 author: "Xiaosai Yao"
 email: "yao.xiaosai@gene.com"
 output:
-  BiocStyle::html_document:
+  BiocStyle::pdf_document:
     toc: true
     number_section: true
     self_contained: true
@@ -61,6 +61,7 @@ Even though Dorothea provides weights under the mor column, we achieved superior
 ``` {r activity, message=FALSE, warning=FALSE}
 
 library(epiregulon)
+
 
 #Add weights to regulon
 regulon.ms <- addWeights(regulon = regulon,
@@ -170,7 +171,8 @@ plotHeatmapRegulon(sce=sce,
                    cell_attributes="label",
                    col_gap="label",
                    exprs_values="logcounts",
-                   name="regulon heatmap")
+                   name="regulon heatmap",
+                   column_title_rot = 45)
 
 plotHeatmapActivity(activity_matrix = score.combine,
                     sce=sce,
@@ -178,7 +180,8 @@ plotHeatmapActivity(activity_matrix = score.combine,
                     downsample=1000,
                     cell_attributes="label",
                     col_gap="label",
-                    name="regulon heatmap")
+                    name="regulon heatmap",
+                    column_title_rot = 45)
 ```
 # Pathway enrichment
 
@@ -186,8 +189,8 @@ Sometimes it is useful to understand what pathways are enriched in the regulons.
 
 ```{r enrichment, warning=FALSE, fig.height = 14}
 #retrieve genesets
-H <- EnrichmentBrowser::getGenesets(org = "mmu", db = "msigdb", cat = "H", gene.id.type = "SYMBOL" )
-C6 <- EnrichmentBrowser::getGenesets(org = "mmu", db = "msigdb", cat = "C6", gene.id.type = "SYMBOL" )
+H <- EnrichmentBrowser::getGenesets(org = "mmu", db = "msigdb", cat = "H", gene.id.type = "SYMBOL", cache = FALSE)
+C6 <- EnrichmentBrowser::getGenesets(org = "mmu", db = "msigdb", cat = "C6", gene.id.type = "SYMBOL",  cache = FALSE)
 
 #combine genesets and convert genesets to be compatible with enricher
 gs <- c(H,C6)
@@ -196,8 +199,8 @@ gs.list <- do.call(rbind,lapply(names(gs), function(x)
 
 enrichresults <- regulonEnrich(genes_to_plot, 
                                regulon = regulon.ms, 
-                               corr = "weight",
-                               corr_cutoff = 0.5, 
+                               weight = "weight",
+                               weight_cutoff = 0.5, 
                                genesets = gs.list)
 
 #plot results

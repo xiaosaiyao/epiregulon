@@ -3,7 +3,7 @@ title: "Hematopoeisis tutorial - ArchR project"
 author: "Shang-Yang and Xiaosai Yao"
 email: "yao.xiaosai@gene.com"
 output:
-  BiocStyle::html_document:
+  BiocStyle::pdf_document:
     toc: true
     number_section: true
     self_contained: true
