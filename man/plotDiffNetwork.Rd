@@ -41,12 +41,12 @@ Plot graph with separate weights for different levels of the grouping factor
 #' # create an artificial getRegulon output
 set.seed(1234)
 tf_set <- apply(expand.grid(LETTERS[1:10], LETTERS[1:10]),1,  paste, collapse = "")
-regulon <- data.frame(tf = sample(tf_set, 5e3, replace = TRUE))
+regulon <- S4Vectors::DataFrame(tf = sample(tf_set, 5e3, replace = TRUE))
 gene_set <- expand.grid(LETTERS[1:10], LETTERS[1:10], LETTERS[1:10])
 gene_set <- apply(gene_set,1,function(x) paste0(x,collapse=""))
 regulon$target <- sample(gene_set, 5e3, replace = TRUE)
 regulon$idxATAC <- 1:5e3
-regulon <- cbind(regulon, data.frame(C1 = runif(5e3), C2 = runif(5e3),
+regulon$weight <- cbind(data.frame(C1 = runif(5e3), C2 = runif(5e3),
 C3 = runif(5e3)))
 plotDiffNetwork(regulon, tf = unique(tf_set)[1:3],
 clusters = c("C1", "C2", "C3"), cutoff = 0.2)
