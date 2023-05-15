@@ -387,7 +387,7 @@ plotEpiregulonNetwork(C5_network,
 To systematically examine the differential network topology between two clusters, we perform an edge subtraction between two graphs, using weights computed by `pruneRegulon`. We then calculate the degree centrality of the weighted differential graphs and if desired, normalize the differential centrality against the total number of edges. The default normalization function is `sqrt` as it preserves both the difference in the number of edges (but scaled by sqrt) and the differences in the weights. If the user only wants to examine the differences in the averaged weights, the `FUN` argument can be changed to `identity`. Finally, we rank the transcription factors by (normalized) differential centrality.
 
 
-```{r, eval=FALSE}
+```{r}
 
 # rank by differential centrality
 C1_network <- buildGraph(pruned.regulon, weights = "stats", cluster="C1")
