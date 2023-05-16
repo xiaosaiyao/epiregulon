@@ -11,7 +11,7 @@ Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
 #endif
 
 // fast_chisq
-Rcpp::List fast_chisq(Rcpp::IntegerVector peak_ordered, Rcpp::IntegerVector tf_by_peak, Rcpp::IntegerVector target_by_peak, Rcpp::IntegerVector target_ordered, int npeaks, Rcpp::NumericVector peakmat_x, Rcpp::IntegerVector peakmat_i, Rcpp::IntegerVector peakmat_p, double peak_cutoff, int ngenes, Rcpp::NumericVector expmat_x, Rcpp::IntegerVector expmat_i, Rcpp::IntegerVector expmat_p, double exp_cutoff, int nclusters, Rcpp::IntegerVector clusters);
+Rcpp::List fast_chisq(Rcpp::IntegerVector peak_ordered, Rcpp::IntegerVector tf_by_peak, Rcpp::IntegerVector target_by_peak, Rcpp::IntegerVector target_ordered, int npeaks, Rcpp::NumericVector peakmat_x, Rcpp::IntegerVector peakmat_i, Rcpp::IntegerVector peakmat_p, Rcpp::NumericMatrix peak_cutoff, int ngenes, Rcpp::NumericVector expmat_x, Rcpp::IntegerVector expmat_i, Rcpp::IntegerVector expmat_p, Rcpp::NumericMatrix exp_cutoff, int nclusters, Rcpp::IntegerVector clusters);
 RcppExport SEXP _epiregulon_fast_chisq(SEXP peak_orderedSEXP, SEXP tf_by_peakSEXP, SEXP target_by_peakSEXP, SEXP target_orderedSEXP, SEXP npeaksSEXP, SEXP peakmat_xSEXP, SEXP peakmat_iSEXP, SEXP peakmat_pSEXP, SEXP peak_cutoffSEXP, SEXP ngenesSEXP, SEXP expmat_xSEXP, SEXP expmat_iSEXP, SEXP expmat_pSEXP, SEXP exp_cutoffSEXP, SEXP nclustersSEXP, SEXP clustersSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
@@ -23,12 +23,12 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< Rcpp::NumericVector >::type peakmat_x(peakmat_xSEXP);
     Rcpp::traits::input_parameter< Rcpp::IntegerVector >::type peakmat_i(peakmat_iSEXP);
     Rcpp::traits::input_parameter< Rcpp::IntegerVector >::type peakmat_p(peakmat_pSEXP);
-    Rcpp::traits::input_parameter< double >::type peak_cutoff(peak_cutoffSEXP);
+    Rcpp::traits::input_parameter< Rcpp::NumericMatrix >::type peak_cutoff(peak_cutoffSEXP);
     Rcpp::traits::input_parameter< int >::type ngenes(ngenesSEXP);
     Rcpp::traits::input_parameter< Rcpp::NumericVector >::type expmat_x(expmat_xSEXP);
     Rcpp::traits::input_parameter< Rcpp::IntegerVector >::type expmat_i(expmat_iSEXP);
     Rcpp::traits::input_parameter< Rcpp::IntegerVector >::type expmat_p(expmat_pSEXP);
-    Rcpp::traits::input_parameter< double >::type exp_cutoff(exp_cutoffSEXP);
+    Rcpp::traits::input_parameter< Rcpp::NumericMatrix >::type exp_cutoff(exp_cutoffSEXP);
     Rcpp::traits::input_parameter< int >::type nclusters(nclustersSEXP);
     Rcpp::traits::input_parameter< Rcpp::IntegerVector >::type clusters(clustersSEXP);
     rcpp_result_gen = Rcpp::wrap(fast_chisq(peak_ordered, tf_by_peak, target_by_peak, target_ordered, npeaks, peakmat_x, peakmat_i, peakmat_p, peak_cutoff, ngenes, expmat_x, expmat_i, expmat_p, exp_cutoff, nclusters, clusters));
