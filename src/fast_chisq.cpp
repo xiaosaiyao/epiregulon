@@ -87,7 +87,6 @@ Rcpp::List fast_chisq(
         // First pass to tag each gene for whether it's expressed.
         int exstart = expmat_p[c];
         int exend = expmat_p[c + 1];
-        double total_expr=0;
         for (int i = exstart; i < exend; ++i) {
             if (expmat_x[i] > exp_cutoff(expmat_i[i],clust)) {
                 int index = expmat_i[i];
@@ -98,10 +97,6 @@ Rcpp::List fast_chisq(
         // Pass through the peak matrix and collect the peak + TF and peak + TF + target counts.
         int pkstart = peakmat_p[c];
         int pkend = peakmat_p[c + 1];
-        int total_peaks = 0;
-        for (int i = pkstart; i < pkend; ++i) {
-          total_peaks+=peakmat_x[i];
-        }
         for (int i = pkstart; i < pkend; ++i) {
             if (peakmat_x[i] > peak_cutoff(peakmat_i[i], clust)) {
                 int index = peakmat_i[i];
