@@ -342,9 +342,6 @@ to_end <- function(start_dbinom, n, start_k, p)
   .Call("to_end", start_dbinom, n, start_k, p)
 
 
-
-
-
 countCells <- function(regulon,
                        expMatrix,
                        peakMatrix,
@@ -352,6 +349,8 @@ countCells <- function(regulon,
                        peak_cutoff,
                        exp_cutoff,
                        clusters) {
+  if(!is.null(peak_cutoff)) peak_cutoff <- as.numeric(peak_cutoff)
+  if(!is.null(exp_cutoff)) exp_cutoff <- as.numeric(exp_cutoff)
   peak_id <- regulon$idxATAC
   target_id <- factor(regulon$target, levels=rownames(expMatrix))
   tf_id <- factor(regulon$tf, levels=rownames(expMatrix))
@@ -364,41 +363,120 @@ countCells <- function(regulon,
   t_o <- order(target_id)
   t_target_id <- as.integer(target_id[t_o]) - 1L
 
-
   cluster_id2 <- as.integer(cluster_id) - 1L
+  if (all(!is.null(c(exp_cutoff, peak_cutoff)))){
+    exp_cutoff_mat <- matrix(exp_cutoff, nrow = nrow(expMatrix), ncol = nlevels(cluster_id))
+    peak_cutoff_mat <- matrix(peak_cutoff, nrow = nrow(peakMatrix), ncol = nlevels(cluster_id))
+    stats <- fast_chisq(
+      peak_ordered = p_peak_id,
+      tf_by_peak = p_tf_id,
+      target_by_peak = p_target_id,
 
-  stats <- fast_chisq(
-    peak_ordered = p_peak_id,
-    tf_by_peak = p_tf_id,
-    target_by_peak = p_target_id,
+      target_ordered = t_target_id,
 
-    target_ordered = t_target_id,
+      npeaks = nrow(peakMatrix),
+      peakmat_x = peakMatrix@x,
+      peakmat_i = peakMatrix@i,
+      peakmat_p = peakMatrix@p,
+      peak_cutoff = peak_cutoff_mat,
 
-    npeaks = nrow(peakMatrix),
-    peakmat_x = peakMatrix@x,
-    peakmat_i = peakMatrix@i,
-    peakmat_p = peakMatrix@p,
-    peak_cutoff = peak_cutoff,
+      ngenes = nrow(expMatrix),
+      expmat_x = expMatrix@x,
+      expmat_i = expMatrix@i,
+      expmat_p = expMatrix@p,
+      exp_cutoff = exp_cutoff_mat,
 
-    ngenes = nrow(expMatrix),
-    expmat_x = expMatrix@x,
-    expmat_i = expMatrix@i,
-    expmat_p = expMatrix@p,
-    exp_cutoff = exp_cutoff,
+      nclusters = nlevels(cluster_id),
+      clusters = cluster_id2
+    )
+    if (!is.null(clusters)) {
+      stats$peak <- cbind(rowSums(stats$peak), stats$peak)
+      stats$triple <- cbind(rowSums(stats$triple), stats$triple)
+      stats$target <- cbind(rowSums(stats$target), stats$target)
+    }
 
-    nclusters = nlevels(cluster_id),
-    clusters = cluster_id2
-  )
+  }
+  else{
+    if(is.null(peak_cutoff)){
+      peak_cutoff_mat <- matrix(Matrix::rowMeans(peakMatrix), nrow = nrow(peakMatrix), ncol = nlevels(cluster_id))
+    }
+    else{
+      peak_cutoff_mat <- matrix(peak_cutoff, nrow = nrow(peakMatrix), ncol = nlevels(cluster_id))
+    }
+    if(is.null(exp_cutoff)){
+      exp_cutoff_mat <- matrix(Matrix::rowMeans(expMatrix), nrow = nrow(expMatrix), ncol = nlevels(cluster_id))
+    }
+    else{
+      exp_cutoff_mat <- matrix(exp_cutoff, nrow = nrow(expMatrix), ncol = nlevels(cluster_id))
+    }
+    stats <- fast_chisq(
+      peak_ordered = p_peak_id,
+      tf_by_peak = p_tf_id,
+      target_by_peak = p_target_id,
+
+      target_ordered = t_target_id,
+
+      npeaks = nrow(peakMatrix),
+      peakmat_x = peakMatrix@x,
+      peakmat_i = peakMatrix@i,
+      peakmat_p = peakMatrix@p,
+      peak_cutoff = peak_cutoff_mat,
+
+      ngenes = nrow(expMatrix),
+      expmat_x = expMatrix@x,
+      expmat_i = expMatrix@i,
+      expmat_p = expMatrix@p,
+      exp_cutoff = exp_cutoff_mat,
+
+      nclusters = 1L,
+      clusters = rep(0L, ncol(expMatrix))
+    )
+
+    if(!is.null(clusters)){
+      if(is.null(exp_cutoff)){
+        for(cluster in unique(cluster_id2)){
+          cluster_ind <- which(cluster_id2 == cluster)
+          exp_cutoff_mat[, as.numeric(cluster)+1] <- Matrix::rowMeans(expMatrix[,cluster_ind, drop = FALSE])
+        }
+      }
+      if(is.null(peak_cutoff)){
+        for(cluster in unique(cluster_id2)){
+          cluster_ind <- which(cluster_id2 == cluster)
+          peak_cutoff_mat[, as.numeric(cluster)+1] <- Matrix::rowMeans(peakMatrix[,cluster_ind, drop = FALSE])
+        }
+      }
+      stats_clusters <- fast_chisq(
+        peak_ordered = p_peak_id,
+        tf_by_peak = p_tf_id,
+        target_by_peak = p_target_id,
+
+        target_ordered = t_target_id,
+
+        npeaks = nrow(peakMatrix),
+        peakmat_x = peakMatrix@x,
+        peakmat_i = peakMatrix@i,
+        peakmat_p = peakMatrix@p,
+        peak_cutoff = peak_cutoff_mat,
+
+        ngenes = nrow(expMatrix),
+        expmat_x = expMatrix@x,
+        expmat_i = expMatrix@i,
+        expmat_p = expMatrix@p,
+        exp_cutoff = exp_cutoff_mat,
+
+        nclusters = nlevels(cluster_id),
+        clusters = cluster_id2
+      )
+
+      stats$peak <- cbind(stats$peak, stats_clusters$peak)
+      stats$triple <- cbind(stats$triple, stats_clusters$triple)
+      stats$target <- cbind(stats$target, stats_clusters$target)
+
+    }
+  }
   stats$peak[p_o,] <- stats$peak
   stats$triple[p_o,] <- stats$triple
   stats$target[t_o,] <- stats$target
-
-  if (!is.null(clusters)) {
-    stats$peak <- cbind(rowSums(stats$peak), stats$peak)
-    stats$triple <- cbind(rowSums(stats$triple), stats$triple)
-    stats$target <- cbind(rowSums(stats$target), stats$target)
-  }
-
   stats
 }
 
