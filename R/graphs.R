@@ -85,14 +85,6 @@ buildGraph <- function(regulon,
                       aggregation_function = mean,
                       na_replace = TRUE){
   mode <- match.arg(mode)
-  if(is.matrix(regulon[,weights]))
-    weights_df <- data.frame(regulon[,weights][,cluster])
-  else
-    weights_df <- data.frame(regulon[,weights])
-  if(any(is.na(weights_df)) & na_replace){
-    message("Replacement of na values for weights with 0")
-    weights_df[[1]][is.na(weights_df[[1]])] <- 0
-  }
   # give names to the peaks and target genes which will be easy to extract
   regulon$idxATAC <- paste0(as.character(regulon$idxATAC), "_peak")
   regulon$target <- paste0(regulon$target, "_gene")
@@ -101,8 +93,19 @@ buildGraph <- function(regulon,
                            "pairs" = c("tf", "idxATAC", "target"),
                            "tripartite" = c("idxATAC", "target"),
                            "tg" = c("tf", "target"))
-  colnames(weights_df) <- weights
-  graph_data <- cbind(regulon[,vertex_columns], weights_df)
+  graph_data <- regulon[,vertex_columns]
+  if(!is.null(weights)){
+    if(is.matrix(regulon[,weights]))
+      weights_df <- data.frame(regulon[,weights][,cluster])
+    else
+      weights_df <- data.frame(regulon[,weights])
+    if(any(is.na(weights_df)) & na_replace){
+      message("Replacement of na values for weights with 0")
+      weights_df[[1]][is.na(weights_df[[1]])] <- 0
+    }
+    colnames(weights_df) <- weights
+    graph_data <- cbind(graph_data, weights_df)
+  }
 
   message(sprintf("Building graph using %s as edge weights", weights))
   if (mode == "tripartite"){
@@ -112,11 +115,10 @@ buildGraph <- function(regulon,
                                    to = regulon$idxATAC)
     if (!is.null(weights)) {
       graph_data_tf_re[,weights] <- weights_df[[1]]
-      graph_data <- rbind(graph_data, graph_data_tf_re)
-      rm(graph_data_tf_re)
-      vertex_columns <- c("from", "to")
     }
-
+    graph_data <- rbind(graph_data, graph_data_tf_re)
+    rm(graph_data_tf_re)
+    vertex_columns <- c("from", "to")
   }
 
   if (mode == "pairs"){
