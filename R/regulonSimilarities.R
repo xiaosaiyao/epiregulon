@@ -20,10 +20,10 @@ findPartners <- function(graph, focal_tf){
   focal_tf_targets <- focal_tf_targets[focal_tf_targets$type == target_type]
   other_tfs <- V(graph)[V(graph)$type == "transcription factor" & V(graph)$name != focal_tf]
   all_tfs <- c(focal_vertex, other_tfs)
-  tf_targets <- ego(graph, nodes = all_tfs, mindist = 1, mode = "out")
-  tf_targets_subgraphs <- mapply(function(x,y) subgraph(graph, vids = c(x, y)), all_tfs, tf_targets)
+  tf_targets <- igraph::ego(graph, nodes = all_tfs, mindist = 1, mode = "out")
+  tf_targets_subgraphs <- mapply(function(x,y) igraph::subgraph(graph, vids = c(x, y)), all_tfs, tf_targets)
   res_list <- list()
-  focal_weights <- get.edge.attribute(tf_targets_subgraphs[[1]], index =  E(tf_targets_subgraphs[[1]]), name = "weight")
+  focal_weights <- igraph::get.edge.attribute(tf_targets_subgraphs[[1]], index =  E(tf_targets_subgraphs[[1]]), name = "weight")
   for(i in seq_along(other_tfs)){
     # skip focal tf
     if(i == 1) next
@@ -33,7 +33,9 @@ findPartners <- function(graph, focal_tf){
     common_targets_ind <- match(common_targets, ends(tf_targets_subgraphs[[1]], E(tf_targets_subgraphs[[1]]))[,2])
     res_list[[tf$name]] <- data.frame(target = common_targets,
                                       focal_weigth = focal_weights[common_targets_ind],
-                                      other_tf_weight = get.edge.attribute(tf_targets_subgraphs[[i]], index = E(tf_targets_subgraphs[[i]]), name = "weight"))
+                                      other_tf_weight = igraph::get.edge.attribute(tf_targets_subgraphs[[i]],
+                                                                                   index = E(tf_targets_subgraphs[[i]]),
+                                                                                   name = "weight"))
     res_list[[tf$name]]$weight_product <- res_list[[tf$name]]$focal_weigth * res_list[[tf$name]]$other_tf_weight
 
   }
