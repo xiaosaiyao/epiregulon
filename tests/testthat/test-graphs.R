@@ -5,7 +5,13 @@ edge_weights[7] <- NA
 
 regulon = data.frame(tf = rep(LETTERS[1:10], each = 2), idxATAC = rep(1:10, 2), target  = rep(LETTERS[10:14], 4), corr = edge_weights)
 regulon$target[10:13] <- LETTERS[15]
-test_graph <- buildGraph(regulon)
+# duplicated tf-re and tf-tg pairs for aggregation
+regulon[regulon$tf == "B", "idxATAC"] <- 3
+regulon[regulon$tf == "C", "idxATAC"] <- 5
+regulon[regulon$tf == "I", "target"] <- "K"
+regulon[regulon$tf == "J", "target"] <- "M"
+
+test_graph <- buildGraph(regulon, mode = "tripartite", weights = "corr")
 
 re_list <- list()
 target_list <- list()
@@ -26,7 +32,7 @@ for(tf in sort(base::unique(tfs))){
   target_list_graph[[tf]] <- sort(as.character(base::unique(nearby_nodes[[1]][nearby_nodes[[1]]$type == "target gene"]$name)))
 }
 
-test_that("buildGraph function correctly connect vertices", {
+test_that("buildGraph function correctly connect verticesin in the tripartite mode", {
   expect_identical(re_list_graph, re_list)
   expect_identical(target_list_graph, target_list)
 })
@@ -38,9 +44,6 @@ regulon$idxATAC <- as.character(regulon$idxATAC)
 for(tf in sort(base::unique(regulon$tf))){
   re_list[[tf]] <- regulon[regulon$tf == tf, c("idxATAC", "corr"),drop = FALSE]
   re_list[[tf]][is.na(re_list[[tf]][["corr"]]),"corr"] <- 0
-  # aggregate tf-re pairs
-  re_list[[tf]] <- split(re_list[[tf]], re_list[[tf]]$idxATAC) |> lapply(function(x) data.frame(idxATAC = x$idxATAC[1], corr = mean(x$corr)))
-  re_list[[tf]] <- do.call(rbind, re_list[[tf]])
   re_list[[tf]] <- re_list[[tf]][base::order(re_list[[tf]]$corr),,drop = FALSE]
   re_list[[tf]] <- re_list[[tf]][base::order(re_list[[tf]]$idxATAC),,drop = FALSE]
   rownames(re_list[[tf]]) <- NULL
@@ -49,15 +52,12 @@ for(tf in sort(base::unique(regulon$tf))){
 for(idxATAC in sort(base::unique(regulon$idxATAC))){
   target_list[[idxATAC]]<- regulon[regulon$idxATAC == idxATAC, c("target", "corr"),drop = FALSE]
   target_list[[idxATAC]][is.na(target_list[[idxATAC]][,"corr"]),"corr"] <- 0
-  # aggregate re-tg pairs
-  target_list[[idxATAC]] <- split(target_list[[idxATAC]], target_list[[idxATAC]]$target) |> lapply(function(x) data.frame(target = x$target[1], corr = mean(x$corr)))
-  target_list[[idxATAC]] <- do.call(rbind, target_list[[idxATAC]])
   target_list[[idxATAC]] <- target_list[[idxATAC]][base::order(target_list[[idxATAC]]$corr),,FALSE]
   target_list[[idxATAC]] <- target_list[[idxATAC]][base::order(target_list[[idxATAC]]$target),,FALSE]
   rownames(target_list[[idxATAC]]) <- NULL
 }
 
-test_graph <- buildGraph(regulon)
+test_graph <- buildGraph(regulon, mode = "tripartite", weights = "corr")
 
 tfs <- igraph::V(test_graph)[igraph::V(test_graph)$type == "transcription factor"]$name
 re_list_graph <- list()
@@ -98,7 +98,7 @@ for(re in sort(base::unique(reg_elems))){
   rownames(target_list_graph[[re]]) <- NULL
 }
 
-test_that("buildGraph function correctly assign weights in tripartite mode", {
+test_that("buildGraph function correctly assign weights in the tripartite mode", {
   expect_identical(re_list_graph, re_list)
   expect_identical(target_list_graph, target_list)
 })
