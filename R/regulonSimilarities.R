@@ -32,14 +32,11 @@ findPartners <- function(graph, focal_tf){
     # find indices of common targets in all targets of focal tf
     common_targets_ind <- match(common_targets, ends(tf_targets_subgraphs[[1]], E(tf_targets_subgraphs[[1]]))[,2])
     res_list[[tf$name]] <- data.frame(target = common_targets,
-                                      focal_weigth = focal_weights[common_targets_ind],
+                                      focal_weight = focal_weights[common_targets_ind],
                                       other_tf_weight = igraph::get.edge.attribute(tf_targets_subgraphs[[i]],
                                                                                    index = E(tf_targets_subgraphs[[i]]),
                                                                                    name = "weight"))
-    res_list[[tf$name]]$weight_product <- res_list[[tf$name]]$focal_weigth * res_list[[tf$name]]$other_tf_weight
-
+    res_list[[tf$name]]$weight_product <- res_list[[tf$name]]$focal_weight * res_list[[tf$name]]$other_tf_weight
   }
   res_list
 }
-
-
