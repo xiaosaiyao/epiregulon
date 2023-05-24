@@ -91,18 +91,21 @@ addMotifScore <- function(regulon,
 }
 
 species_motif <- function(species, env) {
-  switch(species,
-         human=env$human_pwms_v1,
-         mouse=env$mouse_pwms_v1)
+  if(species == "human"){
+    data("human_pwms_v1", package = "chromVARmotifs", envir = environment())
+    return(environment()$human_pwms_v1)
+  }
+  else if (species == "mouse"){
+    data("mouse_pwms_v1", package = "chromVARmotifs", envir = environment())
+    return(environment()$mouse_pwms_v1)
+  }
+  else stop("Species should be 'human' or 'mouse'")
 }
 
 annotateMotif <- function(species, peaks, genome, pwms = NULL, ...) {
-  data("human_pwms_v1", package = "chromVARmotifs", envir = environment())
-  data("mouse_pwms_v1", package = "chromVARmotifs", envir = environment())
-
 
   if (is.null(pwms)){
-    pwms <- species_motif(species, env = sys.frame(sys.nframe()))
+    pwms <- species_motif(species, env = environment())
   }
   motifs <- motifmatchr::matchMotifs(pwms=pwms,
                                      subject=peaks,
