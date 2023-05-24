@@ -120,7 +120,16 @@ pruneRegulon <- function(regulon,
 
   expMatrix <- as(expMatrix, "dgCMatrix")
   peakMatrix <- as(peakMatrix, "dgCMatrix")
-
+  if(!is.null(peak_cutoff)){
+    prop = sum(peakMatrix>peak_cutoff)/prod(dim(peakMatrix))
+    if(prop < 0.0001| prop > 0.9999) warning(sprintf("Strong inbalance between groups after applying cutoff to peakMatrix. Consider %s value of the peak_cutoff"),
+    c("increasing", "decreasing")[(prop < 0.0001) + 1])
+  }
+  if(!is.null(exp_cutoff)){
+    prop = sum(expMatrix>exp_cutoff)/prod(dim(expMatrix))
+    if(prop < 0.0001| prop > 0.9999) warning(sprintf("Strong inbalance between groups after applying cutoff to expMatrix. Consider %s value of the exp_cutoff"),
+                                             c("increasing", "decreasing")[(prop < 0.0001) + 1])
+  }
 
   unique_clusters <- c("all", as.character(sort(unique(clusters))))
 

@@ -172,6 +172,16 @@ addWeights <- function(regulon,
   }
 
   if (method == "wilcoxon") {
+    if(!is.null(peak_cutoff)){
+      prop = sum(peakMatrix>peak_cutoff)/prod(dim(peakMatrix))
+      if(prop < 0.0001| prop > 0.9999) warning(sprintf("Strong inbalance between groups after applying cutoff to peakMatrix. Consider %s value of the peak_cutoff"),
+                                               c("increasing", "decreasing")[(prop < 0.0001) + 1])
+    }
+    if(!is.null(exp_cutoff)){
+      prop = sum(expMatrix>exp_cutoff)/prod(dim(expMatrix))
+      if(prop < 0.0001| prop > 0.9999) warning(sprintf("Strong inbalance between groups after applying cutoff to expMatrix. Consider %s value of the exp_cutoff"),
+                                               c("increasing", "decreasing")[(prop < 0.0001) + 1])
+    }
     keep <- regulon$idxATAC >= 1 & regulon$idxATAC <= nrow(peakMatrix)
     regulon <- regulon[keep,]
     peakMatrix <- binarize_matrix(peakMatrix, cutoff = peak_cutoff)
@@ -347,7 +357,16 @@ addWeights <- function(regulon,
       BPPARAM = BPPARAM)
 
   } else if (method == "logFC") {
-
+    if(!is.null(peak_cutoff)){
+      prop = sum(peakMatrix>peak_cutoff)/prod(dim(peakMatrix))
+      if(prop < 0.0001| prop > 0.9999) warning(sprintf("Strong inbalance between groups after applying cutoff to peakMatrix. Consider %s value of the peak_cutoff"),
+                                               c("increasing", "decreasing")[(prop < 0.0001) + 1])
+    }
+    if(!is.null(exp_cutoff)){
+      prop = sum(expMatrix>exp_cutoff)/prod(dim(expMatrix))
+      if(prop < 0.0001| prop > 0.9999) warning(sprintf("Strong inbalance between groups after applying cutoff to expMatrix. Consider %s value of the exp_cutoff"),
+                                               c("increasing", "decreasing")[(prop < 0.0001) + 1])
+    }
 
     for (cluster in c("all", unique_clusters)) {
       if (cluster == "all" & !is.null(clusters)){
