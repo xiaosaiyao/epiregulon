@@ -241,8 +241,8 @@ plotBubble <- function (activity_matrix,
                         bubblesize = c("FDR","summary.logFC"),
                         color.theme = "viridis",
                         legend.label = "relative_activity",
-                        x.label = "transcription factors",
-                        y.label = "clusters",
+                        x.label = "clusters",
+                        y.label = "transcription factors",
                         title = "TF activity",
                         ...){
 
