@@ -8,6 +8,9 @@
 #'
 #' @return A Peak2Gene correlation data frame
 #' @import ArchR utils
+#' @importFrom BSgenome.Hsapiens.UCSC.hg38 BSgenome.Hsapiens.UCSC.hg38
+#' @importFrom BSgenome.Hsapiens.UCSC.hg19  BSgenome.Hsapiens.UCSC.hg19
+#' @importFrom BSgenome.Mmusculus.UCSC.mm10 BSgenome.Mmusculus.UCSC.mm10
 #' @export
 #' @author Shang-yang Chen
 
