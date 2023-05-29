@@ -227,12 +227,10 @@ addWeights <- function(regulon,
       clusters = integer(0),
       cell_numb = nrow(exprs_trans_target)
     )
-
     if(!is.null(clusters)){
       # calculate stats for each cluster separately
       exprs_trans_tf_clusters <- Matrix::t(expMatrix_tfs_clusters)
       fclusters <- factor(clusters)
-      fclusters_order <- order(levels(fclusters))
       iclusters <- as.integer(fclusters)
       output_clusters <- fast_wilcox(
         exprs_x = exprs_trans_target@x,
@@ -251,6 +249,8 @@ addWeights <- function(regulon,
         cell_numb = nrow(exprs_trans_target)
       )
       output <- mapply(function(x,y) rbind(x,y), output, output_clusters, SIMPLIFY = FALSE)
+      # find cluster column indices in the weight matrix
+      cluster_col_ind <- iclusters[match(colnames(regulon$weight)[2:ncol(regulon$weight)], clusters)]
     }
 
     AUC <- output$auc
@@ -266,10 +266,19 @@ addWeights <- function(regulon,
     # set z-score to zero if the size of the of the groups is equal to 0
     stats[n1==0 | n2==0 | sigma ==0] <- 0
     stats[,reg.order] <- stats
-    regulon$weight <- t(stats)
+    if(is.null(clusters)){
+      regulon$weight[,1] <- t(stats)
+    }
+    else{
+      regulon$weight[,c(1, order(cluster_col_ind)+1)] <- t(stats)
+    }
     # Calculate effect size
     n_cells <- ncol(expMatrix)
-    n_cells <- c(n_cells, table(clusters))
+    if (!is.null(clusters)){
+      # calculate cluster sizes
+      # first column in weight matrix is reserved for all cells
+      n_cells <- c(n_cells, table(clusters)[colnames(regulon$weight)[2:ncol(regulon$weight)]])
+    }
     # transform z-scores to effect size
     regulon$weight <- t(t(regulon$weight)/sqrt(n_cells))
     return(regulon)
