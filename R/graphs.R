@@ -93,9 +93,7 @@
 #' graph_diff <- addCentrality(graph_diff)
 #' graph_diff <- normalizeCentrality(graph_diff)
 #' tf_ranking <- rankTfs(graph_diff)
-#' @importFrom igraph graph_from_data_frame V V<- E E<- vcount strength incident_edges
-#' list.edge.attributes graph_from_adjacency_matrix get.adjacency list.vertex.attributes
-#' vertex_attr delete.edges delete_vertices
+#' @import igraph
 #' @export
 buildGraph <- function(regulon,
                       mode = c("tg", "tripartite", "re", "pairs"),
@@ -202,11 +200,11 @@ buildDiffGraph <- function(graph_obj_1,
                                        weighted = FALSE)
   }
 
-  if (!identical(igraph::V(graph_obj_1)$type, igraph::V(graph_obj_2)$type)) {
+  if (!identical(V(graph_obj_1)$type, V(graph_obj_2)$type)) {
     warning("Types of nodes differ between graphs. Only those from the first graph are used.")
   }
-  igraph::V(res)$type <- igraph::V(graph_obj_1)$type
-  igraph::V(res)$type.num <- igraph::V(graph_obj_1)$type.num
+  V(res)$type <- V(graph_obj_1)$type
+  V(res)$type.num <- V(graph_obj_1)$type.num
 
   # remove nodes with no edges
   edge_numbers <- vapply(incident_edges(res, V(res), mode = "all"), length,
