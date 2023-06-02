@@ -373,7 +373,7 @@ countCells <- function(regulon,
   t_target_id <- as.integer(target_id[t_o]) - 1L
 
   cluster_id2 <- as.integer(cluster_id) - 1L
-  if (all(!is.null(c(exp_cutoff, peak_cutoff)))){
+  if (!is.null(exp_cutoff) & !is.null(peak_cutoff)){
     exp_cutoff_mat <- matrix(exp_cutoff, nrow = nrow(expMatrix), ncol = nlevels(cluster_id))
     peak_cutoff_mat <- matrix(peak_cutoff, nrow = nrow(peakMatrix), ncol = nlevels(cluster_id))
     stats <- fast_chisq(
