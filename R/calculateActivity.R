@@ -98,7 +98,8 @@ calculateActivity <- function (expMatrix = NULL,
                                ncore = 1,
                                genesets = NULL,
                                clusters = NULL,
-                               FUN = c("mean", "sum")) {
+                               FUN = c("mean", "sum"),
+                               scale_expression = FALSE) {
   method <- tolower(method)
   method <- match.arg(method)
   FUN <- match.arg(FUN)
@@ -174,7 +175,7 @@ calculateActivity <- function (expMatrix = NULL,
 
       message("calculating activity scores...")
       # cross product of expMatrix and tf_target matrix
-      score.combine <- calculateScore(expMatrix, tf_target_mat)
+      score.combine <- calculateScore(expMatrix, tf_target_mat, scale_expression = scale_expression)
 
       # need to normalize
       if(normalize){
@@ -205,7 +206,8 @@ calculateActivity <- function (expMatrix = NULL,
       score.combine <- as(score.combine, "dgCMatrix")
 
       message("calculating activity scores...")
-      score.combine <- calculateScore(expMatrix, tf_target_mat, clusters=clusters, score.combine)
+      score.combine <- calculateScore(expMatrix, tf_target_mat, clusters=clusters, score.combine,
+                                      scale_expression = scale_expression)
 
 
       # if normalize gene expression (taking the mean across all cells)
@@ -213,6 +215,7 @@ calculateActivity <- function (expMatrix = NULL,
         message("normalize by mean...")
         meanExpr <- Matrix::rowMeans(expMatrix[rownames(tf_target_mat[[1]]),])
         for (cluster in sort(unique(clusters))){
+          # calculate cluster-specific mean
           mean_activity <- meanExpr %*% tf_target_mat[[cluster]]
           score.combine[clusters == cluster,] <- sweep(score.combine[clusters == cluster,],
                                                        2, mean_activity, "-")
@@ -300,8 +303,14 @@ createTfTgMat <- function(regulon, mode, clusters=NULL){
 
 
 
-calculateScore <- function(expMatrix, tf_target_mat, clusters=NULL, score.combine=NULL){
+calculateScore <- function(expMatrix, tf_target_mat, clusters=NULL, score.combine=NULL,
+                           scale_expression = FALSE){
   if (is.null(clusters)){
+    if(scale_expression){
+      cum_expr <- cumsum(Matrix::t(expMatrix)@x)[t(expMatrix)@p[2:length(t(expMatrix)@p)]]
+      normalized_expr <- diff(c(0 , cum_expr))/diff(t(expMatrix)@p)
+      expMatrixa@x <- expMatrix@x / normalized_expr[expMatrix@i+1]
+    }
     score.combine <- Matrix::t(expMatrix[rownames(tf_target_mat),, drop = FALSE]) %*%
       tf_target_mat
 
@@ -311,16 +320,19 @@ calculateScore <- function(expMatrix, tf_target_mat, clusters=NULL, score.combin
   } else {
 
     for (cluster in sort(unique(clusters))){
-      score.combine[clusters == cluster,] <- Matrix::t(expMatrix[rownames(tf_target_mat[[cluster]]), clusters == cluster, drop = FALSE]) %*%
-        tf_target_mat[[cluster]]
+      expr_data <- expMatrix[rownames(tf_target_mat[[cluster]]), clusters == cluster, drop = FALSE]
+      if(scale_expression){
+        cum_expr <- cumsum(Matrix::t(expr_data)@x)[Matrix::t(expr_data)@p[2:length(Matrix::t(expr_data)@p)]]
+        normalized_expr <- diff(c(0 , cum_expr))/diff(Matrix::t(expr_data)@p)
+        expr_data@x <- expr_data@x / normalized_expr[expr_data@i+1]
+      }
+      score.combine[clusters == cluster,] <- Matrix::t(expr_data)  %*% tf_target_mat[[cluster]]
     }
-
   }
   score.combine
 }
 
 calculateFrequency <- function(freq=NULL, regulon, mode) {
-
   if (any(is.null(ncol(regulon[,mode])), ncol(regulon[,mode]) == 1)) {
     freq <- table(regulon$tf[as.vector(regulon[,mode]) != 0])
     freq[freq==0 | is.na(freq)] <- 1
