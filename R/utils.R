@@ -1,3 +1,40 @@
+
+#' Convert ArchR Gene Expression Matrix to SingleCellExperiment
+#'
+#' @param rse a RangedSummarizedExperiment object obtained from `ArchR::getMatrixFromProject`
+#'
+#' @return A SingleCellExperiment object
+#' @export
+#' @details When gene expression matrices (either GeneIntegrationMatrix or GeneExpressionMatrix)
+#' are retrieved from ArchR project, they are returned as `RangedSummarizedExperiment`. This function
+#' converts the class of the object from `RangedSummarizedExperiment` to `SingleCellExperiment`.
+#' During the conversion, the genomic location of the genes are transferred from `rowData` in the
+#' `RangedSummarizedExperiment` to the `rowRanges` of the `SingleCellExperiment`.
+#'
+ArchRMatrix2SCE <- function(rse) {
+
+  rowData_temp <- rowData(rse)
+  rse <- as(rse, "SingleCellExperiment")
+  rowData_temp$strand[rowData_temp$strand == 1] = "+"
+  rowData_temp$strand[rowData_temp$strand == 2] = "-"
+  rowData_temp$strand[rowData_temp$strand == 3] = "*"
+
+  # change order
+  swap_rows <- which(rowData_temp$start > rowData_temp$end)
+  rowData_temp_start <- rowData_temp$start
+  rowData_temp$start[swap_rows] <- rowData_temp$end[swap_rows]
+  rowData_temp$end[swap_rows] <- rowData_temp_start[swap_rows]
+
+  rowRanges(rse) <- makeGRangesFromDataFrame(rowData_temp)
+  rowData(rse) <- rowData_temp[, -which(colnames(rowData_temp) %in% c("seqnames","start","end","strand"))]
+  count_names <- switch(names(assays(rse)),
+                        GeneExpressionMatrix = "logcounts",
+                        GeneIntegrationMatrix = "logcounts",
+                        PeakMatrix = "counts")
+  names(assays(rse))[1] <- count_names
+  rse
+}
+
 aggregateMatrix <- function(regulon, mode, FUN){
 
   groupings <- paste(regulon$tf,regulon$target, sep = '#')

@@ -19,12 +19,12 @@
 #' @export
 #'
 #' @examples
-#' regulon <- S4Vectors::DataFrame(tf = c("AR","AR","AR","ESR1","ESR1"),
-#' idxATAC = 1:5)
+#' regulon <- S4Vectors::DataFrame(tf = c("AR","AR","AR","ESR1","ESR1","NKX2-1"),
+#' idxATAC = 1:6)
 
-#' peaks <- GRanges(seqnames = c("chr12","chr19","chr19","chr11","chr6"),
-#' ranges = IRanges(start = c(124914563,50850844, 50850844, 101034172, 151616327),
-#' end = c(124914662,50850929, 50850929, 101034277, 151616394)))
+#' peaks <- GRanges(seqnames = c("chr12","chr19","chr19","chr11","chr6","chr1"),
+#' ranges = IRanges(start = c(124914563,50850844, 50850844, 101034172, 151616327, 1000),
+#' end = c(124914662,50850929, 50850929, 101034277, 151616394,2000)))
 #' regulon <- addMotifScore(regulon, peaks=peaks)
 
 
@@ -50,7 +50,13 @@ addMotifScore <- function(regulon,
     motifs <- assay(matches, "matches")
 
     # Convert motifs to gene names
-    colnames(motifs) <- unlist(lapply(strsplit(colnames(motifs), split="_"), "[", 1))
+    motif_names <- unlist(lapply(strsplit(colnames(motifs), split="_"), "[", 1))
+
+    # match motif_names and official gene symbols
+
+    colnames(motifs) <- matchNames(motif_names, regulon)
+
+
 
   } else if (is.null(archr_path) & !is.null(peaks)) {
     message ("annotating peaks with motifs")
@@ -61,8 +67,11 @@ addMotifScore <- function(regulon,
 
     motifs <- annotateMotif(species, peaks, BS.genome, pwms, ...)
     motifs <- assay(motifs,"motifMatches")
+
     # Convert motifs to gene names
-    colnames(motifs) <- lapply(strsplit(colnames(motifs), split="_|\\."), "[", 3)
+    motif_names <- unlist(lapply(strsplit(colnames(motifs), split="_|\\."), "[", 3))
+
+    colnames(motifs) <- matchNames(motif_names, regulon)
 
   } else {
 
@@ -91,23 +100,45 @@ addMotifScore <- function(regulon,
 }
 
 species_motif <- function(species, env) {
-  switch(species,
-         human=env$human_pwms_v1,
-         mouse=env$mouse_pwms_v1)
+  if(species == "human"){
+    data("human_pwms_v1", package = "chromVARmotifs", envir = environment())
+    return(environment()$human_pwms_v1)
+  }
+  else if (species == "mouse"){
+    data("mouse_pwms_v1", package = "chromVARmotifs", envir = environment())
+    return(environment()$mouse_pwms_v1)
+  }
+  else stop("Species should be 'human' or 'mouse'")
 }
 
 annotateMotif <- function(species, peaks, genome, pwms = NULL, ...) {
-  data("human_pwms_v1", package = "chromVARmotifs", envir = environment())
-  data("mouse_pwms_v1", package = "chromVARmotifs", envir = environment())
-
 
   if (is.null(pwms)){
-    pwms <- species_motif(species, env = sys.frame(sys.nframe()))
+    pwms <- species_motif(species, env = environment())
   }
   motifs <- motifmatchr::matchMotifs(pwms=pwms,
                                      subject=peaks,
                                      genome=genome,
                                      ...)
 
+}
+
+
+matchNames <- function(motif_names, regulon){
+  unique_tf <- data.frame(original = unique(regulon$tf),
+                          after = unique(regulon$tf))
+  # remove underscore
+  unique_tf$after <- gsub("\\_","", unique_tf$original)
+
+  # remove dash
+  unique_tf$after <- gsub("\\-","", unique_tf$after)
+
+  # remove dot
+  unique_tf$after <- gsub("\\.","", unique_tf$after)
+
+
+  official <- unique_tf$original[match(motif_names, unique_tf$after)]
+  official[which(is.na(official))] <- motif_names[which(is.na(official))]
+  official
 }
 

@@ -69,6 +69,7 @@ gene_set <- apply(gene_set,1,function(x) paste0(x,collapse=""))
 regulon$target <- sample(gene_set, 5e2, replace = TRUE)
 regulon$idxATAC <- seq_len(5e2)
 regulon$corr <- runif(5e2)*0.5+0.5
+regulon$weights <- runif(500)
 #create igraph object
 graph_tripartite <- buildGraph(regulon, mode = "tripartite")
 plotEpiregulonNetwork(graph_tripartite, tfs_to_highlight = sample(unique(tf_set),3),

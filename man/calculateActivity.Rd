@@ -14,7 +14,8 @@ calculateActivity(
   ncore = 1,
   genesets = NULL,
   clusters = NULL,
-  FUN = c("mean", "sum")
+  FUN = c("mean", "sum"),
+  scale_expression = FALSE
 )
 }
 \arguments{
@@ -42,6 +43,8 @@ contains genes in the first column and weights in the second column. See details
 \item{clusters}{A vector indicating cluster assignment}
 
 \item{FUN}{function to aggregate the weights}
+
+\item{scale_expression}{logical indicating whether gene expression should be scaled to the mean}
 }
 \value{
 A matrix of inferred transcription factor (row) activities in single cells (columns)

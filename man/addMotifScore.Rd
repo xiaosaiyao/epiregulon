@@ -47,10 +47,10 @@ A DataFrame with motif matches added with 1s indicating the presence of motifs a
 Add Motif Scores
 }
 \examples{
-regulon <- S4Vectors::DataFrame(tf = c("AR","AR","AR","ESR1","ESR1"),
-idxATAC = 1:5)
-peaks <- GRanges(seqnames = c("chr12","chr19","chr19","chr11","chr6"),
-ranges = IRanges(start = c(124914563,50850844, 50850844, 101034172, 151616327),
-end = c(124914662,50850929, 50850929, 101034277, 151616394)))
+regulon <- S4Vectors::DataFrame(tf = c("AR","AR","AR","ESR1","ESR1","NKX2-1"),
+idxATAC = 1:6)
+peaks <- GRanges(seqnames = c("chr12","chr19","chr19","chr11","chr6","chr1"),
+ranges = IRanges(start = c(124914563,50850844, 50850844, 101034172, 151616327, 1000),
+end = c(124914662,50850929, 50850929, 101034277, 151616394,2000)))
 regulon <- addMotifScore(regulon, peaks=peaks)
 }

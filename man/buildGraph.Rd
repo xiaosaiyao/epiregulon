@@ -10,10 +10,10 @@
 \usage{
 buildGraph(
   regulon,
-  mode = c("tripartite", "tg", "re", "pairs"),
-  weights = "corr",
+  mode = c("tg", "tripartite", "re", "pairs"),
+  weights = "weights",
   cluster = "all",
-  aggregation_function = mean,
+  aggregation_function = function(x) x[which.max(abs(x))],
   na_replace = TRUE
 )
 
@@ -70,8 +70,27 @@ an igraph object
 to the value of the \code{centrality} attribute
 }
 \description{
+The function enable to create graph objects using as input regulon objects returned by
+\code{pruneRegulon} or \code{addWeights}. Both weighted and unweighted graphs can be
+created that can further be visualized using dedicated functions.
+}
+\details{
 \code{buildGraph} function creates a directed graph based on the output of
-the \code{getRegulon} function.
+the \code{getRegulon} function. Four modes are available: (1) \code{tg} in which
+connections are made directly between transcription factor and target genes. Even if
+the same tf-tg pair is connected in the original regulon object through many
+regulatory elements then only one edge is created. In such a case, when weighted
+graph is created, weights are summarized by the aggregating function (by default
+the maximum absolute value with the sign of the original value). Similarly, aggregation
+is made in the \code{re} mode leaving only unique transcription factor-regulatory element pairs.
+In \code{tripartite} mode edges connect transcription factors with regulatory elements and
+regulatory elements with target genes. The same weights are used for both edges
+that correspond to the single row in the regulon data frame (tf-re and re-tg). Note
+that the original regulon structure is not fully preserved because each row is now
+represented by two edges which are independent from each other. Thus they can be
+coupled with different edges connected to the same regulatory element building the
+path from transcription factor to the target gene of another transcription factor
+through the shared regulatory element.
 
 \code{buildDiffGraph} a graph difference by subtracting the edges of \code{graph_obj_2}
 from those of the \code{graph_obj_1}. If \code{weighted} is set to \code{TRUE} then for each
@@ -98,17 +117,18 @@ centrality of their vertices
 # create an artificial getRegulon output
 set.seed(1234)
 tf_set <- apply(expand.grid(LETTERS[1:10], LETTERS[1:10]),1,  paste, collapse = "")
-regulon <- data.frame(tf = sample(tf_set, 5e3, replace = TRUE))
+regulon <- DataFrame(tf = sample(tf_set, 5e3, replace = TRUE))
 gene_set <- expand.grid(LETTERS[1:10], LETTERS[1:10], LETTERS[1:10])
 gene_set <- apply(gene_set,1,function(x) paste0(x,collapse=""))
 regulon$target <- sample(gene_set, 5e3, replace = TRUE)
 regulon$idxATAC <- 1:5e3
 regulon$corr <- runif(5e3)*0.5+0.5
-graph_tripartite <- buildGraph(regulon, mode = "tripartite")
+regulon$weights <- matrix(runif(15000), nrow=5000, ncol=3)
+colnames(regulon$weights) <- c("all","cluster1", "cluster2")
+graph_tripartite <- buildGraph(regulon, cluster="all", mode = "tripartite")
 # build bipartite graph using regulatory element-target gene pairs
-graph_pairs_1 <- buildGraph(regulon, mode = "pairs")
-regulon$corr <- runif(5e3)*0.5+0.5
-graph_pairs_2 <- buildGraph(regulon, mode = "pairs")
+graph_pairs_1 <- buildGraph(regulon, cluster = "cluster1", mode = "pairs")
+graph_pairs_2 <- buildGraph(regulon, cluster = "cluster2", mode = "pairs")
 graph_diff <- buildDiffGraph(graph_pairs_1, graph_pairs_2)
 graph_diff <- addCentrality(graph_diff)
 graph_diff <- normalizeCentrality(graph_diff)

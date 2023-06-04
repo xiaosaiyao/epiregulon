@@ -57,6 +57,7 @@ for(cluster in unique(clusters)){
 }
 # weights for all clusters have been divided by sqrt(n) prior to the previous test
 weight_matrix <- t(t(weight_matrix)/sqrt(c(1,10,10)))
+colnames(weight_matrix) <- c("all", "A", "B")
 expMatrix.sce <- SingleCellExperiment(list(logcounts = expMatrix))
 test_that("addWeights works correctly using Wilcoxon test with clusters", {
   regulon.w <- addWeights(regulon = regulon,

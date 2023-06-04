@@ -1,8 +1,27 @@
 #' Creating graphs and related operations
 #'
 #' @description
+#' The function enable to create graph objects using as input regulon objects returned by
+#' `pruneRegulon` or `addWeights`. Both weighted and unweighted graphs can be
+#' created that can further be visualized using dedicated functions.
+#'
+#' @details
 #' \code{buildGraph} function creates a directed graph based on the output of
-#' the \code{getRegulon} function.
+#' the \code{getRegulon} function. Four modes are available: (1) `tg` in which
+#' connections are made directly between transcription factor and target genes. Even if
+#' the same tf-tg pair is connected in the original regulon object through many
+#' regulatory elements then only one edge is created. In such a case, when weighted
+#' graph is created, weights are summarized by the aggregating function (by default
+#' the maximum absolute value with the sign of the original value). Similarly, aggregation
+#' is made in the `re` mode leaving only unique transcription factor-regulatory element pairs.
+#' In `tripartite` mode edges connect transcription factors with regulatory elements and
+#' regulatory elements with target genes. The same weights are used for both edges
+#' that correspond to the single row in the regulon data frame (tf-re and re-tg). Note
+#' that the original regulon structure is not fully preserved because each row is now
+#' represented by two edges which are independent from each other. Thus they can be
+#' coupled with different edges connected to the same regulatory element building the
+#' path from transcription factor to the target gene of another transcription factor
+#' through the shared regulatory element.
 #'
 #' \code{buildDiffGraph} a graph difference by subtracting the edges of \code{graph_obj_2}
 #' from those of the \code{graph_obj_1}. If \code{weighted} is set to \code{TRUE} then for each
@@ -59,40 +78,32 @@
 #' # create an artificial getRegulon output
 #' set.seed(1234)
 #' tf_set <- apply(expand.grid(LETTERS[1:10], LETTERS[1:10]),1,  paste, collapse = "")
-#' regulon <- data.frame(tf = sample(tf_set, 5e3, replace = TRUE))
+#' regulon <- DataFrame(tf = sample(tf_set, 5e3, replace = TRUE))
 #' gene_set <- expand.grid(LETTERS[1:10], LETTERS[1:10], LETTERS[1:10])
 #' gene_set <- apply(gene_set,1,function(x) paste0(x,collapse=""))
 #' regulon$target <- sample(gene_set, 5e3, replace = TRUE)
 #' regulon$idxATAC <- 1:5e3
 #' regulon$corr <- runif(5e3)*0.5+0.5
-#' graph_tripartite <- buildGraph(regulon, mode = "tripartite")
+#' regulon$weights <- matrix(runif(15000), nrow=5000, ncol=3)
+#' colnames(regulon$weights) <- c("all","cluster1", "cluster2")
+#' graph_tripartite <- buildGraph(regulon, cluster="all", mode = "tripartite")
 #' # build bipartite graph using regulatory element-target gene pairs
-#' graph_pairs_1 <- buildGraph(regulon, mode = "pairs")
-#' regulon$corr <- runif(5e3)*0.5+0.5
-#' graph_pairs_2 <- buildGraph(regulon, mode = "pairs")
+#' graph_pairs_1 <- buildGraph(regulon, cluster = "cluster1", mode = "pairs")
+#' graph_pairs_2 <- buildGraph(regulon, cluster = "cluster2", mode = "pairs")
 #' graph_diff <- buildDiffGraph(graph_pairs_1, graph_pairs_2)
 #' graph_diff <- addCentrality(graph_diff)
 #' graph_diff <- normalizeCentrality(graph_diff)
 #' tf_ranking <- rankTfs(graph_diff)
-#' @importFrom igraph graph_from_data_frame V V<- E E<- vcount strength incident_edges
-#' list.edge.attributes graph_from_adjacency_matrix get.adjacency list.vertex.attributes
-#' vertex_attr delete.edges delete_vertices
+#' @import igraph
 #' @export
 buildGraph <- function(regulon,
-                      mode = c("tripartite", "tg", "re", "pairs"),
-                      weights = "corr",
+                      mode = c("tg", "tripartite", "re", "pairs"),
+                      weights = "weights",
                       cluster = "all",
-                      aggregation_function = mean,
+                      aggregation_function = function(x) x[which.max(abs(x))],
                       na_replace = TRUE){
+  if (!weights %in% colnames(regulon)) stop(sprintf("%s column should be present in the regulon", weights))
   mode <- match.arg(mode)
-  if(is.matrix(regulon[,weights]))
-    weights_df <- data.frame(regulon[,weights][,cluster])
-  else
-    weights_df <- data.frame(regulon[,weights])
-  if(any(is.na(weights_df)) & na_replace){
-    message("Replacement of na values for weights with 0")
-    weights_df[[1]][is.na(weights_df[[1]])] <- 0
-  }
   # give names to the peaks and target genes which will be easy to extract
   regulon$idxATAC <- paste0(as.character(regulon$idxATAC), "_peak")
   regulon$target <- paste0(regulon$target, "_gene")
@@ -101,9 +112,23 @@ buildGraph <- function(regulon,
                            "pairs" = c("tf", "idxATAC", "target"),
                            "tripartite" = c("idxATAC", "target"),
                            "tg" = c("tf", "target"))
-  colnames(weights_df) <- weights
-  graph_data <- cbind(regulon[,vertex_columns], weights_df)
-
+  graph_data <- regulon[,vertex_columns]
+  if(!is.null(weights)){
+    if(is.matrix(regulon[,weights]))
+      weights_df <- data.frame(regulon[,weights][,cluster])
+    else
+      weights_df <- data.frame(regulon[,weights])
+    if(any(is.na(weights_df)) & na_replace){
+      message("Replacement of na values for weights with 0")
+      weights_df[[1]][is.na(weights_df[[1]])] <- 0
+    }
+    colnames(weights_df) <- weights
+    graph_data <- cbind(graph_data, weights_df)
+  }
+  if(mode %in% c("tg", "re")){
+    graph_data <- aggregate_regulon(graph_data, FUN = aggregation_function,
+                                    weights_col = weights)
+  }
   message(sprintf("Building graph using %s as edge weights", weights))
   if (mode == "tripartite"){
     # add tf-re data
@@ -112,11 +137,10 @@ buildGraph <- function(regulon,
                                    to = regulon$idxATAC)
     if (!is.null(weights)) {
       graph_data_tf_re[,weights] <- weights_df[[1]]
-      graph_data <- rbind(graph_data, graph_data_tf_re)
-      rm(graph_data_tf_re)
-      vertex_columns <- c("from", "to")
     }
-
+    graph_data <- rbind(graph_data, graph_data_tf_re)
+    rm(graph_data_tf_re)
+    vertex_columns <- c("from", "to")
   }
 
   if (mode == "pairs"){
@@ -127,15 +151,10 @@ buildGraph <- function(regulon,
   }
 
   if (is.null(weights)) {
+    # avoid duplicated edges in the case of unweighted graph
     graph_data <- unique(graph_data)
   } else{
     colnames(graph_data)[colnames(graph_data) == weights] <- "weight"
-    grouping_factors <- paste(vertex_columns, collapse="+")
-    aggregation_formula <- eval(parse(text=paste0("weight~", grouping_factors)))
-    graph_data <- stats::aggregate(graph_data,
-                                   aggregation_formula,
-                                   aggregation_function,
-                                   na.rm = TRUE)
   }
 
   epiregulon_graph <- graph_from_data_frame(graph_data)
@@ -182,11 +201,11 @@ buildDiffGraph <- function(graph_obj_1,
                                        weighted = FALSE)
   }
 
-  if (!identical(igraph::V(graph_obj_1)$type, igraph::V(graph_obj_2)$type)) {
+  if (!identical(V(graph_obj_1)$type, V(graph_obj_2)$type)) {
     warning("Types of nodes differ between graphs. Only those from the first graph are used.")
   }
-  igraph::V(res)$type <- igraph::V(graph_obj_1)$type
-  igraph::V(res)$type.num <- igraph::V(graph_obj_1)$type.num
+  V(res)$type <- V(graph_obj_1)$type
+  V(res)$type.num <- V(graph_obj_1)$type.num
 
   # remove nodes with no edges
   edge_numbers <- vapply(incident_edges(res, V(res), mode = "all"), length,
@@ -267,6 +286,7 @@ rankTfs <- function(graph, type_attr = "type"){
 #' regulon$target <- sample(gene_set, 5e2, replace = TRUE)
 #' regulon$idxATAC <- seq_len(5e2)
 #' regulon$corr <- runif(5e2)*0.5+0.5
+#' regulon$weights <- runif(500)
 #' #create igraph object
 #' graph_tripartite <- buildGraph(regulon, mode = "tripartite")
 #' plotEpiregulonNetwork(graph_tripartite, tfs_to_highlight = sample(unique(tf_set),3),
@@ -381,4 +401,10 @@ plotDiffNetwork <- function(regulon,
                           tfs_to_highlight = unique(combined.regulon$tf),
                           label_nudge_x = 0.1,
                           label_nudge_y = 0.1)
+}
+
+aggregate_regulon <- function(regulon, FUN, weights_col){
+  grouping_factors <- paste(intersect(c("tf", "target", "re"), colnames(regulon)), collapse="+")
+  aggregation_formula <- eval(parse(text=paste0(weights_col, "~", grouping_factors)))
+  stats::aggregate(regulon, aggregation_formula, FUN)
 }
