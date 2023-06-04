@@ -78,17 +78,18 @@
 #' # create an artificial getRegulon output
 #' set.seed(1234)
 #' tf_set <- apply(expand.grid(LETTERS[1:10], LETTERS[1:10]),1,  paste, collapse = "")
-#' regulon <- data.frame(tf = sample(tf_set, 5e3, replace = TRUE))
+#' regulon <- DataFrame(tf = sample(tf_set, 5e3, replace = TRUE))
 #' gene_set <- expand.grid(LETTERS[1:10], LETTERS[1:10], LETTERS[1:10])
 #' gene_set <- apply(gene_set,1,function(x) paste0(x,collapse=""))
 #' regulon$target <- sample(gene_set, 5e3, replace = TRUE)
 #' regulon$idxATAC <- 1:5e3
 #' regulon$corr <- runif(5e3)*0.5+0.5
-#' graph_tripartite <- buildGraph(regulon, mode = "tripartite")
+#' regulon$weights <- matrix(runif(15000), nrow=5000, ncol=3)
+#' colnames(regulon$weights) <- c("all","cluster1", "cluster2")
+#' graph_tripartite <- buildGraph(regulon, cluster="all", mode = "tripartite")
 #' # build bipartite graph using regulatory element-target gene pairs
-#' graph_pairs_1 <- buildGraph(regulon, mode = "pairs")
-#' regulon$corr <- runif(5e3)*0.5+0.5
-#' graph_pairs_2 <- buildGraph(regulon, mode = "pairs")
+#' graph_pairs_1 <- buildGraph(regulon, cluster = "cluster1", mode = "pairs")
+#' graph_pairs_2 <- buildGraph(regulon, cluster = "cluster2", mode = "pairs")
 #' graph_diff <- buildDiffGraph(graph_pairs_1, graph_pairs_2)
 #' graph_diff <- addCentrality(graph_diff)
 #' graph_diff <- normalizeCentrality(graph_diff)
@@ -285,6 +286,7 @@ rankTfs <- function(graph, type_attr = "type"){
 #' regulon$target <- sample(gene_set, 5e2, replace = TRUE)
 #' regulon$idxATAC <- seq_len(5e2)
 #' regulon$corr <- runif(5e2)*0.5+0.5
+#' regulon$weights <- runif(500)
 #' #create igraph object
 #' graph_tripartite <- buildGraph(regulon, mode = "tripartite")
 #' plotEpiregulonNetwork(graph_tripartite, tfs_to_highlight = sample(unique(tf_set),3),
