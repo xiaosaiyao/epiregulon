@@ -15,7 +15,16 @@ ArchRMatrix2SCE <- function(rse) {
 
   rowData_temp <- rowData(rse)
   rse <- as(rse, "SingleCellExperiment")
+  rowData_temp$strand[rowData_temp$strand == 1] = "+"
+  rowData_temp$strand[rowData_temp$strand == 2] = "-"
   rowData_temp$strand[rowData_temp$strand == 3] = "*"
+
+  # change order
+  swap_rows <- which(rowData_temp$start > rowData_temp$end)
+  rowData_temp_start <- rowData_temp$start
+  rowData_temp$start[swap_rows] <- rowData_temp$end[swap_rows]
+  rowData_temp$end[swap_rows] <- rowData_temp_start[swap_rows]
+
   rowRanges(rse) <- makeGRangesFromDataFrame(rowData_temp)
   rowData(rse) <- rowData_temp[, -which(colnames(rowData_temp) %in% c("seqnames","start","end","strand"))]
   count_names <- switch(names(assays(rse)),
