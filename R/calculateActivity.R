@@ -15,6 +15,7 @@
 #' contains genes in the first column and weights in the second column. See details
 #' @param clusters A vector indicating cluster assignment
 #' @param FUN function to aggregate the weights
+#' @param scale_expression logical indicating whether gene expression should be scaled to the mean
 #' @return A matrix of inferred transcription factor (row) activities in single cells (columns)
 #' @export
 #' @import methods utils
