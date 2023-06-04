@@ -167,8 +167,6 @@ addWeights <- function(regulon,
     peakMatrix <- as(peakMatrix, "dgCMatrix")
     # name peakMatrix
     rownames(peakMatrix) <- seq_len(nrow(peakMatrix))
-    # remove peaks not found in regulon
-    peakMatrix <- peakMatrix[which(rownames(peakMatrix) %in% unique(regulon$idxATAC)),]
   }
 
   if (method == "wilcoxon") {
