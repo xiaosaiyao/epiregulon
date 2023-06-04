@@ -101,22 +101,28 @@ PeakMatrix <- getMatrixFromProject(
 
 ```
 
-Convert gene expression matrix to SingleCellExperiment object
+If we extract the gene expression from matrix, it will be in the form of RangedSummarizedExperiment.
+We can make use of `ArchRMatrix2SCE` to convert gene expression matrix to SingleCellExperiment object.
+It's also important to note that gene expression from ArchR is library size normalized. We further transform it to logcounts by adding a pseudocount of 1 and taking log2.
 ```{r}
+GeneExpressionMatrix <- ArchRMatrix2SCE(GeneExpressionMatrix)
+rownames(GeneExpressionMatrix) <- rowData(GeneExpressionMatrix)$name
+assay(GeneExpressionMatrix) <- as(log2(assay(GeneExpressionMatrix)+1), "CsparseMatrix")
+```
 
-GeneExpressionMatrix <- as(GeneExpressionMatrix, "SingleCellExperiment")
-assayNames(GeneExpressionMatrix)  <-  "logcounts"
+We rename the assay name of the PeakMatrix as counts
+
+```{r}
 assayNames(PeakMatrix)  <-  "counts"
 ```
 
-Transfer cell and gene information and embeddings from ArchR project to singleCellExperiment
+Transfer embeddings from ArchR project to singleCellExperiment
 
 ```{r}
 reducedDim(GeneExpressionMatrix, "UMAP_Combined") <- getEmbedding(ArchRProj = proj, 
                                                                   embedding = "UMAP_Combined", 
                                                                   returnDF = TRUE)[colnames(GeneExpressionMatrix),]
-colData(GeneExpressionMatrix) <- getCellColData(proj)[colnames(GeneExpressionMatrix),]
-rownames(GeneExpressionMatrix) <- rowData(GeneExpressionMatrix)$name
+
 
 # add cell label
 GeneExpressionMatrix$label <- GeneExpressionMatrix$Cells
@@ -189,8 +195,7 @@ pruned.regulon <- pruneRegulon(expMatrix = GeneExpressionMatrix,
                                regulon = regulon,
                                clusters = GeneExpressionMatrix$Sample,
                                prune_value = "pval",
-                               regulon_cutoff = 0.05,
-                               BPPARAM = BiocParallel::MulticoreParam())
+                               regulon_cutoff = 0.05)
 ```
 
 Epiregulon computes weights using either correlation, linear regression, mutual information, log fold change or wilcoxon rank sum test. The choice of methods depends on the datasets. Correlation works best when increased TF activity results from increased TF expression, such in the case of normal development. The user has a choice between computing the correlation of TF expression vs target gene expression by setting `method = "corr"`, or the product of TF expression and chromatin accessibility at TF-bound regulatory elements vs target gene expression  by setting `method = "corr"` and `"tf_re.merge = TRUE`. 
@@ -395,11 +400,15 @@ Sometimes we are interested to know what pathways are enriched in the regulon of
 
 ```{r enrichment, fig.height = 10, fig.width = 12}
 #retrieve genesets
-H <- EnrichmentBrowser::getGenesets(org = "hsa", db = "msigdb", 
-                                    cat = "H", gene.id.type = "SYMBOL",
+H <- EnrichmentBrowser::getGenesets(org = "hsa", 
+                                    db = "msigdb", 
+                                    cat = "H", 
+                                    gene.id.type = "SYMBOL",
                                     cache = FALSE)
-C6 <- EnrichmentBrowser::getGenesets(org = "hsa", db = "msigdb", 
-                                     cat = "C6", gene.id.type = "SYMBOL",
+C6 <- EnrichmentBrowser::getGenesets(org = "hsa", 
+                                     db = "msigdb", 
+                                     cat = "C6", 
+                                     gene.id.type = "SYMBOL",
                                      cache = FALSE)
 
 #combine genesets and convert genesets to be compatible with enricher

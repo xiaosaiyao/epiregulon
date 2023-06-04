@@ -65,6 +65,7 @@ PeakMatrix <- mae[["PeakMatrix"]]
 # expression matrix
 GeneExpressionMatrix <- mae[["GeneExpressionMatrix"]]
 rownames(GeneExpressionMatrix) <- rowData(GeneExpressionMatrix)$name
+assay(GeneExpressionMatrix) <- as(log2(assay(GeneExpressionMatrix)+1), "CsparseMatrix")
 
 # dimensional reduction matrix
 reducedDimMatrix <- reducedDim(mae[['TileMatrix500']], "LSI_ATAC")
@@ -308,11 +309,17 @@ Sometimes we are interested to know what pathways are enriched in the regulon of
 
 ```{r enrichment, fig.height = 10, fig.width = 12}
 #retrieve genesets
-H <- EnrichmentBrowser::getGenesets(org = "hsa", db = "msigdb", cat = "H", 
+H <- EnrichmentBrowser::getGenesets(org = "hsa", 
+                                    db = "msigdb", 
+                                    cat = "H", 
                                     gene.id.type = "SYMBOL" )
-C2 <- EnrichmentBrowser::getGenesets(org = "hsa", db = "msigdb", cat = "C2",
+C2 <- EnrichmentBrowser::getGenesets(org = "hsa", 
+                                     db = "msigdb", 
+                                     cat = "C2",
                                      gene.id.type = "SYMBOL" )
-C6 <- EnrichmentBrowser::getGenesets(org = "hsa", db = "msigdb", cat = "C6",
+C6 <- EnrichmentBrowser::getGenesets(org = "hsa", 
+                                     db = "msigdb", 
+                                     cat = "C6",
                                      gene.id.type = "SYMBOL" )
 
 #combine genesets and convert genesets to be compatible with enricher
@@ -368,20 +375,25 @@ plotDiffNetwork(pruned.regulon,
 
 We can also visualize how transcription factors relate to other transcription factors in each cluster.
 ```{r}
-
-C1_network <- buildGraph(pruned.regulon[which(pruned.regulon$stats[,"C1"]> 1 & pruned.regulon$tf %in% c("GATA6","FOXA1","AR")),], 
+selected <- which(pruned.regulon$stats[,"C1"]> 1 & 
+                    pruned.regulon$tf %in% c("GATA6","FOXA1","AR"))
+C1_network <- buildGraph(pruned.regulon[selected,], 
                          weights = "stats", 
                          cluster = "C1")
-C5_network <- buildGraph(pruned.regulon[which(pruned.regulon$stats[,"C5"]> 1 & pruned.regulon$tf %in% c("GATA6","FOXA1","AR")),], 
+selected <- which(pruned.regulon$stats[,"C5"]> 1 & 
+                    pruned.regulon$tf %in% c("GATA6","FOXA1","AR"))
+C5_network <- buildGraph(pruned.regulon[selected,], 
                          weights = "stats", 
                          cluster = "C5")
 plotEpiregulonNetwork(C1_network,
-                        layout = "sugiyama",
-                        tfs_to_highlight = c("GATA6","FOXA1","AR")) + ggplot2::ggtitle ("C1")
+                      layout = "sugiyama",
+                      tfs_to_highlight = c("GATA6","FOXA1","AR")) + 
+  ggplot2::ggtitle ("C1")
 
 plotEpiregulonNetwork(C5_network,
-                        layout = "sugiyama",
-                        tfs_to_highlight = c("GATA6","FOXA1","AR")) + ggplot2::ggtitle ("C5")
+                      layout = "sugiyama",
+                      tfs_to_highlight = c("GATA6","FOXA1","AR")) + 
+  ggplot2::ggtitle ("C5")
 
 ```
 To systematically examine the differential network topology between two clusters, we perform an edge subtraction between two graphs, using weights computed by `pruneRegulon`. We then calculate the degree centrality of the weighted differential graphs and if desired, normalize the differential centrality against the total number of edges. The default normalization function is `sqrt` as it preserves both the difference in the number of edges (but scaled by sqrt) and the differences in the weights. If the user only wants to examine the differences in the averaged weights, the `FUN` argument can be changed to `identity`. Finally, we rank the transcription factors by (normalized) differential centrality.
