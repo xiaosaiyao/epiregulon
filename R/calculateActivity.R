@@ -15,7 +15,6 @@
 #' contains genes in the first column and weights in the second column. See details
 #' @param clusters A vector indicating cluster assignment
 #' @param FUN function to aggregate the weights
-#' @param scale_expression logical indicating whether gene expression should be scaled to the mean
 #' @return A matrix of inferred transcription factor (row) activities in single cells (columns)
 #' @export
 #' @import methods utils
@@ -132,6 +131,10 @@ calculateActivity <- function (expMatrix = NULL,
   }
   else{
     regulon <- regulon[which(regulon[,mode]!=0),]
+    if(nrow(regulon) == 0) {
+      warning("No non-zero weight in the regulon")
+      return(NULL)
+      }
   }
 
   # check that rownames match regulon
