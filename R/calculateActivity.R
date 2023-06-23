@@ -9,13 +9,15 @@
 #' @param normalize Logical indicating whether row means should be subtracted from expression matrix. default is FALSE
 #' @param mode String indicating the name of column to be used as the weights
 #' @param method String indicating the method for calculating activity. Available methods are `weightedMean` or `aucell`
-#' @param ncore Integer specifying the number of cores to be used in AUCell
 #' @param genesets A list of genesets. Each list element can be a dataframe with the first column indicating the genes and second column indicating the weights.
 #' Alternatively, each list element is a character vector corresponding to the genes in the geneset. A feature set collection in the form of CompressedSplitDataFrameList that
 #' contains genes in the first column and weights in the second column. See details
 #' @param clusters A vector indicating cluster assignment
 #' @param FUN function to aggregate the weights
-#' @param scale_expression logical indicating whether gene expression should be scaled to the mean
+#' @param ncore Integer specifying the number of cores to be used in AUCell
+#' @param BPPARAM A BiocParallelParam object specifying whether summation should be parallelized. Use BiocParallel::SerialParam() for
+#' serial evaluation and use BiocParallel::MulticoreParam() for parallel evaluation
+
 #' @return A matrix of inferred transcription factor (row) activities in single cells (columns)
 #' @export
 #' @import methods utils
@@ -96,15 +98,17 @@ calculateActivity <- function (expMatrix = NULL,
                                normalize = FALSE,
                                mode = "weight",
                                method = c("weightedmean","aucell"),
-                               ncore = 1,
                                genesets = NULL,
                                clusters = NULL,
                                FUN = c("mean", "sum"),
-                               scale_expression = FALSE) {
+                               scale_expression = FALSE,
+                               ncore = 1,
+                               BPPARAM = BiocParallel::SerialParam()) {
   method <- tolower(method)
   method <- match.arg(method)
   FUN <- match.arg(FUN)
 
+  regulon <- S4Vectors::DataFrame(regulon)
   # convert expMatrix to dgCMatrix
   if (checkmate::test_class(expMatrix,classes = "SummarizedExperiment")){
     expMatrix <- assay(expMatrix, exp_assay)
@@ -132,6 +136,10 @@ calculateActivity <- function (expMatrix = NULL,
   }
   else{
     regulon <- regulon[which(regulon[,mode]!=0),]
+    if(nrow(regulon) == 0) {
+      warning("No non-zero weight in the regulon")
+      return(NULL)
+    }
   }
 
   # check that rownames match regulon
@@ -236,8 +244,8 @@ calculateActivity <- function (expMatrix = NULL,
     message("ranking cells...")
     cells_rankings <- AUCell::AUCell_buildRankings(expMatrix,
                                                    splitByBlocks = TRUE,
-                                                   nCores = ncore,
-                                                   plotStats = FALSE)
+                                                   plotStats = FALSE,
+                                                   BPPARAM = BPPARAM )
     message("calculating AUC...")
     cells_AUC <- AUCell::AUCell_calcAUC(geneSets,
                                         rankings = cells_rankings,
