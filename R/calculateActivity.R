@@ -17,7 +17,6 @@
 #' @param ncore Integer specifying the number of cores to be used in AUCell
 #' @param BPPARAM A BiocParallelParam object specifying whether summation should be parallelized. Use BiocParallel::SerialParam() for
 #' serial evaluation and use BiocParallel::MulticoreParam() for parallel evaluation
-
 #' @return A matrix of inferred transcription factor (row) activities in single cells (columns)
 #' @export
 #' @import methods utils
@@ -145,7 +144,7 @@ calculateActivity <- function (expMatrix = NULL,
   # check that rownames match regulon
   fraction_genes <- length(which(regulon$target %in% rownames(expMatrix)))/ length(regulon$target)
   if (fraction_genes <  0.01) {
-    stop("Less than 1% of target genes in the regulon are found in expression matrix. Check rownames of gene expression matrix ")
+    warning("Less than 1% of target genes in the regulon are found in expression matrix. Check rownames of gene expression matrix ")
   }
 
 
