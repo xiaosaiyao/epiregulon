@@ -461,11 +461,12 @@ use_MI_method <- function(n,
 }
 
 MI_per_row <- function (tf_re, tg){
+  if(length(unique(tf_re))==1 | length(unique(tg))==1) return(0)
   y2d <- entropy::discretize2d(tf_re,
                                tg,
-                               numBins1=max(10, unique(tf_re)),
-                               numBins2=max(10, unique(tg)))
-  MI <- entropy::mi.empirical(y2d)
+                               numBins1=min(10, length(unique(tf_re))),
+                               numBins2=min(10, length(unique(tg))))
+  entropy::mi.empirical(y2d)
 }
 
 
