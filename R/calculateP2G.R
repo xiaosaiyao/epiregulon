@@ -18,6 +18,7 @@
 #' @param gene_symbol String indicating the column name in the rowData of expMatrix that corresponds to gene symbol
 #' @param clusters A vector corresponding to the cluster labels for calculation of correlations within each cluster. If left NULL, correlation is calculated across
 #' all clusters. See details for the use of clusters
+#' @param cor_method String indicating which correlation coefficient is to be computed. One of "pearson" (default), "kendall", or "spearman".
 #' @param ... other parameters to pass to addPeak2GeneLinks from ArchR package
 #'
 #' @return A DataFrame of Peak to Gene correlation
@@ -67,6 +68,7 @@ calculateP2G <- function(peakMatrix = NULL,
                          peak_assay = "counts",
                          gene_symbol = "name",
                          clusters = NULL,
+                         cor_method = c("pearson", "kendall", "spearman"),
                          ...) {
 
 
@@ -116,6 +118,8 @@ calculateP2G <- function(peakMatrix = NULL,
              !is.null(expMatrix) & !is.null(reducedDim)) {
 
     writeLines("Using epiregulon to compute peak to gene links...")
+
+    cor_method <- match.arg(cor_method)
 
     if (is.null(rowRanges(peakMatrix))) {
       stop("peakMatrix must contain rowRanges")
@@ -209,7 +213,8 @@ calculateP2G <- function(peakMatrix = NULL,
 
     o$Correlation[,"all"] <- mapply(stats::cor,
                                     as.data.frame(t(expCorMatrix)),
-                                    as.data.frame(t(peakCorMatrix)))
+                                    as.data.frame(t(peakCorMatrix)),
+                                    MoreArgs = list(method = cor_method))
 
     # compute correlation within each cluster
     if (!is.null(clusters)) {
