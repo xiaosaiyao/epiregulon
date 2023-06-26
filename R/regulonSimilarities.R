@@ -1,3 +1,7 @@
+#' Find interaction partners of a transcription factor of interest
+#' @param graph a igraph object from `buildGraph` or `buildDiffGraph`
+#' @param focal_tf character string indicating the name of the transcription factors to find
+#' interaction partners of
 #' @export
 #' @return A list with elements corresponding to each transcription factor apart from
 #' the focal one. Each list element is represented as a data frame with columns containing
@@ -43,6 +47,8 @@ findPartners <- function(graph, focal_tf){
   res_list
 }
 
+#' Calculate Jaccard Similarity betweeb regulons of all transcription factors
+#' @param graph a igraph object from `buildGraph` or `buildDiffGraph`
 #' @export
 #' @return A matrix with Jaccard similarity between all pairs of transcription factors.
 calculateJaccardSimilarity <- function(graph){
