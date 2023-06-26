@@ -338,6 +338,7 @@ enrichPlot_ <- function(results,
 #' @param results  Output from regulonEnrich
 #' @param top An integer to indicate the number of pathways to plot ranked by significance. Default is 15.
 #' @param ncol An integer to indciate the number of columns in the combined plot, if combine == TRUE. Default is 3.
+#' @param title String indicating the title of the combined plot
 #' @param combine logical to indicate whether to combine and visualize the plots in one panel
 #'
 #' @return A combined ggplot object or a list of ggplots if combine == FALSE
@@ -372,6 +373,7 @@ enrichPlot_ <- function(results,
 enrichPlot <- function(results,
                        top = 15,
                        ncol = 3,
+                       title = NULL,
                        combine = TRUE) {
 
   gs <- lapply(names(results), function(x) {
@@ -380,7 +382,9 @@ enrichPlot <- function(results,
 
   if (combine == TRUE) {
 
-    gs <- patchwork::wrap_plots(gs, ncol = ncol)
+    gs <- patchwork::wrap_plots(gs, ncol = ncol) +
+      patchwork::plot_annotation(title = title,
+                                 theme = theme(plot.title = element_text(hjust = 0.5)))
 
     return(gs)
 
@@ -478,6 +482,7 @@ plotHeatmapRegulon <- function(sce,
   targets <- regulon$target
 
   sce <- sce[targets, downsample_seq]
+
 
   right_annotation <- data.frame(tf=regulon$tf)
   top_annotation <- data.frame(colData(sce)[cell_attributes])

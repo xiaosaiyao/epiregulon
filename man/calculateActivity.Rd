@@ -11,11 +11,12 @@ calculateActivity(
   normalize = FALSE,
   mode = "weight",
   method = c("weightedmean", "aucell"),
-  ncore = 1,
   genesets = NULL,
   clusters = NULL,
   FUN = c("mean", "sum"),
-  scale_expression = FALSE
+  scale_expression = FALSE,
+  ncore = 1,
+  BPPARAM = BiocParallel::SerialParam()
 )
 }
 \arguments{
@@ -34,8 +35,6 @@ indicating degree of association between tf and target such as "mor" or "corr" o
 
 \item{method}{String indicating the method for calculating activity. Available methods are \code{weightedMean} or \code{aucell}}
 
-\item{ncore}{Integer specifying the number of cores to be used in AUCell}
-
 \item{genesets}{A list of genesets. Each list element can be a dataframe with the first column indicating the genes and second column indicating the weights.
 Alternatively, each list element is a character vector corresponding to the genes in the geneset. A feature set collection in the form of CompressedSplitDataFrameList that
 contains genes in the first column and weights in the second column. See details}
@@ -44,7 +43,12 @@ contains genes in the first column and weights in the second column. See details
 
 \item{FUN}{function to aggregate the weights}
 
-\item{scale_expression}{logical indicating whether gene expression should be scaled to the mean}
+\item{scale_expression}{logical to indicate whether gene expression should be normalized to the mean}
+
+\item{ncore}{Integer specifying the number of cores to be used in AUCell}
+
+\item{BPPARAM}{A BiocParallelParam object specifying whether summation should be parallelized. Use BiocParallel::SerialParam() for
+serial evaluation and use BiocParallel::MulticoreParam() for parallel evaluation}
 }
 \value{
 A matrix of inferred transcription factor (row) activities in single cells (columns)

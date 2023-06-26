@@ -4,7 +4,7 @@
 \alias{enrichPlot}
 \title{Plot results of regulonEnrich}
 \usage{
-enrichPlot(results, top = 15, ncol = 3, combine = TRUE)
+enrichPlot(results, top = 15, ncol = 3, title = NULL, combine = TRUE)
 }
 \arguments{
 \item{results}{Output from regulonEnrich}
@@ -12,6 +12,8 @@ enrichPlot(results, top = 15, ncol = 3, combine = TRUE)
 \item{top}{An integer to indicate the number of pathways to plot ranked by significance. Default is 15.}
 
 \item{ncol}{An integer to indciate the number of columns in the combined plot, if combine == TRUE. Default is 3.}
+
+\item{title}{String indicating the title of the combined plot}
 
 \item{combine}{logical to indicate whether to combine and visualize the plots in one panel}
 }

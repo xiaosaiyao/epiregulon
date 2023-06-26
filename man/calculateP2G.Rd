@@ -18,6 +18,7 @@ calculateP2G(
   peak_assay = "counts",
   gene_symbol = "name",
   clusters = NULL,
+  cor_method = c("pearson", "kendall", "spearman"),
   ...
 )
 }
@@ -52,6 +53,8 @@ Default correlation cutoff is 0.5.}
 
 \item{clusters}{A vector corresponding to the cluster labels for calculation of correlations within each cluster. If left NULL, correlation is calculated across
 all clusters. See details for the use of clusters}
+
+\item{cor_method}{String indicating which correlation coefficient is to be computed. One of "pearson" (default), "kendall", or "spearman".}
 
 \item{...}{other parameters to pass to addPeak2GeneLinks from ArchR package}
 }
