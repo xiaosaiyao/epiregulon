@@ -14,6 +14,7 @@
 #' contains genes in the first column and weights in the second column. See details
 #' @param clusters A vector indicating cluster assignment
 #' @param FUN function to aggregate the weights
+#' @param scale_expression logical to indicate whether gene expression should be normalized to the mean
 #' @param ncore Integer specifying the number of cores to be used in AUCell
 #' @param BPPARAM A BiocParallelParam object specifying whether summation should be parallelized. Use BiocParallel::SerialParam() for
 #' serial evaluation and use BiocParallel::MulticoreParam() for parallel evaluation
