@@ -136,10 +136,10 @@ calculateActivity <- function (expMatrix = NULL,
   }
   else{
     regulon <- regulon[which(regulon[,mode]!=0),]
-    if(nrow(regulon) == 0) {
-      warning("No non-zero weight in the regulon")
-      return(NULL)
-    }
+  }
+  if(nrow(regulon) == 0) {
+    warning("No non-zero weight in the regulon")
+    return(NULL)
   }
 
   # check that rownames match regulon
