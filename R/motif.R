@@ -5,6 +5,7 @@
 #' motif enrichment was already performed. If no motif enrichment has been performed, first annotate the ArchR using
 #' `addMotifAnnotations`. If no ArchR project is provided, the user can also provide peaks in the form of GRanges and
 #' this function will annotate the peaks with Cisbp
+#' @param ArchProj An ArchR project as an alternative to providing an ArchR path
 #' @param field_name Character string	indicating the column name of the regulon to add the motif information to
 #' @param motif_name Character string	indicating name of the peakAnnotation object (i.e. Motifs) to retrieve from the designated ArchRProject.
 #' @param peaks A GRanges object indicating the peaks to perform motif annotation on if ArchR project is not provided.
@@ -31,6 +32,7 @@
 
 addMotifScore <- function(regulon,
                           archr_path=NULL,
+                          ArchProj=NULL,
                           field_name="motif",
                           motif_name="Motif",
                           peaks=NULL,
@@ -42,10 +44,13 @@ addMotifScore <- function(regulon,
   species <- match.arg(species)
   genome <- match.arg(genome)
 
-  if (!is.null(archr_path) & is.null(peaks)) {
-    message("retrieving motif information from ArchR project")
+  if (!is.null(archr_path)){
     ArchProj <-
       ArchR::loadArchRProject(path = archr_path, showLogo = FALSE)
+  }
+
+  if (!is.null(ArchProj) & is.null(peaks)) {
+    message("retrieving motif information from ArchR project")
     matches <- ArchR::getMatches(ArchProj, name = motif_name)
     motifs <- assay(matches, "matches")
 
@@ -58,7 +63,7 @@ addMotifScore <- function(regulon,
 
 
 
-  } else if (is.null(archr_path) & !is.null(peaks)) {
+  } else if (is.null(ArchProj) & !is.null(peaks)) {
     message ("annotating peaks with motifs")
     BS.genome <- switch(genome,
                       hg38 = "BSgenome.Hsapiens.UCSC.hg38",

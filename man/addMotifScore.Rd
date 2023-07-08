@@ -7,6 +7,7 @@
 addMotifScore(
   regulon,
   archr_path = NULL,
+  ArchProj = NULL,
   field_name = "motif",
   motif_name = "Motif",
   peaks = NULL,
@@ -23,6 +24,8 @@ addMotifScore(
 motif enrichment was already performed. If no motif enrichment has been performed, first annotate the ArchR using
 \code{addMotifAnnotations}. If no ArchR project is provided, the user can also provide peaks in the form of GRanges and
 this function will annotate the peaks with Cisbp}
+
+\item{ArchProj}{An ArchR project as an alternative to providing an ArchR path}
 
 \item{field_name}{Character string    indicating the column name of the regulon to add the motif information to}
 
