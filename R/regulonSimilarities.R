@@ -57,3 +57,26 @@ calculateJaccardSimilarity <- function(graph){
   rownames(res) <- colnames(res) <- V(graph)[all_tfs]$name
   res
 }
+
+
+#' Calculate similarity score from permuted graphs to estimate background similarity
+#' @param graph an igraph object from `buildGraph` or `buildDiffGraph`
+#' @param focal_tf character string indicating the name of the transcription factors to
+#' calculate similarity score
+#' @param n an integer indicating the number of permutations
+#' @param p a scalar indicating the probability of rewiring the graphs
+#' @export A matrix with Jaccard similarity between the focal transcription factor and all pairs of transcription factors for n permuted graphs
+permuteGraph <- function(graph, focal_tf, n=100, p=1){
+
+  all_tfs <- names(V(graph)[V(graph)$type == "transcription factor"])
+  permute_matrix <- matrix(rep(NA, length(all_tfs)*n), nrow=length(all_tfs))
+  rownames(permute_matrix) <-  all_tfs
+
+  for ( iteration in seq_len(n)) {
+    diff_graph_permute <- rewire(graph, each_edge(prob = p))
+    similarity_score <- calculateJaccardSimilarity(diff_graph_permute)
+    permute_matrix[, iteration ] <- similarity_score[focal_tf, all_tfs]
+  }
+  permute_matrix
+
+}
