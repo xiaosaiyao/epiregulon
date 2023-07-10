@@ -44,6 +44,8 @@
 #' \code{rankTfs} assign ranks to transcription factors according to degree
 #' centrality of their vertices
 #'
+#' \code{permuteGraph} permute an igraph object by rewiring the edges
+#'
 #' @param regulon an object returned by the getRegulon or addWeights function
 #' @param mode a character specifying whch type of graph will be built. In \code{'tg'} mode
 #' a bipartite graph is built connecting transcription factors directly to the target genes
@@ -408,3 +410,5 @@ aggregate_regulon <- function(regulon, FUN, weights_col){
   aggregation_formula <- eval(parse(text=paste0(weights_col, "~", grouping_factors)))
   stats::aggregate(regulon, aggregation_formula, FUN)
 }
+
+
