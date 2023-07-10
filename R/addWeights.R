@@ -146,6 +146,11 @@ addWeights <- function(regulon,
   # remove tfs with less than min_targets
   regulon <- regulon[regulon$tf %in% names(which(table(regulon$tf) >= min_targets)),]
 
+  if(nrow(regulon) == 0){
+    warning("No transcription factor has required number of target genes")
+    return(NULL)
+  }
+
   # if a cluster is named "all", replace it to distinguish from all cells
   if (!is.null(clusters)){
     clusters[clusters == "all"] <- "clusters_all"
