@@ -130,7 +130,7 @@ addWeights <- function(regulon,
 
     } else {
       kclusters <- scran::clusterCells(
-        peakMatrix,
+        expMatrix,
         use.dimred = useDim,
         BLUSPARAM = bluster::KmeansParam(centers = trunc(ncol(peakMatrix) / cellNum), iter.max = 5000)
       )
@@ -156,8 +156,7 @@ addWeights <- function(regulon,
       statistics = "sum",
       use.assay.type = peak_assay
     )
-
-    clusters <- colData(expMatrix)[, "cluster_for_pseudobulk"]
+    if(!is.null(clusters)) clusters <- colData(expMatrix)[, "cluster_for_pseudobulk"]
   }
 
 
