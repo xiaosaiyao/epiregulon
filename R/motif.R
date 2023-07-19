@@ -70,6 +70,7 @@ addMotifScore <- function(regulon,
                       hg19 = "BSgenome.Hsapiens.UCSC.hg19",
                       mm10 = "BSgenome.Mmusculus.UCSC.mm10")
 
+    peaks <- GenomeInfoDb::keepStandardChromosomes(peaks, pruning.mode = "coarse")
     motifs <- annotateMotif(species, peaks, BS.genome, pwms, ...)
     motifs <- assay(motifs,"motifMatches")
 
