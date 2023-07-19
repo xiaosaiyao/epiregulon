@@ -15,7 +15,8 @@ plotActivityViolin(
   colors = NULL,
   title = NULL,
   text_size = 10,
-  facet_grid_variable = NULL
+  facet_grid_variable = NULL,
+  boxplot = FALSE
 )
 }
 \arguments{
