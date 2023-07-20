@@ -22,7 +22,10 @@
 #' to be retained in the pruned regulon.
 #' @param p_adj A logical indicating whether p adjustment should be performed
 #' @param prune_value String indicating whether to filter regulon based on `pval` or `padj`.
-#' @param aggregate logical to specify whether regulatory elements are aggregated across the same TF-target pairs
+#' @param aggregateCells A logical to indicate whether to aggregate cells into groups determined by cellNum. Use
+#' option to overcome data sparsity if needed
+#' @param useDim String indicating the name of the dimensionality reduction matrix in expMatrix used for cell aggregation
+#' @param cellNum An integer specifying the number of cells per cluster for cell aggregation. Default is 10.
 #' @param BPPARAM A BiocParallelParam object specifying whether calculation should be parallelized.
 #' Default is set to BiocParallel::MulticoreParam()
 #
@@ -82,10 +85,17 @@
 #'                      target = c(paste0("Gene_", sample(3:2000,10)),
 #'                                 paste0("Gene_",sample(3:2000,10))))
 #'
-#  # prune regulon
+#' # prune regulon
 #' pruned.regulon <- pruneRegulon(expMatrix = gene_sce,
 #' exp_assay = "logcounts", peakMatrix = peak_sce, peak_assay = "counts",
-#' regulon = regulon, clusters = gene_sce$Treatment, aggregate = FALSE, regulon_cutoff = 0.5)
+#' regulon = regulon, clusters = gene_sce$Treatment, regulon_cutoff = 0.5)
+#'
+#' # add weights with cell aggregation
+#' gene_sce <- scater::runPCA(gene_sce)
+#' pruned.regulon <- pruneRegulon(expMatrix = gene_sce, exp_assay = "logcounts",
+#' peakMatrix = peak_sce, peak_assay = "counts", regulon = regulon,
+#' clusters = gene_sce$Treatment, regulon_cutoff = 0.5,
+#' aggregateCells=TRUE, cellNum=3, useDim = "PCA")
 #'
 #' @author Xiaosai Yao, Tomasz Wlodarczyk
 
@@ -101,12 +111,77 @@ pruneRegulon <- function(regulon,
                          regulon_cutoff = 0.05,
                          p_adj = TRUE,
                          prune_value = "pval",
-                         aggregate = FALSE,
+                         aggregateCells = FALSE,
+                         useDim = "IterativeLSI_ATAC",
+                         cellNum = 10,
                          BPPARAM = BiocParallel::SerialParam(progressbar = TRUE)){
 
   # choose test method
   test <- match.arg(test)
   message("pruning network with ", test, " tests using a regulon cutoff of ", prune_value, "<", regulon_cutoff)
+
+  # pseudobulk
+  if (aggregateCells) {
+    message("performing pseudobulk using an average of ", cellNum, " cells")
+    barcodes <- list()
+    kclusters <- list()
+
+
+    if (!is.null(clusters)) {
+
+      #add cluster info to expMatrix
+      colData(expMatrix)[, "cluster_for_pseudobulk"] <- clusters
+
+      # K-means clustering
+      kclusters <- list()
+      for (cluster in unique(clusters)) {
+        sce <- expMatrix[, which(clusters == cluster)]
+        kNum <- trunc(ncol(sce) / cellNum)
+        kclusters[[cluster]] <- scran::clusterCells(
+          sce,
+          use.dimred = useDim,
+          BLUSPARAM = bluster::KmeansParam(centers = kNum, iter.max = 5000)
+        )
+        barcodes[[cluster]] <- names(kclusters[[cluster]])
+        kclusters[[cluster]] <- paste(cluster, kclusters[[cluster]], sep = "_")
+      }
+      kclusters <- unlist(kclusters)
+      barcodes <- unlist(barcodes)
+      names(kclusters) <- barcodes
+
+
+    } else {
+      kclusters <- scran::clusterCells(
+        expMatrix,
+        use.dimred = useDim,
+        BLUSPARAM = bluster::KmeansParam(centers = trunc(ncol(peakMatrix) / cellNum), iter.max = 5000)
+      )
+    }
+
+    kclusters <- kclusters[colnames(expMatrix)]
+
+    #replace clusters with clusters of pseudobulked samples
+
+
+    expMatrix <- applySCE(
+      expMatrix,
+      scuttle::aggregateAcrossCells,
+      WHICH = NULL,
+      ids = kclusters,
+      statistics = "sum",
+      use.assay.type = exp_assay
+    )
+
+    peakMatrix <- applySCE(
+      peakMatrix,
+      scuttle::aggregateAcrossCells,
+      WHICH = NULL,
+      ids = kclusters,
+      statistics = "sum",
+      use.assay.type = peak_assay
+    )
+    if(!is.null(clusters)) clusters <- colData(expMatrix)[, "cluster_for_pseudobulk"]
+  }
 
 
   # extracting assays from SE
@@ -120,6 +195,9 @@ pruneRegulon <- function(regulon,
 
   expMatrix <- as(expMatrix, "dgCMatrix")
   peakMatrix <- as(peakMatrix, "dgCMatrix")
+
+
+
   if(!is.null(peak_cutoff)){
     prop = sum(peakMatrix>peak_cutoff)/prod(dim(peakMatrix))
     if(prop < 0.0001| prop > 0.9999) warning(sprintf("Strong inbalance between groups after applying cutoff to peakMatrix. Consider %s value of the peak_cutoff",

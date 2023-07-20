@@ -19,7 +19,7 @@ addWeights(
   min_targets = 10,
   tf_re.merge = FALSE,
   aggregateCells = FALSE,
-  useDim = "UMAP_ATAC",
+  useDim = "IterativeLSI_ATAC",
   cellNum = 10,
   BPPARAM = BiocParallel::SerialParam(progressbar = TRUE)
 )
@@ -55,8 +55,8 @@ many regulatory elements.}
 
 \item{tf_re.merge}{A logical to indicate whether to consider both TF expression and chromatin accessibility. See details.}
 
-\item{aggregateCells}{A logical to indicate whether to aggregate cells into groups determined by cellNum. It is recommended to
-turn on this option to overcome data sparsity when using \code{wilcoxon} and \code{logFC}}
+\item{aggregateCells}{A logical to indicate whether to aggregate cells into groups determined by cellNum. This option can be used to
+overcome data sparsity when using \code{wilcoxon} and \code{logFC}}
 
 \item{useDim}{String indicating the name of the dimensionality reduction matrix in expMatrix used for cell aggregation}
 
@@ -113,6 +113,13 @@ regulon <- DataFrame(tf=c(rep("Gene_0001",5), rep("Gene_0002",10)),
 regulon.w <- addWeights(regulon=regulon, expMatrix=expMatrix, exp_assay="logcounts",
 peakMatrix=peakMatrix, peak_assay="counts", clusters=expMatrix$cluster,
 min_targets=5, method="logFC")
+
+# add weights with cell aggregation
+expMatrix <- scater::runPCA(expMatrix)
+regulon.w <- addWeights(regulon=regulon, expMatrix=expMatrix, exp_assay="logcounts",
+peakMatrix=peakMatrix, peak_assay="counts", clusters=expMatrix$cluster,
+min_targets=5, method="logFC", aggregateCells=TRUE, cellNum=3, useDim = "PCA")
+
 }
 \author{
 Xiaosai Yao, Shang-yang Chen, Tomasz Wlodarczyk

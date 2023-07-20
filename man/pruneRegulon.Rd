@@ -17,7 +17,9 @@ pruneRegulon(
   regulon_cutoff = 0.05,
   p_adj = TRUE,
   prune_value = "pval",
-  aggregate = FALSE,
+  aggregateCells = FALSE,
+  useDim = "IterativeLSI_ATAC",
+  cellNum = 10,
   BPPARAM = BiocParallel::SerialParam(progressbar = TRUE)
 )
 }
@@ -56,7 +58,12 @@ to be retained in the pruned regulon.}
 
 \item{prune_value}{String indicating whether to filter regulon based on \code{pval} or \code{padj}.}
 
-\item{aggregate}{logical to specify whether regulatory elements are aggregated across the same TF-target pairs}
+\item{aggregateCells}{A logical to indicate whether to aggregate cells into groups determined by cellNum. Use
+option to overcome data sparsity if needed}
+
+\item{useDim}{String indicating the name of the dimensionality reduction matrix in expMatrix used for cell aggregation}
+
+\item{cellNum}{An integer specifying the number of cells per cluster for cell aggregation. Default is 10.}
 
 \item{BPPARAM}{A BiocParallelParam object specifying whether calculation should be parallelized.
 Default is set to BiocParallel::MulticoreParam()}
@@ -116,9 +123,17 @@ regulon <- data.frame(tf = c(rep("Gene_1",10), rep("Gene_2",10)),
                      target = c(paste0("Gene_", sample(3:2000,10)),
                                 paste0("Gene_",sample(3:2000,10))))
 
+# prune regulon
 pruned.regulon <- pruneRegulon(expMatrix = gene_sce,
 exp_assay = "logcounts", peakMatrix = peak_sce, peak_assay = "counts",
-regulon = regulon, clusters = gene_sce$Treatment, aggregate = FALSE, regulon_cutoff = 0.5)
+regulon = regulon, clusters = gene_sce$Treatment, regulon_cutoff = 0.5)
+
+# add weights with cell aggregation
+gene_sce <- scater::runPCA(gene_sce)
+pruned.regulon <- pruneRegulon(expMatrix = gene_sce, exp_assay = "logcounts",
+peakMatrix = peak_sce, peak_assay = "counts", regulon = regulon,
+clusters = gene_sce$Treatment, regulon_cutoff = 0.5,
+aggregateCells=TRUE, cellNum=3, useDim = "PCA")
 
 }
 \author{

@@ -17,8 +17,8 @@
 #' many regulatory elements.
 #' @param min_targets Integer specifying the minimum number of targets for each tf in the regulon with 10 targets as the default
 #' @param tf_re.merge A logical to indicate whether to consider both TF expression and chromatin accessibility. See details.
-#' @param aggregateCells A logical to indicate whether to aggregate cells into groups determined by cellNum. It is recommended to
-#' turn on this option to overcome data sparsity when using `wilcoxon` and `logFC`
+#' @param aggregateCells A logical to indicate whether to aggregate cells into groups determined by cellNum. This option can be used to
+#' overcome data sparsity when using `wilcoxon` and `logFC`
 #' @param useDim String indicating the name of the dimensionality reduction matrix in expMatrix used for cell aggregation
 #' @param cellNum An integer specifying the number of cells per cluster for cell aggregation. Default is 10.
 #' @param BPPARAM A BiocParallelParam object specifying whether summation should be parallelized. Use BiocParallel::SerialParam() for
@@ -72,8 +72,13 @@
 #' regulon.w <- addWeights(regulon=regulon, expMatrix=expMatrix, exp_assay="logcounts",
 #' peakMatrix=peakMatrix, peak_assay="counts", clusters=expMatrix$cluster,
 #' min_targets=5, method="logFC")
-#
-
+#'
+#' # add weights with cell aggregation
+#' expMatrix <- scater::runPCA(expMatrix)
+#' regulon.w <- addWeights(regulon=regulon, expMatrix=expMatrix, exp_assay="logcounts",
+#' peakMatrix=peakMatrix, peak_assay="counts", clusters=expMatrix$cluster,
+#' min_targets=5, method="logFC", aggregateCells=TRUE, cellNum=3, useDim = "PCA")
+#'
 #' @author Xiaosai Yao, Shang-yang Chen, Tomasz Wlodarczyk
 
 
@@ -91,7 +96,7 @@ addWeights <- function(regulon,
                        min_targets = 10,
                        tf_re.merge = FALSE,
                        aggregateCells = FALSE,
-                       useDim = "UMAP_ATAC",
+                       useDim = "IterativeLSI_ATAC",
                        cellNum = 10,
                        BPPARAM = BiocParallel::SerialParam(progressbar = TRUE)) {
   # choose method
@@ -144,6 +149,7 @@ addWeights <- function(regulon,
     expMatrix <- applySCE(
       expMatrix,
       scuttle::aggregateAcrossCells,
+      WHICH = NULL,
       ids = kclusters,
       statistics = "sum",
       use.assay.type = exp_assay
@@ -152,6 +158,7 @@ addWeights <- function(regulon,
     peakMatrix <- applySCE(
       peakMatrix,
       scuttle::aggregateAcrossCells,
+      WHICH = NULL,
       ids = kclusters,
       statistics = "sum",
       use.assay.type = peak_assay
