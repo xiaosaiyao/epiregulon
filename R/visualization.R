@@ -163,6 +163,7 @@ plotActivityViolin_ <- function(activity_matrix,
 #' @param title String indicating the title of the plot if `combine = TRUE`
 #' @param text_size Scalar indicating the font size of the title
 #' @param facet_grid_variable  A character vector of a secondary label to split the plots by facet_grid
+#' @param boxplot logical indicating whether to add boxplot on top of violin plot
 #'
 #' @return A combined ggplot object or a list of ggplots if `combine = FALSE`
 #' @export
