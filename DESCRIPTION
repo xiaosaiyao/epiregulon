@@ -46,7 +46,9 @@ Imports:
     scran,
     scuttle,
     stats,
-    utils
+    utils,
+    MultiAssayExperiment,
+    rhdf5
 Depends: 
     R (>= 4.2.0),
     SingleCellExperiment
