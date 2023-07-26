@@ -1,0 +1,455 @@
+---
+title: "Hematopoeisis tutorial - MAE"
+author: "Xiaosai Yao"
+email: "yao.xiaosai@gene.com"
+output:
+  BiocStyle::pdf_document:
+    toc: true
+    number_section: true
+    self_contained: true
+    titlecaps: true
+package: "epiregulon"
+vignette: >
+  %\VignetteIndexEntry{Hematopoeisis tutorial - MAE}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE,
+                      eval = FALSE)
+```
+
+
+# Introduction
+
+In this vignette, we used a dataset from the ArchR [tutorial](https://www.archrproject.com/bookdown/index.html). Prior to using epiregulon, this dataset has been fully preprocessed in ArchR, and converted to a `MultiAssayExperiment` using `epireglon::archr2MAE`. The MAE object was uploaded to `scMultiome` for full reproducibility. In this dataset, scRNAseq and scATACseq were unpaired and integrated by the `ArchR::addGeneIntegrationMatrix` function. 
+
+
+# Installation
+
+Epiregulon is currently available on R/dev
+
+```{r, message=FALSE}
+#library(epiregulon)
+devtools::load_all("/gstore/project/lineage/xiaosai/epiregulon")
+```
+
+If you would like to install from gitlab, 
+
+```{r, message=FALSE, eval=FALSE}
+devtools::install_github(repo='xiaosaiyao/epiregulon')
+library(epiregulon)
+```
+
+# Data preparation
+
+Download the example dataset from `r Biocpkg("scMultiome")` package
+
+```{r}
+mae <- scMultiome::hematopoiesis()
+
+# Load peak matrix
+PeakMatrix <- mae[["PeakMatrix"]]
+
+# Load expression matrix
+GeneExpressionMatrix <- mae[["GeneIntegrationMatrix"]]
+
+# Add gene symbols to rownames
+rownames(GeneExpressionMatrix) <- rowData(GeneExpressionMatrix)$name
+
+# Transfer dimensionality reduction matrix to GeneExpression
+reducedDim(GeneExpressionMatrix, "IterativeLSI") <- 
+  reducedDim(mae[['TileMatrix500']], "IterativeLSI")
+reducedDim(GeneExpressionMatrix, "UMAP") <- 
+  reducedDim(mae[['TileMatrix500']], "UMAP")
+
+```
+
+
+Visualize the data
+```{r}
+
+scater::plotReducedDim(GeneExpressionMatrix, 
+                       dimred = "UMAP", 
+                       text_by = "Clusters2", 
+                       colour_by = "Clusters2",
+                       point_size = 0.3,
+                       point_alpha = 0.3)
+
+```
+
+# Quick start
+
+## Retrieve bulk TF ChIP-seq binding sites 
+
+First, we retrieve the information of TF binding sites collected from Cistrome and ENCODE ChIP-seq. Currently, human genomes hg19 and hg38 and mouse genome mm10 are available
+```{r}
+grl <- getTFMotifInfo(genome = "hg19")
+head(grl)
+
+```
+
+## Link ATACseq peaks to target genes
+
+Next, we compute peak to gene correlations using a custom algorithm that has similar performance to ArchR's P2G function. Wherever possible, use a multidimensional dimensionality reduction matrix such as LSI or PCA instead of UMAP or TSNE since the former provides a more accurate estimate of cell similarity.
+
+```{r}
+
+set.seed(1010)
+p2g <- calculateP2G(peakMatrix = PeakMatrix, 
+                    expMatrix = GeneExpressionMatrix, 
+                    exp_assay = "counts",
+                    reducedDim = reducedDim(GeneExpressionMatrix, "IterativeLSI"))
+
+p2g
+```
+
+## Add TF motif binding to peaks
+
+The next step is to add the TF motif binding information by overlapping the regions of the peak matrix with the bulk chip-seq database.
+```{r}
+overlap <- addTFMotifInfo(grl = grl, p2g = p2g, peakMatrix = PeakMatrix)
+head(overlap)
+```
+
+## Generate regulons
+
+A long format dataframe, representing the inferred regulons, is then generated. The dataframe consists of three columns:
+
+* tf (transcription factor)
+* target gene
+* peak to gene correlation between tf and target gene
+
+```{r}
+regulon <- getRegulon(p2g, overlap, aggregate=FALSE)
+head(regulon)
+```
+
+## Prune network
+
+Epiregulon prunes the network by performing tests of independence on the observed number of cells jointly expressing transcription factor (TF), regulatory element (RE) and target gene (TG) vs the expected number of cells if TF/RE and TG are independently expressed. We implement two tests, the binomial test and the chi-square test. In the binomial test, the expected probability is P(TF, RE) * P(TG), and the number of trials is the total number of cells, and the observed successes is the number of cells jointly expressing all three elements. In the chi-square test, the expected probability for having all 3 elements active is also P(TF, RE) * P(TG) and the probability otherwise is 1- P(TF, RE) * P(TG). The observed cell count for the active category is the number of cells jointly expressing all three elements, and the cell count for the inactive category is n - n_triple.
+
+
+We calculate cluster-specific p-values if users supply cluster labels. This is useful if we are interested in cluster-specific networks. The pruned regulons can then be used to visualize differential networks for transcription factors of interest. See section on differential networks.
+
+
+```{r}
+
+pruned.regulon <- pruneRegulon(expMatrix = GeneExpressionMatrix,
+                               exp_assay = "counts",
+                               peakMatrix = PeakMatrix,
+                               peak_assay = "counts",
+                               regulon = regulon,
+                               prune_value = "pval",
+                               regulon_cutoff = 0.05,
+                               clusters = GeneExpressionMatrix$Clusters2,
+                               exp_cutoff = NULL)
+
+```
+
+
+## Add Weights
+
+While the `pruneRegulon' function provides statistics on the joint occurrence of TF-RE-TG, we would like to further estimate the strength of regulation. Biologically, this can be interpreted as the magnitude of gene expression changes induced by transcription factor activity. Epiregulon estimates the regulatory potential using one of the four measures: 1) correlation between TF and target gene expression, 2) mutual information between the TF and target gene expression, 3) Wilcoxon test statistics of target gene expression in cells jointly expressing all 3 elements vs cells that do not, or 4) log 2 fold difference of target gene expression in cells jointly expressing all 3 elements vs cells that do not. 
+
+Three measures (correlation, Wilcoxon statistics and log 2 fold difference) give both the magnitude and directionality of changes whereas mutational information is always positive. The correlation and mutual information statistics are computed on grouped pseudobulks by user-supplied cluster labels and yield a single weight across all clusters per each TF-RE-target triplet. In contrast, Wilcoxon and log fold change methods group cells based on the joint expression of TF, RE and TG in each single cell or in cell aggregates. Cell aggregation uses a default value of 10 cells and can help overcome sparsity and speed up computation. If cluster labels are provided, we can obtain weights of individual clusters and all cells combined. In this example, we apply Wilcoxon test on cell aggregates of 10 cells.  
+ 
+```{r}
+
+regulon.w <- addWeights(regulon = pruned.regulon,
+                        expMatrix  = GeneExpressionMatrix,
+                        exp_assay  = "counts",
+                        peakMatrix = PeakMatrix,
+                        peak_assay = "counts",
+                        clusters = GeneExpressionMatrix$Clusters2,
+                        aggregateCells = TRUE,
+                        method = "wilcox",
+                        useDim = "IterativeLSI")
+
+regulon.w
+
+saveRDS(regulon, "/gstore/project/lineage/manuscript/epiregulon/OUTPUT/regulon.rds")
+saveRDS(regulon.w, "/gstore/project/lineage/manuscript/epiregulon/OUTPUT/regulon.w.rds")
+
+```
+
+
+## Calculate TF activity 
+
+Finally, the activities for a specific TF in each cell are computed by averaging the weighted expressions of target genes linked to the TF weighted. 
+$$y=\frac{1}{n}\sum_{i=1}^{n} x_i * weight_i$$
+where $y$ is the activity of a TF for a cell
+$n$ is the total number of targets for a TF
+$x_i$ is the log count expression of target i where i in {1,2,...,n}
+$weight_i$ is the weight of TF and target i
+
+```{r}
+score.combine <- calculateActivity(expMatrix = GeneExpressionMatrix, 
+                                   regulon = regulon.w, 
+                                   mode = "weight", 
+                                   method = "weightedMean", 
+                                   exp_assay = "counts")
+head(score.combine[1:5,1:5])
+```
+
+## Differential TF activity test
+
+We can next determine which TFs exhibit differential activities across cell clusters/groups via the `findDifferentialActivity` function. This function depends on `findMarkers` function from `r Biocpkg("scran")` package. 
+
+```{r}
+markers  <- findDifferentialActivity(activity_matrix = score.combine, 
+                                    groups = GeneExpressionMatrix$Clusters2, 
+                                    pval.type = "some", 
+                                    direction = "up", 
+                                    test.type = "t")
+```
+
+getSigGenes compiles the different test results into a single dataframe and enables user to supply their desired cutoffs for significance and variable to order by.
+
+```{r}
+markers.sig <- getSigGenes(markers, topgenes = 3 )
+
+```
+## Visualizing TF activities
+
+Epiregulon also provides multiple options for visualizing the inferred TF activities by reduced dimensional space
+
+tSNE or UMAP plots:
+```{r}
+
+tfs_interest <- c("EBF1","GATA3", "SPI1", "GATA2")
+plotActivityDim(sce = GeneExpressionMatrix, 
+                activity_matrix = score.combine[tfs_interest,], 
+                tf = tfs_interest, 
+                dimtype = "UMAP",
+                nrow=2,
+                ncol=2,
+                point_size=0.1,
+                rasterise = TRUE)
+```
+We can compare the activity with gene expression of the same TFs.
+
+```{r}
+
+#options(ggrastr.default.dpi=300)
+plotActivityDim(sce = GeneExpressionMatrix, 
+                activity_matrix = counts(GeneExpressionMatrix)[tfs_interest,], 
+                tf = tfs_interest, 
+                dimtype = "UMAP",
+                nrow=2,
+                ncol=2,
+                legend.label = "Gex",
+                colors = c("grey","blue"),
+                #limit = c(0,2),
+                point_size=0.1,
+                rasterise = TRUE)
+```
+
+
+We can also plot violin plot to visualize TF activity.
+```{r}
+plotActivityViolin(activity_matrix = score.combine, 
+                   tf = tfs_interest, 
+                   clusters = GeneExpressionMatrix$Clusters2,
+                   nrow=2,
+                   ncol=2)
+```
+We plot violin plot to visualize TF gene expression.
+
+```{r}
+plotActivityViolin(activity_matrix = counts(GeneExpressionMatrix)[tfs_interest,], 
+                   tf = tfs_interest, 
+                   clusters = GeneExpressionMatrix$Clusters2,
+                   nrow=2,
+                   ncol=2,
+                   legend.label = "gene expression")
+```
+
+We can visualize the different TFs in a bubble plot:
+```{r}
+plotBubble(activity_matrix = score.combine, 
+           tf = tfs_interest, 
+           GeneExpressionMatrix$Clusters2, 
+           bubblesize = "FDR")
+```
+
+We visualize the top differential TFs based on activity.
+
+```{r,fig.height=9}
+plotBubble(activity_matrix = score.combine, 
+           tf = markers.sig$tf, 
+           GeneExpressionMatrix$Clusters2, 
+           bubblesize = "FDR")
+```
+
+
+## Geneset enrichment
+
+Sometimes we are interested to know what pathways are enriched in the regulon of a particular TF. We can perform geneset enrichment using the enricher function from [clusterProfiler](http://yulab-smu.top/biomedical-knowledge-mining-book/universal-api.html).
+
+Here we first download Hallmark and C2 signatures from hallmark and then perform gene set enrichment of the known lineage factors. As expected, EBF1 is consistent with a B cell lineage factor, GATA3 and RUNX3 with lymphoid lineage and SPI1 with myeloid lineage.
+
+```{r enrichment, fig.width=12}
+#retrieve genesets
+H <- EnrichmentBrowser::getGenesets(org = "hsa", 
+                                    db = "msigdb", 
+                                    cat = "H", 
+                                    gene.id.type = "SYMBOL" )
+C2 <- EnrichmentBrowser::getGenesets(org = "hsa", 
+                                     db = "msigdb", 
+                                     cat = "C2",
+                                     gene.id.type = "SYMBOL" )
+
+
+#combine genesets and convert genesets to be compatible with enricher
+gs <- c(H, C2)
+gs.list <- do.call(rbind,lapply(names(gs), function(x) 
+  {data.frame(gs=x, genes=gs[[x]])}))
+
+enrichresults <- regulonEnrich(TF = tfs_interest, 
+                               regulon = regulon.w, 
+                               weight = "weight",
+                               weight_cutoff = 0, 
+                               genesets = gs.list)
+
+#plot results
+enrichPlot(results = enrichresults, ncol=2)
+```
+# Differential Network analysis
+
+In addition to looking at the summed TF activity, a second approach to investigate differential TF activity is to compare and contrast target genes or network topology. In this example, we know that EBF1 is a B cell lineage factor. If we plot the differential network of EBF1 using the regulon with cluster-specific weights, we can see that EBF1 has many more targets in PreB cells than it has in CD4 memory cells. 
+
+```{r differential networks}
+
+plotDiffNetwork(regulon.w,
+                cutoff = 0,
+                tf = c("EBF1"),
+                weight = "weight",
+                clusters = c("PreB","CD4.M"),
+                layout = "stress")
+
+```
+Sometimes, we are interested to identify interaction partners of the TFs of interest. This can be achieved by comparing the overlap of the targets genes for all the TFs and identify the most similar TFs by Jaccard similarity. To illustrate this function, we take a look at the top most similar 20 TFs to EBF1, and we successfully identify PAX5 as the most similar TF. Both PAX5 and EBF1 are important factors for B cell development (https://www.nature.com/articles/ni.2641).
+
+```{r}
+# construct a graph of the preB cells
+preB_network <- buildGraph(regulon.w, weights = "weight", cluster="PreB")
+
+# compute a similarity matrix of all TFs
+similarity_score <- calculateJaccardSimilarity(preB_network)
+
+# Focus on EBF1
+similarity_score_EBF1 <- similarity_score[, "EBF1"]
+similarity_df <- data.frame(similarity = head(sort(similarity_score_EBF1, 
+                                                   decreasing = TRUE),20),
+                            TF = names(head(sort(similarity_score_EBF1,
+                                                 decreasing = TRUE),20)))
+
+similarity_df$TF <- factor(similarity_df$TF, levels = rev(unique(similarity_df$TF)))
+
+# plot top TFs most similar to EBF1
+topTFplot <- ggplot(similarity_df, aes(x=TF, y=similarity)) +
+  geom_bar(stat="identity") +
+  coord_flip() +
+  ggtitle("EBF1 similarity") +
+  theme_classic()
+
+print(topTFplot)
+
+```
+
+
+In order to convince ourselves that our differential network is statistically significant, we permute the edges and obtain a background graph from averaging many iterations. Here, we plot the differential network graph subtracted by permuted graphs. 
+```{r}
+
+# create a permuted graph by rewiring the edges 100 times
+permute_matrix <- permuteGraph(preB_network, "EBF1", 100, p=1)
+permute_matrix <- permute_matrix[names(similarity_score_EBF1),]
+diff_matrix <- similarity_score_EBF1-rowMeans(permute_matrix)
+
+diff_matrix_df <- data.frame(similarity = head(sort(diff_matrix, 
+                                                    decreasing = TRUE),20),
+                            TF = names(head(sort(diff_matrix,
+                                                 decreasing = TRUE),20)))
+
+diff_matrix_df$TF <- factor(diff_matrix_df$TF, levels = rev(unique(diff_matrix_df$TF)))
+
+# plot top TFs most similar to EBF1
+topTFplot <- ggplot(diff_matrix_df, aes(x=TF, y=similarity)) +
+            geom_bar(stat="identity") +
+            coord_flip() +
+            ggtitle("background subtracted EBF1 similarity ") +
+            theme_classic()
+print(topTFplot)
+
+# obtain empirical p-values
+p_matrix <- rowMeans(apply(permute_matrix, 2, function(x) {x > similarity_score_EBF1}))
+p_matrix[names(head(sort(diff_matrix,decreasing = TRUE),20))]
+```
+
+
+Next, we are interested to compare the networks of two cell types, in this case, CD4 memory cells (CD4.M) vs Monocytes (mono) cells. We build an edge subtracted graph and then calculate the degree centrality of the subtracted graph. We normalize centrality using the default square root function. The top 5 most positive TFs represent lineage factors more active in NK cells whereas the bottom 5 TFs present lineage factors enriched in CD4. We successfully identified the myeloid factor SPI1 to be associated with monocytes and Th1 factor TBX21 to be associated with CD4 cells.
+
+```{r}
+# construct a graph of the CD4.M and NK cells respectively
+CD4.M_network <- buildGraph(regulon.w, weights = "weight", cluster="CD4.M")
+Mono_network <- buildGraph(regulon.w, weights = "weight", cluster="Mono")
+
+# construct a difference graph
+diff_graph <- buildDiffGraph( Mono_network,CD4.M_network, abs_diff = FALSE)
+diff_graph <- addCentrality(diff_graph)
+diff_graph <- normalizeCentrality(diff_graph)
+rank_table <- rankTfs(diff_graph)
+
+library(ggplot2)
+ggplot(rank_table, aes(x = rank, y = centrality)) +
+    geom_point() +
+    ggrepel::geom_text_repel(data = rbind(head(rank_table, 5), 
+                                          tail(rank_table,5)), 
+                             aes(label = tf), 
+                             nudge_x = 0, nudge_y = 0, box.padding = 0.5) +
+    theme_classic() + ggtitle ("differential TFs (Mono-CD4.M) ranked by degree centrality")
+
+```
+
+
+We can further explore interacting factors with the myeloid factor SPI1 using the same Jaccard similarity approach. We found CEBPA as the most similar TF as SPI1. SPI1 and CEBPA are known to be important for differentiation into myeloid cells (https://www.cell.com/cell-reports/pdfExtended/S2211-1247(18)30745-9).
+```{r}
+
+diff_graph_filter <- subgraph.edges(diff_graph, 
+                                    E(diff_graph)[E(diff_graph)$weight>0], 
+                                    del=T)
+
+
+# compute a similarity matrix of all TFs
+similarity_score <- calculateJaccardSimilarity(diff_graph_filter)
+
+# Focus on SPI1
+similarity_score_SPI1 <- similarity_score[, "SPI1"]
+similarity_df <- data.frame(similarity = head(sort(similarity_score_SPI1, 
+                                                   decreasing = TRUE),20),
+                            TF = names(head(sort(similarity_score_SPI1,
+                                                 decreasing = TRUE),20)))
+
+similarity_df$TF <- factor(similarity_df$TF, 
+                           levels = rev(unique(similarity_df$TF)))
+
+# plot top TFs most similar to SPI1
+topTFplot <- ggplot(similarity_df, aes(x=TF, y=similarity)) +
+  geom_bar(stat="identity") +
+  coord_flip() +
+  ggtitle("SPI1 similarity") +
+  theme_classic()
+
+print(topTFplot)
+
+
+
+```
+# Session Info
+
+```{r}
+sessionInfo()
+```
+
