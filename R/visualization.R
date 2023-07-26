@@ -109,7 +109,8 @@ plotActivityViolin_ <- function(activity_matrix,
                                 legend.label,
                                 colors,
                                 text_size,
-                                facet_grid_variable){
+                                facet_grid_variable,
+                                boxplot){
 
   tf.activity <- as.numeric(activity_matrix[tf,])
 
@@ -138,7 +139,13 @@ plotActivityViolin_ <- function(activity_matrix,
   if (!is.null(facet_grid_variable)){
     g <- g +  facet_grid(stats::reformulate("facet","."), scales = "free", space = "free")
   }
+
+  if (boxplot){
+    g <- g + geom_boxplot(width=0.1)
+  }
   g <- g +   theme(text = element_text(size = text_size))
+
+
   return(g)
 
 }
@@ -156,6 +163,7 @@ plotActivityViolin_ <- function(activity_matrix,
 #' @param title String indicating the title of the plot if `combine = TRUE`
 #' @param text_size Scalar indicating the font size of the title
 #' @param facet_grid_variable  A character vector of a secondary label to split the plots by facet_grid
+#' @param boxplot logical indicating whether to add boxplot on top of violin plot
 #'
 #' @return A combined ggplot object or a list of ggplots if `combine = FALSE`
 #' @export
@@ -180,7 +188,8 @@ plotActivityViolin <- function(activity_matrix,
                                colors = NULL,
                                title = NULL,
                                text_size = 10,
-                               facet_grid_variable = NULL){
+                               facet_grid_variable = NULL,
+                               boxplot = FALSE){
 
   # give warning for genes absent in tf list
   missing <- tf[which(! tf %in% rownames(activity_matrix))]
@@ -190,7 +199,14 @@ plotActivityViolin <- function(activity_matrix,
   tf <- tf[which(tf %in% rownames(activity_matrix))]
 
   gs <- lapply(tf, function(x) {
-    return(plotActivityViolin_(activity_matrix, x, clusters, legend.label, colors, text_size, facet_grid_variable))
+    return(plotActivityViolin_(activity_matrix,
+                               x,
+                               clusters,
+                               legend.label,
+                               colors,
+                               text_size,
+                               facet_grid_variable,
+                               boxplot))
   })
 
   if (combine == TRUE) {

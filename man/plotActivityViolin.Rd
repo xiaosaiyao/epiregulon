@@ -15,7 +15,8 @@ plotActivityViolin(
   colors = NULL,
   title = NULL,
   text_size = 10,
-  facet_grid_variable = NULL
+  facet_grid_variable = NULL,
+  boxplot = FALSE
 )
 }
 \arguments{
@@ -40,6 +41,8 @@ plotActivityViolin(
 \item{text_size}{Scalar indicating the font size of the title}
 
 \item{facet_grid_variable}{A character vector of a secondary label to split the plots by facet_grid}
+
+\item{boxplot}{logical indicating whether to add boxplot on top of violin plot}
 }
 \value{
 A combined ggplot object or a list of ggplots if \code{combine = FALSE}

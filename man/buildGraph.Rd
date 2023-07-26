@@ -112,6 +112,8 @@ are calculated from the original ones divided by
 
 \code{rankTfs} assign ranks to transcription factors according to degree
 centrality of their vertices
+
+\code{permuteGraph} permute an igraph object by rewiring the edges
 }
 \examples{
 # create an artificial getRegulon output

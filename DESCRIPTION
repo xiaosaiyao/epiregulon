@@ -1,8 +1,8 @@
 Package: epiregulon
 Type: Package
 Title: Gene regulatory network inference from single cell epigenomic data
-Version: 1.0.27
-Date: 2023-6-26
+Version: 1.0.28
+Date: 2023-7-26
 Authors@R: 
     c(person(given = "Xiaosai", family = "Yao", role = c("aut", "cre"), email = "yao.xiaosai@gene.com", comment = c(ORCID = "0000-0001-9729-0726")),
     person(given = "Shang-Yang", family = "Chen", role = "aut", email = "sychen9584@gmail.com"))
@@ -46,7 +46,9 @@ Imports:
     scran,
     scuttle,
     stats,
-    utils
+    utils,
+    MultiAssayExperiment,
+    rhdf5
 Depends: 
     R (>= 4.2.0),
     SingleCellExperiment

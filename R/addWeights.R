@@ -17,6 +17,10 @@
 #' many regulatory elements.
 #' @param min_targets Integer specifying the minimum number of targets for each tf in the regulon with 10 targets as the default
 #' @param tf_re.merge A logical to indicate whether to consider both TF expression and chromatin accessibility. See details.
+#' @param aggregateCells A logical to indicate whether to aggregate cells into groups determined by cellNum. This option can be used to
+#' overcome data sparsity when using `wilcoxon` and `logFC`
+#' @param useDim String indicating the name of the dimensionality reduction matrix in expMatrix used for cell aggregation
+#' @param cellNum An integer specifying the number of cells per cluster for cell aggregation. Default is 10.
 #' @param BPPARAM A BiocParallelParam object specifying whether summation should be parallelized. Use BiocParallel::SerialParam() for
 #' serial evaluation and use BiocParallel::MulticoreParam() for parallel evaluation
 #'
@@ -68,88 +72,172 @@
 #' regulon.w <- addWeights(regulon=regulon, expMatrix=expMatrix, exp_assay="logcounts",
 #' peakMatrix=peakMatrix, peak_assay="counts", clusters=expMatrix$cluster,
 #' min_targets=5, method="logFC")
-#
-
+#'
+#' # add weights with cell aggregation
+#' expMatrix <- scater::runPCA(expMatrix)
+#' regulon.w <- addWeights(regulon=regulon, expMatrix=expMatrix, exp_assay="logcounts",
+#' peakMatrix=peakMatrix, peak_assay="counts", clusters=expMatrix$cluster,
+#' min_targets=5, method="logFC", aggregateCells=TRUE, cellNum=3, useDim = "PCA")
+#'
 #' @author Xiaosai Yao, Shang-yang Chen, Tomasz Wlodarczyk
 
 
 addWeights <- function(regulon,
-                       expMatrix=NULL,
-                       peakMatrix=NULL,
-                       exp_assay="logcounts",
-                       peak_assay="PeakMatrix",
-                       method=c("corr", "MI", "lmfit","logFC","wilcoxon"),
-                       clusters=NULL,
-                       exp_cutoff=1,
-                       peak_cutoff=0,
-                       block_factor=NULL,
-                       aggregation_function=mean,
-                       min_targets=10,
-                       tf_re.merge=FALSE,
-                       BPPARAM=BiocParallel::SerialParam(progressbar=TRUE)){
-
-
+                       expMatrix = NULL,
+                       peakMatrix = NULL,
+                       exp_assay = "logcounts",
+                       peak_assay = "PeakMatrix",
+                       method = c("corr", "MI", "lmfit", "logFC", "wilcoxon"),
+                       clusters = NULL,
+                       exp_cutoff = 1,
+                       peak_cutoff = 0,
+                       block_factor = NULL,
+                       aggregation_function = mean,
+                       min_targets = 10,
+                       tf_re.merge = FALSE,
+                       aggregateCells = FALSE,
+                       useDim = "IterativeLSI_ATAC",
+                       cellNum = 10,
+                       BPPARAM = BiocParallel::SerialParam(progressbar = TRUE)) {
   # choose method
   method <- match.arg(method)
   message("adding weights using ", method, "...")
 
+  # pseudobulk
+  if (aggregateCells) {
+    message("performing pseudobulk using an average of ", cellNum, " cells")
+    barcodes <- list()
+    kclusters <- list()
+
+
+    if (!is.null(clusters)) {
+
+      #add cluster info to expMatrix
+      colData(expMatrix)[, "cluster_for_pseudobulk"] <- clusters
+
+      # K-means clustering
+      kclusters <- list()
+      for (cluster in unique(clusters)) {
+        sce <- expMatrix[, which(clusters == cluster)]
+        kNum <- trunc(ncol(sce) / cellNum)
+        kclusters[[cluster]] <- scran::clusterCells(
+          sce,
+          use.dimred = useDim,
+          BLUSPARAM = bluster::KmeansParam(centers = kNum, iter.max = 5000)
+        )
+        barcodes[[cluster]] <- names(kclusters[[cluster]])
+        kclusters[[cluster]] <- paste(cluster, kclusters[[cluster]], sep = "_")
+  }
+      kclusters <- unlist(kclusters)
+      barcodes <- unlist(barcodes)
+      names(kclusters) <- barcodes
+
+
+    } else {
+      kclusters <- scran::clusterCells(
+        expMatrix,
+        use.dimred = useDim,
+        BLUSPARAM = bluster::KmeansParam(centers = trunc(ncol(peakMatrix) / cellNum), iter.max = 5000)
+      )
+    }
+
+    kclusters <- kclusters[colnames(expMatrix)]
+
+    #replace clusters with clusters of pseudobulked samples
+
+
+    expMatrix <- applySCE(
+      expMatrix,
+      scuttle::aggregateAcrossCells,
+      WHICH = NULL,
+      ids = kclusters,
+      statistics = "sum",
+      use.assay.type = exp_assay
+    )
+
+    peakMatrix <- applySCE(
+      peakMatrix,
+      scuttle::aggregateAcrossCells,
+      WHICH = NULL,
+      ids = kclusters,
+      statistics = "sum",
+      use.assay.type = peak_assay
+    )
+    if(!is.null(clusters)) clusters <- colData(expMatrix)[, "cluster_for_pseudobulk"]
+  }
+
+
   # extract matrices from SE
-  if (checkmate::test_class(expMatrix,classes="SummarizedExperiment")){
+  if (checkmate::test_class(expMatrix, classes = "SummarizedExperiment")) {
     expMatrix <- assay(expMatrix, exp_assay)
   }
 
-  if(any(dim(expMatrix)==0)) stop("expMatrix with no data")
+  if (any(dim(expMatrix) == 0))
+    stop("expMatrix with no data")
 
-  if (checkmate::test_class(peakMatrix, classes="SummarizedExperiment")){
+  if (checkmate::test_class(peakMatrix, classes = "SummarizedExperiment")) {
     peakMatrix <- assay(peakMatrix, peak_assay)
   }
 
-  if(!is.null(peakMatrix)){
-    checkmate::testMultiClass(peakMatrix, c("matrix", "dgeMatrix",
-                                            "lgCMatrix", "dgCMatrix"))
+  if (!is.null(peakMatrix)) {
+    checkmate::testMultiClass(peakMatrix,
+                              c("matrix", "dgeMatrix", "lgCMatrix", "dgCMatrix", "CsparseMatrix"))
   }
 
   checkmate::testMultiClass(regulon, c("data.frame", "DFrame"))
 
-  if(nrow(regulon) == 0) stop("Regulon with zero rows")
+  if (nrow(regulon) == 0)
+    stop("Regulon with zero rows")
 
   checkmate::assert_logical(tf_re.merge, len = 1)
 
-  if(!is.null(clusters)){
-    if(!is.character(clusters) | !is.vector(clusters))
-    tryCatch(clusters <- as.character(as.vector(clusters)), error = function(e) stop("'clusters' agrument should be coercible to a character vector"))
+  if (!is.null(clusters)) {
+    if (!is.character(clusters) | !is.vector(clusters))
+      tryCatch(
+        clusters <-
+          as.character(as.vector(clusters)),
+        error = function(e)
+          stop("'clusters' agrument should be coercible to a character vector")
+      )
   }
 
-  if(method %in% c("logFC", "wilcoxon") | tf_re.merge){
-    if(is.null(peakMatrix)) stop("Peak matrix should be provided")
-    if(any(dim(peakMatrix) == 0)) stop("Peak matrix is empty")
+  if (method %in% c("logFC", "wilcoxon") | tf_re.merge) {
+    if (is.null(peakMatrix))
+      stop("Peak matrix should be provided")
+    if (any(dim(peakMatrix) == 0))
+      stop("Peak matrix is empty")
   }
 
 
-  expMatrix <- as(expMatrix, "dgCMatrix")
+  expMatrix <- as(expMatrix, "CsparseMatrix")
 
   regulon <- S4Vectors::DataFrame(regulon)
 
   # order regulon
-  regulon <- regulon[order(regulon$tf),]
+  regulon <- regulon[order(regulon$tf), ]
 
   # remove genes not found in regulon
-  expMatrix <- expMatrix[which(rownames(expMatrix) %in% unique(c(regulon$tf, regulon$target))),]
+  expMatrix <- expMatrix[which(rownames(expMatrix) %in% unique(c(regulon$tf, regulon$target))), ]
 
   keep <- regulon$tf %in% rownames(expMatrix) &
     regulon$target %in% rownames(expMatrix)
 
-  regulon <- regulon[keep,]
+  regulon <- regulon[keep, ]
 
-  if(nrow(regulon) == 0) stop("Gene names in the regulon should match those in the expMatrix")
+  if (nrow(regulon) == 0)
+    stop("Gene names in the regulon should match those in the expMatrix")
 
   # remove tfs with less than min_targets
-  regulon <- regulon[regulon$tf %in% names(which(table(regulon$tf) >= min_targets)),]
+  regulon <- regulon[regulon$tf %in% names(which(table(regulon$tf) >= min_targets)), ]
+
+  if(nrow(regulon) == 0){
+    warning("No transcription factor has required number of target genes")
+    return(NULL)
+  }
 
   # if a cluster is named "all", replace it to distinguish from all cells
-  if (!is.null(clusters)){
+  if (!is.null(clusters)) {
     clusters[clusters == "all"] <- "clusters_all"
-
   }
   unique_clusters <- sort(unique(clusters))
 
@@ -158,56 +246,69 @@ addWeights <- function(regulon,
     regulon$weight <- NA
     regulon.split <- split(regulon, regulon$tf)
 
-  }  else if (method %in% c("logFC", "wilcoxon")){
+  }  else if (method %in% c("logFC", "wilcoxon")) {
     regulon$weight <- initiateMatCluster(clusters, nrow = nrow(regulon))
     regulon.split <- split(regulon, regulon$tf)
   }
 
   if (!is.null(peakMatrix)) {
-    peakMatrix <- as(peakMatrix, "dgCMatrix")
+    peakMatrix <- as(peakMatrix, "CsparseMatrix")
     # name peakMatrix
     rownames(peakMatrix) <- seq_len(nrow(peakMatrix))
   }
 
   if (method == "wilcoxon") {
-    if(!is.null(peak_cutoff)){
-      prop = sum(peakMatrix>peak_cutoff)/prod(dim(peakMatrix))
-      if(prop < 0.0001| prop > 0.9999) warning(sprintf("Strong inbalance between groups after applying cutoff to peakMatrix. Consider %s value of the peak_cutoff"),
-                                               c("increasing", "decreasing")[(prop < 0.0001) + 1])
+    if (!is.null(peak_cutoff)) {
+      prop = sum(peakMatrix > peak_cutoff) / prod(dim(peakMatrix))
+      if (prop < 0.0001 |
+          prop > 0.9999)
+        warning(
+          sprintf(
+            "Strong inbalance between groups after applying cutoff to peakMatrix. Consider %s value of the peak_cutoff"
+          ),
+          c("increasing", "decreasing")[(prop < 0.0001) + 1]
+        )
     }
-    if(!is.null(exp_cutoff)){
-      prop = sum(expMatrix>exp_cutoff)/prod(dim(expMatrix))
-      if(prop < 0.0001| prop > 0.9999) warning(sprintf("Strong inbalance between groups after applying cutoff to expMatrix. Consider %s value of the exp_cutoff"),
-                                               c("increasing", "decreasing")[(prop < 0.0001) + 1])
+    if (!is.null(exp_cutoff)) {
+      prop = sum(expMatrix > exp_cutoff) / prod(dim(expMatrix))
+      if (prop < 0.0001 |
+          prop > 0.9999)
+        warning(
+          sprintf(
+            "Strong inbalance between groups after applying cutoff to expMatrix. Consider %s value of the exp_cutoff"
+          ),
+          c("increasing", "decreasing")[(prop < 0.0001) + 1]
+        )
     }
     keep <- regulon$idxATAC >= 1 & regulon$idxATAC <= nrow(peakMatrix)
-    regulon <- regulon[keep,]
+    regulon <- regulon[keep, ]
     peakMatrix <- binarize_matrix(peakMatrix, cutoff = peak_cutoff)
     copy <- regulon
     all.targets <- sort(unique(regulon$target))
     all.tfs <- sort(unique(regulon$tf))
     copy$tf <- match(copy$tf, all.tfs)
     copy$target <- match(copy$target, all.targets)
-    if (!is.null(clusters)){
+    if (!is.null(clusters)) {
       # binarize expression matrix for each cluster separately
-      expMatrix_tfs_clusters <- expMatrix[all.tfs,,drop = FALSE]
-      for(cluster in unique(clusters)){
+      expMatrix_tfs_clusters <- expMatrix[all.tfs, , drop = FALSE]
+      for (cluster in unique(clusters)) {
         cluster_ind <- which(clusters == cluster)
-        expMatrix_tfs_clusters[,cluster_ind, drop = FALSE] <- binarize_matrix(expMatrix_tfs_clusters[,cluster_ind, drop = FALSE],
-                                                                 cutoff = exp_cutoff)
+        expMatrix_tfs_clusters[, cluster_ind, drop = FALSE] <-
+          binarize_matrix(expMatrix_tfs_clusters[, cluster_ind, drop = FALSE],
+                          cutoff = exp_cutoff)
       }
     }
-    expMatrix_tfs <- binarize_matrix(expMatrix[all.tfs,,drop = FALSE], cutoff = exp_cutoff)
-    exprs_trans_target <- Matrix::t(expMatrix[all.targets,,drop=FALSE])
+    expMatrix_tfs <- binarize_matrix(expMatrix[all.tfs, , drop = FALSE], cutoff = exp_cutoff)
+    exprs_trans_target <- Matrix::t(expMatrix[all.targets, , drop = FALSE])
     exprs_trans_tf <- Matrix::t(expMatrix_tfs)
     all.peaks <- sort(unique(copy$idxATAC))
-    peak_trans <- Matrix::t(peakMatrix[all.peaks,,drop=FALSE])
-    if (!is(peak_trans, "dgCMatrix")) {
-        peak_trans <- as(peak_trans, "dgCMatrix")
+    peak_trans <- Matrix::t(peakMatrix[all.peaks, , drop = FALSE])
+    if (!is(peak_trans, "CsparseMatrix")) {
+      peak_trans <- as(peak_trans, "CsparseMatrix")
     }
     copy$idxATAC <- match(copy$idxATAC, all.peaks)
     reg.order <- order(copy$target, copy$tf, copy$idxATAC)
-    copy <- copy[reg.order,,drop=FALSE]
+    copy <- copy[reg.order, , drop = FALSE]
     # calculate stats for all clusters
     output <- fast_wilcox(
       exprs_x = exprs_trans_target@x,
@@ -225,7 +326,7 @@ addWeights <- function(regulon,
       clusters = integer(0),
       cell_numb = nrow(exprs_trans_target)
     )
-    if(!is.null(clusters)){
+    if (!is.null(clusters)) {
       # calculate stats for each cluster separately
       exprs_trans_tf_clusters <- Matrix::t(expMatrix_tfs_clusters)
       fclusters <- factor(clusters)
@@ -246,9 +347,12 @@ addWeights <- function(regulon,
         clusters = iclusters - 1L,
         cell_numb = nrow(exprs_trans_target)
       )
-      output <- mapply(function(x,y) rbind(x,y), output, output_clusters, SIMPLIFY = FALSE)
+      output <-
+        mapply(function(x, y)
+          rbind(x, y), output, output_clusters, SIMPLIFY = FALSE)
       # find cluster column indices in the weight matrix
-      cluster_col_ind <- iclusters[match(colnames(regulon$weight)[2:ncol(regulon$weight)], clusters)]
+      cluster_col_ind <-
+        iclusters[match(colnames(regulon$weight)[2:ncol(regulon$weight)], clusters)]
     }
 
     AUC <- output$auc
@@ -257,62 +361,61 @@ addWeights <- function(regulon,
     n2 <- output$total1
 
     prod <- n1 * n2
-    n <- n1 + n2 # technically same across all rows, but we'll just do this for simplicity.
-    sigma <- sqrt(prod / 12 * (n + 1 - ties / n / (n-1)))
-    mu <- prod/2
-    stats <- (AUC - mu)/sigma
+    n <-
+      n1 + n2 # technically same across all rows, but we'll just do this for simplicity.
+    sigma <- sqrt(prod / 12 * (n + 1 - ties / n / (n - 1)))
+    mu <- prod / 2
+    stats <- (AUC - mu) / sigma
     # set z-score to zero if the size of the of the groups is equal to 0
-    stats[n1==0 | n2==0 | sigma ==0] <- 0
-    stats[,reg.order] <- stats
-    if(is.null(clusters)){
-      regulon$weight[,1] <- t(stats)
+    stats[n1 == 0 | n2 == 0 | sigma == 0] <- 0
+    stats[, reg.order] <- stats
+    if (is.null(clusters)) {
+      regulon$weight[, 1] <- t(stats)
     }
     else{
-      regulon$weight[,c(1, order(cluster_col_ind)+1)] <- t(stats)
+      regulon$weight[, c(1, order(cluster_col_ind) + 1)] <- t(stats)
     }
     # Calculate effect size
     n_cells <- ncol(expMatrix)
-    if (!is.null(clusters)){
+    if (!is.null(clusters)) {
       # calculate cluster sizes
       # first column in weight matrix is reserved for all cells
-      n_cells <- c(n_cells, table(clusters)[colnames(regulon$weight)[2:ncol(regulon$weight)]])
+      n_cells <-
+        c(n_cells, table(clusters)[colnames(regulon$weight)[2:ncol(regulon$weight)]])
     }
     # transform z-scores to effect size
-    regulon$weight <- t(t(regulon$weight)/sqrt(n_cells))
+    regulon$weight <- t(t(regulon$weight) / sqrt(n_cells))
     return(regulon)
   }
 
-  if (method %in% c("corr", "MI", "lmfit")){
+  if (method %in% c("corr", "MI", "lmfit")) {
     message("calculating average expression across clusters...")
 
     # define groupings
-    groupings <- S4Vectors::DataFrame(cluster=clusters)
+    groupings <- S4Vectors::DataFrame(cluster = clusters)
     if (!is.null(block_factor)) {
       groupings$block <- colData(expMatrix)[block_factor]
     }
 
     # compute average expression across clusters and batches
-    averages.se.exp <- scuttle::sumCountsAcrossCells(
-      expMatrix,
-      ids = groupings,
-      average = TRUE,
-      BPPARAM = BPPARAM
-    )
+    averages.se.exp <- scuttle::sumCountsAcrossCells(expMatrix,
+                                                     ids = groupings,
+                                                     average = TRUE,
+                                                     BPPARAM = BPPARAM)
 
     # average expression across pseudobulk clusters
     expMatrix <- assays(averages.se.exp)$average
 
     # remove genes whose expressions are NA for all pseudobulks
-    expMatrix <- expMatrix[!Matrix::rowSums(is.na(expMatrix)) == ncol(expMatrix), ]
+    expMatrix <-
+      expMatrix[!Matrix::rowSums(is.na(expMatrix)) == ncol(expMatrix),]
 
 
     if (tf_re.merge) {
-      averages.se.peak <- scuttle::sumCountsAcrossCells(
-        peakMatrix,
-        ids = groupings,
-        average = TRUE,
-        BPPARAM = BPPARAM
-      )
+      averages.se.peak <- scuttle::sumCountsAcrossCells(peakMatrix,
+                                                        ids = groupings,
+                                                        average = TRUE,
+                                                        BPPARAM = BPPARAM)
 
       # average accessibility across pseudobulk clusters
       peakMatrix <- assays(averages.se.peak)$average
@@ -326,82 +429,96 @@ addWeights <- function(regulon,
 
   message("computing weights...")
   if (method == "corr") {
-
     output_df <- BiocParallel::bplapply(
-      X=seq_len(length(regulon.split)),
-      FUN=use_corr_method,
+      X = seq_len(length(regulon.split)),
+      FUN = use_corr_method,
       regulon.split,
       expMatrix,
       peakMatrix,
       tf_re.merge,
-      BPPARAM=BPPARAM)
+      BPPARAM = BPPARAM
+    )
 
   } else if (method == "MI") {
-
     n_pseudobulk <- length(unique(clusters))
 
     output_df <- BiocParallel::bplapply(
-      X=seq_len(length(regulon.split)),
-      FUN=use_MI_method,
+      X = seq_len(length(regulon.split)),
+      FUN = use_MI_method,
       regulon.split,
       expMatrix,
       peakMatrix,
       tf_re.merge,
       n_pseudobulk,
-      BPPARAM=BPPARAM
+      BPPARAM = BPPARAM
     )
 
 
   } else if (method == "lmfit") {
-
     output_df <- BiocParallel::bplapply(
-      X=seq_len(length(regulon.split)),
-      FUN=use_lmfit_method,
+      X = seq_len(length(regulon.split)),
+      FUN = use_lmfit_method,
       regulon.split,
       expMatrix,
       peakMatrix,
       tf_re.merge,
-      BPPARAM = BPPARAM)
+      BPPARAM = BPPARAM
+    )
 
   } else if (method == "logFC") {
-    if(!is.null(peak_cutoff)){
-      prop = sum(peakMatrix>peak_cutoff)/prod(dim(peakMatrix))
-      if(prop < 0.0001| prop > 0.9999) warning(sprintf("Strong inbalance between groups after applying cutoff to peakMatrix. Consider %s value of the peak_cutoff"),
-                                               c("increasing", "decreasing")[(prop < 0.0001) + 1])
+    if (!is.null(peak_cutoff)) {
+      prop = sum(peakMatrix > peak_cutoff) / prod(dim(peakMatrix))
+      if (prop < 0.0001 |
+          prop > 0.9999)
+        warning(
+          sprintf(
+            "Strong inbalance between groups after applying cutoff to peakMatrix. Consider %s value of the peak_cutoff"
+          ),
+          c("increasing", "decreasing")[(prop < 0.0001) + 1]
+        )
     }
-    if(!is.null(exp_cutoff)){
-      prop = sum(expMatrix>exp_cutoff)/prod(dim(expMatrix))
-      if(prop < 0.0001| prop > 0.9999) warning(sprintf("Strong inbalance between groups after applying cutoff to expMatrix. Consider %s value of the exp_cutoff"),
-                                               c("increasing", "decreasing")[(prop < 0.0001) + 1])
+    if (!is.null(exp_cutoff)) {
+      prop = sum(expMatrix > exp_cutoff) / prod(dim(expMatrix))
+      if (prop < 0.0001 |
+          prop > 0.9999)
+        warning(
+          sprintf(
+            "Strong inbalance between groups after applying cutoff to expMatrix. Consider %s value of the exp_cutoff"
+          ),
+          c("increasing", "decreasing")[(prop < 0.0001) + 1]
+        )
     }
 
     for (cluster in c("all", unique_clusters)) {
-      if (cluster == "all" & !is.null(clusters)){
+      if (cluster == "all" & !is.null(clusters)) {
         cluster.current <- unique_clusters
       } else if (cluster == "all" & is.null(clusters)) {
         cluster.current <- "all"
         clusters <- rep("all", ncol(expMatrix))
-      } else if (cluster != "all"){
+      } else if (cluster != "all") {
         cluster.current <- cluster
         regulon.split <- output_df
       }
 
-      peakMatrix.bi <- binarize_matrix(peakMatrix[,clusters %in% cluster.current], peak_cutoff)
-      tfMatrix.bi <- binarize_matrix(expMatrix[,clusters %in% cluster.current], exp_cutoff)
-      output_df <- BiocParallel::bplapply(X=seq_len(length(regulon.split)),
-                            FUN=compare_logFC_bp,
-                            regulon.split,
-                            expMatrix[,clusters %in% cluster.current],
-                            tfMatrix.bi,
-                            peakMatrix.bi,
-                            cluster,
-                            BPPARAM=BPPARAM
-      )
+      peakMatrix.bi <-
+        binarize_matrix(peakMatrix[, clusters %in% cluster.current], peak_cutoff)
+      tfMatrix.bi <-
+        binarize_matrix(expMatrix[, clusters %in% cluster.current], exp_cutoff)
+      output_df <-
+        BiocParallel::bplapply(
+          X = seq_len(length(regulon.split)),
+          FUN = compare_logFC_bp,
+          regulon.split,
+          expMatrix[, clusters %in% cluster.current],
+          tfMatrix.bi,
+          peakMatrix.bi,
+          cluster,
+          BPPARAM = BPPARAM
+        )
     }
 
 
   } else {
-
     stop("method should be corr, MI, lmfit, logFC or wilcoxon")
 
   }

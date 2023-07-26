@@ -2,12 +2,12 @@
 peakMatrix <- matrix(rbinom(1000*1000,1,0.01), 1000, 1000)
 rownames(peakMatrix) <- paste("peak", 1:1000, sep="_")
 colnames(peakMatrix) <- paste("cell", 1:1000, sep="_")
-peakMatrix <- as(peakMatrix, "dgCMatrix")
+peakMatrix <- as(peakMatrix, "CsparseMatrix")
 
 expMatrix <- matrix(rnorm(1000*1000,0.3,1), 1000, 1000)
 rownames(expMatrix) <- paste("gene", 1:1000, sep="_")
 colnames(expMatrix) <- paste("cell", 1:1000, sep="_")
-expMatrix <- as(expMatrix, "dgCMatrix")
+expMatrix <- as(expMatrix, "CsparseMatrix")
 
 clusters <- sample(c("A","B","C"), 1000, replace = TRUE)
 

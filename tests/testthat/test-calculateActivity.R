@@ -126,10 +126,10 @@ test_that("createTfTgMat works correctly with clusters", {
 activity_matrix3 <- as(cbind(Matrix::t(Matrix::t(geneExpr_C1) %*% tf_tg_matrix_C1),
                          Matrix::t(Matrix::t(geneExpr_C2) %*% tf_tg_matrix_C2)), "CsparseMatrix")
 
-activity_matrix4 <- matrix(NA, nrow=ncol(geneExpressionMatrix), ncol=length(unique(regulon$tf)))
+activity_matrix4 <- matrix(0, nrow=ncol(geneExpressionMatrix), ncol=length(unique(regulon$tf)))
 rownames(activity_matrix4) <- colnames(geneExpressionMatrix)
 colnames(activity_matrix4) <- colnames(tf_tg_matrix4[[1]])
-activity_matrix4 <- as(activity_matrix4, "dgCMatrix")
+activity_matrix4 <- as(activity_matrix4, "CsparseMatrix")
 
 activity_matrix4 <- calculateScore(geneExpressionMatrix, tf_tg_matrix4, clusters=clusters, activity_matrix4)
 
