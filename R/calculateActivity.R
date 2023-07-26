@@ -109,10 +109,10 @@ calculateActivity <- function (expMatrix = NULL,
   FUN <- match.arg(FUN)
 
   regulon <- S4Vectors::DataFrame(regulon)
-  # convert expMatrix to dgCMatrix
+  # convert expMatrix to CsparseMatrix
   if (checkmate::test_class(expMatrix,classes = "SummarizedExperiment")){
     expMatrix <- assay(expMatrix, exp_assay)
-    expMatrix <- as(expMatrix, "dgCMatrix")
+    expMatrix <- as(expMatrix, "CsparseMatrix")
   }
 
 
@@ -209,10 +209,10 @@ calculateActivity <- function (expMatrix = NULL,
       freq <- calculateFrequency(freq, aggregated.regulon, mode=mode)
 
       # Calculating scores
-      score.combine <- matrix(NA, nrow=ncol(expMatrix), ncol=length(unique(regulon$tf)))
+      score.combine <- matrix(0, nrow=ncol(expMatrix), ncol=length(unique(regulon$tf)))
       rownames(score.combine) <- colnames(expMatrix)
       colnames(score.combine) <- colnames(tf_target_mat[[1]])
-      score.combine <- as(score.combine, "dgCMatrix")
+      score.combine <- as(score.combine, "CsparseMatrix")
 
       message("calculating activity scores...")
       score.combine <- calculateScore(expMatrix, tf_target_mat, clusters=clusters, score.combine,

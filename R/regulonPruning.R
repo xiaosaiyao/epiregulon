@@ -193,8 +193,8 @@ pruneRegulon <- function(regulon,
     peakMatrix <- assay(peakMatrix, peak_assay)
   }
 
-  expMatrix <- as(expMatrix, "dgCMatrix")
-  peakMatrix <- as(peakMatrix, "dgCMatrix")
+  expMatrix <- as(expMatrix, "CsparseMatrix")
+  peakMatrix <- as(peakMatrix, "CsparseMatrix")
 
 
 
@@ -324,7 +324,7 @@ pruneRegulon <- function(regulon,
 binarize_matrix <- function(matrix_obj, cutoff = NULL){
   if(is.null(cutoff)) cutoff <- Matrix::rowMeans(matrix_obj)
   else cutoff <- rep(cutoff, nrow(matrix_obj))
-  if (is(matrix_obj, "dgCMatrix")) {
+  if (is(matrix_obj, "CsparseMatrix")) {
     matrix_obj@x <- as.double(matrix_obj@x > cutoff[matrix_obj@i+1])
     matrix_obj
   } else {

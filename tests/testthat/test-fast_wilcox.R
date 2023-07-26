@@ -11,7 +11,7 @@ set.seed(1001)
 peakMatrix <- matrix(rbinom(1000*1000,1,0.01), 1000, 1000)
 rownames(peakMatrix) <- paste("peak", 1:1000, sep="_")
 colnames(peakMatrix) <- paste("cell", 1:1000, sep="_")
-peakMatrix <- as(peakMatrix, "dgCMatrix")
+peakMatrix <- as(peakMatrix, "CsparseMatrix")
 
 unique_exp_values <- runif(5000)*3
 # make ties
@@ -22,7 +22,7 @@ exp_values[sample(1:1e6, 1e6*0.25)] <- 0
 expMatrix <- matrix(exp_values, 1000, 1000)
 rownames(expMatrix) <- paste("gene", 1:1000, sep="_")
 colnames(expMatrix) <- paste("cell", 1:1000, sep="_")
-expMatrix <- as(expMatrix, "dgCMatrix")
+expMatrix <- as(expMatrix, "CsparseMatrix")
 
 #clusters <- NULL
 clusters <- sample(LETTERS[1:3], 1000, replace = TRUE)
@@ -52,8 +52,8 @@ exprs_trans_tf <- Matrix::t(expMatrix_tfs)
 all.peaks <- sort(unique(copy$idxATAC))
 copy$idxATAC <- match(copy$idxATAC, all.peaks)
 peak_trans <- Matrix::t(peakMatrix[all.peaks,,drop=FALSE])
-if (!is(peak_trans, "dgCMatrix")) {
-  peak_trans <- as(peak_trans, "dgCMatrix")
+if (!is(peak_trans, "CsparseMatrix")) {
+  peak_trans <- as(peak_trans, "CsparseMatrix")
 }
 
 reg.order <- order(copy$target, copy$tf, copy$idxATAC)

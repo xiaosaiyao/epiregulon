@@ -181,7 +181,7 @@ addWeights <- function(regulon,
 
   if (!is.null(peakMatrix)) {
     checkmate::testMultiClass(peakMatrix,
-                              c("matrix", "dgeMatrix", "lgCMatrix", "dgCMatrix"))
+                              c("matrix", "dgeMatrix", "lgCMatrix", "dgCMatrix", "CsparseMatrix"))
   }
 
   checkmate::testMultiClass(regulon, c("data.frame", "DFrame"))
@@ -209,7 +209,7 @@ addWeights <- function(regulon,
   }
 
 
-  expMatrix <- as(expMatrix, "dgCMatrix")
+  expMatrix <- as(expMatrix, "CsparseMatrix")
 
   regulon <- S4Vectors::DataFrame(regulon)
 
@@ -252,7 +252,7 @@ addWeights <- function(regulon,
   }
 
   if (!is.null(peakMatrix)) {
-    peakMatrix <- as(peakMatrix, "dgCMatrix")
+    peakMatrix <- as(peakMatrix, "CsparseMatrix")
     # name peakMatrix
     rownames(peakMatrix) <- seq_len(nrow(peakMatrix))
   }
@@ -303,8 +303,8 @@ addWeights <- function(regulon,
     exprs_trans_tf <- Matrix::t(expMatrix_tfs)
     all.peaks <- sort(unique(copy$idxATAC))
     peak_trans <- Matrix::t(peakMatrix[all.peaks, , drop = FALSE])
-    if (!is(peak_trans, "dgCMatrix")) {
-      peak_trans <- as(peak_trans, "dgCMatrix")
+    if (!is(peak_trans, "CsparseMatrix")) {
+      peak_trans <- as(peak_trans, "CsparseMatrix")
     }
     copy$idxATAC <- match(copy$idxATAC, all.peaks)
     reg.order <- order(copy$target, copy$tf, copy$idxATAC)
