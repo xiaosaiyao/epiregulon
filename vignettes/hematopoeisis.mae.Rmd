@@ -31,8 +31,8 @@ In this vignette, we used a dataset from the ArchR [tutorial](https://www.archrp
 Epiregulon is currently available on R/dev
 
 ```{r, message=FALSE}
-#library(epiregulon)
-devtools::load_all("/gstore/project/lineage/xiaosai/epiregulon")
+library(epiregulon)
+#devtools::load_all("/gstore/project/lineage/xiaosai/epiregulon")
 ```
 
 If you would like to install from gitlab, 
@@ -63,6 +63,9 @@ reducedDim(GeneExpressionMatrix, "IterativeLSI") <-
   reducedDim(mae[['TileMatrix500']], "IterativeLSI")
 reducedDim(GeneExpressionMatrix, "UMAP") <- 
   reducedDim(mae[['TileMatrix500']], "UMAP")
+
+scater::plotColData(GeneExpressionMatrix, x="Clusters2", y="predictedScore",
+                    colour_by= "Clusters2")
 
 ```
 
@@ -169,8 +172,8 @@ regulon.w <- addWeights(regulon = pruned.regulon,
 
 regulon.w
 
-saveRDS(regulon, "/gstore/project/lineage/manuscript/epiregulon/OUTPUT/regulon.rds")
-saveRDS(regulon.w, "/gstore/project/lineage/manuscript/epiregulon/OUTPUT/regulon.w.rds")
+#saveRDS(regulon, "/gstore/project/lineage/manuscript/epiregulon/OUTPUT/regulon.rds")
+#saveRDS(regulon.w, "/gstore/project/lineage/manuscript/epiregulon/OUTPUT/regulon.w.rds")
 
 ```
 
@@ -265,6 +268,22 @@ plotActivityViolin(activity_matrix = counts(GeneExpressionMatrix)[tfs_interest,]
                    ncol=2,
                    legend.label = "gene expression")
 ```
+We can visualize the individual target genes 
+
+```{r}
+plotHeatmapRegulon(sce=GeneExpressionMatrix,
+                   tfs=tfs_interest,
+                   regulon=regulon.w,
+                   regulon_cutoff=0.1,
+                   downsample=1000,
+                   cell_attributes="Clusters2",
+                   col_gap="Clusters2",
+                   exprs_values="counts",
+                   name="regulon heatmap",
+                   column_title_rot = 45)
+
+```
+
 
 We can visualize the different TFs in a bubble plot:
 ```{r}
@@ -288,7 +307,7 @@ plotBubble(activity_matrix = score.combine,
 
 Sometimes we are interested to know what pathways are enriched in the regulon of a particular TF. We can perform geneset enrichment using the enricher function from [clusterProfiler](http://yulab-smu.top/biomedical-knowledge-mining-book/universal-api.html).
 
-Here we first download Hallmark and C2 signatures from hallmark and then perform gene set enrichment of the known lineage factors. As expected, EBF1 is consistent with a B cell lineage factor, GATA3 and RUNX3 with lymphoid lineage and SPI1 with myeloid lineage.
+Here we first download Hallmark and C2 signatures from hallmark and then perform gene set enrichment of the known lineage factors. As expected, EBF1 is consistent with a B cell lineage factor, GATA3 with lymphoid lineage, SPI1 with myeloid lineage and GATA2 with progenitors.
 
 ```{r enrichment, fig.width=12}
 #retrieve genesets
