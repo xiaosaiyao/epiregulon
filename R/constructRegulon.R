@@ -286,16 +286,18 @@ getRegulon <- function(p2g,
                        FUN=colMeans){
 
   p2g <- S4Vectors::DataFrame(p2g)
-  regulon_df <- S4Vectors::merge(p2g, overlap, by="idxATAC")
 
-  Correlation.rownames <- colnames(regulon_df)[grep("Correlation.|Correlation", colnames(regulon_df))]
-  corr_matrix <- regulon_df[,Correlation.rownames, drop=FALSE]
-
-  if (any(grepl("Correlation.", Correlation.rownames))){
-    colnames(corr_matrix) <- gsub("Correlation.","", Correlation.rownames)
+  if (identical(colnames(p2g$Correlation),"all")) {
+    colnames(p2g$Correlation) <- "Correlation.all"
   }
 
-  regulon_df[,grep("Correlation.",colnames(regulon_df))] <- NULL
+  regulon_df <- S4Vectors::merge(p2g, overlap, by="idxATAC")
+
+  Correlation.rownames <- colnames(regulon_df)[grep("^Correlation\\.", colnames(regulon_df))]
+  corr_matrix <- regulon_df[,Correlation.rownames, drop=FALSE]
+  colnames(corr_matrix) <- gsub("^Correlation\\.","", Correlation.rownames)
+
+  regulon_df[,grep("Correlation\\.",colnames(regulon_df))] <- NULL
   regulon_df$Correlation <- as.matrix(corr_matrix)
 
 

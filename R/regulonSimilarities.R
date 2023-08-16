@@ -47,7 +47,7 @@ findPartners <- function(graph, focal_tf){
   res_list
 }
 
-#' Calculate Jaccard Similarity betweeb regulons of all transcription factors
+#' Calculate Jaccard Similarity between regulons of all transcription factors
 #' @param graph a igraph object from `buildGraph` or `buildDiffGraph`
 #' @export
 #' @return A matrix with Jaccard similarity between all pairs of transcription factors.
@@ -69,7 +69,7 @@ calculateJaccardSimilarity <- function(graph){
 #' for n permuted graphs
 #' @export
 permuteGraph <- function(graph, focal_tf, n=100, p=1){
-
+  if(!focal_tf %in% names(V(graph)[V(graph)$type == "transcription factor"])) stop(focal_tf, " vertex shoud be present in the graph")
   all_tfs <- names(V(graph)[V(graph)$type == "transcription factor"])
   permute_matrix <- matrix(rep(NA, length(all_tfs)*n), nrow=length(all_tfs))
   rownames(permute_matrix) <-  all_tfs

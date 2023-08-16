@@ -103,6 +103,17 @@ addWeights <- function(regulon,
   method <- match.arg(method)
   message("adding weights using ", method, "...")
 
+  if(!is.null(clusters)){
+    clusters <- tryCatch(as.vector(clusters),
+             error = function(cond){
+               message("'clusters' argument should be coercible to a vector")
+               stop(cond)
+             })
+    if(length(clusters) != ncol(expMatrix)){
+      stop("'clusters' length should be equal to the number of cells")
+    }
+  }
+
   # pseudobulk
   if (aggregateCells) {
     message("performing pseudobulk using an average of ", cellNum, " cells")
@@ -119,7 +130,7 @@ addWeights <- function(regulon,
       kclusters <- list()
       for (cluster in unique(clusters)) {
         sce <- expMatrix[, which(clusters == cluster)]
-        kNum <- trunc(ncol(sce) / cellNum)
+        kNum <- max(trunc(ncol(sce) / cellNum), 1)
         kclusters[[cluster]] <- scran::clusterCells(
           sce,
           use.dimred = useDim,
@@ -389,6 +400,9 @@ addWeights <- function(regulon,
   }
 
   if (method %in% c("corr", "MI", "lmfit")) {
+    if(is.null(clusters)){
+      stop("'clusters' argument should be provided for ", method, " method")
+    }
     message("calculating average expression across clusters...")
 
     # define groupings

@@ -14,7 +14,9 @@ buildGraph(
   weights = "weights",
   cluster = "all",
   aggregation_function = function(x) x[which.max(abs(x))],
-  na_replace = TRUE
+  na_replace = TRUE,
+  keep_original_names = TRUE,
+  filter_edges = NULL
 )
 
 buildDiffGraph(graph_obj_1, graph_obj_2, weighted = TRUE, abs_diff = TRUE)
@@ -50,6 +52,14 @@ that is a matrix.}
 
 \item{na_replace}{a logical indicating whether NA values for weights should be
 replaced with zeros.}
+
+\item{keep_original_names}{A logical indicating whether gene names should be used as
+node names in the output graph. Note that this might lead to the duplicated node
+names if the same gene is present in two layers (transcription factors and target genes).}
+
+\item{filter_edges}{A numeric defining the cutoff weight used for filtering out edges
+which have weights equal or greater than cutoff. The isolated vertices are removed then
+from the graph. Defaults to NULL in which case no filtering is applied.}
 
 \item{weighted}{a logical indicating whether weighted graphs are used}
 

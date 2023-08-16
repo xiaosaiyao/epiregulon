@@ -6,23 +6,26 @@
 \usage{
 findDifferentialActivity(
   activity_matrix,
-  groups,
+  clusters,
   test.type = "t",
   pval.type = "some",
   direction = "up",
+  groups = deprecated(),
   ...
 )
 }
 \arguments{
 \item{activity_matrix}{A matrix of TF activities inferred from calculateActivity}
 
-\item{groups}{A character or integer vector of cluster or group labels for single cells}
+\item{clusters}{A character or integer vector of cluster or group labels for single cells}
 
 \item{test.type}{String indicating the type of statistical tests to be passed to scran::findMarkers, can be "t", "wilcox". or "binom"}
 
 \item{pval.type}{A string specifying how p-values are to be combined across pairwise comparisons for a given group/cluster.}
 
 \item{direction}{A string specifying direction of differential TF activity, can be "up" or "down"}
+
+\item{groups}{\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#deprecated}{\figure{lifecycle-deprecated.svg}{options: alt='[Deprecated]'}}}{\strong{[Deprecated]}} A character or integer vector of cluster or group labels for single cells}
 
 \item{...}{Further arguments to pass to scran::findMarkers}
 }
@@ -40,7 +43,7 @@ colnames(score.combine) <- paste0("cell",1:200)
 cluster <- c(rep(1,100),rep(2,100))
 markers <- findDifferentialActivity(
 activity_matrix = score.combine,
-groups = cluster,
+clusters = cluster,
 pval.type = "some",
 direction = "up",
 test.type = "t")

@@ -36,6 +36,7 @@ Imports:
     ggplot2,
     ggraph,
     igraph,
+    lifecycle,
     methods,
     motifmatchr,
     patchwork,

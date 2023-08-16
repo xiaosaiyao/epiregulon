@@ -73,6 +73,12 @@
 #' which indicate the type of vertex
 #' @param na_replace a logical indicating whether NA values for weights should be
 #' replaced with zeros.
+#' @param keep_original_names A logical indicating whether gene names should be used as
+#' node names in the output graph. Note that this might lead to the duplicated node
+#' names if the same gene is present in two layers (transcription factors and target genes).
+#' @param filter_edges A numeric defining the cutoff weight used for filtering out edges
+#' which have weights equal or greater than cutoff. The isolated vertices are removed then
+#' from the graph. Defaults to NULL in which case no filtering is applied.
 #' @return an igraph object
 #' \code{rankTfs} returns a data.frame with transcription factors sorted according
 #' to the value of the \code{centrality} attribute
@@ -103,12 +109,14 @@ buildGraph <- function(regulon,
                       weights = "weights",
                       cluster = "all",
                       aggregation_function = function(x) x[which.max(abs(x))],
-                      na_replace = TRUE){
-  if (!weights %in% colnames(regulon)) stop(sprintf("%s column should be present in the regulon", weights))
+                      na_replace = TRUE,
+                      keep_original_names = TRUE,
+                      filter_edges = NULL){
+  if (!is.null(weights) && !weights %in% colnames(regulon)) stop(sprintf("%s column should be present in the regulon", weights))
   mode <- match.arg(mode)
   # give names to the peaks and target genes which will be easy to extract
   regulon$idxATAC <- paste0(as.character(regulon$idxATAC), "_peak")
-  regulon$target <- paste0(regulon$target, "_gene")
+  regulon$target <- paste0(regulon$target, "_target_gene")
   vertex_columns <- switch(mode,
                            "re" = c("tf", "idxATAC"),
                            "pairs" = c("tf", "idxATAC", "target"),
@@ -116,8 +124,10 @@ buildGraph <- function(regulon,
                            "tg" = c("tf", "target"))
   graph_data <- regulon[,vertex_columns]
   if(!is.null(weights)){
-    if(is.matrix(regulon[,weights]))
+    if(is.matrix(regulon[,weights])){
+      stopifnot(cluster %in% colnames(regulon[,weights]))
       weights_df <- data.frame(regulon[,weights][,cluster])
+    }
     else
       weights_df <- data.frame(regulon[,weights])
     if(any(is.na(weights_df)) & na_replace){
@@ -162,21 +172,27 @@ buildGraph <- function(regulon,
   epiregulon_graph <- graph_from_data_frame(graph_data)
   if (mode == "tripartite"){
     layer_numb <- rep(1, vcount(epiregulon_graph))
-    layer_numb[grepl("_gene$", V(epiregulon_graph)$name)] <- 2
+    layer_numb[grepl("_target_gene$", V(epiregulon_graph)$name)] <- 2
     layer_numb[grepl("_peak$", V(epiregulon_graph)$name)] <- 3
     V(epiregulon_graph)$layer <- layer_numb
   }
   # set 'type' attribute for vertices required by bipartite graphs
   vertex_type <- rep("transcription factor", vcount(epiregulon_graph))
   vertex_type[grepl("_peak$", V(epiregulon_graph)$name)] <- "regulatory element"
-  vertex_type[grepl("_gene$", V(epiregulon_graph)$name)] <- "target gene"
+  vertex_type[grepl("_target_gene$", V(epiregulon_graph)$name)] <- "target gene"
   V(epiregulon_graph)$type <- vertex_type
   # transform character constants to numeric values for later use by graphics functions
   V(epiregulon_graph)$type.num <- match(V(epiregulon_graph)$type,
                                         c("transcription factor", "peak", "target gene"))
 
   # restore original names
-  V(epiregulon_graph)$name <- gsub("_gene|_peak", "", V(epiregulon_graph)$name)
+  if(keep_original_names){
+    V(epiregulon_graph)$name <- gsub("_target_gene$|_peak$", "", V(epiregulon_graph)$name)
+  }
+  if(!is.null(filter_edges) && !is.null(weights)){
+    epiregulon_graph <- delete.edges(epiregulon_graph, E(epiregulon_graph)[E(epiregulon_graph)$weight <= filter_edges])
+    epiregulon_graph <- delete.vertices(epiregulon_graph, V(epiregulon_graph)[degree(epiregulon_graph)==0])
+  }
   epiregulon_graph
 }
 

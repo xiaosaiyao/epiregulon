@@ -2,7 +2,7 @@
 % Please edit documentation in R/regulonSimilarities.R
 \name{calculateJaccardSimilarity}
 \alias{calculateJaccardSimilarity}
-\title{Calculate Jaccard Similarity betweeb regulons of all transcription factors}
+\title{Calculate Jaccard Similarity between regulons of all transcription factors}
 \usage{
 calculateJaccardSimilarity(graph)
 }
@@ -13,5 +13,5 @@ calculateJaccardSimilarity(graph)
 A matrix with Jaccard similarity between all pairs of transcription factors.
 }
 \description{
-Calculate Jaccard Similarity betweeb regulons of all transcription factors
+Calculate Jaccard Similarity between regulons of all transcription factors
 }

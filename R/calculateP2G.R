@@ -124,8 +124,14 @@ calculateP2G <- function(peakMatrix = NULL,
     if (is.null(rowRanges(peakMatrix))) {
       stop("peakMatrix must contain rowRanges")
     }
+    if (length(rowRanges(peakMatrix))== 0){
+      stop("peakMatrix should contain non-empty rowRanges")
+    }
     if (is.null(rowRanges(expMatrix))) {
       stop("expMatrix must contain rowRanges")
+    }
+    if (length(rowRanges(expMatrix))== 0){
+      stop("expMatrix should contain non-empty rowRanges")
     }
 
     if (! gene_symbol %in% colnames(rowData(expMatrix))) {

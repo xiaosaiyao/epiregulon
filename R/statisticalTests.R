@@ -1,13 +1,17 @@
 #' Test for differential TF activity between pairs of single cell clusters/groups
 #'
 #' @param activity_matrix A matrix of TF activities inferred from calculateActivity
-#' @param groups A character or integer vector of cluster or group labels for single cells
+#' @param groups `r lifecycle::badge("deprecated")` A character or integer vector of cluster or group labels for single cells
+#' @param clusters A character or integer vector of cluster or group labels for single cells
 #' @param test.type String indicating the type of statistical tests to be passed to scran::findMarkers, can be "t", "wilcox". or "binom"
 #' @param pval.type A string specifying how p-values are to be combined across pairwise comparisons for a given group/cluster.
 #' @param direction A string specifying direction of differential TF activity, can be "up" or "down"
 #' @param ... Further arguments to pass to scran::findMarkers
 #'
 #' @return A named list of dataframes containing differential TF activity test results for each cluster/group
+#'
+#' @importFrom lifecycle deprecated
+#'
 #' @export
 #'
 #' @examples
@@ -18,7 +22,7 @@
 #' cluster <- c(rep(1,100),rep(2,100))
 #' markers <- findDifferentialActivity(
 #' activity_matrix = score.combine,
-#' groups = cluster,
+#' clusters = cluster,
 #' pval.type = "some",
 #' direction = "up",
 #' test.type = "t")
@@ -26,14 +30,21 @@
 #' @author Xiaosai Yao, Shang-yang Chen
 
 findDifferentialActivity <- function(activity_matrix,
-                                     groups,
+                                     clusters,
                                      test.type = "t",
                                      pval.type = "some",
                                      direction="up",
+                                     groups=deprecated(),
                                      ...){
 
+  if(lifecycle::is_present(groups)){
+      lifecycle::deprecate_warn( "1.0.0", "findDifferentialActivity(groups)",
+                                 "findDifferentialActivity(clusters)")
+    clusters <- groups
+  }
+
   activity_matrix <- stats::na.omit(as.matrix(activity_matrix))
-  tf_markers <- scran::findMarkers(activity_matrix, groups, test.type=test.type,
+  tf_markers <- scran::findMarkers(activity_matrix, clusters, test.type=test.type,
                                    pval.type=pval.type, direction=direction, ...)
   return(tf_markers)
 
