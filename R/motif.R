@@ -105,7 +105,7 @@ addMotifScore <- function(regulon,
 
 }
 
-species_motif <- function(species, env) {
+species_motif <- function(species) {
   if(species == "human"){
     data("human_pwms_v1", package = "chromVARmotifs", envir = environment())
     return(environment()$human_pwms_v1)
@@ -120,7 +120,7 @@ species_motif <- function(species, env) {
 annotateMotif <- function(species, peaks, genome, pwms = NULL, ...) {
 
   if (is.null(pwms)){
-    pwms <- species_motif(species, env = environment())
+    pwms <- species_motif(species)
   }
   motifs <- motifmatchr::matchMotifs(pwms=pwms,
                                      subject=peaks,
