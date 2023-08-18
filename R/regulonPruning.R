@@ -282,7 +282,7 @@ pruneRegulon <- function(regulon,
     res <- chisqTest(k = stats$triple, size = cluster_freq, p = null_probability)
     colnames(res$p) <- sprintf("pval_%s", unique_clusters)
     colnames(res$stat) <- sprintf("stats_%s", unique_clusters)
-    res$p[test_unavailable_ind] <- 0
+    res$p[test_unavailable_ind] <- 1
     res$stat[test_unavailable_ind] <- 0
     res <- cbind(res$p, res$stat)
 
