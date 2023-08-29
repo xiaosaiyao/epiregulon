@@ -331,7 +331,7 @@ enrichPlot_ <- function(results,
                         title,
                         top) {
   results$logP.adj <- -log10(results$p.adjust)
-  ggplot(results[seq_len(top), ] , aes_string(y = "logP.adj",
+  ggplot(results[seq_len(top), ] , aes_string(y = "-logP.adj",
                                               x = "Description",
                                               color = "GeneRatio")) +
     scale_colour_gradient(high = "red", low = "blue") +

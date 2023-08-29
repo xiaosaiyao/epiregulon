@@ -121,15 +121,14 @@ calculateP2G <- function(peakMatrix = NULL,
 
     cor_method <- match.arg(cor_method)
 
-    if (is.null(rowRanges(peakMatrix))) {
-      stop("peakMatrix must contain rowRanges")
-    }
+    checkmate::assert_class(rowRanges(peakMatrix), "GRanges")
+
     if (length(rowRanges(peakMatrix))== 0){
       stop("peakMatrix should contain non-empty rowRanges")
     }
-    if (is.null(rowRanges(expMatrix))) {
-      stop("expMatrix must contain rowRanges")
-    }
+
+    checkmate::assert_class(rowRanges(expMatrix), "GRanges")
+
     if (length(rowRanges(expMatrix))== 0){
       stop("expMatrix should contain non-empty rowRanges")
     }
