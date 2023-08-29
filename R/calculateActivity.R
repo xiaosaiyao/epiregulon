@@ -105,7 +105,7 @@ calculateActivity <- function (expMatrix = NULL,
                                ncore = 1,
                                BPPARAM = BiocParallel::SerialParam()) {
   if(!is.null(regulon)) checkmate::assertMultiClass(regulon, c("data.frame", "DFrame"))
-  if(!mode %in% colnames(regulon)) stop("No such column in the regulon: ", mode)
+  if(is.null(regulon) && !mode %in% colnames(regulon)) stop("No such column in the regulon: ", mode)
   method <- tolower(method)
   method <- match.arg(method)
   FUN <- match.arg(FUN)
@@ -318,9 +318,11 @@ calculateScore <- function(expMatrix, tf_target_mat, clusters=NULL, score.combin
                            scale_expression = FALSE){
   if (is.null(clusters)){
     if(scale_expression){
-      cum_expr <- cumsum(Matrix::t(expMatrix)@x)[t(expMatrix)@p[2:length(t(expMatrix)@p)]]
-      normalized_expr <- diff(c(0 , cum_expr))/diff(t(expMatrix)@p)
-      expMatrixa@x <- expMatrix@x / normalized_expr[expMatrix@i+1]
+      # if the first column has all zero values its entry in p vector is 0
+      cum_expr <- cumsum(c(0,Matrix::t(expMatrix)@x))[Matrix::t(expMatrix)@p[-1]+1]
+      normalized_expr <- diff(c(0 , cum_expr))
+      normalized_expr[normalized_expr>0] <- normalized_expr[normalized_expr>0]/diff(unique(Matrix::t(expMatrix)@p))
+      expMatrix@x <- expMatrix@x / normalized_expr[expMatrix@i+1]
     }
     score.combine <- Matrix::t(expMatrix[rownames(tf_target_mat),, drop = FALSE]) %*%
       tf_target_mat
