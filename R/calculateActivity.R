@@ -105,7 +105,7 @@ calculateActivity <- function (expMatrix = NULL,
                                ncore = 1,
                                BPPARAM = BiocParallel::SerialParam()) {
   if(!is.null(regulon)) checkmate::assertMultiClass(regulon, c("data.frame", "DFrame"))
-  if(is.null(regulon) && !mode %in% colnames(regulon)) stop("No such column in the regulon: ", mode)
+  if(!is.null(regulon) && !mode %in% colnames(regulon)) stop("No such column in the regulon: ", mode)
   method <- tolower(method)
   method <- match.arg(method)
   FUN <- match.arg(FUN)
