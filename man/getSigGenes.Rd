@@ -4,7 +4,13 @@
 \alias{getSigGenes}
 \title{Compile and summarize the output from findDifferentialActivity function}
 \usage{
-getSigGenes(da_list, fdr_cutoff = 0.05, logFC_cutoff = NULL, topgenes = NULL)
+getSigGenes(
+  da_list,
+  fdr_cutoff = 0.05,
+  logFC_cutoff = NULL,
+  topgenes = NULL,
+  direction = "up"
+)
 }
 \arguments{
 \item{da_list}{List of dataframes from running findDifferentialActivity}
@@ -14,6 +20,8 @@ getSigGenes(da_list, fdr_cutoff = 0.05, logFC_cutoff = NULL, topgenes = NULL)
 \item{logFC_cutoff}{A numeric scalar to specify the cutoff for log fold change.}
 
 \item{topgenes}{A integer scalar to indicate the number of top ordered genes to include in output}
+
+\item{direction}{A string specifying direction for which differential TF activity was calculated, can be "up" or "down"}
 }
 \value{
 A compiled dataframe of TFs with differential activities across clusters/groups

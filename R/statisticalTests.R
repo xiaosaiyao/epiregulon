@@ -56,6 +56,7 @@ findDifferentialActivity <- function(activity_matrix,
 #' @param fdr_cutoff A numeric scalar to specify the cutoff for FDR value. Default is 0.05
 #' @param logFC_cutoff A numeric scalar to specify the cutoff for log fold change.
 #' @param topgenes A integer scalar to indicate the number of top ordered genes to include in output
+#' @param direction A string specifying direction for which differential TF activity was calculated, can be "up" or "down"
 #'
 #' @return A compiled dataframe of TFs with differential activities across clusters/groups
 #' @export
@@ -75,21 +76,22 @@ findDifferentialActivity <- function(activity_matrix,
 getSigGenes <- function(da_list,
                         fdr_cutoff = 0.05,
                         logFC_cutoff = NULL,
-                        topgenes = NULL){
-
+                        topgenes = NULL,
+                        direction = "up"){
+  stopifnot(direction %in% c("down", "up"))
   classes <- names(da_list)
-
+  direction_factor <- c(down = -1, up = 1)[direction]
   top.list <- lapply(seq_along(da_list), function(i){
     da_genes <- as.data.frame(da_list[[i]])
     da_genes <- da_genes[,c("p.value","FDR","summary.logFC")]
 
     if (is.null(logFC_cutoff)){
-      logFC_cutoff <- round(stats::quantile(da_genes$summary.logFC, 0.95, na.rm=TRUE), digits = 1)
+      logFC_cutoff <- round(stats::quantile(da_genes$summary.logFC*direction_factor, 0.95, na.rm=TRUE), digits = 1)
     }else {
       logFC_cutoff <- logFC_cutoff
     }
     message ("Using a logFC cutoff of ", logFC_cutoff, " for class ", classes[i])
-    da_genes <- da_genes[which(da_genes[,"FDR"] < fdr_cutoff & da_genes[, 3] > logFC_cutoff), ]
+    da_genes <- da_genes[which(da_genes[,"FDR"] < fdr_cutoff & da_genes[, 3]*direction_factor > logFC_cutoff), ]
 
     if (nrow(da_genes) != 0){
       da_genes$class <- classes[[i]]
