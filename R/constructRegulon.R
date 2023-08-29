@@ -241,8 +241,7 @@ addTFMotifInfo <- function(p2g,
 #'
 #' @param p2g A Peak2Gene data frame created by ArchR or getP2Glinks() function
 #' @param overlap A data frame storing overlaps between the regions of the peak matrix with the bulk TF ChIP-seq binding sites computed from addTFMotifInfo
-#' @param aggregate logical to specify whether regulatory elements are aggregated across the same TF-target pairs
-#' @param FUN function to aggregate the weights
+#' @param aggregate logical to specify whether regulatory elements are aggregated across the same TF-target pairs by calculation mean value for the correlation
 #'
 #' @return A DataFrame consisting of tf(regulator), target and a column indicating degree of association between TF and target such as "mor" or "corr".
 #'
@@ -283,7 +282,7 @@ addTFMotifInfo <- function(p2g,
 getRegulon <- function(p2g,
                        overlap,
                        aggregate=FALSE,
-                       FUN=colMeans){
+                       FUN="mean"){
 
   p2g <- S4Vectors::DataFrame(p2g)
 
@@ -303,7 +302,7 @@ getRegulon <- function(p2g,
 
   if (aggregate) {
     "aggregating regulon ..."
-    regulon_df <- aggregateMatrix(regulon_df[,c("tf","target","Correlation")], "Correlation")
+    regulon_df <- aggregateMatrix(regulon_df[,c("tf","target","Correlation")], "Correlation", FUN="mean")
   }
   colnames(regulon_df)[colnames(regulon_df) == "Correlation"] <- "corr"
   return(regulon_df)

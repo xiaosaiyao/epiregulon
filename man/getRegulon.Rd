@@ -4,16 +4,14 @@
 \alias{getRegulon}
 \title{Combine the TF binding info and peak to gene correlations to generate regulons}
 \usage{
-getRegulon(p2g, overlap, aggregate = FALSE, FUN = colMeans)
+getRegulon(p2g, overlap, aggregate = FALSE, FUN = "mean")
 }
 \arguments{
 \item{p2g}{A Peak2Gene data frame created by ArchR or getP2Glinks() function}
 
 \item{overlap}{A data frame storing overlaps between the regions of the peak matrix with the bulk TF ChIP-seq binding sites computed from addTFMotifInfo}
 
-\item{aggregate}{logical to specify whether regulatory elements are aggregated across the same TF-target pairs}
-
-\item{FUN}{function to aggregate the weights}
+\item{aggregate}{logical to specify whether regulatory elements are aggregated across the same TF-target pairs by calculation mean value for the correlation}
 }
 \value{
 A DataFrame consisting of tf(regulator), target and a column indicating degree of association between TF and target such as "mor" or "corr".
