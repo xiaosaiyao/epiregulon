@@ -1,7 +1,7 @@
 Package: epiregulon
 Type: Package
 Title: Gene regulatory network inference from single cell epigenomic data
-Version: 1.0.31
+Version: 1.0.32
 Date: 2023-7-26
 Authors@R: 
     c(person(given = "Xiaosai", family = "Yao", role = c("aut", "cre"), email = "yao.xiaosai@gene.com", comment = c(ORCID = "0000-0001-9729-0726")),
