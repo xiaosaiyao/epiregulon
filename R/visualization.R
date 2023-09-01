@@ -331,13 +331,14 @@ enrichPlot_ <- function(results,
                         title,
                         top) {
   results$logP.adj <- -log10(results$p.adjust)
-  ggplot(results[seq_len(top), ] , aes_string(y = "-logP.adj",
+  ggplot(results[seq_len(top), ] , aes_string(y = "logP.adj",
                                               x = "Description",
                                               color = "GeneRatio")) +
     scale_colour_gradient(high = "red", low = "blue") +
     geom_point(stat = 'identity', aes_string(size = "Odds.Ratio")) +
     coord_flip() +
     theme_bw() + ggtitle (title) +
+    xlab(expression("-log"[10]~"pval")) +
     theme(
       text = element_text(size = 10),
       axis.text = element_text(size = 8),
@@ -345,7 +346,8 @@ enrichPlot_ <- function(results,
       plot.title = element_text(hjust = 0.5),
       panel.grid.major = element_blank(),
       panel.grid.minor = element_blank(),
-      panel.spacing = unit(0.5, "lines")
+      panel.spacing = unit(0.5, "lines"),
+      axis.title.x = expression()
     )
 }
 
