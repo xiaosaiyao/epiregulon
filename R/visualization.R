@@ -338,7 +338,7 @@ enrichPlot_ <- function(results,
     geom_point(stat = 'identity', aes_string(size = "Odds.Ratio")) +
     coord_flip() +
     theme_bw() + ggtitle (title) +
-    xlab(expression("-log"[10]~"pval")) +
+    ylab(expression("-log"[10]~"pval")) +
     theme(
       text = element_text(size = 10),
       axis.text = element_text(size = 8),
@@ -346,8 +346,7 @@ enrichPlot_ <- function(results,
       plot.title = element_text(hjust = 0.5),
       panel.grid.major = element_blank(),
       panel.grid.minor = element_blank(),
-      panel.spacing = unit(0.5, "lines"),
-      axis.title.x = expression()
+      panel.spacing = unit(0.5, "lines")
     )
 }
 
