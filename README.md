@@ -1,4 +1,5 @@
 # Epiregulon
+![epiregulon_logo-01](https://github.com/xiaosaiyao/epiregulon/assets/70164860/c77e4f39-8dbc-4eeb-8fb4-f3fd940ec621)
 
 Gene regulatory networks model the underlying gene regulation hierarchies that drive gene expression and cell states. The main function of the epiregulon package is to construct gene regulatory networks and infer transcription factor (TF) activity in single cells by integration of scATAC-seq and scRNA-seq data and incorporation of public bulk TF ChIP-seq data.
 
