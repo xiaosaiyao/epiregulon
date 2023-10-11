@@ -14,7 +14,6 @@ calculateActivity(
   genesets = NULL,
   clusters = NULL,
   FUN = c("mean", "sum"),
-  scale_expression = FALSE,
   ncore = 1,
   BPPARAM = BiocParallel::SerialParam()
 )
@@ -42,8 +41,6 @@ contains genes in the first column and weights in the second column. See details
 \item{clusters}{A vector indicating cluster assignment}
 
 \item{FUN}{function to aggregate the weights}
-
-\item{scale_expression}{logical to indicate whether gene expression should be normalized to the mean}
 
 \item{ncore}{Integer specifying the number of cores to be used in AUCell}
 
