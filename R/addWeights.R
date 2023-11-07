@@ -275,9 +275,8 @@ addWeights <- function(regulon,
           prop > 0.9999)
         warning(
           sprintf(
-            "Strong inbalance between groups after applying cutoff to peakMatrix. Consider %s value of the peak_cutoff"
-          ),
-          c("increasing", "decreasing")[(prop < 0.0001) + 1]
+            "Strong inbalance between groups after applying cutoff to peakMatrix. Consider %s value of the peak_cutoff",
+            c("increasing", "decreasing")[(prop < 0.0001) + 1])
         )
     }
     if (!is.null(exp_cutoff)) {
@@ -286,9 +285,8 @@ addWeights <- function(regulon,
           prop > 0.9999)
         warning(
           sprintf(
-            "Strong inbalance between groups after applying cutoff to expMatrix. Consider %s value of the exp_cutoff"
-          ),
-          c("increasing", "decreasing")[(prop < 0.0001) + 1]
+            "Strong inbalance between groups after applying cutoff to expMatrix. Consider %s value of the exp_cutoff",
+            c("increasing", "decreasing")[(prop < 0.0001) + 1])
         )
     }
     keep <- regulon$idxATAC >= 1 & regulon$idxATAC <= nrow(peakMatrix)
@@ -486,9 +484,8 @@ addWeights <- function(regulon,
           prop > 0.9999)
         warning(
           sprintf(
-            "Strong inbalance between groups after applying cutoff to peakMatrix. Consider %s value of the peak_cutoff"
-          ),
-          c("increasing", "decreasing")[(prop < 0.0001) + 1]
+            "Strong inbalance between groups after applying cutoff to peakMatrix. Consider %s value of the peak_cutoff",
+          c("increasing", "decreasing")[(prop < 0.0001) + 1])
         )
     }
     if (!is.null(exp_cutoff)) {
@@ -497,9 +494,8 @@ addWeights <- function(regulon,
           prop > 0.9999)
         warning(
           sprintf(
-            "Strong inbalance between groups after applying cutoff to expMatrix. Consider %s value of the exp_cutoff"
-          ),
-          c("increasing", "decreasing")[(prop < 0.0001) + 1]
+            "Strong inbalance between groups after applying cutoff to expMatrix. Consider %s value of the exp_cutoff",
+          c("increasing", "decreasing")[(prop < 0.0001) + 1])
         )
     }
 
