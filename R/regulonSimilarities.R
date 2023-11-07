@@ -16,31 +16,35 @@ findPartners <- function(graph, focal_tf){
   focal_vertex <- V(graph)[V(graph)$name == focal_tf & V(graph)$type == "transcription factor"]
   if(length(focal_vertex) == 0) stop(sprintf("Focal transcription factor (%s) is not present in the input graph"), focal_tf)
   focal_tf_targets <- igraph::ego(graph, node = focal_vertex, mode = "out", mindist = 1)[[1]]
+  # keep other transcription factors
   redundant_vertices <- setdiff(as.numeric(V(graph)), as.numeric(V(graph)[V(graph)$type=="transcription factor"]))
+  # keep focal tf's target genes
   redundant_vertices <- setdiff(redundant_vertices, as.numeric(focal_tf_targets))
-  # keep only transcription factors and target genes shared with focal transcription factor
+  # prune network removing target genes which do not belong to the focal tf's regulon
   graph <- igraph::delete.vertices(graph, redundant_vertices)
   if(any(duplicated(igraph::ends(graph, es=E(graph))))) stop("Duplicated edges")
   # find focal tf in the new graph
   focal_vertex <- V(graph)[V(graph)$name == focal_tf & V(graph)$type == "transcription factor"]
   other_tfs <- V(graph)[V(graph)$type == "transcription factor" & V(graph)$name != focal_tf]
   all_tfs <- c(focal_vertex, other_tfs)   # focal tf first on the list
-  tf_targets <- igraph::ego(graph, nodes = all_tfs, mindist = 1, mode = "out")
-  tf_targets_subgraphs <- mapply(function(x,y) igraph::subgraph(graph, vids = c(x, y)), all_tfs, tf_targets)
+  focal_tf_targets <- V(graph)[V(graph)$type == "target gene"]
+  # create regulons using focal tf's target genes
+  tf_targets_subgraphs <- lapply(all_tfs, function(tf, targets) igraph::subgraph(graph, vids = c(tf, intersection(targets, subcomponent(graph, tf, mode ="out")))), focal_tf_targets)
   res_list <- list()
   focal_weights <- igraph::get.edge.attribute(tf_targets_subgraphs[[1]], index =  E(tf_targets_subgraphs[[1]]), name = "weight")
-  focal_tf_targets <- ends(tf_targets_subgraphs[[1]], E(tf_targets_subgraphs[[1]]))[,2]
   for(i in seq_along(all_tfs)){
     # skip focal tf
     if(i == 1) next
-    tf <- all_tfs[i]
-    common_targets <- ends(tf_targets_subgraphs[[i]], E(tf_targets_subgraphs[[i]]))[,2]
+    tf <- V(tf_targets_subgraphs[[i]])[V(tf_targets_subgraphs[[i]])$type=="transcription factor" & V(tf_targets_subgraphs[[i]])$name==all_tfs[i]$name]
+    common_targets <- V(tf_targets_subgraphs[[i]])[V(tf_targets_subgraphs[[i]])$type=="target gene"]
+    edges_to_tf <- shortest_paths(tf_targets_subgraphs[[i]], from=tf, to=common_targets, output="epath")
+    edges_to_tf <- do.call(c, edges_to_tf)
     # find indices of common targets in all targets of focal tf
-    common_targets_ind <- match(common_targets, focal_tf_targets)
-    res_list[[tf$name]] <- data.frame(target = common_targets,
+    common_targets_ind <- match(common_targets$name, focal_tf_targets$name)
+    res_list[[tf$name]] <- data.frame(target = common_targets$name,
                                       focal_weight = focal_weights[common_targets_ind],
                                       other_tf_weight = igraph::get.edge.attribute(tf_targets_subgraphs[[i]],
-                                                                                   index = E(tf_targets_subgraphs[[i]]),
+                                                                                   index = edges_to_tf,
                                                                                    name = "weight"))
     res_list[[tf$name]]$weight_product <- res_list[[tf$name]]$focal_weight * res_list[[tf$name]]$other_tf_weight
   }
