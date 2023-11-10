@@ -19,7 +19,7 @@ vignette: >
 knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>",
-  eval = FALSE
+  eval = TRUE
 )
 ```
 
@@ -65,7 +65,10 @@ PeakMatrix <- mae[["PeakMatrix"]]
 # expression matrix
 GeneExpressionMatrix <- mae[["GeneExpressionMatrix"]]
 rownames(GeneExpressionMatrix) <- rowData(GeneExpressionMatrix)$name
-assay(GeneExpressionMatrix) <- as(log2(assay(GeneExpressionMatrix)+1), "CsparseMatrix")
+
+assay(GeneExpressionMatrix,"normalizedCounts") <- assay(GeneExpressionMatrix,2)
+assay(GeneExpressionMatrix,"logcounts") <- log2(assay(GeneExpressionMatrix,"normalizedCounts")+1)
+
 
 # dimensional reduction matrix
 reducedDimMatrix <- reducedDim(mae[['TileMatrix500']], "LSI_ATAC")
@@ -101,7 +104,9 @@ Next, we compute peak to gene correlations using a custom algorithm that has sim
 set.seed(1010)
 p2g <- calculateP2G(peakMatrix = PeakMatrix, 
                     expMatrix = GeneExpressionMatrix, 
-                    reducedDim = reducedDimMatrix)
+                    reducedDim = reducedDimMatrix,
+                    exp_assay = "normalizedCounts",
+                    peak_assay = "counts")
 
 p2g
 
@@ -143,7 +148,7 @@ We calculate cluster-specific p-values if users supply cluster labels. This is u
 ```{r network pruning, results = "hide", message = FALSE}
 
 pruned.regulon <- pruneRegulon(expMatrix = GeneExpressionMatrix,
-                               exp_assay = "logcounts",
+                               exp_assay = "normalizedCounts",
                                peakMatrix = PeakMatrix,
                                peak_assay = "counts",
                                test = "chi.sq",
@@ -166,7 +171,7 @@ Three measures (correlation, Wilcoxon statistics and log 2 fold difference) give
 
 regulon.w <- addWeights(regulon = pruned.regulon,
                         expMatrix  = GeneExpressionMatrix,
-                        exp_assay  = "logcounts",
+                        exp_assay  = "normalizedCounts",
                         peakMatrix = PeakMatrix,
                         peak_assay = "counts",
                         clusters = GeneExpressionMatrix$Clusters,
@@ -209,7 +214,7 @@ score.combine <- calculateActivity(expMatrix = GeneExpressionMatrix,
                                    regulon = regulon.w, 
                                    mode = "weight", 
                                    method = "weightedMean", 
-                                   exp_assay = "logcounts",
+                                   exp_assay = "normalizedCounts",
                                    normalize = FALSE)
 
 ```
