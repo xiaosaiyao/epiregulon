@@ -11,8 +11,8 @@ After network pruning, we would like to further estimate the strength of regulat
 The target genes of TFs can be queried against known pathways to predict the functions of TFs. We can also perform differential network analysis between cluster-specific networks. Here we perform edge subtraction between two networks and the TFs are ranked by the degree centrality of the differential graphs. 
 
 
-![plot](src/epiregulon_schematics.svg)   
+![plot](inst/epiregulon_schematics.svg)   
 
 Current prerequisites for running epiregulon include pre-computed peak matrix,  gene expression matrix and dimensionality reduction. Epiregulon offers seamless integration with ArchR. Alternately, users can analyze their data using their favorite analysis tools and package their matrices into `MultiAssayExperiment` (See `scMultiome` package). The scATAC-seq experiment can be either paired or unpaired with the scRNA-seq dataset as long as they were already integrated. The final output of epiregulon is a matrix of TF activities where rows are individual TFs and columns are single cell indexes.
 
-![plot](src/epiregulon_functions.svg)
+![plot](inst/epiregulon_functions.svg)

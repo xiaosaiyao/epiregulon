@@ -1,67 +1,3 @@
-#' Compute correlations between ATAC-seq peaks and RNA-seq genes
-#'
-#' @param archr_path String indicating the path to a ArchR project that has already performed LSI dimensionality reduction and scRNA-seq integration
-#' @param cor_cutoff A numeric scalar to indicate the cutoff for correlations between ATAC-seq peaks and RNA-seq genes
-#' @param reducedDims String specifying which dimensional reduction representation in the ArchR project to use
-#' @param useMatrix String specifying which data matrix in the ArchR project to use
-#' @param ... other parameters to pass to addPeak2GeneLinks from ArchR package
-#'
-#' @return A Peak2Gene correlation data frame
-#' @import ArchR utils
-#' @importFrom BSgenome.Hsapiens.UCSC.hg38 BSgenome.Hsapiens.UCSC.hg38
-#' @importFrom BSgenome.Hsapiens.UCSC.hg19  BSgenome.Hsapiens.UCSC.hg19
-#' @importFrom BSgenome.Mmusculus.UCSC.mm10 BSgenome.Mmusculus.UCSC.mm10
-#' @export
-#' @author Shang-yang Chen
-
-
-getP2Glinks <- function(archr_path,
-                        cor_cutoff = 0.5,
-                        reducedDims = "IterativeLSI",
-                        useMatrix = "GeneIntegrationMatrix",
-                        ...){
-
- .Deprecated("calculateP2G")
-
- ArchR::addArchRLogging(useLogs = FALSE)
-
-  suppressMessages(proj <- ArchR::loadArchRProject(archr_path))
-
-  proj <- ArchR::addPeak2GeneLinks(
-    ArchRProj = proj,
-    reducedDims = reducedDims,
-    useMatrix = useMatrix,
-    logFile = "x",
-    ...
-  )
-
-  p2g <- ArchR::getPeak2GeneLinks(
-    ArchRProj = proj,
-    corCutOff = cor_cutoff,
-    resolution = 1000,
-    returnLoops = FALSE
-  )
-
-  # Get metadata from p2g object and turn into df with peak indexes
-  peak_metadata <- as.data.frame(S4Vectors::metadata(p2g)[[1]]) # shows  chromosome, start, and end coordinates for each peak
-  peak_metadata$idxATAC <- as.numeric(rownames(peak_metadata))
-
-  gene_metadata <- as.data.frame(S4Vectors::metadata(p2g)[[2]]) # shows gene name and RNA index of genomic ranges
-  gene_metadata$idxRNA <- as.numeric(rownames(gene_metadata))
-
-  # Add gene names, chromosome num, chrom start, and chrom end to dataframe
-  p2g <- as.data.frame(p2g)
-  p2g_merged <- merge(p2g, gene_metadata, by = "idxRNA") # merge by gene ID
-  p2g_merged <- merge(p2g_merged, peak_metadata, by = "idxATAC") # merge by peak ID
-
-  p2g_merged <- p2g_merged[, c("idxATAC","seqnames.x","idxRNA","name","Correlation")]
-  colnames(p2g_merged) <- c("idxATAC","Chrom","idxRNA", "Gene","Correlation")
-  p2g_merged <- p2g_merged[order(p2g_merged$idxATAC,p2g_merged$idxRNA),]
-
-  return(p2g_merged)
-}
-
-
 #' Retrieve TF binding sites or motif positions
 #'
 #' Combined transcription factor ChIP-seq data from ChIP-Atlas and ENCODE or
@@ -69,10 +5,6 @@ getP2Glinks <- function(archr_path,
 #' @param mode a string indicating whether to download a GRangelist of TF binding sites ("occupancy") or motif matches ("motif").
 #' TF binding information is retrieved from [scMultiome](https://github.com/xiaosaiyao/scMultiome/blob/devel/R/tfBinding.R) whereas
 #' motif information is annotated by cisbp from [chromVARmotifs](https://github.com/GreenleafLab/chromVARmotifs)
-#' @param archr_path Character string indicating the path of the ArchR project to retrieve motif information if
-#' motif enrichment was already performed. If no motif enrichment has been performed, first annotate the ArchR using
-#' `addMotifAnnotations`. If no ArchR project is provided, the user can also provide peaks in the form of GRanges and
-#' this function will annotate the peaks with Cisbp
 #' @param motif_name Character string	indicating name of the peakAnnotation object (i.e. Motifs) to retrieve from the designated ArchRProject.
 #' @param peaks A GRanges object indicating the peaks to perform motif annotation on if ArchR project is not provided.
 #' The peak indices should match the `re` column in the regulon
@@ -96,7 +28,6 @@ getTFMotifInfo <- function (genome = c("hg38", "hg19", "mm10"),
                             source = c("atlas", "cistrome"),
                             metadata = FALSE,
                             mode = c("occupancy","motif"),
-                            archr_path = NULL,
                             motif_name = "Motif",
                             peaks = NULL) {
   genome <- match.arg(genome)
@@ -107,21 +38,7 @@ getTFMotifInfo <- function (genome = c("hg38", "hg19", "mm10"),
     grl <- scMultiome::tfBinding(genome, source, metadata)
   } else if (mode == "motif") {
 
-    if (!is.null(archr_path)) {
-      message("retrieving previously annotated motif from ArchR project")
-      ArchProj <-
-        ArchR::loadArchRProject(path = archr_path, showLogo = FALSE)
-      matches <- ArchR::getMatches(ArchProj, name = motif_name)
-      motifs <- assay(matches, "matches")
 
-      grl <- list()
-      for (tf in colnames(motifs)){
-        grl[[tf]] <- SummarizedExperiment::rowRanges(matches[motifs[,tf],])
-      }
-      grl <- GenomicRanges::GRangesList(grl)
-      names(grl) <- unlist(lapply(strsplit(names(grl), split="_|\\."), "[", 1))
-
-    } else {
       species <- switch(genome,
                         hg38 = "human",
                         hg19 = "human",
@@ -139,7 +56,7 @@ getTFMotifInfo <- function (genome = c("hg38", "hg19", "mm10"),
       names(grl) <- lapply(strsplit(names(grl), split="_|\\."), "[", 3)
       }
 
-  }
+
 
   grl
 }
@@ -153,7 +70,6 @@ getTFMotifInfo <- function (genome = c("hg38", "hg19", "mm10"),
 #' contains TF occupancy data derived from public and ENCODE ChIP-seq peaks. Alternatively, if the users would like to provide a GRangeList
 #' of motif annotations. This can be derived using `motifmatchr::matchMotifs`. See details
 #' @param peakMatrix A matrix of scATAC-seq peak regions with peak ids as rows
-#' @param archR_project_path Path to an ArchR project that have performed LSI dimensionality reduction and scRNA-seq integration
 #'
 #' @return A data frame containing overlapping ids of scATAC-seq peak regions and reference TF binding regions
 #' @details This function annotates each regulatory element with possible transcription factors. We can either provide a GRangeList of known ChIP-seq
@@ -214,15 +130,10 @@ getTFMotifInfo <- function (genome = c("hg38", "hg19", "mm10"),
 
 addTFMotifInfo <- function(p2g,
                            grl,
-                           peakMatrix = NULL,
-                           archR_project_path = NULL){
+                           peakMatrix = NULL){
 
-  if (!is.null(archR_project_path)) {
-    proj <- loadArchRProject(path = archR_project_path, showLogo = FALSE)
-    peakSet <- getPeakSet(ArchRProj = proj)
-  } else {
-    peakSet <- rowRanges(peakMatrix)
-  }
+
+  peakSet <- rowRanges(peakMatrix)
 
   message("Computing overlap...")
   overlap <- GenomicRanges::findOverlaps(peakSet, grl)
@@ -241,8 +152,8 @@ addTFMotifInfo <- function(p2g,
 #'
 #' @param p2g A Peak2Gene data frame created by ArchR or getP2Glinks() function
 #' @param overlap A data frame storing overlaps between the regions of the peak matrix with the bulk TF ChIP-seq binding sites computed from addTFMotifInfo
-#' @param aggregate logical to specify whether regulatory elements are aggregated across the same TF-target pairs by calculation mean value for the correlation
-#'
+#' @param aggregate logical to specify whether regulatory elements are aggregated across the same TF-target pairs
+#' @param FUN function to aggregate TF-target sharing different regulatory elements
 #' @return A DataFrame consisting of tf(regulator), target and a column indicating degree of association between TF and target such as "mor" or "corr".
 #'
 #' @export

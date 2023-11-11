@@ -8,7 +8,6 @@ calculateP2G(
   peakMatrix = NULL,
   expMatrix = NULL,
   reducedDim = NULL,
-  ArchR_path = NULL,
   useDim = "IterativeLSI",
   useMatrix = "GeneIntegrationMatrix",
   maxDist = 250000,
@@ -30,8 +29,6 @@ calculateP2G(
 the genes in the form of \code{GRanges}. \code{rowData} should contain a column of gene symbols with column name matching the \code{gene_symbol} argument.}
 
 \item{reducedDim}{A matrix of dimension reduced values}
-
-\item{ArchR_path}{String specifying the path to an ArchR project if ArchR's implementation of addPeak2GeneLinks is desired}
 
 \item{useDim}{String specifying the dimensional reduction representation in the ArchR project to use or the name of the reduced dimension matrix supplied by the user}
 

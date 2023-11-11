@@ -5,7 +5,6 @@
 #' @param expMatrix A SingleCellExperiment object containing gene expression counts from scRNA-seq. `rowRanges` should contain genomic positions of
 #' the genes in the form of `GRanges`. `rowData` should contain a column of gene symbols with column name matching the `gene_symbol` argument.
 #' @param reducedDim A matrix of dimension reduced values
-#' @param ArchR_path String specifying the path to an ArchR project if ArchR's implementation of addPeak2GeneLinks is desired
 #' @param cor_cutoff A numeric scalar to specify the correlation cutoff between ATAC-seq peaks and RNA-seq genes to assign peak to gene links.
 #'  Default correlation cutoff is 0.5.
 #' @param useDim String specifying the dimensional reduction representation in the ArchR project to use or the name of the reduced dimension matrix supplied by the user
@@ -58,7 +57,6 @@
 calculateP2G <- function(peakMatrix = NULL,
                          expMatrix = NULL,
                          reducedDim = NULL,
-                         ArchR_path = NULL,
                          useDim = "IterativeLSI",
                          useMatrix = "GeneIntegrationMatrix",
                          maxDist = 250000,
@@ -72,50 +70,8 @@ calculateP2G <- function(peakMatrix = NULL,
                          ...) {
 
 
-  if (!is.null(ArchR_path)) {
-    ArchR::addArchRLogging(useLogs = FALSE)
-
-    writeLines("Using ArchR to compute peak to gene links...")
-    suppressMessages(obj <- ArchR::loadArchRProject(ArchR_path))
-
-    obj <- ArchR::addPeak2GeneLinks(
-      ArchRProj = obj,
-      reducedDims = useDim,
-      useMatrix = useMatrix,
-      logFile = "x",
-      ...
-    )
-
-    p2g <- ArchR::getPeak2GeneLinks(
-      ArchRProj = obj,
-      corCutOff = cor_cutoff,
-      resolution = 1000,
-      returnLoops = FALSE
-    )
-
-    # Get metadata from p2g object and turn into df with peak indexes
-    peak_metadata <- as.data.frame(S4Vectors::metadata(p2g)[[1]]) # shows  chromosome, start, and end coordinates for each peak
-    peak_metadata$idxATAC <- seq_along(rownames(peak_metadata))
-
-    gene_metadata <- as.data.frame(S4Vectors::metadata(p2g)[[2]]) # shows gene name and RNA index of genomic ranges
-    gene_metadata$idxRNA <- seq_along(rownames(gene_metadata))
-
-    # Add gene names and peak positions to dataframe
-    p2g_merged <- merge(p2g, gene_metadata, by = "idxRNA") # merge by gene ID
-    p2g_merged <- merge(p2g_merged, peak_metadata, by = "idxATAC") # merge by peak ID
-
-    # Calculate distance
-    p2g_merged$distance <- abs((p2g_merged$start.y + p2g_merged$end.y)/2 - (p2g_merged$start.x + p2g_merged$end.x)/2)
-
-    # Extract relevant columns
-    p2g_merged <- p2g_merged[, c("idxATAC", "seqnames.y", "start.y","end.y", "idxRNA", "name", "Correlation", "distance")]
-    colnames(p2g_merged) <- c("idxATAC", "chr", "start","end", "idxRNA", "target", "Correlation", "distance")
-
-
-
-
-  } else if (!is.null(peakMatrix) &
-             !is.null(expMatrix) & !is.null(reducedDim)) {
+  if (!is.null(peakMatrix) &
+      !is.null(expMatrix) & !is.null(reducedDim)) {
 
     writeLines("Using epiregulon to compute peak to gene links...")
 
