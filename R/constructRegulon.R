@@ -44,9 +44,9 @@ getTFMotifInfo <- function (genome = c("hg38", "hg19", "mm10"),
                         hg19 = "human",
                         mm10 = "mouse")
       BS.genome <- switch(genome,
-                          hg38 = "BSgenome.Hsapiens.UCSC.hg38",
-                          hg19 = "BSgenome.Hsapiens.UCSC.hg19",
-                          mm10 = "BSgenome.Mmusculus.UCSC.mm10")
+                          hg38 = BSgenome.Hsapiens.UCSC.hg38::BSgenome.Hsapiens.UCSC.hg38,
+                          hg19 = BSgenome.Hsapiens.UCSC.hg19::BSgenome.Hsapiens.UCSC.hg19,
+                          mm10 = BSgenome.Mmusculus.UCSC.mm10::BSgenome.Mmusculus.UCSC.mm10)
 
       message("keeping only standard chromosomes..")
       peaks <- GenomeInfoDb::keepStandardChromosomes(peaks, pruning.mode = "coarse")

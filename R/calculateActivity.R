@@ -62,7 +62,8 @@
 #'                         expMatrix = gene_sce,
 #'                         clusters = gene_sce$Treatment,
 #'                         exp_assay = "logcounts",
-#'                         min_targets = 5)
+#'                         min_targets = 5,
+#'                         method = "corr")
 #'
 #' # calculate activity
 #' activity <- calculateActivity(expMatrix = gene_sce,
