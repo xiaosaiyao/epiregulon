@@ -1,8 +1,7 @@
 Package: epiregulon
-Type: Package
 Title: Gene regulatory network inference from single cell epigenomic data
-Version: 1.0.35
-Date: 2023-7-26
+Version: 1.0.36
+Date: 2023-11-12
 Authors@R: 
     c(person(given = "Xiaosai", family = "Yao", role = c("aut", "cre"), email = "yao.xiaosai@gene.com", comment = c(ORCID = "0000-0001-9729-0726")),
     person(given = "Shang-Yang", family = "Chen", role = "aut", email = "sychen9584@gmail.com"))
@@ -23,7 +22,6 @@ Imports:
     lifecycle,
     methods,
     scran,
-    scater,
     scuttle,
     stats,
     utils,
@@ -46,7 +44,8 @@ Suggests:
     dsassembly,
     BiocStyle,
     testthat (>= 3.0.0),
-    coin
+    coin,
+    scater
 LinkingTo: Rcpp
 VignetteBuilder: knitr
 URL:
