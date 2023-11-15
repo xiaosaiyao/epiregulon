@@ -49,6 +49,7 @@ pvals <- c()
 for(i in 1:4){
   pvals[i] <- suppressWarnings(chisq.test(c(triplet_n[i], 100-triplet_n[i]),
                                           p = c(null_probs[i],1- null_probs[i]))$p.val)
+  pvals[i][is.na(pvals[i])] <- 1
 }
 
 test_that("pruneRegulon calculates p-values with chi-square test correctly", {
@@ -115,7 +116,8 @@ for(i in 1:4){
                                            p = c(null_probs_C2[i], 1- null_probs_C2[i]))$p.val)
 }
 
-#
+pvals_C1[is.na(pvals_C1)] <- 1
+pvals_C2[is.na(pvals_C2)] <- 1
 
 # create data frame with
 pvals <- data.frame(C1 = pvals_C1, C2 = pvals_C2)
@@ -230,7 +232,9 @@ for(i in 1:4){
                                             p = c(null_probs[i], 1- null_probs[i]))$p.val)
 }
 
-
+pvals_C1[is.na(pvals_C1)] <- 1
+pvals_C2[is.na(pvals_C2)] <- 1
+pvals_all[is.na(pvals_all)] <- 1
 pvals <- data.frame(C1 = pvals_C1, C2 = pvals_C2, all = pvals_all)
 # remove rows with NaN values
 pvals <- suppressWarnings(pvals[is.finite(apply(pvals,1,function(x) min(x, na.rm = TRUE))),])

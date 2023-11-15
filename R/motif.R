@@ -1,11 +1,6 @@
 #' Add Motif Scores
 #'
 #' @param regulon A DataFrame consisting of tf (regulator) and target in the column names.
-#' @param archr_path Character string indicating the path of the ArchR project to retrieve motif information if
-#' motif enrichment was already performed. If no motif enrichment has been performed, first annotate the ArchR using
-#' `addMotifAnnotations`. If no ArchR project is provided, the user can also provide peaks in the form of GRanges and
-#' this function will annotate the peaks with Cisbp
-#' @param ArchProj An ArchR project as an alternative to providing an ArchR path
 #' @param field_name Character string	indicating the column name of the regulon to add the motif information to
 #' @param motif_name Character string	indicating name of the peakAnnotation object (i.e. Motifs) to retrieve from the designated ArchRProject.
 #' @param peaks A GRanges object indicating the peaks to perform motif annotation on if ArchR project is not provided.
@@ -22,7 +17,6 @@
 #' @examples
 #' regulon <- S4Vectors::DataFrame(tf = c("AR","AR","AR","ESR1","ESR1","NKX2-1"),
 #' idxATAC = 1:6)
-
 #' peaks <- GRanges(seqnames = c("chr12","chr19","chr19","chr11","chr6","chr1"),
 #' ranges = IRanges(start = c(124914563,50850844, 50850844, 101034172, 151616327, 1000),
 #' end = c(124914662,50850929, 50850929, 101034277, 151616394,2000)))
@@ -31,8 +25,6 @@
 
 
 addMotifScore <- function(regulon,
-                          archr_path=NULL,
-                          ArchProj=NULL,
                           field_name="motif",
                           motif_name="Motif",
                           peaks=NULL,
@@ -44,31 +36,12 @@ addMotifScore <- function(regulon,
   species <- match.arg(species)
   genome <- match.arg(genome)
 
-  if (!is.null(archr_path)){
-    ArchProj <-
-      ArchR::loadArchRProject(path = archr_path, showLogo = FALSE)
-  }
-
-  if (!is.null(ArchProj) & is.null(peaks)) {
-    message("retrieving motif information from ArchR project")
-    matches <- ArchR::getMatches(ArchProj, name = motif_name)
-    motifs <- assay(matches, "matches")
-
-    # Convert motifs to gene names
-    motif_names <- unlist(lapply(strsplit(colnames(motifs), split="_"), "[", 1))
-
-    # match motif_names and official gene symbols
-
-    colnames(motifs) <- matchNames(motif_names, regulon)
-
-
-
-  } else if (is.null(ArchProj) & !is.null(peaks)) {
+  if (!is.null(peaks)) {
     message ("annotating peaks with motifs")
     BS.genome <- switch(genome,
-                      hg38 = "BSgenome.Hsapiens.UCSC.hg38",
-                      hg19 = "BSgenome.Hsapiens.UCSC.hg19",
-                      mm10 = "BSgenome.Mmusculus.UCSC.mm10")
+                        hg38 = "BSgenome.Hsapiens.UCSC.hg38",
+                        hg19 = "BSgenome.Hsapiens.UCSC.hg19",
+                        mm10 = "BSgenome.Mmusculus.UCSC.mm10")
 
     peaks <- GenomeInfoDb::keepStandardChromosomes(peaks, pruning.mode = "coarse")
     motifs <- annotateMotif(species, peaks, BS.genome, pwms, ...)
@@ -81,7 +54,7 @@ addMotifScore <- function(regulon,
 
   } else {
 
-    stop("specify either an ArchR project path OR supply a GenomicRanges object for peaks")
+    stop("supply a GenomicRanges object for peaks")
   }
 
 
@@ -105,22 +78,11 @@ addMotifScore <- function(regulon,
 
 }
 
-species_motif <- function(species, env) {
-  if(species == "human"){
-    data("human_pwms_v1", package = "chromVARmotifs", envir = environment())
-    return(environment()$human_pwms_v1)
-  }
-  else if (species == "mouse"){
-    data("mouse_pwms_v1", package = "chromVARmotifs", envir = environment())
-    return(environment()$mouse_pwms_v1)
-  }
-  else stop("Species should be 'human' or 'mouse'")
-}
 
 annotateMotif <- function(species, peaks, genome, pwms = NULL, ...) {
 
   if (is.null(pwms)){
-    pwms <- species_motif(species, env = environment())
+    pwms <- species_motif(species)
   }
   motifs <- motifmatchr::matchMotifs(pwms=pwms,
                                      subject=peaks,
@@ -129,6 +91,17 @@ annotateMotif <- function(species, peaks, genome, pwms = NULL, ...) {
 
 }
 
+species_motif <- function(species) {
+  if(species == "human"){
+    data("human_pwms_v1", package = "epiregulon", envir = environment())
+    return(environment()$human_pwms_v1)
+  }
+  else if (species == "mouse"){
+    data("mouse_pwms_v1", package = "epiregulon", envir = environment())
+    return(environment()$mouse_pwms_v1)
+  }
+  else stop("Species should be 'human' or 'mouse'. Please provide your own pwms for other species")
+}
 
 matchNames <- function(motif_names, regulon){
   unique_tf <- data.frame(original = unique(regulon$tf),
@@ -147,4 +120,30 @@ matchNames <- function(motif_names, regulon){
   official[which(is.na(official))] <- motif_names[which(is.na(official))]
   official
 }
+
+
+
+#' human_pwms_v1
+#'
+#' Collection of human pwms
+#' @docType data
+#' @keywords datasets
+#' @name human_pwms_v1
+#' @details These motifs were curated from the cisBP database. Position
+#' frequency matrices were converted to PWMs by taking the log
+#' of the frequencies (after adding a pseudocount of 0.008) divided by 0.25.
+
+
+#' mouse_pwms_v1
+#'
+#' Collection of mouse pwms
+#' @details These motifs were curated from the cisBP database. Position
+#' frequency matrices were converted to PWMs by taking the log
+#' of the frequencies (after adding a pseudocount of 0.008) divided by 0.25.
+#' @docType data
+#' @keywords datasets
+#' @name mouse_pwms_v1
+#' @usage data(mouse_pwms_v1)
+
+
 

@@ -115,6 +115,11 @@ pruneRegulon <- function(regulon,
                          useDim = "IterativeLSI_ATAC",
                          cellNum = 10,
                          BPPARAM = BiocParallel::SerialParam(progressbar = TRUE)){
+  tryCatch(ncol(peakMatrix), error = function(cond) stop("'ncol' method should be defined for the 'peakMatrix' object"))
+  tryCatch(ncol(expMatrix), error = function(cond) stop("'ncol' method should be defined for the 'expMatrix' object"))
+  clusters <- tryCatch(as.vector(clusters), error = function(cond) stop("'clusters' should be coercible to a vector"))
+  stopifnot(ncol(peakMatrix)==ncol(expMatrix))
+  if(!is.null(clusters) && length(clusters) != ncol(expMatrix)) stop("The 'clusters' length should be the same length as the number of columns in 'expMatrix' and 'peakMatrix'")
 
   # choose test method
   test <- match.arg(test)
@@ -272,10 +277,13 @@ pruneRegulon <- function(regulon,
     peak.prop <- stats$peak / cluster_freq
     target.prop <- stats$target / cluster_freq
     null_probability <- peak.prop * target.prop
-
+    # if p=0 or 1 chi square test would produce NaN values
+    test_unavailable_ind <- null_probability%%1==0
     res <- chisqTest(k = stats$triple, size = cluster_freq, p = null_probability)
     colnames(res$p) <- sprintf("pval_%s", unique_clusters)
     colnames(res$stat) <- sprintf("stats_%s", unique_clusters)
+    res$p[test_unavailable_ind] <- 1
+    res$stat[test_unavailable_ind] <- 0
     res <- cbind(res$p, res$stat)
 
   } else {

@@ -32,15 +32,12 @@
 #' the magnitude of gene expression changes induced by transcription factor activity, using one of the four methods:
 #' \itemize{
 #' \item{`corr` - correlation between TF and target gene expression}
-#' \item{`lmfit` - coefficients of target genes estimated from linear regression of TF ~ TG}
 #' \item{`MI` - mutual information between the TF and target gene expression}
 #' \item{`wilcoxon` - effect size of the Wilcoxon test between target gene expression in cells jointly expressing all 3 elements vs
-#' cells that do not}
-#' \item{`logFC` - log 2 fold difference of target gene expression in cells jointly expressing all 3 elements vs cells that do not}
-#' }
-#' Four measures (`corr`, `lmfit`, `wilcoxon` and `logFC`) give both the magnitude and directionality of changes whereas `MI` always outputs
-#' positive weights. The correlation, linear fit and mutual information statistics are computed on the pseudobulked gene expression or accessibility
-#' matrices, whereas the Wilcoxon and log fold change group cells based on the joint expression of TF, RE and TG in each single cell.
+#' cells that do not}}
+#' Two measures (`corr` and `wilcoxon`) give both the magnitude and directionality of changes whereas `MI` always outputs
+#' positive weights. The correlation and mutual information statistics are computed on the pseudobulked gene expression or accessibility
+#' matrices, whereas the Wilcoxon method groups cells based on the joint expression of TF, RE and TG in each single cell.
 #'
 #' When using the `corr` method, the default practice is to compute weights by correlating the pseudobulk target gene expression vs
 #' the pseudobulk TF gene expression. However, often times, an inhibitor of TF does not alter the gene expression of the TF.
@@ -71,13 +68,13 @@
 #' # add weights to regulon
 #' regulon.w <- addWeights(regulon=regulon, expMatrix=expMatrix, exp_assay="logcounts",
 #' peakMatrix=peakMatrix, peak_assay="counts", clusters=expMatrix$cluster,
-#' min_targets=5, method="logFC")
+#' min_targets=5, method="wilcox")
 #'
 #' # add weights with cell aggregation
 #' expMatrix <- scater::runPCA(expMatrix)
 #' regulon.w <- addWeights(regulon=regulon, expMatrix=expMatrix, exp_assay="logcounts",
 #' peakMatrix=peakMatrix, peak_assay="counts", clusters=expMatrix$cluster,
-#' min_targets=5, method="logFC", aggregateCells=TRUE, cellNum=3, useDim = "PCA")
+#' min_targets=5, method="wilcox", aggregateCells=TRUE, cellNum=3, useDim = "PCA")
 #'
 #' @author Xiaosai Yao, Shang-yang Chen, Tomasz Wlodarczyk
 
@@ -87,7 +84,7 @@ addWeights <- function(regulon,
                        peakMatrix = NULL,
                        exp_assay = "logcounts",
                        peak_assay = "PeakMatrix",
-                       method = c("corr", "MI", "lmfit", "logFC", "wilcoxon"),
+                       method = c("wilcoxon", "corr", "MI"),
                        clusters = NULL,
                        exp_cutoff = 1,
                        peak_cutoff = 0,
@@ -102,6 +99,17 @@ addWeights <- function(regulon,
   # choose method
   method <- match.arg(method)
   message("adding weights using ", method, "...")
+
+  if(!is.null(clusters)){
+    clusters <- tryCatch(as.vector(clusters),
+             error = function(cond){
+               message("'clusters' argument should be coercible to a vector")
+               stop(cond)
+             })
+    if(length(clusters) != ncol(expMatrix)){
+      stop("'clusters' length should be equal to the number of cells")
+    }
+  }
 
   # pseudobulk
   if (aggregateCells) {
@@ -119,7 +127,7 @@ addWeights <- function(regulon,
       kclusters <- list()
       for (cluster in unique(clusters)) {
         sce <- expMatrix[, which(clusters == cluster)]
-        kNum <- trunc(ncol(sce) / cellNum)
+        kNum <- max(trunc(ncol(sce) / cellNum), 1)
         kclusters[[cluster]] <- scran::clusterCells(
           sce,
           use.dimred = useDim,
@@ -201,7 +209,7 @@ addWeights <- function(regulon,
       )
   }
 
-  if (method %in% c("logFC", "wilcoxon") | tf_re.merge) {
+  if (method %in% c("wilcoxon") | tf_re.merge) {
     if (is.null(peakMatrix))
       stop("Peak matrix should be provided")
     if (any(dim(peakMatrix) == 0))
@@ -242,7 +250,7 @@ addWeights <- function(regulon,
   unique_clusters <- sort(unique(clusters))
 
   # define weight matrix
-  if (method %in%  c("corr", "MI", "lmfit")) {
+  if (method %in%  c("corr", "MI")) {
     regulon$weight <- NA
     regulon.split <- split(regulon, regulon$tf)
 
@@ -264,9 +272,8 @@ addWeights <- function(regulon,
           prop > 0.9999)
         warning(
           sprintf(
-            "Strong inbalance between groups after applying cutoff to peakMatrix. Consider %s value of the peak_cutoff"
-          ),
-          c("increasing", "decreasing")[(prop < 0.0001) + 1]
+            "Strong inbalance between groups after applying cutoff to peakMatrix. Consider %s value of the peak_cutoff",
+            c("increasing", "decreasing")[(prop < 0.0001) + 1])
         )
     }
     if (!is.null(exp_cutoff)) {
@@ -275,9 +282,8 @@ addWeights <- function(regulon,
           prop > 0.9999)
         warning(
           sprintf(
-            "Strong inbalance between groups after applying cutoff to expMatrix. Consider %s value of the exp_cutoff"
-          ),
-          c("increasing", "decreasing")[(prop < 0.0001) + 1]
+            "Strong inbalance between groups after applying cutoff to expMatrix. Consider %s value of the exp_cutoff",
+            c("increasing", "decreasing")[(prop < 0.0001) + 1])
         )
     }
     keep <- regulon$idxATAC >= 1 & regulon$idxATAC <= nrow(peakMatrix)
@@ -389,6 +395,9 @@ addWeights <- function(regulon,
   }
 
   if (method %in% c("corr", "MI", "lmfit")) {
+    if(is.null(clusters)){
+      stop("'clusters' argument should be provided for ", method, " method")
+    }
     message("calculating average expression across clusters...")
 
     # define groupings
@@ -454,72 +463,8 @@ addWeights <- function(regulon,
     )
 
 
-  } else if (method == "lmfit") {
-    output_df <- BiocParallel::bplapply(
-      X = seq_len(length(regulon.split)),
-      FUN = use_lmfit_method,
-      regulon.split,
-      expMatrix,
-      peakMatrix,
-      tf_re.merge,
-      BPPARAM = BPPARAM
-    )
-
-  } else if (method == "logFC") {
-    if (!is.null(peak_cutoff)) {
-      prop = sum(peakMatrix > peak_cutoff) / prod(dim(peakMatrix))
-      if (prop < 0.0001 |
-          prop > 0.9999)
-        warning(
-          sprintf(
-            "Strong inbalance between groups after applying cutoff to peakMatrix. Consider %s value of the peak_cutoff"
-          ),
-          c("increasing", "decreasing")[(prop < 0.0001) + 1]
-        )
-    }
-    if (!is.null(exp_cutoff)) {
-      prop = sum(expMatrix > exp_cutoff) / prod(dim(expMatrix))
-      if (prop < 0.0001 |
-          prop > 0.9999)
-        warning(
-          sprintf(
-            "Strong inbalance between groups after applying cutoff to expMatrix. Consider %s value of the exp_cutoff"
-          ),
-          c("increasing", "decreasing")[(prop < 0.0001) + 1]
-        )
-    }
-
-    for (cluster in c("all", unique_clusters)) {
-      if (cluster == "all" & !is.null(clusters)) {
-        cluster.current <- unique_clusters
-      } else if (cluster == "all" & is.null(clusters)) {
-        cluster.current <- "all"
-        clusters <- rep("all", ncol(expMatrix))
-      } else if (cluster != "all") {
-        cluster.current <- cluster
-        regulon.split <- output_df
-      }
-
-      peakMatrix.bi <-
-        binarize_matrix(peakMatrix[, clusters %in% cluster.current], peak_cutoff)
-      tfMatrix.bi <-
-        binarize_matrix(expMatrix[, clusters %in% cluster.current], exp_cutoff)
-      output_df <-
-        BiocParallel::bplapply(
-          X = seq_len(length(regulon.split)),
-          FUN = compare_logFC_bp,
-          regulon.split,
-          expMatrix[, clusters %in% cluster.current],
-          tfMatrix.bi,
-          peakMatrix.bi,
-          cluster,
-          BPPARAM = BPPARAM
-        )
-    }
-
-
   } else {
-    stop("method should be corr, MI, lmfit, logFC or wilcoxon")
+    stop("method should be wilcoxon, corr or MI")
 
   }
 
@@ -588,43 +533,3 @@ MI_per_row <- function (tf_re, tg){
 
 
 
-use_lmfit_method <- function(n,
-                             regulon.split,
-                             expMatrix,
-                             peakMatrix,
-                             tf_re.merge){
-
-  if (tf_re.merge){
-    tf_re <- expMatrix[regulon.split[[n]]$tf, , drop=FALSE] * peakMatrix[as.character(regulon.split[[n]]$idxATAC), , drop = FALSE]
-  } else {
-    tf_re <- expMatrix[regulon.split[[n]]$tf, , drop=FALSE]
-  }
-  tg <- expMatrix[regulon.split[[n]]$target, , drop=FALSE]
-  regulon.split[[n]]$weight <- mapply(function(y,x) {stats::cov(x,y)/stats::var(x)}, as.data.frame(t(tf_re)), as.data.frame(t(tg)))
-  regulon.split[[n]]
-}
-
-
-
-
-
-compare_logFC_bp <- function(n,
-                             regulon.split,
-                             expMatrix,
-                             tfMatrix,
-                             peakMatrix,
-                             cluster){
-
-  expMatrix <- expMatrix[regulon.split[[n]]$target,,drop=FALSE]
-  tf_reMatrix <- tfMatrix[regulon.split[[n]]$tf,,drop=FALSE] *
-    peakMatrix[as.character(regulon.split[[n]]$idxATAC),,drop=FALSE]
-
-  group1 <- tf_reMatrix
-  group0 <- (1-tf_reMatrix)
-
-  regulon.split[[n]]$weight[,cluster] <- Matrix::rowSums(expMatrix * group1) / Matrix::rowSums(group1) -
-    Matrix::rowSums(expMatrix * group0) / Matrix::rowSums(group0)
-
-  return(regulon.split[[n]])
-
-}

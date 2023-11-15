@@ -10,7 +10,7 @@ addWeights(
   peakMatrix = NULL,
   exp_assay = "logcounts",
   peak_assay = "PeakMatrix",
-  method = c("corr", "MI", "lmfit", "logFC", "wilcoxon"),
+  method = c("wilcoxon", "corr", "MI"),
   clusters = NULL,
   exp_cutoff = 1,
   peak_cutoff = 0,
@@ -77,15 +77,12 @@ This function estimates the regulatory potential of transcription factor on its 
 the magnitude of gene expression changes induced by transcription factor activity, using one of the four methods:
 \itemize{
 \item{\code{corr} - correlation between TF and target gene expression}
-\item{\code{lmfit} - coefficients of target genes estimated from linear regression of TF ~ TG}
 \item{\code{MI} - mutual information between the TF and target gene expression}
 \item{\code{wilcoxon} - effect size of the Wilcoxon test between target gene expression in cells jointly expressing all 3 elements vs
-cells that do not}
-\item{\code{logFC} - log 2 fold difference of target gene expression in cells jointly expressing all 3 elements vs cells that do not}
-}
-Four measures (\code{corr}, \code{lmfit}, \code{wilcoxon} and \code{logFC}) give both the magnitude and directionality of changes whereas \code{MI} always outputs
-positive weights. The correlation, linear fit and mutual information statistics are computed on the pseudobulked gene expression or accessibility
-matrices, whereas the Wilcoxon and log fold change group cells based on the joint expression of TF, RE and TG in each single cell.
+cells that do not}}
+Two measures (\code{corr} and \code{wilcoxon}) give both the magnitude and directionality of changes whereas \code{MI} always outputs
+positive weights. The correlation and mutual information statistics are computed on the pseudobulked gene expression or accessibility
+matrices, whereas the Wilcoxon method groups cells based on the joint expression of TF, RE and TG in each single cell.
 
 When using the \code{corr} method, the default practice is to compute weights by correlating the pseudobulk target gene expression vs
 the pseudobulk TF gene expression. However, often times, an inhibitor of TF does not alter the gene expression of the TF.
@@ -112,13 +109,13 @@ regulon <- DataFrame(tf=c(rep("Gene_0001",5), rep("Gene_0002",10)),
 # add weights to regulon
 regulon.w <- addWeights(regulon=regulon, expMatrix=expMatrix, exp_assay="logcounts",
 peakMatrix=peakMatrix, peak_assay="counts", clusters=expMatrix$cluster,
-min_targets=5, method="logFC")
+min_targets=5, method="wilcox")
 
 # add weights with cell aggregation
 expMatrix <- scater::runPCA(expMatrix)
 regulon.w <- addWeights(regulon=regulon, expMatrix=expMatrix, exp_assay="logcounts",
 peakMatrix=peakMatrix, peak_assay="counts", clusters=expMatrix$cluster,
-min_targets=5, method="logFC", aggregateCells=TRUE, cellNum=3, useDim = "PCA")
+min_targets=5, method="wilcox", aggregateCells=TRUE, cellNum=3, useDim = "PCA")
 
 }
 \author{

@@ -98,24 +98,6 @@ test_that("addWeights works correctly using Wilcoxon test with fixed cutoff", {
 
 
 
-# prepare expected data for logFC method
-weights <- numeric(20)
-tfMatrix <- expMatrix[regulon$tf,,drop = FALSE] > 1
-tf_re <- tfMatrix * peakMatrix
-for(i in 1:20){
-  group1 <- Matrix::rowSums(targetMatrix[i,,drop=FALSE]*tf_re[i,,drop=FALSE])
-  group0 <- Matrix::rowSums(targetMatrix[i,,drop=FALSE]*(1-tf_re[i,,drop=FALSE]))
-  weights[i] <- group1/sum(tf_re[i,,drop=FALSE]) - group0/sum(1-tf_re[i,,drop=FALSE])
-}
-regulon$weight <- weights
-test_that("addWeights works correctly using 'logFC' method", {
-  regulon.w <- addWeights(regulon = regulon,
-                          expMatrix = expMatrix.sce,
-                          method = "logFC",
-                          peakMatrix = peakMatrix,
-                          min_targets = 0)
-  expect_identical(as.vector(regulon.w$weight[,1]), regulon$weight, tolerance = 1e-3)
-})
 
 # prepare dataset for testing MI method
 set.seed(1010)
