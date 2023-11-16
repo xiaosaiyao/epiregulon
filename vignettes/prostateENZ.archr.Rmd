@@ -158,7 +158,8 @@ to supply a path to an ArchR project already containing peak and gene matrices, 
 
 ```{r calculateP2G}
 # path to ArchR project
-p2g <- calculateP2G(ArchR_path = archR_project_path, 
+p2g <- calculateP2G(ArchR_path = archR_project_path,
+                    exp_assay = "counts",
                     useDim = "iLSI_Combined", 
                     useMatrix = "GeneIntegrationMatrix",
                     threads = 1)
@@ -189,6 +190,7 @@ head(regulon)
 ```{r pruning,  results = "hide", warning = FALSE, message = FALSE, echo = FALSE}
 
 pruned.regulon <- pruneRegulon(expMatrix = GeneExpressionMatrix,
+                               exp_assay = "counts",
                                peakMatrix = PeakMatrix,
                                peak_assay = "counts",
                                test = "chi.sq",
@@ -244,14 +246,14 @@ Therefore, we consider the choice of the `wilcoxon` test which compare target ge
 
 regulon.w.wilcox <- addWeights(regulon = pruned.regulon,
                         expMatrix = GeneExpressionMatrix,
-                        exp_assay = "logcounts",
+                        exp_assay = "counts",
                         peakMatrix = PeakMatrix,
                         peak_assay = "counts",
                         clusters = GeneExpressionMatrix$Sample,
                         method = "wilcoxon")
 regulon.w.corr <- addWeights(regulon = pruned.regulon,
                         expMatrix = GeneExpressionMatrix,
-                        exp_assay = "logcounts",
+                        exp_assay = "counts",
                         peakMatrix = PeakMatrix,
                         peak_assay = "counts",
                         clusters = GeneExpressionMatrix$Sample,
@@ -259,7 +261,7 @@ regulon.w.corr <- addWeights(regulon = pruned.regulon,
 
 regulon.w.corr.re <- addWeights(regulon = pruned.regulon,
                         expMatrix = GeneExpressionMatrix,
-                        exp_assay = "logcounts",
+                        exp_assay = "counts",
                         peakMatrix = PeakMatrix,
                         peak_assay = "counts",
                         clusters = GeneExpressionMatrix$Sample,
@@ -280,16 +282,19 @@ We calculate three different activities corresponding to the different weighted 
 
 ```{r calculateActivity, results = "hide"}
 score.combine.wilcox <- calculateActivity(expMatrix = GeneExpressionMatrix,
+                                   exp_assay = "counts",
                                    regulon = regulon.w.wilcox,
                                    normalize = TRUE,
                                    mode = "weight",
                                    method = "weightedMean")
 score.combine.corr <- calculateActivity(expMatrix = GeneExpressionMatrix,
+                                   exp_assay = "counts",
                                    regulon = regulon.w.corr,
                                    normalize = TRUE,
                                    mode = "weight",
                                    method = "weightedMean")
 score.combine.corr.re <- calculateActivity(expMatrix = GeneExpressionMatrix,
+                                   exp_assay = "counts",
                                    regulon = regulon.w.corr.re,
                                    normalize = TRUE,
                                    mode = "weight",
@@ -382,7 +387,7 @@ plotHeatmapRegulon(sce=GeneExpressionMatrix,
                    downsample=1000,
                    cell_attributes="label",
                    col_gap="label",
-                   exprs_values="logcounts",
+                   exprs_values="counts",
                    name="regulon heatmap")
 ```
 

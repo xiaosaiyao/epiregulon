@@ -102,7 +102,7 @@ Next, we compute peak to gene correlations using a custom algorithm that has sim
 set.seed(1010)
 p2g <- calculateP2G(peakMatrix = PeakMatrix, 
                     expMatrix = GeneExpressionMatrix, 
-                    exp_assay = "counts",
+                    exp_assay = "normalizedCounts",
                     reducedDim = reducedDim(GeneExpressionMatrix, "IterativeLSI"))
 
 p2g
@@ -140,7 +140,7 @@ We calculate cluster-specific p-values if users supply cluster labels. This is u
 ```{r}
 
 pruned.regulon <- pruneRegulon(expMatrix = GeneExpressionMatrix,
-                               exp_assay = "counts",
+                               exp_assay = "normalizedCounts",
                                peakMatrix = PeakMatrix,
                                peak_assay = "counts",
                                regulon = regulon,
@@ -162,7 +162,7 @@ Three measures (correlation, Wilcoxon statistics and log 2 fold difference) give
 
 regulon.w <- addWeights(regulon = pruned.regulon,
                         expMatrix  = GeneExpressionMatrix,
-                        exp_assay  = "counts",
+                        exp_assay = "normalizedCounts",
                         peakMatrix = PeakMatrix,
                         peak_assay = "counts",
                         clusters = GeneExpressionMatrix$Clusters2,
@@ -192,7 +192,7 @@ score.combine <- calculateActivity(expMatrix = GeneExpressionMatrix,
                                    regulon = regulon.w, 
                                    mode = "weight", 
                                    method = "weightedMean", 
-                                   exp_assay = "counts")
+                                   exp_assay = "normalizedCounts")
 head(score.combine[1:5,1:5])
 ```
 
@@ -237,7 +237,7 @@ We can compare the activity with gene expression of the same TFs.
 
 #options(ggrastr.default.dpi=300)
 plotActivityDim(sce = GeneExpressionMatrix, 
-                activity_matrix = counts(GeneExpressionMatrix)[tfs_interest,], 
+                activity_matrix = activity_matrix = assay(GeneExpressionMatrix, "normalizedCounts")[tfs_interest,],  
                 tf = tfs_interest, 
                 dimtype = "UMAP",
                 nrow=2,
@@ -261,7 +261,7 @@ plotActivityViolin(activity_matrix = score.combine,
 We plot violin plot to visualize TF gene expression.
 
 ```{r}
-plotActivityViolin(activity_matrix = counts(GeneExpressionMatrix)[tfs_interest,], 
+plotActivityViolin(activity_matrix = assay(GeneExpressionMatrix, "normalizedCounts")[tfs_interest,],   
                    tf = tfs_interest, 
                    clusters = GeneExpressionMatrix$Clusters2,
                    nrow=2,
@@ -435,7 +435,7 @@ ggplot(rank_table, aes(x = rank, y = centrality)) +
 
 We can further explore interacting factors with the myeloid factor SPI1 using the same Jaccard similarity approach. We found CEBPA as the most similar TF as SPI1. SPI1 and CEBPA are known to be important for differentiation into myeloid cells (https://www.cell.com/cell-reports/pdfExtended/S2211-1247(18)30745-9).
 ```{r}
-
+library(igraph)
 diff_graph_filter <- subgraph.edges(diff_graph, 
                                     E(diff_graph)[E(diff_graph)$weight>0], 
                                     del=T)
