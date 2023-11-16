@@ -125,25 +125,22 @@ matchNames <- function(motif_names, regulon){
 
 #' human_pwms_v1
 #'
-#' Collection of human pwms
+#' @name human_pwms_v1
 #' @docType data
 #' @keywords datasets
-#' @name human_pwms_v1
 #' @details These motifs were curated from the cisBP database. Position
 #' frequency matrices were converted to PWMs by taking the log
 #' of the frequencies (after adding a pseudocount of 0.008) divided by 0.25.
-
+NULL
 
 #' mouse_pwms_v1
 #'
-#' Collection of mouse pwms
+#' @name mouse_pwms_v1
+#' @docType data
 #' @details These motifs were curated from the cisBP database. Position
 #' frequency matrices were converted to PWMs by taking the log
 #' of the frequencies (after adding a pseudocount of 0.008) divided by 0.25.
-#' @docType data
 #' @keywords datasets
-#' @name mouse_pwms_v1
 #' @usage data(mouse_pwms_v1)
-
-
+NULL
 
