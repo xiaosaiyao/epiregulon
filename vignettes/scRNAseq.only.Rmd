@@ -81,7 +81,7 @@ score.combine <- calculateActivity(sce,
 ```{r differential}
 
 markers <- findDifferentialActivity(activity_matrix = score.combine, 
-                                    groups = sce$label, 
+                                    clusters = sce$label, 
                                     pval.type = "some", 
                                     direction = "up", 
                                     test.type = "t")
