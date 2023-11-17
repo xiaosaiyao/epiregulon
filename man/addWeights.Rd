@@ -56,7 +56,7 @@ many regulatory elements.}
 \item{tf_re.merge}{A logical to indicate whether to consider both TF expression and chromatin accessibility. See details.}
 
 \item{aggregateCells}{A logical to indicate whether to aggregate cells into groups determined by cellNum. This option can be used to
-overcome data sparsity when using \code{wilcoxon} and \code{logFC}}
+overcome data sparsity when using \code{wilcoxon}.}
 
 \item{useDim}{String indicating the name of the dimensionality reduction matrix in expMatrix used for cell aggregation}
 

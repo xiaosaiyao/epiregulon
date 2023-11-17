@@ -18,7 +18,7 @@
 #' @param min_targets Integer specifying the minimum number of targets for each tf in the regulon with 10 targets as the default
 #' @param tf_re.merge A logical to indicate whether to consider both TF expression and chromatin accessibility. See details.
 #' @param aggregateCells A logical to indicate whether to aggregate cells into groups determined by cellNum. This option can be used to
-#' overcome data sparsity when using `wilcoxon` and `logFC`
+#' overcome data sparsity when using `wilcoxon`.
 #' @param useDim String indicating the name of the dimensionality reduction matrix in expMatrix used for cell aggregation
 #' @param cellNum An integer specifying the number of cells per cluster for cell aggregation. Default is 10.
 #' @param BPPARAM A BiocParallelParam object specifying whether summation should be parallelized. Use BiocParallel::SerialParam() for
@@ -112,7 +112,8 @@ addWeights <- function(regulon,
   }
 
   # pseudobulk
-  if (aggregateCells) {
+  if (aggregateCells&&method!="wilcoxon") message("Cell aggregation is possible only with 'wilcoxon' method.")
+  else if (aggregateCells&&method=="wilcoxon") {
     message("performing pseudobulk using an average of ", cellNum, " cells")
     barcodes <- list()
     kclusters <- list()
