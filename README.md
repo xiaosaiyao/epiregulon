@@ -6,8 +6,8 @@ Gene regulatory networks model the underlying gene regulation hierarchies that d
 
 For full documentation, please refer to the epiregulon [book](https://xiaosaiyao.github.io/epiregulon.book/).
 
-![plot](inst/epiregulon_schematics.svg)   
-There are three related packages. The core epiregulon package supports input in the form of `SingleCellExperiment` objects. If the users would like to start from `ArchR` projects, they may choose to use `epiregulon.archr` package, which allows for the seamless integration with `ArchR` package through accepting its output to be used in the downstream workflow. Moreover, we provide a suite of tools in `epiregulon.extra` package for the enrichment analysis, visualization, and network analysis which can be run on the `epireglon` or `epiregulon.archr` output.
+![plot](inst/epiregulon_schematics.svg) 
+There are three related packages. The core epiregulon package supports `SingleCellExperiment` objects. If the users would like to start from `ArchR` projects, they may choose to use `epiregulon.archr` package, which allows for the seamless integration with the [ArchR](https://www.archrproject.com/) package. Moreover, we provide a suite of tools in `epiregulon.extra` package for the enrichment analysis, visualization, and network analysis which can be run on the `epireglon` or `epiregulon.archr` output.
 
 # Installation
 
