@@ -4,7 +4,7 @@
 \alias{addTFMotifInfo}
 \title{Add TF binding motif occupancy information to the peak2gene object}
 \usage{
-addTFMotifInfo(p2g, grl, peakMatrix = NULL)
+addTFMotifInfo(p2g, grl, peakMatrix = NULL, archR_project_path = NULL)
 }
 \arguments{
 \item{p2g}{A Peak2Gene dataframe created by ArchR or getP2Glinks() function}
@@ -14,6 +14,8 @@ contains TF occupancy data derived from public and ENCODE ChIP-seq peaks. Altern
 of motif annotations. This can be derived using \code{motifmatchr::matchMotifs}. See details}
 
 \item{peakMatrix}{A matrix of scATAC-seq peak regions with peak ids as rows}
+
+\item{archR_project_path}{Path to an ArchR project that have performed LSI dimensionality reduction and scRNA-seq integration}
 }
 \value{
 A data frame containing overlapping ids of scATAC-seq peak regions and reference TF binding regions
