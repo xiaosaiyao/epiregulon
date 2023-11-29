@@ -11,9 +11,7 @@ getRegulon(p2g, overlap, aggregate = FALSE, FUN = "mean")
 
 \item{overlap}{A data frame storing overlaps between the regions of the peak matrix with the bulk TF ChIP-seq binding sites computed from addTFMotifInfo}
 
-\item{aggregate}{logical to specify whether regulatory elements are aggregated across the same TF-target pairs}
-
-\item{FUN}{function to aggregate TF-target sharing different regulatory elements}
+\item{aggregate}{logical to specify whether regulatory elements are aggregated across the same TF-target pairs by calculation mean value for the correlation}
 }
 \value{
 A DataFrame consisting of tf(regulator), target and a column indicating degree of association between TF and target such as "mor" or "corr".
