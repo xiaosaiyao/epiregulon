@@ -9,7 +9,6 @@ getTFMotifInfo(
   source = c("atlas", "cistrome"),
   metadata = FALSE,
   mode = c("occupancy", "motif"),
-  archr_path = NULL,
   motif_name = "Motif",
   peaks = NULL
 )
@@ -24,11 +23,6 @@ getTFMotifInfo(
 \item{mode}{a string indicating whether to download a GRangelist of TF binding sites ("occupancy") or motif matches ("motif").
 TF binding information is retrieved from \href{https://github.com/xiaosaiyao/scMultiome/blob/devel/R/tfBinding.R}{scMultiome} whereas
 motif information is annotated by cisbp from \href{https://github.com/GreenleafLab/chromVARmotifs}{chromVARmotifs}}
-
-\item{archr_path}{Character string indicating the path of the ArchR project to retrieve motif information if
-motif enrichment was already performed. If no motif enrichment has been performed, first annotate the ArchR using
-\code{addMotifAnnotations}. If no ArchR project is provided, the user can also provide peaks in the form of GRanges and
-this function will annotate the peaks with Cisbp}
 
 \item{motif_name}{Character string    indicating name of the peakAnnotation object (i.e. Motifs) to retrieve from the designated ArchRProject.}
 
