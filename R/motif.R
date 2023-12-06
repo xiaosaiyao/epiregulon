@@ -93,7 +93,7 @@ annotateMotif <- function(species, peaks, genome, pwms = NULL, ...) {
 
 species_motif <- function(species) {
   if(species == "human"){
-    bfc <- BiocFileCache::BiocFileCache(ask=FALSE)
+    bfc <- BiocFileCache::BiocFileCache()
     tryCatch(
       path_to_database <- BiocFileCache::bfcrpath(bfc, "https://github.com/GreenleafLab/chromVARmotifs/raw/master/data/human_pwms_v2.rda"),
       error = function(cond) {
@@ -105,7 +105,7 @@ species_motif <- function(species) {
     return(human_pwms_v2)
   }
   else if (species == "mouse"){
-    bfc <- BiocFileCache::BiocFileCache(ask=FALSE)
+    bfc <- BiocFileCache::BiocFileCache()
     tryCatch(
       path_to_database <- BiocFileCache::bfcrpath(bfc, "https://github.com/GreenleafLab/chromVARmotifs/raw/master/data/mouse_pwms_v2.rda"),
       error = function(cond) {
