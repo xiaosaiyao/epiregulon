@@ -93,12 +93,28 @@ annotateMotif <- function(species, peaks, genome, pwms = NULL, ...) {
 
 species_motif <- function(species) {
   if(species == "human"){
-    data("human_pwms_v1", package = "epiregulon", envir = environment())
-    return(environment()$human_pwms_v1)
+    bfc <- BiocFileCache::BiocFileCache()
+    tryCatch(
+      path_to_database <- BiocFileCache::bfcrpath(bfc, "https://github.com/GreenleafLab/chromVARmotifs/raw/master/data/human_pwms_v2.rda"),
+      error = function(cond) {
+        message(cond)
+        stop("Downloading of motif database failed. Please report a bug on github.")
+      }
+    )
+    load(path_to_database)
+    return(human_pwms_v2)
   }
   else if (species == "mouse"){
-    data("mouse_pwms_v1", package = "epiregulon", envir = environment())
-    return(environment()$mouse_pwms_v1)
+    bfc <- BiocFileCache::BiocFileCache()
+    tryCatch(
+      path_to_database <- BiocFileCache::bfcrpath(bfc, "https://github.com/GreenleafLab/chromVARmotifs/raw/master/data/mouse_pwms_v2.rda"),
+      error = function(cond) {
+        message(cond)
+        stop("Downloading of motif database failed. Please report a bug on github.")
+      }
+    )
+    load(path_to_database)
+    return(mouse_pwms_v2)
   }
   else stop("Species should be 'human' or 'mouse'. Please provide your own pwms for other species")
 }
@@ -120,27 +136,3 @@ matchNames <- function(motif_names, regulon){
   official[which(is.na(official))] <- motif_names[which(is.na(official))]
   official
 }
-
-
-
-#' human_pwms_v1
-#'
-#' @name human_pwms_v1
-#' @docType data
-#' @keywords datasets
-#' @details These motifs were curated from the cisBP database. Position
-#' frequency matrices were converted to PWMs by taking the log
-#' of the frequencies (after adding a pseudocount of 0.008) divided by 0.25.
-NULL
-
-#' mouse_pwms_v1
-#'
-#' @name mouse_pwms_v1
-#' @docType data
-#' @details These motifs were curated from the cisBP database. Position
-#' frequency matrices were converted to PWMs by taking the log
-#' of the frequencies (after adding a pseudocount of 0.008) divided by 0.25.
-#' @keywords datasets
-#' @usage data(mouse_pwms_v1)
-NULL
-

@@ -117,10 +117,20 @@ pruneRegulon <- function(regulon,
                          BPPARAM = BiocParallel::SerialParam(progressbar = TRUE)){
   tryCatch(ncol(peakMatrix), error = function(cond) stop("'ncol' method should be defined for the 'peakMatrix' object"))
   tryCatch(ncol(expMatrix), error = function(cond) stop("'ncol' method should be defined for the 'expMatrix' object"))
-  clusters <- tryCatch(as.vector(clusters), error = function(cond) stop("'clusters' should be coercible to a vector"))
   stopifnot(ncol(peakMatrix)==ncol(expMatrix))
-  if(!is.null(clusters) && length(clusters) != ncol(expMatrix)) stop("The 'clusters' length should be the same length as the number of columns in 'expMatrix' and 'peakMatrix'")
-
+  if(!is.null(clusters)){
+    clusters <- tryCatch(as.vector(clusters),
+                         error = function(cond){
+                           message("'clusters' argument should be coercible to a vector")
+                           stop(cond)
+                         })
+    if(length(clusters) != ncol(expMatrix)){
+      stop("'clusters' length should be equal to the number of cells")
+    }
+    if(any(is.na(clusters))){
+      stop("'clusters' object contains NA")
+    }
+  }
   # choose test method
   test <- match.arg(test)
   message("pruning network with ", test, " tests using a regulon cutoff of ", prune_value, "<", regulon_cutoff)

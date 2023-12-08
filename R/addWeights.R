@@ -109,6 +109,9 @@ addWeights <- function(regulon,
     if(length(clusters) != ncol(expMatrix)){
       stop("'clusters' length should be equal to the number of cells")
     }
+    if(any(is.na(clusters))){
+      stop("'clusters' object contains NA")
+    }
   }
 
   # pseudobulk
