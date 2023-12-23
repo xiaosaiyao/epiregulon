@@ -47,6 +47,8 @@ Suggests:
     testthat (>= 3.0.0),
     coin,
     scater
+Remotes:
+    xiaosaiyao/epiregulon.extra
 LinkingTo: Rcpp
 VignetteBuilder: knitr
 URL:
