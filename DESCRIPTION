@@ -23,6 +23,7 @@ Imports:
     knitr,
     lifecycle,
     methods,
+    rmarkdown,
     scran,
     scuttle,
     stats,
