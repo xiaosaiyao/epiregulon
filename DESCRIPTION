@@ -51,6 +51,8 @@ Suggests:
     scater
 Remotes:
     xiaosaiyao/epiregulon.extra
+    GreenleafLab/chromVARmotifs
+    
 LinkingTo: Rcpp
 VignetteBuilder: knitr
 URL:
