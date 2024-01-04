@@ -2,7 +2,6 @@
 #'
 #' @param regulon A DataFrame consisting of tf (regulator) and target in the column names.
 #' @param field_name Character string	indicating the column name of the regulon to add the motif information to
-#' @param motif_name Character string	indicating name of the peakAnnotation object (i.e. Motifs) to retrieve from the designated ArchRProject.
 #' @param peaks A GRanges object indicating the peaks to perform motif annotation on if ArchR project is not provided.
 #' The peak indices should match the `re` column in the regulon
 #' @param pwms A PWMatrixList for annotation of motifs using 'motifmatchr::matchMotifs'
@@ -26,7 +25,6 @@
 
 addMotifScore <- function(regulon,
                           field_name="motif",
-                          motif_name="Motif",
                           peaks=NULL,
                           pwms=NULL,
                           species=c("human","mouse"),
@@ -43,8 +41,12 @@ addMotifScore <- function(regulon,
                         hg19 = "BSgenome.Hsapiens.UCSC.hg19",
                         mm10 = "BSgenome.Mmusculus.UCSC.mm10")
 
-    peaks <- GenomeInfoDb::keepStandardChromosomes(peaks, pruning.mode = "coarse")
-    motifs <- annotateMotif(species, peaks, BS.genome, pwms, ...)
+    peaks.pruned <- GenomeInfoDb::keepStandardChromosomes(peaks, pruning.mode = "coarse")
+    # store original peak indices to match them to regulon idxATAC
+    peaks.idx <- GenomicRanges::match(peaks.pruned, peaks)
+    peaks.pruned <- peaks.pruned[peaks.idx %in% regulon$idxATAC]
+    peaks.idx <- peaks.idx[peaks.idx %in% regulon$idxATAC]
+    motifs <- annotateMotif(species, peaks.pruned, BS.genome, pwms, ...)
     motifs <- assay(motifs,"motifMatches")
 
     # Convert motifs to gene names
@@ -68,7 +70,7 @@ addMotifScore <- function(regulon,
   tfs_with_motif <- intersect(colnames(motifs), unique(regulon$tf))
 
   for (tf in tfs_with_motif){
-    regulon[which(regulon$tf ==tf), field_name] <- motifs[regulon$idxATAC[which(regulon$tf ==tf)],tf]
+    regulon[which(regulon$tf ==tf), field_name] <- motifs[match(regulon$idxATAC[which(regulon$tf ==tf)], peaks.idx),tf]
   }
 
   regulon[,field_name] <- as.numeric(regulon[,field_name])

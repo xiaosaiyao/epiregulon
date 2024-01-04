@@ -7,7 +7,6 @@
 addMotifScore(
   regulon,
   field_name = "motif",
-  motif_name = "Motif",
   peaks = NULL,
   pwms = NULL,
   species = c("human", "mouse"),
@@ -19,8 +18,6 @@ addMotifScore(
 \item{regulon}{A DataFrame consisting of tf (regulator) and target in the column names.}
 
 \item{field_name}{Character string    indicating the column name of the regulon to add the motif information to}
-
-\item{motif_name}{Character string    indicating name of the peakAnnotation object (i.e. Motifs) to retrieve from the designated ArchRProject.}
 
 \item{peaks}{A GRanges object indicating the peaks to perform motif annotation on if ArchR project is not provided.
 The peak indices should match the \code{re} column in the regulon}
