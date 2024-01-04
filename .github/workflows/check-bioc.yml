@@ -212,12 +212,6 @@ jobs:
           sessioninfo::session_info(pkgs, include_base = TRUE)
         shell: Rscript {0}
 
-      - name: add TeX deps
-        run: |
-          install.packages("tinytex")
-          tinytex::tlmgr_install(pkgs = "name")
-        shell: Rscript {0}
-
       - name: Run CMD check
         env:
           _R_CHECK_CRAN_INCOMING_: false

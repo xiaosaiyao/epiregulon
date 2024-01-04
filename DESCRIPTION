@@ -20,6 +20,7 @@ Imports:
     bluster,
     checkmate,
     entropy,
+    knitr,
     lifecycle,
     methods,
     scran,
