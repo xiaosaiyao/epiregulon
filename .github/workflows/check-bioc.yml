@@ -178,10 +178,18 @@ jobs:
           remotes::install_local(dependencies = TRUE, repos = BiocManager::repositories(), build_vignettes = FALSE, upgrade = TRUE)
         continue-on-error: true
         shell: Rscript {0}
+      - name: Setup TeX Live
+        uses: teatimeguest/setup-texlive-action@v3
+        with:
+          packages: scheme-basic
+
+      - name: Check `tlmgr` version
+        run: tlmgr --version
 
       - name: add TeX deps
         run: |
           install.packages("tinytex")
+          tinytex:::install_prebuilt()
           tinytex::tlmgr_install(pkgs = "name")
         shell: Rscript {0}
 
