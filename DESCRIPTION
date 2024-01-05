@@ -48,9 +48,6 @@ Suggests:
     testthat (>= 3.0.0),
     coin,
     scater
-Remotes:
-    xiaosaiyao/epiregulon.extra,
-    GreenleafLab/chromVARmotifs
 LinkingTo: Rcpp
 VignetteBuilder: knitr
 URL:
