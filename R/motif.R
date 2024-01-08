@@ -46,6 +46,9 @@ addMotifScore <- function(regulon, field_name = "motif",
             regulon[, field_name] <- NA
             return(regulon)
         }
+        # peaks shoud by unique otherwise some idxATAC values will be missing
+        # in peaks.idx object because match function always returns the first index
+        if(any(duplicated(peaks.pruned))) stop("Duplicated peaks provided.")
 
         # store original peak indices to match them to regulon idxATAC
         peaks.idx <- GenomicRanges::match(peaks.pruned,
