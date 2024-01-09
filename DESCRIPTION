@@ -4,9 +4,9 @@ Version: 1.0.38
 Date: 2023-11-21
 Authors@R: 
     c(person(given = "Xiaosai", family = "Yao", role = c("aut", "cre"), email = "yao.xiaosai@gene.com", comment = c(ORCID = "0000-0001-9729-0726")),
-    c(person(given = "Tomasz", family = "Włodarczyk", role = c("aut"), email = "tomwlo@gmail.com", comment = c(ORCID = "0000-0003-1554-9699")),
-    c(person("Aaron", "Lun", role=c("aut"), email="infinite.monkeys.with.keyboards@gmail.com"),
-    c(person(given = "Shang-Yang", family = "Chen", role = "aut", email = "sychen9584@gmail.com"))
+    person(given = "Tomasz", family = "Włodarczyk", role = c("aut"), email = "tomwlo@gmail.com", comment = c(ORCID = "0000-0003-1554-9699")),
+    person(given = "Aaron", family = "Lun", role=c("aut"), email="infinite.monkeys.with.keyboards@gmail.com"),
+    person(given = "Shang-Yang", family = "Chen", role = "aut", email = "sychen9584@gmail.com"))
 Description: Gene regulatory networks model the underlying gene regulation hierarchies that drive gene expression and observed phenotypes. Epiregulon infers TF activity in single cells by constructing a gene regulatory network (regulons). This is achieved through integration of scATAC-seq and scRNA-seq data and incorporation of public bulk TF ChIP-seq data. Links between regulatory elements and their target genes are established by computing correlations between chromatin accessibility and gene expressions.
 License: file LICENSE
 Encoding: UTF-8
