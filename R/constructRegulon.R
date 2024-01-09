@@ -26,7 +26,7 @@
 getTFMotifInfo <- function(genome = c("hg38",
     "hg19", "mm10"), source = c("atlas",
     "cistrome"), metadata = FALSE, mode = c("occupancy",
-    "motif"), motif_name = "Motif",
+    "motif"),
     peaks = NULL) {
     genome <- match.arg(genome)
     source <- match.arg(source)

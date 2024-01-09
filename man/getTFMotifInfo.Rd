@@ -9,7 +9,6 @@ getTFMotifInfo(
   source = c("atlas", "cistrome"),
   metadata = FALSE,
   mode = c("occupancy", "motif"),
-  motif_name = "Motif",
   peaks = NULL
 )
 }

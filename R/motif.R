@@ -2,7 +2,8 @@
 #'
 #' @param regulon A DataFrame consisting of tf (regulator) and target in the column names.
 #' @param field_name Character string	indicating the column name of the regulon to add the motif information to
-#' @param motif_name Character string	indicating name of the peakAnnotation object (i.e. Motifs) to retrieve from the designated ArchRProject.
+#' @param peaks A GRanges object indicating the peaks to perform motif annotation on if ArchR project is not provided.
+#' The peak indices should match the `re` column in the regulon
 #' @param pwms A PWMatrixList for annotation of motifs using 'motifmatchr::matchMotifs'
 #' @param species Character string indicating species. Currently supported species is human or mouse
 #' @param genome Character string indicating the genomic build

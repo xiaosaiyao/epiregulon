@@ -19,6 +19,9 @@ addMotifScore(
 
 \item{field_name}{Character string    indicating the column name of the regulon to add the motif information to}
 
+\item{peaks}{A GRanges object indicating the peaks to perform motif annotation on if ArchR project is not provided.
+The peak indices should match the \code{re} column in the regulon}
+
 \item{pwms}{A PWMatrixList for annotation of motifs using 'motifmatchr::matchMotifs'}
 
 \item{species}{Character string indicating species. Currently supported species is human or mouse}
@@ -26,8 +29,6 @@ addMotifScore(
 \item{genome}{Character string indicating the genomic build}
 
 \item{...}{Additional arguments to pass into motifmatchr::matchMotifs}
-
-\item{motif_name}{Character string    indicating name of the peakAnnotation object (i.e. Motifs) to retrieve from the designated ArchRProject.}
 }
 \value{
 A DataFrame with motif matches added with 1s indicating the presence of motifs and
