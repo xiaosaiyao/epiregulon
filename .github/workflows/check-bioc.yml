@@ -251,6 +251,11 @@ jobs:
           BiocGenerics:::testPackage()
         shell: Rscript {0}
 
+      - name: Check package content
+        run: |
+          for (i in seq_along(list.files("./", full.names = TRUE))) message(paste0(rownames(file.info(list.files("./", full.names = TRUE)))[i],"  ",file.info(list.files("./", full.names = TRUE)[i])[,"size"]))
+        shell: Rscript {0}
+
       - name: Run BiocCheck
         env:
           DISPLAY: 99.0
