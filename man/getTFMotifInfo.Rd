@@ -36,7 +36,7 @@ from CistromeDB and ENCODE.
 }
 \examples{
 # retrieve TF binding info
-\\dontrun{
+\dontrun{
 getTFMotifInfo('mm10', 'atlas')
 }
 

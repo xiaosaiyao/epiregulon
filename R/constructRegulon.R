@@ -11,7 +11,7 @@
 #' @inherit scMultiome::tfBinding params return references
 #' @examples
 #' # retrieve TF binding info
-#' \\dontrun{
+#' \dontrun{
 #' getTFMotifInfo('mm10', 'atlas')
 #' }
 #'
