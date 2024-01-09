@@ -102,20 +102,20 @@ peakMatrix <- scuttle::mockSCE()
 rownames(peakMatrix) <- 1:2000
 
 # create a mock regulon
-regulon <- DataFrame(tf=c(rep("Gene_0001",5), rep("Gene_0002",10)),
+regulon <- DataFrame(tf=c(rep('Gene_0001',5), rep('Gene_0002',10)),
                       idxATAC=1:15,
-                      target=c(paste0("Gene_000",2:6), paste0("Gene_00",11:20)))
+                      target=c(paste0('Gene_000',2:6), paste0('Gene_00',11:20)))
 
 # add weights to regulon
-regulon.w <- addWeights(regulon=regulon, expMatrix=expMatrix, exp_assay="logcounts",
-peakMatrix=peakMatrix, peak_assay="counts", clusters=expMatrix$cluster,
-min_targets=5, method="wilcox")
+regulon.w <- addWeights(regulon=regulon, expMatrix=expMatrix, exp_assay='logcounts',
+peakMatrix=peakMatrix, peak_assay='counts', clusters=expMatrix$cluster,
+min_targets=5, method='wilcox')
 
 # add weights with cell aggregation
 expMatrix <- scater::runPCA(expMatrix)
-regulon.w <- addWeights(regulon=regulon, expMatrix=expMatrix, exp_assay="logcounts",
-peakMatrix=peakMatrix, peak_assay="counts", clusters=expMatrix$cluster,
-min_targets=5, method="wilcox", aggregateCells=TRUE, cellNum=3, useDim = "PCA")
+regulon.w <- addWeights(regulon=regulon, expMatrix=expMatrix, exp_assay='logcounts',
+peakMatrix=peakMatrix, peak_assay='counts', clusters=expMatrix$cluster,
+min_targets=5, method='wilcox', aggregateCells=TRUE, cellNum=3, useDim = 'PCA')
 
 }
 \author{

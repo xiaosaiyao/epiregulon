@@ -20,16 +20,12 @@ aggregateMatrix <- function(regulon, mode, FUN) {
     aggregated
 }
 
-
-
 renameCluster <- function(clusters) {
     if (!is.null(clusters)) {
         clusters[clusters == "all"] <- "clusters_all"
     }
     clusters
 }
-
-
 
 initiateMatCluster <- function(clusters, nrow, value = NA) {
     unique_clusters <- sort(unique(clusters))

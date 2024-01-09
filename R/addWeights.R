@@ -30,10 +30,10 @@
 #' @details
 #' This function estimates the regulatory potential of transcription factor on its target genes, or in other words,
 #' the magnitude of gene expression changes induced by transcription factor activity, using one of the four methods:
-#' \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\itemize{
-#' \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\item{`corr` - correlation between TF and target gene expression}
-#' \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\item{`MI` - mutual information between the TF and target gene expression}
-#' \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\item{`wilcoxon` - effect size of the Wilcoxon test between target gene expression in cells jointly expressing all 3 elements vs
+#' \itemize{
+#' \item{`corr` - correlation between TF and target gene expression}
+#' \item{`MI` - mutual information between the TF and target gene expression}
+#' \item{`wilcoxon` - effect size of the Wilcoxon test between target gene expression in cells jointly expressing all 3 elements vs
 #' cells that do not}}
 #' Two measures (`corr` and `wilcoxon`) give both the magnitude and directionality of changes whereas `MI` always outputs
 #' positive weights. The correlation and mutual information statistics are computed on the pseudobulked gene expression or accessibility
@@ -46,6 +46,7 @@
 #' we may correlate the product of TF and RE against TG. When `tf_re.merge` is `TRUE`, we take the product of
 #' the gene expression and chromatin accessibility.
 #'
+
 
 #'
 #' @export

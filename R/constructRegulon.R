@@ -5,20 +5,19 @@
 #' @param mode a string indicating whether to download a GRangelist of TF binding sites ('occupancy') or motif matches ('motif').
 #' TF binding information is retrieved from [scMultiome](https://github.com/xiaosaiyao/scMultiome/blob/devel/R/tfBinding.R) whereas
 #' motif information is annotated by cisbp from [chromVARmotifs](https://github.com/GreenleafLab/chromVARmotifs)
-#' @param motif_name Character string\\\\\\\\\\\\\\\\tindicating name of the peakAnnotation object (i.e. Motifs) to retrieve from the designated ArchRProject.
 #' @param peaks A GRanges object indicating the peaks to perform motif annotation on if ArchR project is not provided.
 #' The peak indices should match the `re` column in the regulon
 
 #' @inherit scMultiome::tfBinding params return references
 #' @examples
 #' # retrieve TF binding info
-#' \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\dontrun{
+#' \\dontrun{
 #' getTFMotifInfo('mm10', 'atlas')
 #' }
 #'
 #' # retrieve motif info
 #' peaks <- GRanges(seqnames = c('chr12','chr19','chr19','chr11','chr6'),
-#' ranges = IRanges(start = c(124914563,50850844, 50850844, 101034172, 151616327),
+#' ranges = IRanges(start = c(124914563,50850845, 50850844, 101034172, 151616327),
 #' end = c(124914662,50850929, 50850929, 101034277, 151616394)))
 #' grl <- getTFMotifInfo(genome = 'hg38', mode = 'motif', peaks=peaks)
 #'
@@ -56,9 +55,6 @@ getTFMotifInfo <- function(genome = c("hg38",
         names(grl) <- lapply(strsplit(names(grl),
             split = "_|\\."), "[", 3)
     }
-
-
-
     grl
 }
 
@@ -76,26 +72,26 @@ getTFMotifInfo <- function(genome = c("hg38",
 #' @details This function annotates each regulatory element with possible transcription factors. We can either provide a GRangeList of known ChIP-seq
 #' binding sites (TF occupancy) or positions of TF motifs (TF motifs). While public ChIP-seq data may not fully align with the ground truth TF occupancy in users' data
 #' (due to technical challenges of ChIP-seq or cell type nature of TF occupancy), it does offer a few important advantages over TF motif information:
-#' \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\enumerate{
-#' \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\item{TF occupancy allows co-activators to be included. Co-activators are chromatin modifiers that do not directly bind to DNA but nonetheless play an important role
+#' \enumerate{
+#' \item{TF occupancy allows co-activators to be included. Co-activators are chromatin modifiers that do not directly bind to DNA but nonetheless play an important role
 #' in gene regulation}
-#' \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\item{TF occupancy can distinguish between members of the same class that may share similar motifs but that may have drastically different binding sites}
+#' \item{TF occupancy can distinguish between members of the same class that may share similar motifs but that may have drastically different binding sites}
 #' }
 #' If multiple ChIP-seq are available for the same TF, we merge the ChIP-seq data to represent an universal set of possible binding sites. The predicted TF
-#' occupancy is further refined by \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\code{\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\link{pruneRegulon}}.
+#' occupancy is further refined by \code{\link{pruneRegulon}}.
 #'
 #' If the users prefer to use TF motifs instead of TF occupancy, the users can create a GRangeList of motif annotation using `motifmatchr::matchMotifs`.
 #' Here, we demonstrate how to annotate peaks with cisbp motif database
 #' ```
 #' library(motifmatchr)
 #' library(chromVARmotifs)
-#' data('human_pwms_v1')
-#' peaks <- GenomicRanges::GRanges(seqnames = c('chr1','chr2','chr2'),
+#' data("human_pwms_v1")
+#' peaks <- GenomicRanges::GRanges(seqnames = c("chr1","chr2","chr2"),
 #'                                ranges = IRanges::IRanges(start = c(76585873,42772928, 100183786),
 #'                                                          width = 500))
-#' grl <- matchMotifs(human_pwms_v1, peaks, genome = 'hg38', out = 'positions')
+#' grl <- matchMotifs(human_pwms_v1, peaks, genome = "hg38", out = "positions")
 #' # retain only TF symbols. TF symbols need to be consistent with gene names in regulon
-#' names(grl) <- sapply(strsplit(names(grl), '_'), '[',3)
+#' names(grl) <- sapply(strsplit(names(grl), "_"), "[",3)
 #' ```
 #'
 #'
