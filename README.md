@@ -8,7 +8,7 @@ For full documentation, please refer to the epiregulon [book](https://xiaosaiyao
 
 Preprint
 Epiregulon: Inference of single-cell transcription factor activity to dissect mechanisms of lineage plasticity and drug response
-Tomasz Wlodarczyk, Aaron Lun, Diana Wu, Shreya Menon, Shushan Toneyan, Kerstin Seidel, Liang Wang, Jenille Tan, Shang-Yang Chen, Timothy Keyes, Aleksander Chlebowski, Yu Guo, Ciara Metcalfe, Marc Hafner, Christian W. Siebel, M. Ryan Corces, Robert Yauch, Shiqi Xie, Xiaosai Yao
+Tomasz Włodarczyk, Aaron Lun, Diana Wu, Shreya Menon, Shushan Toneyan, Kerstin Seidel, Liang Wang, Jenille Tan, Shang-Yang Chen, Timothy Keyes, Aleksander Chlebowski, Yu Guo, Ciara Metcalfe, Marc Hafner, Christian W. Siebel, M. Ryan Corces, Robert Yauch, Shiqi Xie, Xiaosai Yao
 bioRxiv 2023.11.27.568955; doi: [https://doi.org/10.1101/2023.11.27.568955](https://www.biorxiv.org/content/10.1101/2023.11.27.568955v1)
 
 ![plot](inst/epiregulon_schematics.svg) 
@@ -29,7 +29,6 @@ devtools::install_github(repo='xiaosaiyao/epiregulon.archr')
 # install extended version of epiregulon
 devtools::install_github(repo='xiaosaiyao/epiregulon.extra')
 ```
-
 Example data included in the tutorial are available from [scMultiome](https://bioconductor.org/packages/release/data/experiment/html/scMultiome.html) 
 
 ```
@@ -39,11 +38,25 @@ if (!require("BiocManager", quietly = TRUE))
 BiocManager::install("scMultiome")
 ```
 
+# System Requirements
+
+## Hardware Requirements
+
+The epiregulon package has been tested on a standard MacBook with 16GB of RAM and 8 cores
+
+## Software Requirements
+
+The epiregulon package is supported for macOS, Linux and Windows. The package has been tested on the following systems:
+
+- macOS: Monterey (12.7.1)
+- Linux: Ubuntu 22.04.2 LTS
+- Windows: Windows 2022
+
+Users should have R version 4.3.0 or higher
+
 # Functions
 Functions in the suite of Epiregulon packages
 ![plot](inst/epiregulon_functions.png)
 
-
 Contact: [Xiaosai Yao](mailto:yao.xiaosai@gene.com), Genentech Inc.
-
 

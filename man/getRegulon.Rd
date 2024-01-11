@@ -16,7 +16,7 @@ getRegulon(p2g, overlap, aggregate = FALSE, FUN = "mean")
 \item{FUN}{function to aggregate TF-target sharing different regulatory elements}
 }
 \value{
-A DataFrame consisting of tf(regulator), target and a column indicating degree of association between TF and target such as "mor" or "corr".
+A DataFrame consisting of tf(regulator), target and a column indicating degree of association between TF and target such as 'mor' or 'corr'.
 }
 \description{
 Combine the TF binding info and peak to gene correlations to generate regulons
@@ -24,25 +24,25 @@ Combine the TF binding info and peak to gene correlations to generate regulons
 \examples{
 set.seed(1)
 # create a mock peak-to-gene matrix
-p2g <- data.frame(idxATAC = c(rep(1,5), rep(2,5)), Chrom = "chr1", idxRNA = 1:10,
-target = paste0("Gene_", 1:10), Correlation = runif(10, 0, 1))
+p2g <- data.frame(idxATAC = c(rep(1,5), rep(2,5)), Chrom = 'chr1', idxRNA = 1:10,
+target = paste0('Gene_', 1:10), Correlation = runif(10, 0, 1))
 
 # create a Granges list of TF binding sites
-grl <- GRangesList("TF1" = GRanges(seqnames = "chr1",
+grl <- GRangesList('TF1' = GRanges(seqnames = 'chr1',
 ranges = IRanges(start = c(50,1050), width = 100)),
-"TF2" = GRanges(seqnames = "chr1",
+'TF2' = GRanges(seqnames = 'chr1',
 ranges = IRanges(start = c(1050), width = 100))
 )
 
 # Create a mock peak matrix
-peak_gr <- GRanges(seqnames = "chr1",
+peak_gr <- GRanges(seqnames = 'chr1',
                    ranges = IRanges(start = seq(from = 1, to = 10000, by = 1000), width = 100))
 
 peak_counts <- matrix(sample(x = 0:4, size = 100*length(peak_gr), replace = TRUE),
 nrow = length(peak_gr),ncol = 100)
 peak_sce <- SingleCellExperiment(list(counts = peak_counts))
 rowRanges(peak_sce) <- peak_gr
-rownames(peak_sce) <- paste0("peak", 1:10)
+rownames(peak_sce) <- paste0('peak', 1:10)
 
 # create overlaps between p2g matrix, TF binding sites and peak matrix
 overlap <- addTFMotifInfo(p2g, grl, peakMatrix = peak_sce)
