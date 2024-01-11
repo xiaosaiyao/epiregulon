@@ -186,6 +186,13 @@ jobs:
       - name: Check `tlmgr` version
         run: tlmgr --version
 
+      - name: add TeX deps
+        run: |
+          install.packages("tinytex")
+          tinytex:::install_prebuilt()
+          tinytex::tlmgr_install(pkgs = "name")
+        shell: Rscript {0}
+
       - name: Install dependencies pass 2
         run: |
           ## Pass #2 at installing dependencies
@@ -242,11 +249,6 @@ jobs:
         if:  env.has_RUnit == 'true'
         run: |
           BiocGenerics:::testPackage()
-        shell: Rscript {0}
-
-      - name: Check package content
-        run: |
-          for (i in seq_along(list.files("./", full.names = TRUE))) message(paste0(rownames(file.info(list.files("./", full.names = TRUE)))[i],"  ",file.info(list.files("./", full.names = TRUE)[i])[,"size"]))
         shell: Rscript {0}
 
       - name: Run BiocCheck
