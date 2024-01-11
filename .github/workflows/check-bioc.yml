@@ -183,16 +183,6 @@ jobs:
         with:
           packages: scheme-basic
 
-      - name: Check `tlmgr` version
-        run: tlmgr --version
-
-      - name: add TeX deps
-        run: |
-          install.packages("tinytex")
-          tinytex:::install_prebuilt()
-          tinytex::tlmgr_install(pkgs = "name")
-        shell: Rscript {0}
-
       - name: Install dependencies pass 2
         run: |
           ## Pass #2 at installing dependencies
