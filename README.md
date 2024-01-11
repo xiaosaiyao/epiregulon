@@ -52,7 +52,7 @@ The epiregulon package is supported for macOS, Linux and Windows. The package ha
 - Linux: Ubuntu 22.04.2 LTS
 - Windows: Windows 2022
 
-Users should have R version 4.3.0 or higher (edited)
+Users should have R version 4.3.0 or higher
 
 # Functions
 Functions in the suite of Epiregulon packages
