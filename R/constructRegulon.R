@@ -2,10 +2,9 @@
 #'
 #' Combined transcription factor ChIP-seq data from ChIP-Atlas and ENCODE or
 #' from CistromeDB and ENCODE.
-#' @param mode a string indicating whether to download a GRangelist of TF binding sites ("occupancy") or motif matches ("motif").
+#' @param mode a string indicating whether to download a GRangelist of TF binding sites ('occupancy') or motif matches ('motif').
 #' TF binding information is retrieved from [scMultiome](https://github.com/xiaosaiyao/scMultiome/blob/devel/R/tfBinding.R) whereas
 #' motif information is annotated by cisbp from [chromVARmotifs](https://github.com/GreenleafLab/chromVARmotifs)
-#' @param motif_name Character string	indicating name of the peakAnnotation object (i.e. Motifs) to retrieve from the designated ArchRProject.
 #' @param peaks A GRanges object indicating the peaks to perform motif annotation on if ArchR project is not provided.
 #' The peak indices should match the `re` column in the regulon
 
@@ -13,52 +12,50 @@
 #' @examples
 #' # retrieve TF binding info
 #' \dontrun{
-#' getTFMotifInfo("mm10", "atlas")
+#' getTFMotifInfo('mm10', 'atlas')
 #' }
 #'
 #' # retrieve motif info
-#' peaks <- GRanges(seqnames = c("chr12","chr19","chr19","chr11","chr6"),
-#' ranges = IRanges(start = c(124914563,50850844, 50850844, 101034172, 151616327),
+#' peaks <- GRanges(seqnames = c('chr12','chr19','chr19','chr11','chr6'),
+#' ranges = IRanges(start = c(124914563,50850845, 50850844, 101034172, 151616327),
 #' end = c(124914662,50850929, 50850929, 101034277, 151616394)))
-#' grl <- getTFMotifInfo(genome = "hg38", mode = "motif", peaks=peaks)
+#' grl <- getTFMotifInfo(genome = 'hg38', mode = 'motif', peaks=peaks)
 #'
 #' @export
 #'
-getTFMotifInfo <- function (genome = c("hg38", "hg19", "mm10"),
-                            source = c("atlas", "cistrome"),
-                            metadata = FALSE,
-                            mode = c("occupancy","motif"),
-                            motif_name = "Motif",
-                            peaks = NULL) {
-  genome <- match.arg(genome)
-  source <- match.arg(source)
-  mode <- match.arg(mode)
+getTFMotifInfo <- function(genome = c("hg38",
+    "hg19", "mm10"), source = c("atlas",
+    "cistrome"), metadata = FALSE, mode = c("occupancy",
+    "motif"),
+    peaks = NULL) {
+    genome <- match.arg(genome)
+    source <- match.arg(source)
+    mode <- match.arg(mode)
 
-  if (mode == "occupancy") {
-    grl <- scMultiome::tfBinding(genome, source, metadata)
-  } else if (mode == "motif") {
-
-
-      species <- switch(genome,
-                        hg38 = "human",
-                        hg19 = "human",
-                        mm10 = "mouse")
-      BS.genome <- switch(genome,
-                          hg38 = BSgenome.Hsapiens.UCSC.hg38::BSgenome.Hsapiens.UCSC.hg38,
-                          hg19 = BSgenome.Hsapiens.UCSC.hg19::BSgenome.Hsapiens.UCSC.hg19,
-                          mm10 = BSgenome.Mmusculus.UCSC.mm10::BSgenome.Mmusculus.UCSC.mm10)
-
-      message("keeping only standard chromosomes..")
-      peaks <- GenomeInfoDb::keepStandardChromosomes(peaks, pruning.mode = "coarse")
-
-      message("annotating peaks with motifs")
-      grl <- annotateMotif(species, peaks, BS.genome, out = "positions")
-      names(grl) <- lapply(strsplit(names(grl), split="_|\\."), "[", 3)
-      }
+    if (mode == "occupancy") {
+        grl <- scMultiome::tfBinding(genome,
+            source, metadata)
+    } else if (mode == "motif") {
 
 
+        species <- switch(genome, hg38 = "human",
+            hg19 = "human", mm10 = "mouse")
+        BS.genome <- switch(genome,
+            hg38 = BSgenome.Hsapiens.UCSC.hg38::BSgenome.Hsapiens.UCSC.hg38,
+            hg19 = BSgenome.Hsapiens.UCSC.hg19::BSgenome.Hsapiens.UCSC.hg19,
+            mm10 = BSgenome.Mmusculus.UCSC.mm10::BSgenome.Mmusculus.UCSC.mm10)
 
-  grl
+        message("keeping only standard chromosomes..")
+        peaks <- GenomeInfoDb::keepStandardChromosomes(peaks,
+            pruning.mode = "coarse")
+
+        message("annotating peaks with motifs")
+        grl <- annotateMotif(species,
+            peaks, BS.genome, out = "positions")
+        names(grl) <- lapply(strsplit(names(grl),
+            split = "_|\\."), "[", 3)
+    }
+    grl
 }
 
 
@@ -103,47 +100,45 @@ getTFMotifInfo <- function (genome = c("hg38", "hg19", "mm10"),
 #' @examples
 #' set.seed(1)
 #' # create a mock peak-to-gene matrix
-#' p2g <- data.frame(idxATAC = c(rep(1,5), rep(2,5)), Chrom = "chr1", idxRNA = 1:10,
-#' Gene = paste0("Gene_",1:10),Correlation = runif(10, 0,1))
+#' p2g <- data.frame(idxATAC = c(rep(1,5), rep(2,5)), Chrom = 'chr1', idxRNA = 1:10,
+#' Gene = paste0('Gene_',1:10),Correlation = runif(10, 0,1))
 #'
 #' # create mock a GRanges list of TF binding sites
-#' grl <- GRangesList("TF1" = GRanges(seqnames = "chr1",
+#' grl <- GRangesList('TF1' = GRanges(seqnames = 'chr1',
 #' ranges = IRanges(start = c(50,1050), width = 100)),
-#' "TF2" = GRanges(seqnames = "chr1",
+#' 'TF2' = GRanges(seqnames = 'chr1',
 #' ranges = IRanges(start = c(1050), width = 100))
 #' )
 #'
 #' # create a mock singleCellExperiment object for peak matrix
-#' peak_gr <- GRanges(seqnames = "chr1",
+#' peak_gr <- GRanges(seqnames = 'chr1',
 #'              ranges = IRanges(start = seq(from = 1, to = 10000, by = 1000),
 #'              width = 100))
 #' peak_counts <- matrix(sample(x = 0:4, size = 100*length(peak_gr), replace = TRUE),
 #' nrow = length(peak_gr), ncol = 100)
 #' peak_sce <- SingleCellExperiment(list(counts = peak_counts))
 #' rowRanges(peak_sce) <- peak_gr
-#' rownames(peak_sce) <- paste0("peak",1:10)
+#' rownames(peak_sce) <- paste0('peak',1:10)
 #'
 #' # create overlaps between p2g matrix, TF binding sites and peak matrix
 #' overlap <- addTFMotifInfo(p2g, grl, peakMatrix = peak_sce)
 #' utils::head(overlap)
 #' @author Xiaosai Yao, Shang-yang Chen
 
-addTFMotifInfo <- function(p2g,
-                           grl,
-                           peakMatrix = NULL){
+addTFMotifInfo <- function(p2g, grl, peakMatrix = NULL) {
 
 
-  peakSet <- rowRanges(peakMatrix)
+    peakSet <- rowRanges(peakMatrix)
 
-  message("Computing overlap...")
-  overlap <- GenomicRanges::findOverlaps(peakSet, grl)
-  overlap <- data.frame(overlap)
-  colnames(overlap) <- c("idxATAC", "idxTF")
-  overlap <- overlap[which(overlap$idxATAC %in% p2g$idxATAC), ]
-  overlap$tf <- names(grl)[overlap$idxTF]
-  message("Success!")
+    message("Computing overlap...")
+    overlap <- GenomicRanges::findOverlaps(peakSet, grl)
+    overlap <- data.frame(overlap)
+    colnames(overlap) <- c("idxATAC", "idxTF")
+    overlap <- overlap[which(overlap$idxATAC %in% p2g$idxATAC), ]
+    overlap$tf <- names(grl)[overlap$idxTF]
+    message("Success!")
 
-  return(overlap)
+    return(overlap)
 
 }
 
@@ -154,7 +149,7 @@ addTFMotifInfo <- function(p2g,
 #' @param overlap A data frame storing overlaps between the regions of the peak matrix with the bulk TF ChIP-seq binding sites computed from addTFMotifInfo
 #' @param aggregate logical to specify whether regulatory elements are aggregated across the same TF-target pairs
 #' @param FUN function to aggregate TF-target sharing different regulatory elements
-#' @return A DataFrame consisting of tf(regulator), target and a column indicating degree of association between TF and target such as "mor" or "corr".
+#' @return A DataFrame consisting of tf(regulator), target and a column indicating degree of association between TF and target such as 'mor' or 'corr'.
 #'
 #' @export
 #'
@@ -162,25 +157,25 @@ addTFMotifInfo <- function(p2g,
 #' @examples
 #' set.seed(1)
 #' # create a mock peak-to-gene matrix
-#' p2g <- data.frame(idxATAC = c(rep(1,5), rep(2,5)), Chrom = "chr1", idxRNA = 1:10,
-#' target = paste0("Gene_", 1:10), Correlation = runif(10, 0, 1))
+#' p2g <- data.frame(idxATAC = c(rep(1,5), rep(2,5)), Chrom = 'chr1', idxRNA = 1:10,
+#' target = paste0('Gene_', 1:10), Correlation = runif(10, 0, 1))
 #'
 #' # create a Granges list of TF binding sites
-#' grl <- GRangesList("TF1" = GRanges(seqnames = "chr1",
+#' grl <- GRangesList('TF1' = GRanges(seqnames = 'chr1',
 #' ranges = IRanges(start = c(50,1050), width = 100)),
-#' "TF2" = GRanges(seqnames = "chr1",
+#' 'TF2' = GRanges(seqnames = 'chr1',
 #' ranges = IRanges(start = c(1050), width = 100))
 #' )
 #'
 #' # Create a mock peak matrix
-#' peak_gr <- GRanges(seqnames = "chr1",
+#' peak_gr <- GRanges(seqnames = 'chr1',
 #'                    ranges = IRanges(start = seq(from = 1, to = 10000, by = 1000), width = 100))
 #'
 #' peak_counts <- matrix(sample(x = 0:4, size = 100*length(peak_gr), replace = TRUE),
 #' nrow = length(peak_gr),ncol = 100)
 #' peak_sce <- SingleCellExperiment(list(counts = peak_counts))
 #' rowRanges(peak_sce) <- peak_gr
-#' rownames(peak_sce) <- paste0("peak", 1:10)
+#' rownames(peak_sce) <- paste0('peak', 1:10)
 #'
 #' # create overlaps between p2g matrix, TF binding sites and peak matrix
 #' overlap <- addTFMotifInfo(p2g, grl, peakMatrix = peak_sce)
@@ -190,33 +185,32 @@ addTFMotifInfo <- function(p2g,
 #' regulon <- getRegulon(p2g, overlap, aggregate = FALSE)
 #' @author Xiaosai Yao, Shang-yang Chen
 
-getRegulon <- function(p2g,
-                       overlap,
-                       aggregate=FALSE,
-                       FUN="mean"){
+getRegulon <- function(p2g, overlap, aggregate = FALSE, FUN = "mean") {
 
-  p2g <- S4Vectors::DataFrame(p2g)
+    p2g <- S4Vectors::DataFrame(p2g)
 
-  if (identical(colnames(p2g$Correlation),"all")) {
-    colnames(p2g$Correlation) <- "Correlation.all"
-  }
+    if (identical(colnames(p2g$Correlation), "all")) {
+        colnames(p2g$Correlation) <- "Correlation.all"
+    }
 
-  regulon_df <- S4Vectors::merge(p2g, overlap, by="idxATAC")
+    regulon_df <- S4Vectors::merge(p2g, overlap, by = "idxATAC")
 
-  Correlation.rownames <- colnames(regulon_df)[grep("^Correlation\\.", colnames(regulon_df))]
-  corr_matrix <- regulon_df[,Correlation.rownames, drop=FALSE]
-  colnames(corr_matrix) <- gsub("^Correlation\\.","", Correlation.rownames)
+    Correlation.rownames <- colnames(regulon_df)[grep("^Correlation\\.",
+        colnames(regulon_df))]
+    corr_matrix <- regulon_df[, Correlation.rownames, drop = FALSE]
+    colnames(corr_matrix) <- gsub("^Correlation\\.", "", Correlation.rownames)
 
-  regulon_df[,grep("Correlation\\.",colnames(regulon_df))] <- NULL
-  regulon_df$Correlation <- as.matrix(corr_matrix)
+    regulon_df[, grep("Correlation\\.", colnames(regulon_df))] <- NULL
+    regulon_df$Correlation <- as.matrix(corr_matrix)
 
 
-  if (aggregate) {
-    "aggregating regulon ..."
-    regulon_df <- aggregateMatrix(regulon_df[,c("tf","target","Correlation")], "Correlation", FUN="mean")
-  }
-  colnames(regulon_df)[colnames(regulon_df) == "Correlation"] <- "corr"
-  return(regulon_df)
+    if (aggregate) {
+        "aggregating regulon ..."
+        regulon_df <- aggregateMatrix(regulon_df[, c("tf", "target",
+            "Correlation")], "Correlation", FUN = "mean")
+    }
+    colnames(regulon_df)[colnames(regulon_df) == "Correlation"] <- "corr"
+    return(regulon_df)
 
 }
 

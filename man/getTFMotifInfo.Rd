@@ -9,7 +9,6 @@ getTFMotifInfo(
   source = c("atlas", "cistrome"),
   metadata = FALSE,
   mode = c("occupancy", "motif"),
-  motif_name = "Motif",
   peaks = NULL
 )
 }
@@ -20,11 +19,9 @@ getTFMotifInfo(
 
 \item{metadata}{logical flag specifying whether to return data or metadata only}
 
-\item{mode}{a string indicating whether to download a GRangelist of TF binding sites ("occupancy") or motif matches ("motif").
+\item{mode}{a string indicating whether to download a GRangelist of TF binding sites ('occupancy') or motif matches ('motif').
 TF binding information is retrieved from \href{https://github.com/xiaosaiyao/scMultiome/blob/devel/R/tfBinding.R}{scMultiome} whereas
 motif information is annotated by cisbp from \href{https://github.com/GreenleafLab/chromVARmotifs}{chromVARmotifs}}
-
-\item{motif_name}{Character string    indicating name of the peakAnnotation object (i.e. Motifs) to retrieve from the designated ArchRProject.}
 
 \item{peaks}{A GRanges object indicating the peaks to perform motif annotation on if ArchR project is not provided.
 The peak indices should match the \code{re} column in the regulon}
@@ -39,14 +36,14 @@ from CistromeDB and ENCODE.
 \examples{
 # retrieve TF binding info
 \dontrun{
-getTFMotifInfo("mm10", "atlas")
+getTFMotifInfo('mm10', 'atlas')
 }
 
 # retrieve motif info
-peaks <- GRanges(seqnames = c("chr12","chr19","chr19","chr11","chr6"),
-ranges = IRanges(start = c(124914563,50850844, 50850844, 101034172, 151616327),
+peaks <- GRanges(seqnames = c('chr12','chr19','chr19','chr11','chr6'),
+ranges = IRanges(start = c(124914563,50850845, 50850844, 101034172, 151616327),
 end = c(124914662,50850929, 50850929, 101034277, 151616394)))
-grl <- getTFMotifInfo(genome = "hg38", mode = "motif", peaks=peaks)
+grl <- getTFMotifInfo(genome = 'hg38', mode = 'motif', peaks=peaks)
 
 }
 \references{

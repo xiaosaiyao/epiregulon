@@ -7,7 +7,6 @@
 addMotifScore(
   regulon,
   field_name = "motif",
-  motif_name = "Motif",
   peaks = NULL,
   pwms = NULL,
   species = c("human", "mouse"),
@@ -19,8 +18,6 @@ addMotifScore(
 \item{regulon}{A DataFrame consisting of tf (regulator) and target in the column names.}
 
 \item{field_name}{Character string    indicating the column name of the regulon to add the motif information to}
-
-\item{motif_name}{Character string    indicating name of the peakAnnotation object (i.e. Motifs) to retrieve from the designated ArchRProject.}
 
 \item{peaks}{A GRanges object indicating the peaks to perform motif annotation on if ArchR project is not provided.
 The peak indices should match the \code{re} column in the regulon}
@@ -41,10 +38,10 @@ A DataFrame with motif matches added with 1s indicating the presence of motifs a
 Add Motif Scores
 }
 \examples{
-regulon <- S4Vectors::DataFrame(tf = c("AR","AR","AR","ESR1","ESR1","NKX2-1"),
+regulon <- S4Vectors::DataFrame(tf = c('AR','AR','AR','ESR1','ESR1','NKX2-1'),
 idxATAC = 1:6)
-peaks <- GRanges(seqnames = c("chr12","chr19","chr19","chr11","chr6","chr1"),
-ranges = IRanges(start = c(124914563,50850844, 50850844, 101034172, 151616327, 1000),
+peaks <- GRanges(seqnames = c('chr12','chr19','chr19','chr11','chr6','chr1'),
+ranges = IRanges(start = c(124914563,50850845, 50850844, 101034172, 151616327, 1000),
 end = c(124914662,50850929, 50850929, 101034277, 151616394,2000)))
 regulon <- addMotifScore(regulon, peaks=peaks)
 }
