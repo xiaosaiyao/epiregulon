@@ -17,25 +17,8 @@ There are three related packages. The core epiregulon package supports `SingleCe
 # Installation
 
 ```
-# install devtools
-if(!require(devtools)) install.packages("devtools")
-
-# install basic epiregulon package
-devtools::install_github(repo='xiaosaiyao/epiregulon')
-
-# install extended version of epiregulon
-devtools::install_github(repo='xiaosaiyao/epiregulon.archr')
-
-# install extended version of epiregulon
-devtools::install_github(repo='xiaosaiyao/epiregulon.extra')
-```
-Example data included in the tutorial are available from [scMultiome](https://bioconductor.org/packages/release/data/experiment/html/scMultiome.html) 
-
-```
-if (!require("BiocManager", quietly = TRUE))
-    install.packages("BiocManager")
-
-BiocManager::install("scMultiome")
+if(!require(BiocManager)) install.packages("BiocManager")
+BiocManager::install("epiregulon")
 ```
 
 # System Requirements
