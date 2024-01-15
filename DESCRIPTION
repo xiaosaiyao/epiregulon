@@ -1,10 +1,11 @@
-Package: epiregulon.extra
-Title: Companion package to epiregulon with additional plotting, differential and graph functions
-Version: 0.99.2
+Package: epiregulon
+Title: Gene regulatory network inference from single cell epigenomic data
+Version: 0.99.0
+Date: 2023-11-21
 Authors@R: 
-  c(person(given = "Xiaosai", family = "Yao", role = c("aut", "cre"), email = "yao.xiaosai@gene.com", comment = c(ORCID = "0000-0001-9729-0726")),
+    c(person(given = "Xiaosai", family = "Yao", role = c("aut", "cre"), email = "yao.xiaosai@gene.com", comment = c(ORCID = "0000-0001-9729-0726")),
     person(given = "Tomasz", family = "Włodarczyk", role = c("aut"), email = "tomwlo@gmail.com", comment = c(ORCID = "0000-0003-1554-9699")),
-    person(given = "Timothy", family = "Keyes", role=c("aut"), email="keyes.timothy@gmail.com"),
+    person(given = "Aaron", family = "Lun", role=c("aut"), email="infinite.monkeys.with.keyboards@gmail.com"),
     person(given = "Shang-Yang", family = "Chen", role = "aut", email = "sychen9584@gmail.com"))
 Description: Gene regulatory networks model the underlying gene regulation hierarchies that drive gene expression and observed phenotypes. Epiregulon infers TF activity in single cells by constructing a gene regulatory network (regulons). This is achieved through integration of scATAC-seq and scRNA-seq data and incorporation of public bulk TF ChIP-seq data. Links between regulatory elements and their target genes are established by computing correlations between chromatin accessibility and gene expressions.
 License: file LICENSE
@@ -12,42 +13,43 @@ Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.2.3
 Imports:
-  scran,
-ComplexHeatmap,
-Matrix,
-SummarizedExperiment,
-checkmate,
-circlize,
-clusterProfiler,
-ggbeeswarm,
-ggplot2,
-ggraph,
-igraph,
-lifecycle,
-patchwork,
-reshape2,
-scales,
-scater,
-stats
-Depends:
-  SingleCellExperiment
-Suggests:
-  epiregulon,
-knitr,
-rmarkdown,
-parallel,
-BiocStyle,
-testthat (>= 3.0.0),
-EnrichmentBrowser,
-msigdbr,
-dorothea,
-scuttle,
-scMultiome,
-S4Vectors,
-scuttle,
-vdiffr
+    BiocFileCache,
+    BiocParallel,
+    Matrix,
+    Rcpp,
+    S4Vectors,
+    SummarizedExperiment,
+    bluster,
+    checkmate,
+    entropy,
+    lifecycle,
+    methods,
+    scran,
+    scuttle,
+    stats,
+    utils,
+    scMultiome,
+    GenomeInfoDb,
+    GenomicRanges,
+    AUCell,
+    BSgenome.Hsapiens.UCSC.hg19,
+    BSgenome.Hsapiens.UCSC.hg38,
+    BSgenome.Mmusculus.UCSC.mm10,
+    motifmatchr
+Depends: 
+    R (>= 4.2.0),
+    SingleCellExperiment
+Suggests: 
+    knitr,
+    rmarkdown,
+    parallel,
+    BiocStyle,
+    testthat (>= 3.0.0),
+    coin,
+    scater
+LinkingTo: Rcpp
 VignetteBuilder: knitr
-URL: https://github.com/xiaosaiyao/epiregulon.extra/
-  biocViews: GeneExpression, Transcription, ChipOnChip, DifferentialExpression, GeneTarget, Normalization, GraphAndNetwork
+URL: https://github.com/xiaosaiyao/epiregulon/
+biocViews: GeneExpression, Transcription, ChipOnChip, DifferentialExpression, GeneTarget, Normalization, GraphAndNetwork
 Config/testthat/edition: 3
-BugReports: https://github.com/xiaosaiyao/epiregulon.extra/issues
+BugReports: https://github.com/xiaosaiyao/epiregulon/issues
