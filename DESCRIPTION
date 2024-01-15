@@ -49,6 +49,7 @@ Suggests:
     scater
 LinkingTo: Rcpp
 VignetteBuilder: knitr
-URL:
-biocViews: Software, NetworkInference, Epigenetics, SingleCell, GeneRegulation, Network
+URL: https://github.com/xiaosaiyao/epiregulon/
+biocViews: GeneExpression, Transcription, ChipOnChip, DifferentialExpression, GeneTarget, Normalization, GraphAndNetwork
 Config/testthat/edition: 3
+BugReports: https://github.com/xiaosaiyao/epiregulon/issues
