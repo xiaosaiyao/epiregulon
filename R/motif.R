@@ -92,10 +92,7 @@ addMotifScore <- function(regulon, field_name = "motif",
         field_name])
 
     regulon
-
-
 }
-
 
 annotateMotif <- function(species, peaks, genome, pwms = NULL, ...) {
 
@@ -108,25 +105,10 @@ annotateMotif <- function(species, peaks, genome, pwms = NULL, ...) {
 }
 
 species_motif <- function(species) {
-    if (species == "human") {
-        bfc <- BiocFileCache::BiocFileCache()
-        tryCatch(path_to_database <- BiocFileCache::bfcrpath(bfc, "https://github.com/GreenleafLab/chromVARmotifs/raw/master/data/human_pwms_v2.rda"),
-            error = function(cond) {
-                message(cond)
-                stop("Downloading of motif database failed. Please report a bug on github.")
-            })
-        load(path_to_database)
-        return(human_pwms_v2)
-    } else if (species == "mouse") {
-        bfc <- BiocFileCache::BiocFileCache()
-        tryCatch(path_to_database <- BiocFileCache::bfcrpath(bfc, "https://github.com/GreenleafLab/chromVARmotifs/raw/master/data/mouse_pwms_v2.rda"),
-            error = function(cond) {
-                message(cond)
-                stop("Downloading of motif database failed. Please report a bug on github.")
-            })
-        load(path_to_database)
-        return(mouse_pwms_v2)
-    } else stop("Species should be 'human' or 'mouse'. Please provide your own pwms for other species")
+  species <- c(human = "Homo sapiens", mouse = "Mus musculus")[species]
+  eh <- AnnotationHub::query(ExperimentHub::ExperimentHub(),
+                             pattern = c("scMultiome", "TF motifs", species))
+  return(readRDS(eh[[eh$ah_id]]))
 }
 
 matchNames <- function(motif_names, regulon) {
