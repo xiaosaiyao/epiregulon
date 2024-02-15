@@ -11,7 +11,8 @@ Gene regulatory networks model the underlying gene regulation hierarchies that d
 \seealso{
 Useful links:
 \itemize{
-  \item \url{}
+  \item \url{https://github.com/xiaosaiyao/epiregulon/}
+  \item Report bugs at \url{https://github.com/xiaosaiyao/epiregulon/issues}
 }
 
 }

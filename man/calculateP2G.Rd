@@ -9,7 +9,6 @@ calculateP2G(
   expMatrix = NULL,
   reducedDim = NULL,
   useDim = "IterativeLSI",
-  useMatrix = "GeneIntegrationMatrix",
   maxDist = 250000,
   cor_cutoff = 0.5,
   cellNum = 200,
@@ -17,8 +16,7 @@ calculateP2G(
   peak_assay = "counts",
   gene_symbol = "name",
   clusters = NULL,
-  cor_method = c("pearson", "kendall", "spearman"),
-  ...
+  cor_method = c("pearson", "kendall", "spearman")
 )
 }
 \arguments{
@@ -30,10 +28,7 @@ the genes in the form of \code{GRanges}. \code{rowData} should contain a column 
 
 \item{reducedDim}{A matrix of dimension reduced values}
 
-\item{useDim}{String specifying the dimensional reduction representation in the ArchR project to use or the name of the reduced dimension matrix supplied by the user}
-
-\item{useMatrix}{String specifying which the name of the gene expression matrix in the ArchR project to use.
-It is often called the 'GeneExpressionMatrix' for multiome and 'GeneIntegrationMatrix' for unpaired data in ArchR project.}
+\item{useDim}{String specifying the name of the reduced dimension matrix supplied by the user}
 
 \item{maxDist}{An integer to specify the base pair extension from transcription start start for overlap with peak regions}
 
@@ -52,8 +47,6 @@ Default correlation cutoff is 0.5.}
 all clusters. See details for the use of clusters}
 
 \item{cor_method}{String indicating which correlation coefficient is to be computed. One of 'pearson' (default), 'kendall', or 'spearman'.}
-
-\item{...}{other parameters to pass to addPeak2GeneLinks from ArchR package}
 }
 \value{
 A DataFrame of Peak to Gene correlation
