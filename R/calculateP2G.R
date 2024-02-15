@@ -141,7 +141,7 @@ calculateP2G <- function(peakMatrix = NULL, expMatrix = NULL, reducedDim = NULL,
         o$old.idxATAC <- rowData(altExp(sce_grouped))[o[, 2], "old.idxATAC"]
 
         #add metadata to o
-        o$Gene <- rowData(sce_grouped)[o[, 1], "name"]
+        o$Gene <- rowData(sce_grouped)[o[, 1], gene_symbol]
         o$chr <- as.character(seqnames(rowRanges(altExp(sce_grouped))[o[, 2]]))
         o$start <- GenomicRanges::start(rowRanges(altExp(sce_grouped))[o[, 2], ])
         o$end <- GenomicRanges::end(rowRanges(altExp(sce_grouped))[o[, 2], ])
