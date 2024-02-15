@@ -16,7 +16,8 @@ calculateP2G(
   peak_assay = "counts",
   gene_symbol = "name",
   clusters = NULL,
-  cor_method = c("pearson", "kendall", "spearman")
+  cor_method = c("pearson", "kendall", "spearman"),
+  BPPARAM = BiocParallel::SerialParam()
 )
 }
 \arguments{
@@ -47,6 +48,9 @@ Default correlation cutoff is 0.5.}
 all clusters. See details for the use of clusters}
 
 \item{cor_method}{String indicating which correlation coefficient is to be computed. One of 'pearson' (default), 'kendall', or 'spearman'.}
+
+\item{BPPARAM}{A BiocParallelParam object specifying whether summation should be parallelized. Use BiocParallel::SerialParam() for
+serial evaluation and use BiocParallel::MulticoreParam() for parallel evaluation}
 }
 \value{
 A DataFrame of Peak to Gene correlation

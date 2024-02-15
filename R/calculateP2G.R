@@ -16,6 +16,8 @@
 #' @param clusters A vector corresponding to the cluster labels for calculation of correlations within each cluster. If left NULL, correlation is calculated across
 #' all clusters. See details for the use of clusters
 #' @param cor_method String indicating which correlation coefficient is to be computed. One of 'pearson' (default), 'kendall', or 'spearman'.
+#' @param BPPARAM A BiocParallelParam object specifying whether summation should be parallelized. Use BiocParallel::SerialParam() for
+#' serial evaluation and use BiocParallel::MulticoreParam() for parallel evaluation
 #'
 #' @return A DataFrame of Peak to Gene correlation
 #' @details Cluster information is sometimes helpful to avoid the [Simpsons's paradox](https://en.wikipedia.org/wiki/Simpson%27s_paradox) in which baseline differences
@@ -54,7 +56,8 @@
 calculateP2G <- function(peakMatrix = NULL, expMatrix = NULL, reducedDim = NULL,
     useDim = "IterativeLSI", maxDist = 250000,
     cor_cutoff = 0.5, cellNum = 200, exp_assay = "logcounts", peak_assay = "counts",
-    gene_symbol = "name", clusters = NULL, cor_method = c("pearson", "kendall", "spearman")) {
+    gene_symbol = "name", clusters = NULL, cor_method = c("pearson", "kendall", "spearman"),
+    BPPARAM = BiocParallel::SerialParam()) {
 
 
     if (!is.null(peakMatrix) & !is.null(expMatrix) & !is.null(reducedDim)) {
@@ -95,7 +98,7 @@ calculateP2G <- function(peakMatrix = NULL, expMatrix = NULL, reducedDim = NULL,
 
         # aggregate sce by k-means clusters
         sce_grouped <- applySCE(sce, scuttle::aggregateAcrossCells, ids = kclusters,
-            statistics = "mean")
+            statistics = "mean", BPPARAM = BPPARAM)
 
         # some sces have strand information in metadata that conflicts with genomic ranges
         mcols(expMatrix)$strand <- NULL

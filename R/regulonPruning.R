@@ -161,10 +161,10 @@ pruneRegulon <- function(regulon, expMatrix = NULL, peakMatrix = NULL, exp_assay
 
 
         expMatrix <- applySCE(expMatrix, scuttle::aggregateAcrossCells, WHICH = NULL,
-            ids = kclusters, statistics = "sum", use.assay.type = exp_assay)
+            ids = kclusters, statistics = "sum", use.assay.type = exp_assay, BPPARAM = BPPARAM)
 
         peakMatrix <- applySCE(peakMatrix, scuttle::aggregateAcrossCells, WHICH = NULL,
-            ids = kclusters, statistics = "sum", use.assay.type = peak_assay)
+            ids = kclusters, statistics = "sum", use.assay.type = peak_assay, BPPARAM = BPPARAM)
         if (!is.null(clusters))
             clusters <- colData(expMatrix)[, "cluster_for_pseudobulk"]
     }
