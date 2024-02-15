@@ -192,7 +192,7 @@ jobs:
 
       - name: Install magick package
         run: |
-          install.packages("magick"")
+          install.packages("magick")
         shell: Rscript {0}
 
       - name: Install BiocGenerics
