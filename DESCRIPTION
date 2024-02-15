@@ -11,9 +11,11 @@ Description: Gene regulatory networks model the underlying gene regulation hiera
 License: file LICENSE
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.2.3
+RoxygenNote: 7.3.1
 Imports:
+    AnnotationHub,
     BiocParallel,
+    ExperimentHub,
     Matrix,
     Rcpp,
     S4Vectors,
