@@ -7,9 +7,7 @@
 #' @param reducedDim A matrix of dimension reduced values
 #' @param cor_cutoff A numeric scalar to specify the correlation cutoff between ATAC-seq peaks and RNA-seq genes to assign peak to gene links.
 #'  Default correlation cutoff is 0.5.
-#' @param useDim String specifying the dimensional reduction representation in the ArchR project to use or the name of the reduced dimension matrix supplied by the user
-#' @param useMatrix String specifying which the name of the gene expression matrix in the ArchR project to use.
-#' It is often called the 'GeneExpressionMatrix' for multiome and 'GeneIntegrationMatrix' for unpaired data in ArchR project.
+#' @param useDim String specifying the name of the reduced dimension matrix supplied by the user
 #' @param cellNum An integer to specify the number of cells to include in each K-means cluster. Default is 200 cells.
 #' @param maxDist An integer to specify the base pair extension from transcription start start for overlap with peak regions
 #' @param exp_assay String indicating the name of the assay in expMatrix for gene expression
@@ -18,7 +16,8 @@
 #' @param clusters A vector corresponding to the cluster labels for calculation of correlations within each cluster. If left NULL, correlation is calculated across
 #' all clusters. See details for the use of clusters
 #' @param cor_method String indicating which correlation coefficient is to be computed. One of 'pearson' (default), 'kendall', or 'spearman'.
-#' @param ... other parameters to pass to addPeak2GeneLinks from ArchR package
+#' @param BPPARAM A BiocParallelParam object specifying whether summation should be parallelized. Use BiocParallel::SerialParam() for
+#' serial evaluation and use BiocParallel::MulticoreParam() for parallel evaluation
 #'
 #' @return A DataFrame of Peak to Gene correlation
 #' @details Cluster information is sometimes helpful to avoid the [Simpsons's paradox](https://en.wikipedia.org/wiki/Simpson%27s_paradox) in which baseline differences
@@ -55,10 +54,10 @@
 #' @author Xiaosai Yao, Shang-yang Chen
 
 calculateP2G <- function(peakMatrix = NULL, expMatrix = NULL, reducedDim = NULL,
-    useDim = "IterativeLSI", useMatrix = "GeneIntegrationMatrix", maxDist = 250000,
+    useDim = "IterativeLSI", maxDist = 250000,
     cor_cutoff = 0.5, cellNum = 200, exp_assay = "logcounts", peak_assay = "counts",
     gene_symbol = "name", clusters = NULL, cor_method = c("pearson", "kendall", "spearman"),
-    ...) {
+    BPPARAM = BiocParallel::SerialParam()) {
 
 
     if (!is.null(peakMatrix) & !is.null(expMatrix) & !is.null(reducedDim)) {
@@ -99,7 +98,7 @@ calculateP2G <- function(peakMatrix = NULL, expMatrix = NULL, reducedDim = NULL,
 
         # aggregate sce by k-means clusters
         sce_grouped <- applySCE(sce, scuttle::aggregateAcrossCells, ids = kclusters,
-            statistics = "mean")
+            statistics = "mean", BPPARAM = BPPARAM)
 
         # some sces have strand information in metadata that conflicts with genomic ranges
         mcols(expMatrix)$strand <- NULL
@@ -141,7 +140,7 @@ calculateP2G <- function(peakMatrix = NULL, expMatrix = NULL, reducedDim = NULL,
         o$old.idxATAC <- rowData(altExp(sce_grouped))[o[, 2], "old.idxATAC"]
 
         #add metadata to o
-        o$Gene <- rowData(sce_grouped)[o[, 1], "name"]
+        o$Gene <- rowData(sce_grouped)[o[, 1], gene_symbol]
         o$chr <- as.character(seqnames(rowRanges(altExp(sce_grouped))[o[, 2]]))
         o$start <- GenomicRanges::start(rowRanges(altExp(sce_grouped))[o[, 2], ])
         o$end <- GenomicRanges::end(rowRanges(altExp(sce_grouped))[o[, 2], ])

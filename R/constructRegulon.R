@@ -89,8 +89,11 @@ getTFMotifInfo <- function(genome = c("hg38",
 #' peaks <- GenomicRanges::GRanges(seqnames = c("chr1","chr2","chr2"),
 #'                                ranges = IRanges::IRanges(start = c(76585873,42772928, 100183786),
 #'                                                          width = 500))
-#' grl <- matchMotifs(human_pwms_v1, peaks, genome = "hg38", out = "positions")
-#' # retain only TF symbols. TF symbols need to be consistent with gene names in regulon
+#' eh <- AnnotationHub::query(ExperimentHub::ExperimentHub(),
+#' pattern = c("scMultiome", "TF motifs", "human"))
+#' pwms <- readRDS(eh[[eh$ah_id]]))
+#' grl <- matchMotifs(pwms, peaks, genome = "hg38", out = "positions")
+#' retain only TF symbols. TF symbols need to be consistent with gene names in regulon
 #' names(grl) <- sapply(strsplit(names(grl), "_"), "[",3)
 #' ```
 #'
