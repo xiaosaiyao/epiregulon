@@ -150,8 +150,12 @@ addTFMotifInfo <- function(p2g, grl, peakMatrix = NULL) {
 #'
 #' @param p2g A Peak2Gene data frame created by ArchR or getP2Glinks() function
 #' @param overlap A data frame storing overlaps between the regions of the peak matrix with the bulk TF ChIP-seq binding sites computed from addTFMotifInfo
+#' @param expMatrix A SingleCellExperiment object containing gene expression counts from scRNA-seq. `rowData` should contain a column of gene symbols with column name matching the `gene_symbol` argument.
+#' @param gene_symbol String indicating the column name in the rowData of expMatrix that corresponds to gene symbol
 #' @param aggregate logical to specify whether regulatory elements are aggregated across the same TF-target pairs
 #' @param FUN function to aggregate TF-target sharing different regulatory elements
+#' @param makeGeneNamesUnique logical specifying whether replace duplicated genes in `expMatrix` with unique ones which will also
+#' be included in output regulon. If `TRUE` the function returns list contiaing regulon and `expMatrix`.
 #' @return A DataFrame consisting of tf(regulator), target and a column indicating degree of association between TF and target such as 'mor' or 'corr'.
 #'
 #' @export
@@ -188,14 +192,32 @@ addTFMotifInfo <- function(p2g, grl, peakMatrix = NULL) {
 #' regulon <- getRegulon(p2g, overlap, aggregate = FALSE)
 #' @author Xiaosai Yao, Shang-yang Chen
 
-getRegulon <- function(p2g, overlap, aggregate = FALSE, FUN = "mean") {
+getRegulon <- function(p2g, overlap, expMatrix= NULL, gene_symbol = "name", aggregate = FALSE, FUN = "mean",
+                       makeGeneNamesUnique=FALSE) {
 
     p2g <- S4Vectors::DataFrame(p2g)
 
     if (identical(colnames(p2g$Correlation), "all")) {
         colnames(p2g$Correlation) <- "Correlation.all"
     }
-
+    gene_names <- rowData(expMatrix)[,gene_symbol]
+    if(makeGeneNamesUnique & any(duplicated(gene_names))){
+      message("Duplicated gene names. Making them unique.")
+      duplicated_ind <- unique(c(which(duplicated(gene_names)), which(duplicated(gene_names, fromLast=TRUE))))
+      duplicated_names <- unique(gene_names[duplicated_ind])
+      for(duplicated_gene in duplicated_names){
+        gene_ind <- which(gene_names==duplicated_gene)
+        gene_names[gene_ind] <- paste0(duplicated_gene, "-", seq_along(gene_ind))
+        if(duplicated_gene %in% overlap$tf){
+            duplicated_tf_ind <- which(overlap$tf==duplicated_gene)
+            overlap <- rbind(overlap, overlap[rep(duplicated_tf_ind, length(gene_ind)-1),]) # append copies
+            duplicated_tf_ind_updated <- which(overlap$tf==duplicated_gene)
+            overlap$tf[duplicated_tf_ind_updated] <- paste0(duplicated_gene, "-", rep(seq_along(gene_ind), each = length(duplicated_tf_ind)))
+        }
+      }
+      p2g[p2g$idxRNA %in% duplicated_ind,"target"] <- gene_names[p2g$idxRNA[p2g$idxRNA %in% duplicated_ind]]
+      rowData(expMatrix)[,gene_symbol] <- gene_names
+    }
     regulon_df <- S4Vectors::merge(p2g, overlap, by = "idxATAC")
 
     Correlation.rownames <- colnames(regulon_df)[grep("^Correlation\\.",
@@ -213,6 +235,7 @@ getRegulon <- function(p2g, overlap, aggregate = FALSE, FUN = "mean") {
             "Correlation")], "Correlation", FUN = "mean")
     }
     colnames(regulon_df)[colnames(regulon_df) == "Correlation"] <- "corr"
+    if(makeGeneNamesUnique) return(list(regulon=regulon_df, expMatrix=expMatrix))
     return(regulon_df)
 
 }
