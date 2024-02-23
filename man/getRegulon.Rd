@@ -4,31 +4,16 @@
 \alias{getRegulon}
 \title{Combine the TF binding info and peak to gene correlations to generate regulons}
 \usage{
-getRegulon(
-  p2g,
-  overlap,
-  expMatrix = NULL,
-  gene_symbol = "name",
-  aggregate = FALSE,
-  FUN = "mean",
-  makeGeneNamesUnique = FALSE
-)
+getRegulon(p2g, overlap, aggregate = FALSE, FUN = "mean")
 }
 \arguments{
 \item{p2g}{A Peak2Gene data frame created by ArchR or getP2Glinks() function}
 
 \item{overlap}{A data frame storing overlaps between the regions of the peak matrix with the bulk TF ChIP-seq binding sites computed from addTFMotifInfo}
 
-\item{expMatrix}{A SingleCellExperiment object containing gene expression counts from scRNA-seq. \code{rowData} should contain a column of gene symbols with column name matching the \code{gene_symbol} argument.}
-
-\item{gene_symbol}{String indicating the column name in the rowData of expMatrix that corresponds to gene symbol}
-
 \item{aggregate}{logical to specify whether regulatory elements are aggregated across the same TF-target pairs}
 
 \item{FUN}{function to aggregate TF-target sharing different regulatory elements}
-
-\item{makeGeneNamesUnique}{logical specifying whether replace duplicated genes in \code{expMatrix} with unique ones which will also
-be included in output regulon. If \code{TRUE} the function returns list contiaing regulon and \code{expMatrix}.}
 }
 \value{
 A DataFrame consisting of tf(regulator), target and a column indicating degree of association between TF and target such as 'mor' or 'corr'.

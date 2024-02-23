@@ -122,8 +122,7 @@ pruneRegulon <- function(regulon, expMatrix = NULL, peakMatrix = NULL, exp_assay
     test <- match.arg(test)
     message("pruning network with ", test, " tests using a regulon cutoff of ", prune_value,
         "<", regulon_cutoff)
-    if(test=="chi.sq" & any(duplicated(rownames(expMatrix))))
-      error("Duplicated gene names. Consider re-run of the 'getRegulon' function with makeGeneNamesUnique=TRUE")
+
     # pseudobulk
     if (aggregateCells) {
         message("performing pseudobulk using an average of ", cellNum, " cells")
