@@ -120,6 +120,7 @@ pruneRegulon <- function(regulon, expMatrix = NULL, peakMatrix = NULL, exp_assay
     }
     # choose test method
     test <- match.arg(test)
+    if(test=="chi.sq" && any(duplicated(rownames(expMatrix)))) stop("Gene names provided in 'expMatrix' are not unique.")
     message("pruning network with ", test, " tests using a regulon cutoff of ", prune_value,
         "<", regulon_cutoff)
 
