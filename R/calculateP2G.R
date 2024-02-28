@@ -8,7 +8,8 @@
 #' @param cor_cutoff A numeric scalar to specify the correlation cutoff between ATAC-seq peaks and RNA-seq genes to assign peak to gene links.
 #'  Default correlation cutoff is 0.5.
 #' @param useDim String specifying the name of the reduced dimension matrix supplied by the user
-#' @param cellNum An integer to specify the number of cells to include in each K-means cluster. Default is 200 cells.
+#' @param cellNum An integer to specify the number of cells to include in each K-means cluster. By default it is guaranteed to be not less than 10
+#' and calculated as a square root of the total cell number divided by the number of user-specified clusters if they are provided.
 #' @param maxDist An integer to specify the base pair extension from transcription start start for overlap with peak regions
 #' @param exp_assay String indicating the name of the assay in expMatrix for gene expression
 #' @param peak_assay String indicating the name of the assay in peakMatrix for chromatin accessibility
@@ -55,7 +56,7 @@
 
 calculateP2G <- function(peakMatrix = NULL, expMatrix = NULL, reducedDim = NULL,
     useDim = "IterativeLSI", maxDist = 250000,
-    cor_cutoff = 0.5, cellNum = 200, exp_assay = "logcounts", peak_assay = "counts",
+    cor_cutoff = 0.5, cellNum = NULL, exp_assay = "logcounts", peak_assay = "counts",
     gene_symbol = "name", clusters = NULL, cor_method = c("pearson", "kendall", "spearman"),
     BPPARAM = BiocParallel::SerialParam()) {
 
@@ -90,6 +91,15 @@ calculateP2G <- function(peakMatrix = NULL, expMatrix = NULL, reducedDim = NULL,
         message("performing k means clustering to form metacells")
 
         # K-means clustering
+        if(is.null(cellNum)){
+          cellNum = sqrt(ncol(sce))
+          if(!is.null(clusters)){
+            # number of k-clusters should be adjusted to number of user-specified clusters
+            cellNum = cellNum/length(unique(clusters))
+          }
+          # cluster sizes should not be too small
+          cellNum = max(cellNum, 10)
+        }
         kNum <- trunc(ncol(sce)/cellNum)
         kclusters <- scran::clusterCells(sce, use.dimred = useDim, BLUSPARAM = bluster::KmeansParam(centers = kNum,
             iter.max = 5000))
@@ -167,14 +177,19 @@ calculateP2G <- function(peakMatrix = NULL, expMatrix = NULL, reducedDim = NULL,
             cluster_composition <- table(clusters, kclusters)
             cluster_composition <- sweep(cluster_composition, 2, STATS = colSums(cluster_composition),
                 FUN = "/")
-
+            cluster_size_warning <- FALSE
             for (cluster in unique_clusters) {
                 clusters_idx <- colnames(cluster_composition)[cluster_composition[cluster,
                   ] >= 1/length(unique_clusters)]
-                o$Correlation[, cluster] <- mapply(stats::cor, as.data.frame(t(expCorMatrix[,
-                  clusters_idx])), as.data.frame(t(peakCorMatrix[, clusters_idx])))
+                if(length(clusters_idx)<5) cluster_size_warning <- TRUE
+                if(length(clusters_idx)<3) o$Correlation[, cluster] <- NA
+                else{
+                  o$Correlation[, cluster] <- mapply(stats::cor,
+                                                     as.data.frame(t(expCorMatrix[,clusters_idx])),
+                                                     as.data.frame(t(peakCorMatrix[, clusters_idx])))
+                }
             }
-
+            if(cluster_size_warning) warning("Number of aggregated cells in user-specified cluster is low. Consider dropping cells from small clusters or changing cellNum parameter.")
         }
 
 
