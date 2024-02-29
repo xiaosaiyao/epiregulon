@@ -1,4 +1,4 @@
-# epiregulon 0.99.3
+# epiregulon 0.99.4
 
 * new function `filterRegulon` which keeps only those target genes which shows differential expression across clusters.
 * `cellNum` argument to `calculateP2G` set by default to `NULL` which means that
