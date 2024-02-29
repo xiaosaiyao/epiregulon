@@ -524,3 +524,59 @@ chisqTest <- function(k, size, p) {
     list(p = stats::pchisq(chi, df = 1, lower.tail = FALSE), stats = chi)
 }
 
+#' Retain only target genes that are differential expressed
+#'
+
+#' @param expMatrix A SingleCellExperiment object or matrix containing gene expression with
+#' genes in the rows and cells in the columns
+#' @param clusters A character or integer vector of cluster or group labels for single cells
+#' @param regulon A dataframe informing the gene regulatory relationship with the ```tf``` column
+#' representing transcription factors, ```idxATAC``` corresponding to the index in the peakMatrix and
+#'  ```target``` column representing target genes
+#' @param pval.type A string specifying how p-values are to be combined across pairwise comparisons for a given group/cluster.
+#' @param sig_cutoff A numeric scalar to specify the cutoff for FDR or pvalue value. Default is 0.05
+#' @param logFC_cutoff A numeric scalar to specify the cutoff for log fold change. Default is 0.5
+#' @param sig_type A string specifying whether to use "FDR" or "p.value" for sig_cutoff,
+#' @param ... additional parameters for scran::findMarkers
+#' @export
+#'
+#' @examples
+#' # create a mock singleCellExperiment object for gene expMatrixession matrix
+#' set.seed(1000)
+#' gene_sce <- scuttle::mockSCE()
+#' gene_sce <- scuttle::logNormCounts(gene_sce)
+#' rownames(gene_sce) <- paste0('Gene_',1:2000)
+#'
+#' # create a mock regulon
+#' regulon <- data.frame(tf = c(rep('Gene_1',10), rep('Gene_2',10)),
+#'                      idxATAC = sample(1:100, 20),
+#'                      target = c(paste0('Gene_', sample(3:2000,10)),
+#'                                 paste0('Gene_',sample(3:2000,10))))
+#'
+#' # filter regulon
+#' pruned.regulon <- filterRegulon(expMatrix = gene_sce, clusters = gene_sce$Treatment,
+#'                                + regulon = regulon, sig_cutoff=0.5, logFC_cutoff=0, sig_type = "p.value")
+#'
+#' @author Xiaosai Yao
+
+filterRegulon <- function(expMatrix, clusters, regulon, pval.type = c("any", "some", "all"),
+                          sig_cutoff=0.05, logFC_cutoff=0.5, sig_type = c("FDR","p.value"), ...){
+
+  pval.type <- match.arg(pval.type)
+  sig <- match.arg(sig_type)
+
+  # find differential genes
+  de_list <- scran::findMarkers(x=expMatrix, groups=clusters, pval.type=pval.type, ...)
+
+  # combine differential genes from all clusters
+  top.list <- lapply(seq_along(de_list), function(i){
+    de_genes <- as.data.frame(de_list[[i]])
+    de_genes <- de_genes[,c("p.value","FDR","summary.logFC")]
+    de_genes <- de_genes[which(de_genes[,sig_type] < sig_cutoff & abs(de_genes[, "summary.logFC"]) > logFC_cutoff), ]
+  })
+
+  top.list <- do.call(rbind, top.list)
+
+  # filter regulons
+  regulon.filtered <- regulon[regulon$target %in% unique(rownames(top.list)),]
+}
