@@ -536,7 +536,10 @@ chisqTest <- function(k, size, p) {
 #' @param pval.type A string specifying how p-values are to be combined across pairwise comparisons for a given group/cluster.
 #' @param sig_cutoff A numeric scalar to specify the cutoff for FDR or pvalue value. Default is 0.05
 #' @param logFC_cutoff A numeric scalar to specify the cutoff for log fold change. Default is 0.5
-#' @param sig_type A string specifying whether to use "FDR" or "p.value" for sig_cutoff,
+#' @param sig_type A string specifying whether to use "FDR" or "p.value" for sig_cutoff
+#' @param logFC_ref A string indicating the reference sample used to compute logFC. Default value is
+#' `summary.logFC` which is an average of all pairwise comparisons. Users can also specify
+#' reference sample, for example, `DMSO.logFC`.
 #' @param ... additional parameters for scran::findMarkers
 #' @export
 #'
@@ -555,12 +558,20 @@ chisqTest <- function(k, size, p) {
 #'
 #' # filter regulon
 #' pruned.regulon <- filterRegulon(expMatrix = gene_sce, clusters = gene_sce$Treatment,
-#'                                + regulon = regulon, sig_cutoff=0.5, logFC_cutoff=0, sig_type = "p.value")
+#'                                regulon = regulon, sig_cutoff=0.5, logFC_cutoff=0,
+#'                                sig_type = "p.value")
 #'
 #' @author Xiaosai Yao
 
-filterRegulon <- function(expMatrix, clusters, regulon, pval.type = c("any", "some", "all"),
-                          sig_cutoff=0.05, logFC_cutoff=0.5, sig_type = c("FDR","p.value"), ...){
+filterRegulon <- function(expMatrix,
+                          clusters,
+                          regulon,
+                          pval.type = c("any", "some", "all"),
+                          sig_cutoff = 0.05,
+                          logFC_cutoff = 0.5,
+                          sig_type = c("FDR","p.value"),
+                          logFC_ref = "summary.logFC",
+                          ...){
 
   pval.type <- match.arg(pval.type)
   sig <- match.arg(sig_type)
@@ -571,8 +582,9 @@ filterRegulon <- function(expMatrix, clusters, regulon, pval.type = c("any", "so
   # combine differential genes from all clusters
   top.list <- lapply(seq_along(de_list), function(i){
     de_genes <- as.data.frame(de_list[[i]])
-    de_genes <- de_genes[,c("p.value","FDR","summary.logFC")]
-    de_genes <- de_genes[which(de_genes[,sig_type] < sig_cutoff & abs(de_genes[, "summary.logFC"]) > logFC_cutoff), ]
+    de_genes <- de_genes[,c("p.value","FDR",logFC_ref)]
+    de_genes <- de_genes[which(de_genes[,sig_type] < sig_cutoff &
+                                 abs(de_genes[, logFC_ref]) > logFC_cutoff), ]
   })
 
   top.list <- do.call(rbind, top.list)

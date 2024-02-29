@@ -12,6 +12,7 @@ filterRegulon(
   sig_cutoff = 0.05,
   logFC_cutoff = 0.5,
   sig_type = c("FDR", "p.value"),
+  logFC_ref = "summary.logFC",
   ...
 )
 }
@@ -31,7 +32,11 @@ representing transcription factors, \code{idxATAC} corresponding to the index in
 
 \item{logFC_cutoff}{A numeric scalar to specify the cutoff for log fold change. Default is 0.5}
 
-\item{sig_type}{A string specifying whether to use "FDR" or "p.value" for sig_cutoff,}
+\item{sig_type}{A string specifying whether to use "FDR" or "p.value" for sig_cutoff}
+
+\item{logFC_ref}{A string indicating the reference sample used to compute logFC. Default value is
+\code{summary.logFC} which is an average of all pairwise comparisons. Users can also specify
+reference sample, for example, \code{DMSO.logFC}.}
 
 \item{...}{additional parameters for scran::findMarkers}
 }
@@ -53,7 +58,8 @@ regulon <- data.frame(tf = c(rep('Gene_1',10), rep('Gene_2',10)),
 
 # filter regulon
 pruned.regulon <- filterRegulon(expMatrix = gene_sce, clusters = gene_sce$Treatment,
-                               + regulon = regulon, sig_cutoff=0.5, logFC_cutoff=0, sig_type = "p.value")
+                               regulon = regulon, sig_cutoff=0.5, logFC_cutoff=0,
+                               sig_type = "p.value")
 
 }
 \author{
