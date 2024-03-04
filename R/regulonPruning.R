@@ -524,7 +524,7 @@ chisqTest <- function(k, size, p) {
     list(p = stats::pchisq(chi, df = 1, lower.tail = FALSE), stats = chi)
 }
 
-#' Retain only target genes that are differential expressed
+#' Add log fold changes of gene expression to regulons
 #'
 
 #' @param expMatrix A SingleCellExperiment object or matrix containing gene expression with
@@ -533,13 +533,11 @@ chisqTest <- function(k, size, p) {
 #' @param regulon A dataframe informing the gene regulatory relationship with the ```tf``` column
 #' representing transcription factors, ```idxATAC``` corresponding to the index in the peakMatrix and
 #'  ```target``` column representing target genes
-#' @param pval.type A string specifying how p-values are to be combined across pairwise comparisons for a given group/cluster.
-#' @param sig_cutoff A numeric scalar to specify the cutoff for FDR or pvalue value. Default is 0.05
-#' @param logFC_cutoff A numeric scalar to specify the cutoff for log fold change. Default is 0.5
-#' @param sig_type A string specifying whether to use "FDR" or "p.value" for sig_cutoff
-#' @param logFC_ref A string indicating the reference sample used to compute logFC. Default value is
-#' `summary.logFC` which is an average of all pairwise comparisons. Users can also specify
-#' reference sample, for example, `DMSO.logFC`.
+#' @param pval.type String specifying how p-values are to be combined across pairwise comparisons for a given group/cluster.
+#' @param sig_type String specifying whether to use "FDR" or "p.value" for sig_cutoff
+#' @param logFC_condition A scalar or vector of string indicating the sample names to be compared against `logFC_ref`
+#' @param logFC_ref A scalar indicating the reference sample used to compute logFC. Default value is
+#' `rest` which is an average of all pairwise comparisons. Users can also specify a reference sample, for example, `DMSO`.
 #' @param ... additional parameters for scran::findMarkers
 #' @export
 #'
@@ -557,38 +555,81 @@ chisqTest <- function(k, size, p) {
 #'                                 paste0('Gene_',sample(3:2000,10))))
 #'
 #' # filter regulon
-#' pruned.regulon <- filterRegulon(expMatrix = gene_sce, clusters = gene_sce$Treatment,
-#'                                regulon = regulon, sig_cutoff=0.5, logFC_cutoff=0,
+#' pruned.regulon <- addLogFC(expMatrix = gene_sce, clusters = gene_sce$Treatment,
+#'                                regulon = regulon,
 #'                                sig_type = "p.value")
 #'
 #' @author Xiaosai Yao
 
-filterRegulon <- function(expMatrix,
-                          clusters,
-                          regulon,
-                          pval.type = c("any", "some", "all"),
-                          sig_cutoff = 0.05,
-                          logFC_cutoff = 0.5,
-                          sig_type = c("FDR","p.value"),
-                          logFC_ref = "summary.logFC",
-                          ...){
+addLogFC <- function(expMatrix,
+                     clusters,
+                     regulon,
+                     pval.type = c("any", "some", "all"),
+                     sig_type = c("FDR","p.value"),
+                     logFC_condition = NULL,
+                     logFC_ref = NULL,
+                     ...){
 
   pval.type <- match.arg(pval.type)
   sig <- match.arg(sig_type)
 
+  if (!is.null(logFC_condition)){
+    if (!all(logFC_condition %in% unique(clusters))) {
+      stop("not all conditions in logFC_conditions are found in clusters")
+    }
+  }
+
+
+  if (!is.null(logFC_ref)){
+    if (!logFC_ref %in% unique(clusters)) {
+      stop("condition in logFC_ref is not found in clusters")
+    }
+  }
+
+
+
+  if (is.null(logFC_condition)){
+    samples <- unique(clusters)
+  } else {
+    samples <- logFC_condition
+  }
+
+
   # find differential genes
-  de_list <- scran::findMarkers(x=expMatrix, groups=clusters, pval.type=pval.type, ...)
 
-  # combine differential genes from all clusters
-  top.list <- lapply(seq_along(de_list), function(i){
-    de_genes <- as.data.frame(de_list[[i]])
-    de_genes <- de_genes[,c("p.value","FDR",logFC_ref)]
-    de_genes <- de_genes[which(de_genes[,sig_type] < sig_cutoff &
-                                 abs(de_genes[, logFC_ref]) > logFC_cutoff), ]
-  })
+  if (is.null(logFC_ref)){
+    de_list <- scran::findMarkers(x=expMatrix, groups=clusters, pval.type=pval.type, full.stats = FALSE, sorted=FALSE,...)
 
-  top.list <- do.call(rbind, top.list)
+    # combine differential genes from all clusters
+    de.df <- lapply(samples, function(sample){
+      de_genes <- as.data.frame(de_list[[sample]])
+      de_genes <- de_genes[,c(sig_type, "summary.logFC")]
+      combined_name <- paste0(sample,".vs.rest")
+      colnames(de_genes) <- c(paste0(combined_name, ".",sig_type), paste0(combined_name, ".logFC"))
+      de_genes
+    })
 
-  # filter regulons
-  regulon.filtered <- regulon[regulon$target %in% unique(rownames(top.list)),]
+  } else {
+    de_list <- scran::findMarkers(x=expMatrix, groups=clusters, pval.type=pval.type, full.stats = TRUE, sorted=FALSE, ...)
+
+    # combine differential genes from all clusters
+    de.df <- lapply(samples, function(sample){
+      de_genes <- as.data.frame(de_list[[sample]][,paste0("stats", ".",logFC_ref)])
+      de_genes <- de_genes[,c(paste0("log.", sig_type),"logFC")]
+      combined_name <- paste0(sample,".vs.",logFC_ref)
+      colnames(de_genes) <- c(paste0(combined_name, ".",sig_type), paste0(combined_name, ".logFC"))
+      de_genes[,1] <- 10^(de_genes[,1])
+      de_genes
+    })
+
+
+  }
+
+  de.df <- do.call(cbind, de.df)
+
+
+  # add stats
+  regulon.de <- cbind(regulon, de.df[regulon$target,])
+
+
 }
