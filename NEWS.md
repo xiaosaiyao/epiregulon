@@ -1,6 +1,6 @@
-# epiregulon 0.99.4
+# epiregulon 0.99.5
 
-* new function `filterRegulon` which keeps only those target genes which shows differential expression across clusters.
+* new function `addLogFC` which adds log fold changes of gene expression to regulons and significance statistics for differential gene expression
 * `cellNum` argument to `calculateP2G` set by default to `NULL` which means that
 the value will be calculated based on the total number of cells. This behavior can 
 be overridden by specifying a number for `cellNum`. 
