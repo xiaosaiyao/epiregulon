@@ -210,7 +210,7 @@ addWeights <- function(regulon, expMatrix = NULL, peakMatrix = NULL, exp_assay =
         ]
 
     if (nrow(regulon) == 0) {
-        warning("No transcription factor has required number of target genes")
+        warning("No transcription factor has the required number of target genes")
         return(NULL)
     }
 
