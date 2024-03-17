@@ -59,8 +59,8 @@ BEGIN_RCPP
 END_RCPP
 }
 
-RcppExport SEXP to_end(void *, void *, void *, void *);
-RcppExport SEXP to_start(void *, void *, void *, void *);
+RcppExport SEXP to_end(SEXP, SEXP, SEXP, SEXP);
+RcppExport SEXP to_start(SEXP, SEXP, SEXP, SEXP);
 
 static const R_CallMethodDef CallEntries[] = {
     {"_epiregulon_fast_chisq", (DL_FUNC) &_epiregulon_fast_chisq, 16},

@@ -11,7 +11,7 @@ calculateP2G(
   useDim = "IterativeLSI",
   maxDist = 250000,
   cor_cutoff = 0.5,
-  cellNum = 200,
+  cellNum = 100,
   exp_assay = "logcounts",
   peak_assay = "counts",
   gene_symbol = "name",
@@ -36,7 +36,7 @@ the genes in the form of \code{GRanges}. \code{rowData} should contain a column 
 \item{cor_cutoff}{A numeric scalar to specify the correlation cutoff between ATAC-seq peaks and RNA-seq genes to assign peak to gene links.
 Default correlation cutoff is 0.5.}
 
-\item{cellNum}{An integer to specify the number of cells to include in each K-means cluster. Default is 200 cells.}
+\item{cellNum}{An integer to specify the number of cells to include in each K-means cluster}
 
 \item{exp_assay}{String indicating the name of the assay in expMatrix for gene expression}
 
