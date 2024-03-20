@@ -154,6 +154,7 @@ calculateP2G <- function(peakMatrix = NULL, expMatrix = NULL, reducedDim = NULL,
         clusters <- renameCluster(clusters)
 
         unique_clusters <- sort(unique(clusters))
+        if(any(unique_clusters=="")) stop("Some of the culster lables are empty strings.")
 
         o$Correlation <- initiateMatCluster(clusters, nrow = nrow(expCorMatrix))
         o$Correlation[, "all"] <- mapply(stats::cor, as.data.frame(t(expCorMatrix)),
