@@ -20,9 +20,9 @@ getTFMotifInfo(
 \item{metadata}{logical flag specifying whether to return data or metadata only}
 
 \item{mode}{a string indicating whether to download a GRangelist of TF binding sites ('occupancy') or motif matches ('motif').
-TF binding information is retrieved from \verb{r Biocpkg("scMultiome")}. The
+TF binding information is retrieved from  \link[scMultiome:tfBinding]{scMultiome::tfBinding}. The
 motif information was obtained from \href{https://github.com/GreenleafLab/chromVARmotifs}{chromVARmotifs} (human_pwms_v2 and mouse_pwms_v2,
-version 0.2 with filtering of cisBP motifs) and is also hosted on \verb{r Biocpkg("scMultiome")}.}
+version 0.2 with filtering of cisBP motifs) and is also hosted on scMultiome.}
 
 \item{peaks}{A GRanges object indicating the peaks to perform motif annotation on if ArchR project is not provided.
 The peak indices should match the \code{re} column in the regulon}
@@ -36,7 +36,7 @@ from CistromeDB and ENCODE.
 }
 \examples{
 # retrieve TF binding info
-\dontrun{
+\donttest{
 getTFMotifInfo('mm10', 'atlas')
 }
 

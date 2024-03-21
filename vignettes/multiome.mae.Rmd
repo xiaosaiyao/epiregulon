@@ -224,7 +224,22 @@ regulon.w.motif$weight[regulon.w.motif$motif == 0] <- 0
 
 regulon.w.motif
 ```
+## (Optional) Annotate with log fold changes
 
+It is sometimes helpful to filter the regulons based on gene expression changes between two conditions. The `addLogFC` function is a wrapper around `scran::findMarkers` and adds extra columns of log changes to the regulon DataFrame. The users can specify the reference condition in `logFC_ref` and conditions for comparison in
+`logFC_condition`. If these are not provided, log fold changes are conducted for every condition in the cluster labels against the rest of the conditions.
+ 
+```{r add logFC}
+regulon.w <- addLogFC(regulon = regulon.w,
+                      clusters = GeneExpressionMatrix$hash_assignment,
+                      expMatrix  = GeneExpressionMatrix,
+                      assay.type  = "normalizedCounts",
+                      pval.type = "any",
+                      logFC_condition = c("HTO10_GATA6_UTR", "HTO2_GATA6_v2", "HTO8_NKX2.1_UTR"),
+                      logFC_ref = "HTO5_NeonG_v2")
+
+regulon.w
+```
 ## Calculate TF activity 
 
 Finally, the activities for a specific TF in each cell are computed by averaging expressions of target genes linked to the TF weighted by the test statistics of choice, chosen from either correlation, mutual information or the Wilcoxon test statistics. 

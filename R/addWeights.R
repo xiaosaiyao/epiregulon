@@ -238,13 +238,13 @@ addWeights <- function(regulon, expMatrix = NULL, peakMatrix = NULL, exp_assay =
 
     if (method == "wilcoxon") {
         if (!is.null(peak_cutoff)) {
-            prop = sum(peakMatrix > peak_cutoff)/prod(dim(peakMatrix))
+            prop <- sum(peakMatrix > peak_cutoff)/prod(dim(peakMatrix))
             if (prop < 1e-04 | prop > 0.9999)
                 warning(sprintf("Strong inbalance between groups after applying cutoff to peakMatrix. Consider %s value of the peak_cutoff",
                   c("increasing", "decreasing")[(prop < 1e-04) + 1]))
         }
         if (!is.null(exp_cutoff)) {
-            prop = sum(expMatrix > exp_cutoff)/prod(dim(expMatrix))
+            prop <- sum(expMatrix > exp_cutoff)/prod(dim(expMatrix))
             if (prop < 1e-04 | prop > 0.9999)
                 warning(sprintf("Strong inbalance between groups after applying cutoff to expMatrix. Consider %s value of the exp_cutoff",
                   c("increasing", "decreasing")[(prop < 1e-04) + 1]))

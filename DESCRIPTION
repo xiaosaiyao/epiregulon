@@ -1,7 +1,7 @@
 Package: epiregulon
 Title: Gene regulatory network inference from single cell epigenomic data
 Version: 0.99.6
-Date: 2024-3-05
+Date: 2024-03-21
 Authors@R: 
     c(person(given = "Xiaosai", family = "Yao", role = c("aut", "cre"), email = "yao.xiaosai@gene.com", comment = c(ORCID = "0000-0001-9729-0726")),
     person(given = "Tomasz", family = "Włodarczyk", role = c("aut"), email = "tomwlo@gmail.com", comment = c(ORCID = "0000-0003-1554-9699")),
@@ -38,7 +38,6 @@ Imports:
     BSgenome.Mmusculus.UCSC.mm10,
     motifmatchr
 Depends: 
-    R (>= 4.2.0),
     SingleCellExperiment
 Suggests: 
     knitr,
@@ -51,6 +50,6 @@ Suggests:
 LinkingTo: Rcpp
 VignetteBuilder: knitr
 URL: https://github.com/xiaosaiyao/epiregulon/
-biocViews: GeneExpression, Transcription, ChipOnChip, DifferentialExpression, GeneTarget, Normalization, GraphAndNetwork
+biocViews: SingleCell, GeneRegulation,NetworkInference,Network, GeneExpression, Transcription, GeneTarget
 Config/testthat/edition: 3
 BugReports: https://github.com/xiaosaiyao/epiregulon/issues

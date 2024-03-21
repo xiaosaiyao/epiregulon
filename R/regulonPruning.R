@@ -186,13 +186,13 @@ pruneRegulon <- function(regulon, expMatrix = NULL, peakMatrix = NULL, exp_assay
 
 
     if (!is.null(peak_cutoff)) {
-        prop = sum(peakMatrix > peak_cutoff)/prod(dim(peakMatrix))
+        prop <- sum(peakMatrix > peak_cutoff)/prod(dim(peakMatrix))
         if (prop < 1e-04 | prop > 0.9999)
             warning(sprintf("Strong inbalance between groups after applying cutoff to peakMatrix. Consider %s value of the peak_cutoff",
                 c("increasing", "decreasing")[(prop < 1e-04) + 1]))
     }
     if (!is.null(exp_cutoff)) {
-        prop = sum(expMatrix > exp_cutoff)/prod(dim(expMatrix))
+        prop <- sum(expMatrix > exp_cutoff)/prod(dim(expMatrix))
         if (prop < 1e-04 | prop > 0.9999)
             warning(sprintf("Strong inbalance between groups after applying cutoff to expMatrix. Consider %s value of the exp_cutoff",
                 c("increasing", "decreasing")[(prop < 1e-04) + 1]))
@@ -539,6 +539,9 @@ chisqTest <- function(k, size, p) {
 #' @param logFC_ref A scalar indicating the reference sample used to compute logFC. Default value is
 #' `rest` which is an average of all pairwise comparisons. Users can also specify a reference sample, for example, `DMSO`.
 #' @param ... additional parameters for scran::findMarkers
+#' @return A DataFrame of regulons with additional columns of logFC and significance
+#'
+#'
 #' @export
 #'
 #' @examples

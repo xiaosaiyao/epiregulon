@@ -3,16 +3,16 @@
 #' Combined transcription factor ChIP-seq data from ChIP-Atlas and ENCODE or
 #' from CistromeDB and ENCODE.
 #' @param mode a string indicating whether to download a GRangelist of TF binding sites ('occupancy') or motif matches ('motif').
-#' TF binding information is retrieved from `r Biocpkg("scMultiome")`. The
+#' TF binding information is retrieved from  [scMultiome::tfBinding]. The
 #' motif information was obtained from [chromVARmotifs](https://github.com/GreenleafLab/chromVARmotifs) (human_pwms_v2 and mouse_pwms_v2,
-#' version 0.2 with filtering of cisBP motifs) and is also hosted on `r Biocpkg("scMultiome")`.
+#' version 0.2 with filtering of cisBP motifs) and is also hosted on scMultiome.
 #' @param peaks A GRanges object indicating the peaks to perform motif annotation on if ArchR project is not provided.
 #' The peak indices should match the `re` column in the regulon
 
 #' @inherit scMultiome::tfBinding params return references
 #' @examples
 #' # retrieve TF binding info
-#' \dontrun{
+#' \donttest{
 #' getTFMotifInfo('mm10', 'atlas')
 #' }
 #'

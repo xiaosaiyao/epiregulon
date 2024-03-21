@@ -36,6 +36,9 @@ representing transcription factors, \code{idxATAC} corresponding to the index in
 
 \item{...}{additional parameters for scran::findMarkers}
 }
+\value{
+A DataFrame of regulons with additional columns of logFC and significance
+}
 \description{
 Add log fold changes of gene expression to regulons
 }
