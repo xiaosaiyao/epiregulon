@@ -138,7 +138,7 @@ addTFMotifInfo <- function(p2g, grl, peakMatrix = NULL) {
     overlap <- GenomicRanges::findOverlaps(peakSet, grl)
     overlap <- data.frame(overlap)
     colnames(overlap) <- c("idxATAC", "idxTF")
-    overlap <- overlap[which(overlap$idxATAC %in% p2g$idxATAC), ]
+    overlap <- overlap[which(overlap$idxATAC %in% p2g$idxATAC), , drop=FALSE]
     overlap$tf <- names(grl)[overlap$idxTF]
     message("Success!")
 
