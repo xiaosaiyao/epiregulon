@@ -124,13 +124,13 @@ calculateActivity <- function(expMatrix = NULL, exp_assay = "logcounts", regulon
     if (is.matrix(regulon[[mode]]) & !is.null(clusters)) {
         #  check all cluster columns
         regulon <- regulon[which(apply(regulon[[mode]], 1, function(x) any(x[2:length(x)] !=
-            0))), ]
+            0))), ,drop=FALSE]
     } else if (is.matrix(regulon[[mode]]) & is.null(clusters)) {
         # check all cells column
-        regulon <- regulon[which(apply(regulon[[mode]], 1, function(x) x[1] != 0)),
-            ]
+        regulon <- regulon[which(apply(regulon[[mode]], 1, function(x) x[1] != 0)), ,
+                           drop=FALSE]
     } else {
-        regulon <- regulon[which(regulon[, mode] != 0), ]
+        regulon <- regulon[which(regulon[, mode] != 0), , drop=FALSE]
     }
     if (nrow(regulon) == 0) {
         warning("No non-zero weight in the regulon")
@@ -184,7 +184,7 @@ calculateActivity <- function(expMatrix = NULL, exp_assay = "logcounts", regulon
             # need to normalize
             if (normalize) {
                 message("normalize by mean...")
-                meanExpr <- Matrix::rowMeans(expMatrix[rownames(tf_target_mat), ])
+                meanExpr <- Matrix::rowMeans(expMatrix[rownames(tf_target_mat), ,drop=FALSE])
                 mean_activity <- meanExpr %*% tf_target_mat
                 score.combine <- sweep(score.combine, 2, mean_activity, "-")
             }
@@ -224,7 +224,7 @@ calculateActivity <- function(expMatrix = NULL, exp_assay = "logcounts", regulon
                   # calculate cluster-specific mean
                   mean_activity <- meanExpr %*% tf_target_mat[[cluster]]
                   score.combine[clusters == cluster, ] <- sweep(score.combine[clusters ==
-                    cluster, ], 2, mean_activity, "-")
+                    cluster, ,drop=FALSE], 2, mean_activity, "-")
                 }
             }
 
@@ -265,6 +265,19 @@ genesets2regulon <- function(genesets) {
     regulon <- do.call(rbind, as.list(regulon))
 }
 
+
+genesets2regulon <- function(genesets) {
+  regulon <- lapply(seq_along(genesets), function(i){
+    if(is(genesets[[i]], "DFrame") | is(genesets[[i]], "data.frame")){
+      S4Vectors::DataFrame(tf = names(genesets)[i],
+                           target = genesets[[i]][, 1], weight = genesets[[i]][, 2])
+    }
+    else if (is.vector(genesets[[i]])) {
+      S4Vectors::DataFrame(tf = names(genesets)[i], target = genesets[[i]], weight = 1)
+    }
+  })
+  regulon <- do.call(rbind, as.list(regulon))
+}
 
 
 createTfTgMat <- function(regulon, mode, clusters = NULL) {

@@ -62,7 +62,8 @@
 #'
 #'
 #' @export
-#' @import utils SingleCellExperiment
+#' @importFrom SummarizedExperiment assay colData
+#' @importFrom SingleCellExperiment SingleCellExperiment
 #'
 #' @examples
 #' # create a mock singleCellExperiment object for gene expMatrixession matrix
@@ -99,25 +100,25 @@
 #'
 #' @author Xiaosai Yao, Tomasz Wlodarczyk
 
-pruneRegulon <- function(regulon, expMatrix = NULL, peakMatrix = NULL, exp_assay = "logcounts",
-    peak_assay = "PeakMatrix", test = c("chi.sq", "binom"), clusters = NULL, exp_cutoff = 1,
-    peak_cutoff = 0, regulon_cutoff = 0.05, p_adj = TRUE, prune_value = "pval", aggregateCells = FALSE,
-    useDim = "IterativeLSI_ATAC", cellNum = 10, BPPARAM = BiocParallel::SerialParam(progressbar = TRUE)) {
+pruneRegulon <- function(regulon,
+                         expMatrix = NULL,
+                         peakMatrix = NULL,
+                         exp_assay = "logcounts",
+                         peak_assay = "PeakMatrix",
+                         test = c("chi.sq", "binom"),
+                         clusters = NULL, exp_cutoff = 1,
+                         peak_cutoff = 0,
+                         regulon_cutoff = 0.05,
+                         p_adj = TRUE,
+                         prune_value = "pval",
+                         aggregateCells = FALSE,
+                         useDim = "IterativeLSI_ATAC",
+                         cellNum = 10,
+                         BPPARAM = BiocParallel::SerialParam(progressbar = TRUE)) {
     tryCatch(ncol(peakMatrix), error = function(cond) stop("'ncol' method should be defined for the 'peakMatrix' object"))
     tryCatch(ncol(expMatrix), error = function(cond) stop("'ncol' method should be defined for the 'expMatrix' object"))
     stopifnot(ncol(peakMatrix) == ncol(expMatrix))
-    if (!is.null(clusters)) {
-        clusters <- tryCatch(as.vector(clusters), error = function(cond) {
-            message("'clusters' argument should be coercible to a vector")
-            stop(cond)
-        })
-        if (length(clusters) != ncol(expMatrix)) {
-            stop("'clusters' length should be equal to the number of cells")
-        }
-        if (any(is.na(clusters))) {
-            stop("'clusters' object contains NA")
-        }
-    }
+    if(!is.null(clusters)) .validate_clusters(clusters, expMatrix)
     # choose test method
     test <- match.arg(test)
     if(test=="chi.sq" && any(duplicated(rownames(expMatrix)))) stop("Gene names provided in 'expMatrix' are not unique.")
@@ -125,51 +126,8 @@ pruneRegulon <- function(regulon, expMatrix = NULL, peakMatrix = NULL, exp_assay
         "<", regulon_cutoff)
 
     # pseudobulk
-    if (aggregateCells) {
-        message("performing pseudobulk using an average of ", cellNum, " cells")
-        barcodes <- list()
-        kclusters <- list()
-
-
-        if (!is.null(clusters)) {
-
-            #add cluster info to expMatrix
-            colData(expMatrix)[, "cluster_for_pseudobulk"] <- clusters
-
-            # K-means clustering
-            kclusters <- list()
-            for (cluster in unique(clusters)) {
-                sce <- expMatrix[, which(clusters == cluster)]
-                kNum <- trunc(ncol(sce)/cellNum)
-                kclusters[[cluster]] <- scran::clusterCells(sce, use.dimred = useDim,
-                  BLUSPARAM = bluster::KmeansParam(centers = kNum, iter.max = 5000))
-                barcodes[[cluster]] <- names(kclusters[[cluster]])
-                kclusters[[cluster]] <- paste(cluster, kclusters[[cluster]], sep = "_")
-            }
-            kclusters <- unlist(kclusters)
-            barcodes <- unlist(barcodes)
-            names(kclusters) <- barcodes
-
-
-        } else {
-            kclusters <- scran::clusterCells(expMatrix, use.dimred = useDim, BLUSPARAM = bluster::KmeansParam(centers = trunc(ncol(peakMatrix)/cellNum),
-                iter.max = 5000))
-        }
-
-        kclusters <- kclusters[colnames(expMatrix)]
-
-        #replace clusters with clusters of pseudobulked samples
-
-
-        expMatrix <- applySCE(expMatrix, scuttle::aggregateAcrossCells, WHICH = NULL,
-            ids = kclusters, statistics = "sum", use.assay.type = exp_assay, BPPARAM = BPPARAM)
-
-        peakMatrix <- applySCE(peakMatrix, scuttle::aggregateAcrossCells, WHICH = NULL,
-            ids = kclusters, statistics = "sum", use.assay.type = peak_assay, BPPARAM = BPPARAM)
-        if (!is.null(clusters))
-            clusters <- colData(expMatrix)[, "cluster_for_pseudobulk"]
-    }
-
+    if (aggregateCells) .aggregateCells(cellNum, expMatrix, peakMatrix, environment(),
+                                        useDim, exp_assay, peak_assay, BPPARAM, clusters)
 
     # extracting assays from SE
     if (checkmate::test_class(expMatrix, classes = "SummarizedExperiment")) {
@@ -183,26 +141,13 @@ pruneRegulon <- function(regulon, expMatrix = NULL, peakMatrix = NULL, exp_assay
     expMatrix <- as(expMatrix, "CsparseMatrix")
     peakMatrix <- as(peakMatrix, "CsparseMatrix")
 
-
-
-    if (!is.null(peak_cutoff)) {
-        prop <- sum(peakMatrix > peak_cutoff)/prod(dim(peakMatrix))
-        if (prop < 1e-04 | prop > 0.9999)
-            warning(sprintf("Strong inbalance between groups after applying cutoff to peakMatrix. Consider %s value of the peak_cutoff",
-                c("increasing", "decreasing")[(prop < 1e-04) + 1]))
-    }
-    if (!is.null(exp_cutoff)) {
-        prop <- sum(expMatrix > exp_cutoff)/prod(dim(expMatrix))
-        if (prop < 1e-04 | prop > 0.9999)
-            warning(sprintf("Strong inbalance between groups after applying cutoff to expMatrix. Consider %s value of the exp_cutoff",
-                c("increasing", "decreasing")[(prop < 1e-04) + 1]))
-    }
+    .balance_check(peak_cutoff, exp_cutoff, peakMatrix, expMatrix)
 
     unique_clusters <- c("all", as.character(sort(unique(clusters))))
 
     # clean up regulons by removing tf and targets not found in regulons
-    regulon <- regulon[regulon$tf %in% rownames(expMatrix), ]
-    regulon <- regulon[regulon$target %in% rownames(expMatrix), ]
+    regulon <- regulon[regulon$tf %in% rownames(expMatrix), , drop=FALSE]
+    regulon <- regulon[regulon$target %in% rownames(expMatrix), , drop=FALSE]
     regulon <- regulon[order(regulon$tf), ]
 
     message("pruning regulons")
@@ -378,10 +323,7 @@ binom_bp <- function(n, regulon.split, expMatrix.bi, peakMatrix.bi,
 
 binomTest <- function(k, size, p) {
     if (size >= 10000) {
-        e1 <- p * size
-        e2 <- size - e1
-        chi <- (k - e1)^2/e1 + (size - k - e2)^2/e2
-        return(stats::pchisq(chi, df = 1, lower.tail = FALSE))
+      return(chisqTest(k, size, p))
     }
 
     p.value <- rep_len(1, length(k))
