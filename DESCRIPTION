@@ -1,7 +1,7 @@
 Package: epiregulon
 Title: Gene regulatory network inference from single cell epigenomic data
-Version: 0.99.10
-Date: 2024-03-21
+Version: 0.99.9
+Date: 2024-04-08
 Authors@R: 
     c(person(given = "Xiaosai", family = "Yao", role = c("aut", "cre"), email = "xiaosai.yao@gmail.com", comment = c(ORCID = "0000-0001-9729-0726")),
     person(given = "Tomasz", family = "Włodarczyk", role = c("aut"), email = "tomwlo@gmail.com", comment = c(ORCID = "0000-0003-1554-9699")),
@@ -13,6 +13,7 @@ Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.1
 Imports:
+    SingleCellExperiment,
     AnnotationHub,
     BiocParallel,
     ExperimentHub,
@@ -36,10 +37,10 @@ Imports:
     BSgenome.Hsapiens.UCSC.hg19,
     BSgenome.Hsapiens.UCSC.hg38,
     BSgenome.Mmusculus.UCSC.mm10,
-    motifmatchr
+    motifmatchr,
+    IRanges
 Depends:
-    R (>= 4.2),
-    SingleCellExperiment
+    R (>= 4.2)
 Suggests: 
     knitr,
     rmarkdown,

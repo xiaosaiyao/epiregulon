@@ -26,7 +26,7 @@
 #'
 #' @return A DataFrame with columns of corr and/or MI added to the regulon. TFs not found in the expression matrix and regulons not
 #' meeting the minimal number of targets were filtered out.
-#' @import SummarizedExperiment
+#' @importFrom SummarizedExperiment colData assay assays
 #' @details
 #' This function estimates the regulatory potential of transcription factor on its target genes, or in other words,
 #' the magnitude of gene expression changes induced by transcription factor activity, using one of the four methods:
@@ -48,7 +48,7 @@
 #'
 
 
-#'
+#' @importFrom S4Vectors split
 #' @export
 #'
 #' @examples
@@ -62,7 +62,7 @@
 #' rownames(peakMatrix) <- 1:2000
 #'
 #' # create a mock regulon
-#' regulon <- DataFrame(tf=c(rep('Gene_0001',5), rep('Gene_0002',10)),
+#' regulon <- S4Vectors::DataFrame(tf=c(rep('Gene_0001',5), rep('Gene_0002',10)),
 #'                       idxATAC=1:15,
 #'                       target=c(paste0('Gene_000',2:6), paste0('Gene_00',11:20)))
 #'
@@ -225,7 +225,7 @@ addWeights <- function(regulon, expMatrix = NULL, peakMatrix = NULL, exp_assay =
         regulon$weight <- NA
         regulon.split <- split(regulon, regulon$tf)
 
-    } else if (method %in% c("logFC", "wilcoxon")) {
+    } else if (method == "wilcoxon") {
         regulon$weight <- initiateMatCluster(clusters, nrow = nrow(regulon))
         regulon.split <- split(regulon, regulon$tf)
     }

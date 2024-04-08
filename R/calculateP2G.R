@@ -23,7 +23,12 @@
 #' @details Cluster information is sometimes helpful to avoid the [Simpsons's paradox](https://en.wikipedia.org/wiki/Simpson%27s_paradox) in which baseline differences
 #' between cell lines or cell types can create artificial or even inverse correlations between peak accessibility and gene expression. If Cluster information is provided,
 #' correlation is performed within cell aggregates of each cluster.
-#' @import SummarizedExperiment SingleCellExperiment GenomicRanges
+#' @importFrom GenomicRanges GRanges promoters resize findOverlaps start end seqnames GRanges distance
+#' @importFrom SummarizedExperiment rowRanges rowData colData rowRanges<- rowData<- 
+#' @importFrom SingleCellExperiment altExp applySCE altExp<- reducedDim<-
+#' @importFrom IRanges IRanges 
+#' @importFrom S4Vectors Rle mcols mcols<-
+#' @importClassesFrom SingleCellExperiment SingleCellExperiment
 #' @export
 #'
 #' @examples
@@ -31,20 +36,20 @@
 #' set.seed(1000)
 #' gene_sce <- scuttle::mockSCE()
 #' gene_sce <- scuttle::logNormCounts(gene_sce)
-#' gene_gr <- GRanges(seqnames = Rle(c('chr1', 'chr2', 'chr3','chr4'), nrow(gene_sce)/4),
-#'                    ranges = IRanges(start = seq(from = 1, length.out=nrow(gene_sce), by = 1000),
+#' gene_gr <- GenomicRanges::GRanges(seqnames = S4Vectors::Rle(c('chr1', 'chr2', 'chr3','chr4'), nrow(gene_sce)/4),
+#'                    ranges = IRanges::IRanges(start = seq(from = 1, length.out=nrow(gene_sce), by = 1000),
 #'                    width = 100))
 #' rownames(gene_sce) <- rownames(gene_sce)
 #' gene_gr$name <- rownames(gene_sce)
-#' rowRanges(gene_sce) <- gene_gr
+#' SummarizedExperiment::rowRanges(gene_sce) <- gene_gr
 #'
 #' # create a mock singleCellExperiment object for peak matrix
-#' peak_gr <- GRanges(seqnames = 'chr1',
-#'                    ranges = IRanges(start = seq(from = 1, to = 10000, by = 1000), width = 100))
+#' peak_gr <- GenomicRanges::GRanges(seqnames = 'chr1',
+#'                    ranges = IRanges::IRanges(start = seq(from = 1, to = 10000, by = 1000), width = 100))
 #' peak_counts <- matrix(sample(x = 0:4, size = ncol(gene_sce)*length(peak_gr), replace = TRUE),
 #'                       nrow = length(peak_gr), ncol=ncol(gene_sce))
-#' peak_sce <- SingleCellExperiment(list(counts = peak_counts), colData = colData(gene_sce))
-#' rowRanges(peak_sce) <- peak_gr
+#' peak_sce <- SingleCellExperiment::SingleCellExperiment(list(counts = peak_counts), colData = SummarizedExperiment::colData(gene_sce))
+#' SummarizedExperiment::rowRanges(peak_sce) <- peak_gr
 #' rownames(peak_sce) <- paste0('peak',1:10)
 
 #' # create a mock reducedDim matrix

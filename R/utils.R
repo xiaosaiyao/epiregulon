@@ -36,7 +36,8 @@ initiateMatCluster <- function(clusters, nrow, value = NA) {
 }
 
 
-
+#' @importFrom SummarizedExperiment colData<-
+#' @importFrom SingleCellExperiment applySCE
 .aggregateCells <- function(cellNum, expMatrix, peakMatrix, caller_env, useDim,
                             exp_assay, peak_assay, BPPARAM, clusters=NULL){
   message("performing pseudobulk using an average of ", cellNum, " cells")

@@ -66,7 +66,7 @@ overlap <- S4Vectors::DataFrame(findOverlaps(resize(gene.start, 5000, "center"),
 
 # remove genes and peaks that are equal to 0
 sce_grouped <- sce_grouped[which(rowSums(assay(sce_grouped)) != 0),]
-altExp(sce_grouped) <- altExp(sce_grouped)[which(rowSums(assay(altExp(sce_grouped), "counts")) != 0),]
+SingleCellExperiment::altExp(sce_grouped) <- altExp(sce_grouped)[which(rowSums(assay(altExp(sce_grouped), "counts")) != 0),]
 
 # get gene information
 geneSet <- rowRanges(sce_grouped)

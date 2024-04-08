@@ -1,3 +1,5 @@
+# epiregulon 0.99.11
+
 # epiregulon 0.99.5
 
 * new function `addLogFC` which adds log fold changes of gene expression to regulons and significance statistics for differential gene expression
