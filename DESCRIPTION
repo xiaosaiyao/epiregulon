@@ -38,6 +38,7 @@ Imports:
     BSgenome.Mmusculus.UCSC.mm10,
     motifmatchr
 Depends: 
+    R (>= 4.3),
     SingleCellExperiment
 Suggests: 
     knitr,
