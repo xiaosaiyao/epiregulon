@@ -1,9 +1,9 @@
 Package: epiregulon
 Title: Gene regulatory network inference from single cell epigenomic data
-Version: 0.99.7
+Version: 0.99.10
 Date: 2024-03-21
 Authors@R: 
-    c(person(given = "Xiaosai", family = "Yao", role = c("aut", "cre"), email = "yao.xiaosai@gene.com", comment = c(ORCID = "0000-0001-9729-0726")),
+    c(person(given = "Xiaosai", family = "Yao", role = c("aut", "cre"), email = "xiaosai.yao@gmail.com", comment = c(ORCID = "0000-0001-9729-0726")),
     person(given = "Tomasz", family = "Włodarczyk", role = c("aut"), email = "tomwlo@gmail.com", comment = c(ORCID = "0000-0003-1554-9699")),
     person(given = "Aaron", family = "Lun", role=c("aut"), email="infinite.monkeys.with.keyboards@gmail.com"),
     person(given = "Shang-Yang", family = "Chen", role = "aut", email = "sychen9584@gmail.com"))
@@ -37,8 +37,8 @@ Imports:
     BSgenome.Hsapiens.UCSC.hg38,
     BSgenome.Mmusculus.UCSC.mm10,
     motifmatchr
-Depends: 
-    R (>= 4.3),
+Depends:
+    R (>= 4.2),
     SingleCellExperiment
 Suggests: 
     knitr,

@@ -1,0 +1,11 @@
+bibentry(
+  bibtype  = "Article",
+  title    = "Epiregulon: Inference of single-cell transcription factor activity to dissect mechanisms of lineage plasticity and drug response",
+  author   = c(person("Tomasz", "Wlodarczyk"), person("Aaron","Lun"), person("Diana","Wu"), person("Shreya", "Menon"), person("Shushan","Toneyan"), person("Kerstin","Seidel"), person("Liang","Wang"), person("Jenille","Tan"), person("Shang-Yang","Chen"), person("Timothy","Keyes"), person("Aleksander","Chlebowski"), person("Yu","Guo"), person("Ciara","Metcalfe"), person("Marc","Hafner"), person(c("Christian","W."), "Siebel"),
+person(c("M.","Ryan"),"Corces"), person("Robert","Yauch"), person("Shiqi","Xie"), person("Xiaosai","Yao")),
+  journal  = "bioRxiv",
+  year     = "2023",
+  doi      = "10.1101/2023.11.27.568955",
+  url.     = "https://www.biorxiv.org/content/early/2023/11/28/2023.11.27.568955"
+)
+

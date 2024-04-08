@@ -145,17 +145,17 @@ freq3[,"C1"] <- c(1,2,3,4,4)
 freq3[,"C2"] <- 1:5
 freq3[,"all"] <- c(1,1,3,4,5)
 
-freq4 <- calculateFrequency(freq4, regulon, mode="weight")
+freq6 <- calculateFrequency(freq4, regulon, mode="weight")
 
 test_that("calculateFrequency works correctly with clusters", {
-  expect_equal(freq3, freq4)
+  expect_equal(freq6, freq3)
 })
 
 ### test normalizeByFrequency
 activity_matrix.norm3 <- activity_matrix3
 activity_matrix.norm3[,1:50] <- activity_matrix3[,1:50]/freq3[,"C1"]
 activity_matrix.norm3[,51:100] <- activity_matrix3[,51:100]/freq3[,"C2"]
-activity_matrix.norm4 <- normalizeByFrequency(activity_matrix4, freq4, clusters)
+activity_matrix.norm4 <- normalizeByFrequency(activity_matrix4, freq6, clusters)
 
 test_that("normalizeByFrequency works correctly with clusters", {
   expect_equal( as.matrix(Matrix::t(activity_matrix.norm4)), as.matrix(activity_matrix.norm3))
