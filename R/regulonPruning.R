@@ -62,7 +62,7 @@
 #'
 #'
 #' @export
-#' @import utils SingleCellExperiment
+#' @importFrom SingleCellExperiment SingleCellExperiment
 #'
 #' @examples
 #' # create a mock singleCellExperiment object for gene expMatrixession matrix
