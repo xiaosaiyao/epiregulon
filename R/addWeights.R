@@ -26,7 +26,7 @@
 #'
 #' @return A DataFrame with columns of corr and/or MI added to the regulon. TFs not found in the expression matrix and regulons not
 #' meeting the minimal number of targets were filtered out.
-#' @importFrom SummarizedExperiment colData assay assays
+#' @import SummarizedExperiment
 #' @details
 #' This function estimates the regulatory potential of transcription factor on its target genes, or in other words,
 #' the magnitude of gene expression changes induced by transcription factor activity, using one of the four methods:
@@ -48,7 +48,7 @@
 #'
 
 
-#' @importFrom S4Vectors split
+#'
 #' @export
 #'
 #' @examples
