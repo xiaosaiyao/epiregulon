@@ -16,6 +16,11 @@
 #' @param clusters A vector corresponding to the cluster labels for calculation of correlations within each cluster. If left NULL, correlation is calculated across
 #' all clusters. See details for the use of clusters
 #' @param cor_method String indicating which correlation coefficient is to be computed. One of 'pearson' (default), 'kendall', or 'spearman'.
+#' @param assignment_method String indicating the method used to assign target genes to regulatory elements. 'Correlation' is based on correlation between ATAC and RNA
+#' above a correlation threshold set by cor_cutoff. 'Nearest' assigns the closest expressed gene to regulatory element meeting a correlation threshold set by cor_cutoff.
+#' Set cor_cutoff to 0 if wishing to assign the closest expressed gene without any correlation cutoff
+#' @param frac_RNA An integer to indicate the fraction of cells expressing a gene. It is used to filter the gene expression matrix for expressed genes
+#' @param frac_ATAC An integer to indication the fraction of cells showing chromatin accessibility. It is used to filter the peak Matrix for open regions
 #' @param BPPARAM A BiocParallelParam object specifying whether summation should be parallelized. Use BiocParallel::SerialParam() for
 #' serial evaluation and use BiocParallel::MulticoreParam() for parallel evaluation
 #'
@@ -58,11 +63,22 @@
 #'                     cellNum = 20, clusters = gene_sce$Treatment)
 #' @author Xiaosai Yao, Shang-yang Chen
 
-calculateP2G <- function(peakMatrix = NULL, expMatrix = NULL, reducedDim = NULL,
-    useDim = "IterativeLSI", maxDist = 250000,
-    cor_cutoff = 0.5, cellNum = 100, exp_assay = "logcounts", peak_assay = "counts",
-    gene_symbol = "name", clusters = NULL, cor_method = c("pearson", "kendall", "spearman"),
-    BPPARAM = BiocParallel::SerialParam()) {
+calculateP2G <- function(peakMatrix = NULL,
+                         expMatrix = NULL,
+                         reducedDim = NULL,
+                         useDim = "IterativeLSI",
+                         maxDist = 250000,
+                         cor_cutoff = 0.5,
+                         cellNum = 100,
+                         exp_assay = "logcounts",
+                         peak_assay = "counts",
+                         gene_symbol = "name",
+                         clusters = NULL,
+                         cor_method = c("pearson", "kendall", "spearman"),
+                         assignment_method = c("correlation","nearest"),
+                         frac_RNA = 0,
+                         frac_ATAC = 0,
+                         BPPARAM = BiocParallel::SerialParam()) {
 
 
     if (!is.null(peakMatrix) & !is.null(expMatrix) & !is.null(reducedDim)) {
@@ -70,6 +86,7 @@ calculateP2G <- function(peakMatrix = NULL, expMatrix = NULL, reducedDim = NULL,
         writeLines("Using epiregulon to compute peak to gene links...")
 
         cor_method <- match.arg(cor_method)
+        assignment_method <- match.arg(assignment_method)
 
         checkmate::assert_class(rowRanges(peakMatrix), "GRanges")
 
@@ -112,10 +129,15 @@ calculateP2G <- function(peakMatrix = NULL, expMatrix = NULL, reducedDim = NULL,
         rowData(sce_grouped)$old.idxRNA <- seq_len(nrow(sce_grouped))
         rowData(altExp(sce_grouped))$old.idxATAC <- seq_len(nrow(altExp(sce_grouped)))
 
-        # remove genes and peaks that are equal to 0
-        sce_grouped <- sce_grouped[which(rowSums(assay(sce_grouped)) != 0), ]
-        altExp(sce_grouped) <- altExp(sce_grouped)[which(rowSums(assay(altExp(sce_grouped),
-            "counts")) != 0), ]
+        # filter gene expression matrix based on fraction of cells expressing gene
+        cells_express_rna <- rowSums(assay(sce_grouped) > 0)
+        frac_expressed_rna <- cells_express_rna/ncol(assay(sce_grouped))
+        sce_grouped <- sce_grouped[frac_expressed_rna > frac_RNA, ]
+
+        # filter peak matrix based on fraction of cells showing chromatin accessibility
+        cells_express_atac <- rowSums(assay(altExp(sce_grouped),"counts") > 0)
+        frac_expressed_atac <- cells_express_atac/ncol(assay(altExp(sce_grouped),"counts"))
+        altExp(sce_grouped) <- altExp(sce_grouped)[frac_expressed_atac > frac_ATAC, ]
 
         # extract gene expression and peak matrix
         expGroupMatrix <- assay(sce_grouped, "counts")
@@ -124,14 +146,32 @@ calculateP2G <- function(peakMatrix = NULL, expMatrix = NULL, reducedDim = NULL,
 
         # get gene information
         geneSet <- rowRanges(sce_grouped)
-        geneStart <- promoters(geneSet)
+        geneStart <- resize(geneSet,width = 1)
 
         # get peak range information
         peakSet <- rowRanges(altExp(sce_grouped))
 
         # find overlap after resizing
-        o <- S4Vectors::DataFrame(findOverlaps(resize(geneStart, maxDist, "center"),
-            peakSet, ignore.strand = TRUE))
+
+        if (assignment_method == "correlation"){
+          o <- DataFrame(findOverlaps(resize(geneStart, maxDist, "center"),
+                                      peakSet, ignore.strand = TRUE))
+        } else if (assignment_method == "nearest") {
+
+          # assign every regulatory element to its nearest gene
+
+          nearest_gene <- DataFrame(distanceToNearest(peakSet, geneStart))
+
+          # flip order of query and subject to be consistent with correlation mode
+          o <- DataFrame(queryHits=nearest_gene$subjectHits,
+                         subjectHits=nearest_gene$queryHits,
+                         distance=nearest_gene$distance)
+
+          # filter by distance
+          o <- o[which(o$distance < maxDist), ]
+
+        }
+
 
 
 
