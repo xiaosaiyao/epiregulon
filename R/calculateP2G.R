@@ -27,7 +27,7 @@
 #' @importFrom SummarizedExperiment rowRanges rowData colData rowRanges<- rowData<- 
 #' @importFrom SingleCellExperiment altExp applySCE altExp<- reducedDim<-
 #' @importFrom IRanges IRanges 
-#' @importFrom S4Vectors Rle mcols mcols<-
+#' @importFrom S4Vectors Rle mcols mcols<- DataFrame
 #' @importClassesFrom SingleCellExperiment SingleCellExperiment
 #' @export
 #'
