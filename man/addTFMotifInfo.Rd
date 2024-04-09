@@ -57,10 +57,10 @@ p2g <- data.frame(idxATAC = c(rep(1,5), rep(2,5)), Chrom = 'chr1', idxRNA = 1:10
 Gene = paste0('Gene_',1:10),Correlation = runif(10, 0,1))
 
 # create mock a GRanges list of TF binding sites
-grl <- GenomicRanges::GRangesList('TF1' = GenomicRanges::GRanges(seqnames = 'chr1',
-ranges = IRanges::IRanges(start = c(50,1050), width = 100)),
-'TF2' = GenomicRanges::GRanges(seqnames = 'chr1',
-ranges = IRanges::IRanges(start = c(1050), width = 100))
+grl <- GRangesList('TF1' = GRanges(seqnames = 'chr1',
+ranges = IRanges(start = c(50,1050), width = 100)),
+'TF2' = GRanges(seqnames = 'chr1',
+ranges = IRanges(start = c(1050), width = 100))
 )
 
 # create a mock singleCellExperiment object for peak matrix
