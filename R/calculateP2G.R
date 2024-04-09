@@ -23,7 +23,12 @@
 #' @details Cluster information is sometimes helpful to avoid the [Simpsons's paradox](https://en.wikipedia.org/wiki/Simpson%27s_paradox) in which baseline differences
 #' between cell lines or cell types can create artificial or even inverse correlations between peak accessibility and gene expression. If Cluster information is provided,
 #' correlation is performed within cell aggregates of each cluster.
-#' @import SummarizedExperiment SingleCellExperiment GenomicRanges
+#' @importFrom GenomicRanges GRanges promoters resize findOverlaps start end seqnames GRanges distance
+#' @importFrom SummarizedExperiment rowRanges rowData colData rowRanges<- rowData<- 
+#' @importFrom SingleCellExperiment altExp applySCE altExp<- reducedDim<-
+#' @importFrom IRanges IRanges 
+#' @importFrom S4Vectors Rle mcols mcols<- DataFrame
+#' @importClassesFrom SingleCellExperiment SingleCellExperiment
 #' @export
 #'
 #' @examples
@@ -141,8 +146,8 @@ calculateP2G <- function(peakMatrix = NULL, expMatrix = NULL, reducedDim = NULL,
         #add metadata to o
         o$Gene <- rowData(sce_grouped)[o[, 1], gene_symbol]
         o$chr <- as.character(seqnames(rowRanges(altExp(sce_grouped))[o[, 2]]))
-        o$start <- GenomicRanges::start(rowRanges(altExp(sce_grouped))[o[, 2], ])
-        o$end <- GenomicRanges::end(rowRanges(altExp(sce_grouped))[o[, 2], ])
+        o$start <- start(rowRanges(altExp(sce_grouped))[o[, 2], ])
+        o$end <- end(rowRanges(altExp(sce_grouped))[o[, 2], ])
 
         # Calculate correlation
         expCorMatrix <- expGroupMatrix[as.integer(o$RNA), ]

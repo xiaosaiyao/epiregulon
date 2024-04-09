@@ -87,8 +87,8 @@ getTFMotifInfo <- function(genome = c("hg38",
 #' library(motifmatchr)
 #' library(chromVARmotifs)
 #' data("human_pwms_v1")
-#' peaks <- GenomicRanges::GRanges(seqnames = c("chr1","chr2","chr2"),
-#'                                ranges = IRanges::IRanges(start = c(76585873,42772928, 100183786),
+#' peaks <- GRanges(seqnames = c("chr1","chr2","chr2"),
+#'                                ranges = IRanges(start = c(76585873,42772928, 100183786),
 #'                                                          width = 500))
 #' eh <- AnnotationHub::query(ExperimentHub::ExperimentHub(),
 #' pattern = c("scMultiome", "TF motifs", "human"))
@@ -135,7 +135,7 @@ addTFMotifInfo <- function(p2g, grl, peakMatrix = NULL) {
     peakSet <- rowRanges(peakMatrix)
 
     message("Computing overlap...")
-    overlap <- GenomicRanges::findOverlaps(peakSet, grl)
+    overlap <- findOverlaps(peakSet, grl)
     overlap <- data.frame(overlap)
     colnames(overlap) <- c("idxATAC", "idxTF")
     overlap <- overlap[which(overlap$idxATAC %in% p2g$idxATAC), , drop=FALSE]
