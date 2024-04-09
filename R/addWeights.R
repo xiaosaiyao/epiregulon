@@ -140,11 +140,11 @@ addWeights <- function(regulon, expMatrix = NULL, peakMatrix = NULL, exp_assay =
         #replace clusters with clusters of pseudobulked samples
 
 
-        expMatrix <- applySCE(expMatrix, scuttle::aggregateAcrossCells, WHICH = NULL,
-            ids = kclusters, statistics = "sum", use.assay.type = exp_assay, BPPARAM = BPPARAM)
+        expMatrix <- aggregateAcrossCells.fast(expMatrix, ids = kclusters, assay.name = exp_assay,
+                                               fun_name = "sum", aggregateColData = TRUE)
 
-        peakMatrix <- applySCE(peakMatrix, scuttle::aggregateAcrossCells, WHICH = NULL,
-            ids = kclusters, statistics = "sum", use.assay.type = peak_assay, BPPARAM = BPPARAM)
+        peakMatrix <- aggregateAcrossCells.fast(PeakMatrix, ids = kclusters, assay.name = peak_assay,
+                                                fun_name = "sum", aggregateColData = TRUE)
         if (!is.null(clusters))
             clusters <- colData(expMatrix)[, "cluster_for_pseudobulk"]
     }
@@ -345,11 +345,12 @@ addWeights <- function(regulon, expMatrix = NULL, peakMatrix = NULL, exp_assay =
         }
 
         # compute average expression across clusters and batches
-        averages.se.exp <- scuttle::sumCountsAcrossCells(expMatrix, ids = groupings,
-            average = TRUE, BPPARAM = BPPARAM)
+        averages.se.exp <- aggregateAcrossCells.fast(expMatrix, ids = grouping, 
+                                                    assay.name = exp_assay, 
+                                                    fun_name = "sum", aggregateColData = TRUE)
 
         # average expression across pseudobulk clusters
-        expMatrix <- assays(averages.se.exp)$average
+        expMatrix <- assay(averages.se.exp)
 
         # remove genes whose expressions are NA for all pseudobulks
         expMatrix <- expMatrix[!Matrix::rowSums(is.na(expMatrix)) == ncol(expMatrix),
@@ -357,15 +358,13 @@ addWeights <- function(regulon, expMatrix = NULL, peakMatrix = NULL, exp_assay =
 
 
         if (tf_re.merge) {
-            averages.se.peak <- scuttle::sumCountsAcrossCells(peakMatrix, ids = groupings,
-                average = TRUE, BPPARAM = BPPARAM)
+            averages.se.peak <- aggregateAcrossCells.fast(peakMatrix, ids = grouping, 
+                                                       assay.name = peak_assay, 
+                                                       fun_name = "sum", aggregateColData = TRUE)
 
             # average accessibility across pseudobulk clusters
-            peakMatrix <- assays(averages.se.peak)$average
-
+            peakMatrix <- assay(averages.se.peak)
         }
-
-
     }
 
 

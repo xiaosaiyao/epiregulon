@@ -38,7 +38,8 @@ Imports:
     BSgenome.Hsapiens.UCSC.hg38,
     BSgenome.Mmusculus.UCSC.mm10,
     motifmatchr,
-    IRanges
+    IRanges,
+    beachmat
 Depends:
     R (>= 4.2)
 Suggests: 
@@ -49,7 +50,9 @@ Suggests:
     testthat (>= 3.0.0),
     coin,
     scater
-LinkingTo: Rcpp
+LinkingTo: 
+    Rcpp,
+    beachmat
 VignetteBuilder: knitr
 URL: https://github.com/xiaosaiyao/epiregulon/
 biocViews: SingleCell, GeneRegulation,NetworkInference,Network, GeneExpression, Transcription, GeneTarget

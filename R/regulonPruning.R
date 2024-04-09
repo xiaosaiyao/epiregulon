@@ -160,12 +160,12 @@ pruneRegulon <- function(regulon, expMatrix = NULL, peakMatrix = NULL, exp_assay
 
         #replace clusters with clusters of pseudobulked samples
 
-
-        expMatrix <- applySCE(expMatrix, scuttle::aggregateAcrossCells, WHICH = NULL,
-            ids = kclusters, statistics = "sum", use.assay.type = exp_assay, BPPARAM = BPPARAM)
-
-        peakMatrix <- applySCE(peakMatrix, scuttle::aggregateAcrossCells, WHICH = NULL,
-            ids = kclusters, statistics = "sum", use.assay.type = peak_assay, BPPARAM = BPPARAM)
+        expMatrix <- aggregateAcrossCells.fast(expMatrix, ids = kclusters, 
+                                                 assay.name = exp_assay, 
+                                                 fun_name = "sum")
+        peakMatrix <- aggregateAcrossCells.fast(peakMatrix, ids = kclusters, 
+                                               assay.name = peak_assay, 
+                                               fun_name = "sum")
         if (!is.null(clusters))
             clusters <- colData(expMatrix)[, "cluster_for_pseudobulk"]
     }
