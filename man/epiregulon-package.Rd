@@ -17,7 +17,7 @@ Useful links:
 
 }
 \author{
-\strong{Maintainer}: Xiaosai Yao \email{yao.xiaosai@gene.com} (\href{https://orcid.org/0000-0001-9729-0726}{ORCID})
+\strong{Maintainer}: Xiaosai Yao \email{xiaosai.yao@gmail.com} (\href{https://orcid.org/0000-0001-9729-0726}{ORCID})
 
 Authors:
 \itemize{
