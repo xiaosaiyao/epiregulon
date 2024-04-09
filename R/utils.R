@@ -85,5 +85,52 @@ initiateMatCluster <- function(clusters, nrow, value = NA) {
   assign("clusters",clusters,envir = caller_env)
 }
 
+.aggregateCells <- function(cellNum, expMatrix, peakMatrix, caller_env, useDim,
+                            exp_assay, peak_assay, BPPARAM, clusters=NULL){
+  message("performing pseudobulk using an average of ", cellNum, " cells")
+  barcodes <- list()
+  kclusters <- list()
+  if (!is.null(clusters)) {
+
+    #add cluster info to expMatrix
+    colData(expMatrix)[, "cluster_for_pseudobulk"] <- clusters
+
+    # K-means clustering
+    kclusters <- list()
+    for (cluster in unique(clusters)) {
+      sce <- expMatrix[, which(clusters == cluster)]
+      kNum <- trunc(ncol(sce)/cellNum)
+      kclusters[[cluster]] <- scran::clusterCells(sce, use.dimred = useDim,
+                                                  BLUSPARAM = bluster::KmeansParam(centers = kNum, iter.max = 5000))
+      barcodes[[cluster]] <- names(kclusters[[cluster]])
+      kclusters[[cluster]] <- paste(cluster, kclusters[[cluster]], sep = "_")
+    }
+    kclusters <- unlist(kclusters)
+    barcodes <- unlist(barcodes)
+    names(kclusters) <- barcodes
+
+
+  } else {
+    kclusters <- scran::clusterCells(expMatrix, use.dimred = useDim, BLUSPARAM = bluster::KmeansParam(centers = trunc(ncol(peakMatrix)/cellNum),
+                                                                                                      iter.max = 5000))
+  }
+
+  kclusters <- kclusters[colnames(expMatrix)]
+
+  #replace clusters with clusters of pseudobulked samples
+
+
+  expMatrix <- applySCE(expMatrix, scuttle::aggregateAcrossCells, WHICH = NULL,
+                        ids = kclusters, statistics = "sum", use.assay.type = exp_assay, BPPARAM = BPPARAM)
+
+  peakMatrix <- applySCE(peakMatrix, scuttle::aggregateAcrossCells, WHICH = NULL,
+                         ids = kclusters, statistics = "sum", use.assay.type = peak_assay, BPPARAM = BPPARAM)
+  if (!is.null(clusters))
+    clusters <- colData(expMatrix)[, "cluster_for_pseudobulk"]
+  assign("expMatrix",expMatrix,envir = caller_env)
+  assign("peakMatrix",peakMatrix,envir = caller_env)
+  assign("clusters",clusters,envir = caller_env)
+}
+
 
 
