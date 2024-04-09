@@ -9,7 +9,7 @@
 # epiregulon 0.99.0
 Version number downgraded to 0.99.0 to meet Bioconductor requirements.
 
-# epiregulon 1.0.38
+# epiregulon 12fabd3278b76711f4b2cbdcaca6794a918ffd83
 
 * transcription factor motif databeses used by `addMotifScore` function (`human_pwms_v1`, and `mouse_pwms_v1`) were replaced wih the new ones (`human_pwms_v2`, `mouse_pwms_v2`) which are up-to-date.
 
