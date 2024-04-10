@@ -39,8 +39,8 @@ Here, we demonstrate how to annotate peaks with cisbp motif database
 \if{html}{\out{<div class="sourceCode">}}\preformatted{library(motifmatchr)
 library(chromVARmotifs)
 data("human_pwms_v1")
-peaks <- GenomicRanges::GRanges(seqnames = c("chr1","chr2","chr2"),
-                               ranges = IRanges::IRanges(start = c(76585873,42772928, 100183786),
+peaks <- GRanges(seqnames = c("chr1","chr2","chr2"),
+                               ranges = IRanges(start = c(76585873,42772928, 100183786),
                                                          width = 500))
 eh <- AnnotationHub::query(ExperimentHub::ExperimentHub(),
 pattern = c("scMultiome", "TF motifs", "human"))
@@ -64,13 +64,13 @@ ranges = IRanges(start = c(1050), width = 100))
 )
 
 # create a mock singleCellExperiment object for peak matrix
-peak_gr <- GenomicRanges::GRanges(seqnames = 'chr1',
-             ranges = IRanges::IRanges(start = seq(from = 1, to = 10000, by = 1000),
+peak_gr <- GRanges(seqnames = 'chr1',
+             ranges = IRanges(start = seq(from = 1, to = 10000, by = 1000),
              width = 100))
 peak_counts <- matrix(sample(x = 0:4, size = 100*length(peak_gr), replace = TRUE),
 nrow = length(peak_gr), ncol = 100)
-peak_sce <- SingleCellExperiment::SingleCellExperiment(list(counts = peak_counts))
-SummarizedExperiment::rowRanges(peak_sce) <- peak_gr
+peak_sce <- SingleCellExperiment(list(counts = peak_counts))
+rowRanges(peak_sce) <- peak_gr
 rownames(peak_sce) <- paste0('peak',1:10)
 
 # create overlaps between p2g matrix, TF binding sites and peak matrix
