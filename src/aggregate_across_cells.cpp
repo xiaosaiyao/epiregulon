@@ -1,5 +1,5 @@
 #include "Rtatami.h"
-#include "AggregateAcrossCells.hpp"
+#include "AggregateAcrossCells.h"
 
 //[[Rcpp::export(rng=false)]]
 SEXP aggregate_across_cells(SEXP x, Rcpp::List groupings, int nthreads) {
