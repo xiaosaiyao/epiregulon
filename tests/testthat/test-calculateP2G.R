@@ -35,6 +35,7 @@ sce_grouped <- applySCE(sce_combined,
                         scuttle::aggregateAcrossCells,
                         ids = clusters,
                         statistics = "mean")
+sce_grouped_2 <- aggregateAcrossCells.fast(sce_combined, fun_name = "mean", ids = clusters)
 
 
 # extract gene expression and peak matrix

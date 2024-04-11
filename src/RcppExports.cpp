@@ -10,6 +10,18 @@ Rcpp::Rostream<true>&  Rcpp::Rcout = Rcpp::Rcpp_cout_get();
 Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
 #endif
 
+// aggregate_across_cells
+SEXP aggregate_across_cells(SEXP x, Rcpp::List groupings, int nthreads);
+RcppExport SEXP _epiregulon_aggregate_across_cells(SEXP xSEXP, SEXP groupingsSEXP, SEXP nthreadsSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::traits::input_parameter< SEXP >::type x(xSEXP);
+    Rcpp::traits::input_parameter< Rcpp::List >::type groupings(groupingsSEXP);
+    Rcpp::traits::input_parameter< int >::type nthreads(nthreadsSEXP);
+    rcpp_result_gen = Rcpp::wrap(aggregate_across_cells(x, groupings, nthreads));
+    return rcpp_result_gen;
+END_RCPP
+}
 // fast_chisq
 Rcpp::List fast_chisq(Rcpp::IntegerVector peak_ordered, Rcpp::IntegerVector tf_by_peak, Rcpp::IntegerVector target_by_peak, Rcpp::IntegerVector target_ordered, int npeaks, Rcpp::NumericVector peakmat_x, Rcpp::IntegerVector peakmat_i, Rcpp::IntegerVector peakmat_p, Rcpp::NumericMatrix peak_cutoff, int ngenes, Rcpp::NumericVector expmat_x, Rcpp::IntegerVector expmat_i, Rcpp::IntegerVector expmat_p, Rcpp::NumericMatrix exp_cutoff, int nclusters, Rcpp::IntegerVector clusters);
 RcppExport SEXP _epiregulon_fast_chisq(SEXP peak_orderedSEXP, SEXP tf_by_peakSEXP, SEXP target_by_peakSEXP, SEXP target_orderedSEXP, SEXP npeaksSEXP, SEXP peakmat_xSEXP, SEXP peakmat_iSEXP, SEXP peakmat_pSEXP, SEXP peak_cutoffSEXP, SEXP ngenesSEXP, SEXP expmat_xSEXP, SEXP expmat_iSEXP, SEXP expmat_pSEXP, SEXP exp_cutoffSEXP, SEXP nclustersSEXP, SEXP clustersSEXP) {
@@ -63,6 +75,7 @@ RcppExport SEXP to_end(SEXP, SEXP, SEXP, SEXP);
 RcppExport SEXP to_start(SEXP, SEXP, SEXP, SEXP);
 
 static const R_CallMethodDef CallEntries[] = {
+    {"_epiregulon_aggregate_across_cells", (DL_FUNC) &_epiregulon_aggregate_across_cells, 3},
     {"_epiregulon_fast_chisq", (DL_FUNC) &_epiregulon_fast_chisq, 16},
     {"_epiregulon_fast_wilcox", (DL_FUNC) &_epiregulon_fast_wilcox, 14},
     {"to_end",   (DL_FUNC) &to_end,   4},

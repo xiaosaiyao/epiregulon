@@ -101,8 +101,9 @@ calculateP2G <- function(peakMatrix = NULL, expMatrix = NULL, reducedDim = NULL,
         cluster_numb_warning <- length(unique(kclusters)) < 5
 
         # aggregate sce by k-means clusters
-        sce_grouped <- applySCE(sce, scuttle::aggregateAcrossCells, ids = kclusters,
-            statistics = "mean", BPPARAM = BPPARAM)
+        sce_grouped <- aggregateAcrossCells.fast(sce, ids = kclusters, 
+                                                     assay.name = NULL, 
+                                                     fun_name = "mean", aggregateColData = TRUE)
 
         # some sces have strand information in metadata that conflicts with genomic ranges
         mcols(expMatrix)$strand <- NULL
