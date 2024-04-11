@@ -13,7 +13,6 @@ Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.1
 Imports:
-    SingleCellExperiment,
     AnnotationHub,
     BiocParallel,
     ExperimentHub,
@@ -41,7 +40,8 @@ Imports:
     IRanges,
     beachmat
 Depends:
-    R (>= 4.2)
+    R (>= 4.2),
+    SingleCellExperiment
 Suggests: 
     knitr,
     rmarkdown,

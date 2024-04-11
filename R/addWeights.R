@@ -26,7 +26,9 @@
 #'
 #' @return A DataFrame with columns of corr and/or MI added to the regulon. TFs not found in the expression matrix and regulons not
 #' meeting the minimal number of targets were filtered out.
-#' @importFrom SummarizedExperiment colData assay assays
+#' @importClassesFrom SummarizedExperiment SummarizedExperiment
+#' @importFrom SummarizedExperiment assay assays colData
+#' @importFrom S4Vectors split
 #' @details
 #' This function estimates the regulatory potential of transcription factor on its target genes, or in other words,
 #' the magnitude of gene expression changes induced by transcription factor activity, using one of the four methods:
@@ -48,7 +50,7 @@
 #'
 
 
-#' @importFrom S4Vectors split
+#'
 #' @export
 #'
 #' @examples
@@ -80,75 +82,34 @@
 #' @author Xiaosai Yao, Shang-yang Chen, Tomasz Wlodarczyk
 
 
-addWeights <- function(regulon, expMatrix = NULL, peakMatrix = NULL, exp_assay = "logcounts",
-    peak_assay = "PeakMatrix", method = c("wilcoxon", "corr", "MI"), clusters = NULL,
-    exp_cutoff = 1, peak_cutoff = 0, block_factor = NULL, aggregation_function = mean,
-    min_targets = 10, tf_re.merge = FALSE, aggregateCells = FALSE, useDim = "IterativeLSI_ATAC",
-    cellNum = 10, BPPARAM = BiocParallel::SerialParam(progressbar = TRUE)) {
+addWeights <- function(regulon,
+                       expMatrix = NULL,
+                       peakMatrix = NULL,
+                       exp_assay = "logcounts",
+                       peak_assay = "PeakMatrix",
+                       method = c("wilcoxon", "corr", "MI"),
+                       clusters = NULL,
+                       exp_cutoff = 1,
+                       peak_cutoff = 0,
+                       block_factor = NULL,
+                       aggregation_function = mean,
+                       min_targets = 10,
+                       tf_re.merge = FALSE,
+                       aggregateCells = FALSE,
+                       useDim = "IterativeLSI_ATAC",
+                       cellNum = 10,
+                       BPPARAM = BiocParallel::SerialParam(progressbar = TRUE)) {
     # choose method
     method <- match.arg(method)
     message("adding weights using ", method, "...")
 
-    if (!is.null(clusters)) {
-        clusters <- tryCatch(as.vector(clusters), error = function(cond) {
-            message("'clusters' argument should be coercible to a vector")
-            stop(cond)
-        })
-        if (length(clusters) != ncol(expMatrix)) {
-            stop("'clusters' length should be equal to the number of cells")
-        }
-        if (any(is.na(clusters))) {
-            stop("'clusters' object contains NA")
-        }
-    }
+    if(!is.null(clusters)) .validate_clusters(clusters, expMatrix)
 
     # pseudobulk
     if (aggregateCells && method != "wilcoxon")
-        message("Cell aggregation is possible only with 'wilcoxon' method.") else if (aggregateCells && method == "wilcoxon") {
-        message("performing pseudobulk using an average of ", cellNum, " cells")
-        barcodes <- list()
-        kclusters <- list()
-
-
-        if (!is.null(clusters)) {
-
-            #add cluster info to expMatrix
-            colData(expMatrix)[, "cluster_for_pseudobulk"] <- clusters
-
-            # K-means clustering
-            kclusters <- list()
-            for (cluster in unique(clusters)) {
-                sce <- expMatrix[, which(clusters == cluster)]
-                kNum <- max(trunc(ncol(sce)/cellNum), 1)
-                kclusters[[cluster]] <- scran::clusterCells(sce, use.dimred = useDim,
-                  BLUSPARAM = bluster::KmeansParam(centers = kNum, iter.max = 5000))
-                barcodes[[cluster]] <- names(kclusters[[cluster]])
-                kclusters[[cluster]] <- paste(cluster, kclusters[[cluster]], sep = "_")
-            }
-            kclusters <- unlist(kclusters)
-            barcodes <- unlist(barcodes)
-            names(kclusters) <- barcodes
-
-
-        } else {
-            kclusters <- scran::clusterCells(expMatrix, use.dimred = useDim, BLUSPARAM = bluster::KmeansParam(centers = trunc(ncol(peakMatrix)/cellNum),
-                iter.max = 5000))
-        }
-
-        kclusters <- kclusters[colnames(expMatrix)]
-
-        #replace clusters with clusters of pseudobulked samples
-
-
-        expMatrix <- aggregateAcrossCells.fast(expMatrix, ids = kclusters, assay.name = exp_assay,
-                                               fun_name = "sum", aggregateColData = TRUE)
-
-        peakMatrix <- aggregateAcrossCells.fast(PeakMatrix, ids = kclusters, assay.name = peak_assay,
-                                                fun_name = "sum", aggregateColData = TRUE)
-        if (!is.null(clusters))
-            clusters <- colData(expMatrix)[, "cluster_for_pseudobulk"]
-    }
-
+        message("Cell aggregation is possible only with 'wilcoxon' method.")
+    else if (aggregateCells && method == "wilcoxon") .aggregateCells(cellNum, expMatrix, peakMatrix, environment(),
+                                                                     useDim, exp_assay, peak_assay, BPPARAM, clusters)
 
     # extract matrices from SE
     if (checkmate::test_class(expMatrix, classes = "SummarizedExperiment")) {
@@ -192,7 +153,7 @@ addWeights <- function(regulon, expMatrix = NULL, peakMatrix = NULL, exp_assay =
     regulon <- S4Vectors::DataFrame(regulon)
 
     # order regulon
-    regulon <- regulon[order(regulon$tf), ]
+    regulon <- regulon[order(regulon$tf), , drop=FALSE]
 
     # remove genes not found in regulon
     expMatrix <- expMatrix[which(rownames(expMatrix) %in% unique(c(regulon$tf, regulon$target))),
@@ -200,7 +161,7 @@ addWeights <- function(regulon, expMatrix = NULL, peakMatrix = NULL, exp_assay =
 
     keep <- regulon$tf %in% rownames(expMatrix) & regulon$target %in% rownames(expMatrix)
 
-    regulon <- regulon[keep, ]
+    regulon <- regulon[keep, , drop=FALSE]
 
     if (nrow(regulon) == 0)
         stop("Gene names in the regulon should match those in the expMatrix")
@@ -215,9 +176,8 @@ addWeights <- function(regulon, expMatrix = NULL, peakMatrix = NULL, exp_assay =
     }
 
     # if a cluster is named 'all', replace it to distinguish from all cells
-    if (!is.null(clusters)) {
-        clusters[clusters == "all"] <- "clusters_all"
-    }
+    clusters <- renameCluster(clusters)
+
     unique_clusters <- sort(unique(clusters))
 
     # define weight matrix
@@ -225,7 +185,7 @@ addWeights <- function(regulon, expMatrix = NULL, peakMatrix = NULL, exp_assay =
         regulon$weight <- NA
         regulon.split <- split(regulon, regulon$tf)
 
-    } else if (method == "wilcoxon") {
+    } else if (method %in% c("logFC", "wilcoxon")) {
         regulon$weight <- initiateMatCluster(clusters, nrow = nrow(regulon))
         regulon.split <- split(regulon, regulon$tf)
     }
@@ -237,20 +197,9 @@ addWeights <- function(regulon, expMatrix = NULL, peakMatrix = NULL, exp_assay =
     }
 
     if (method == "wilcoxon") {
-        if (!is.null(peak_cutoff)) {
-            prop <- sum(peakMatrix > peak_cutoff)/prod(dim(peakMatrix))
-            if (prop < 1e-04 | prop > 0.9999)
-                warning(sprintf("Strong inbalance between groups after applying cutoff to peakMatrix. Consider %s value of the peak_cutoff",
-                  c("increasing", "decreasing")[(prop < 1e-04) + 1]))
-        }
-        if (!is.null(exp_cutoff)) {
-            prop <- sum(expMatrix > exp_cutoff)/prod(dim(expMatrix))
-            if (prop < 1e-04 | prop > 0.9999)
-                warning(sprintf("Strong inbalance between groups after applying cutoff to expMatrix. Consider %s value of the exp_cutoff",
-                  c("increasing", "decreasing")[(prop < 1e-04) + 1]))
-        }
+        .balance_check(peak_cutoff, exp_cutoff, peakMatrix, expMatrix)
         keep <- regulon$idxATAC >= 1 & regulon$idxATAC <= nrow(peakMatrix)
-        regulon <- regulon[keep, ]
+        regulon <- regulon[keep, , drop=FALSE]
         peakMatrix <- binarize_matrix(peakMatrix, cutoff = peak_cutoff)
         copy <- regulon
         all.targets <- sort(unique(regulon$target))
@@ -332,7 +281,7 @@ addWeights <- function(regulon, expMatrix = NULL, peakMatrix = NULL, exp_assay =
         return(regulon)
     }
 
-    if (method %in% c("corr", "MI", "lmfit")) {
+    if (method %in% c("corr", "MI")) {
         if (is.null(clusters)) {
             stop("'clusters' argument should be provided for ", method, " method")
         }
@@ -345,12 +294,11 @@ addWeights <- function(regulon, expMatrix = NULL, peakMatrix = NULL, exp_assay =
         }
 
         # compute average expression across clusters and batches
-        averages.se.exp <- aggregateAcrossCells.fast(expMatrix, ids = grouping, 
-                                                    assay.name = exp_assay, 
-                                                    fun_name = "sum", aggregateColData = TRUE)
+        averages.se.exp <- scuttle::sumCountsAcrossCells(expMatrix, ids = groupings,
+            average = TRUE, BPPARAM = BPPARAM)
 
         # average expression across pseudobulk clusters
-        expMatrix <- assay(averages.se.exp)
+        expMatrix <- assays(averages.se.exp)$average
 
         # remove genes whose expressions are NA for all pseudobulks
         expMatrix <- expMatrix[!Matrix::rowSums(is.na(expMatrix)) == ncol(expMatrix),
@@ -358,44 +306,21 @@ addWeights <- function(regulon, expMatrix = NULL, peakMatrix = NULL, exp_assay =
 
 
         if (tf_re.merge) {
-            averages.se.peak <- aggregateAcrossCells.fast(peakMatrix, ids = grouping, 
-                                                       assay.name = peak_assay, 
-                                                       fun_name = "sum", aggregateColData = TRUE)
+            averages.se.peak <- scuttle::sumCountsAcrossCells(peakMatrix, ids = groupings,
+                average = TRUE, BPPARAM = BPPARAM)
 
             # average accessibility across pseudobulk clusters
-            peakMatrix <- assay(averages.se.peak)
+            peakMatrix <- assays(averages.se.peak)$average
+
         }
-    }
-
-
-
-    message("computing weights...")
-    if (method == "corr") {
-        output_df <- BiocParallel::bplapply(X = seq_len(length(regulon.split)), FUN = use_corr_method,
-            regulon.split, expMatrix, peakMatrix, tf_re.merge, BPPARAM = BPPARAM)
-
-    } else if (method == "MI") {
-        n_pseudobulk <- length(unique(clusters))
-
-        output_df <- BiocParallel::bplapply(X = seq_len(length(regulon.split)), FUN = use_MI_method,
-            regulon.split, expMatrix, peakMatrix, tf_re.merge, n_pseudobulk, BPPARAM = BPPARAM)
-
-
-    } else {
-        stop("method should be wilcoxon, corr or MI")
-
+        message("computing weights...")
+        output_df <- BiocParallel::bplapply(X = seq_len(length(regulon.split)), FUN = use_specific_method,
+                                            regulon.split, expMatrix, peakMatrix, tf_re.merge, BPPARAM = BPPARAM,
+                                            method = method)
     }
 
     output_df <- do.call(rbind, output_df)
     output_df[["weight"]][is.na(output_df[["weight"]])] <- 0
-
-
-
-    ## Aggregate by REs to have only TF-TG weights
-    #regulon <- stats::aggregate(weight~tf+target, FUN = aggregation_function, na.rm = TRUE, data = output_df)
-    #regulon[order(regulon$tf),]
-
-    #regulon <- output_df
 
     return(output_df)
 
@@ -403,46 +328,26 @@ addWeights <- function(regulon, expMatrix = NULL, peakMatrix = NULL, exp_assay =
 
 #' @keywords internal
 
-use_corr_method <- function(n, regulon.split, expMatrix, peakMatrix,
-    tf_re.merge, BPPARAM = BPPARAM) {
-
-    if (tf_re.merge) {
-        tf_re <- expMatrix[regulon.split[[n]]$tf, , drop = FALSE] *
-            peakMatrix[as.character(regulon.split[[n]]$idxATAC), , drop = FALSE]
-    } else {
-        tf_re <- expMatrix[regulon.split[[n]]$tf, , drop = FALSE]
-    }
-    tg <- expMatrix[regulon.split[[n]]$target, , drop = FALSE]
-    regulon.split[[n]]$weight <- mapply(stats::cor, as.data.frame(t(tf_re)),
-        as.data.frame(t(tg)), use = "everything")
-    regulon.split[[n]]
+use_specific_method <- function(n, regulon.split, expMatrix, peakMatrix,
+                                tf_re.merge, BPPARAM = BPPARAM, method) {
+  association_fun <- switch(method, "corr"=stats::cor, "MI" = MI_per_row)
+  if (tf_re.merge) {
+    tf_re <- expMatrix[regulon.split[[n]]$tf, , drop = FALSE] *
+      peakMatrix[as.character(regulon.split[[n]]$idxATAC), , drop = FALSE]
+  } else {
+    tf_re <- expMatrix[regulon.split[[n]]$tf, , drop = FALSE]
+  }
+  tg <- expMatrix[regulon.split[[n]]$target, , drop = FALSE]
+  regulon.split[[n]]$weight <- mapply(association_fun, as.data.frame(t(tf_re)),
+                                      as.data.frame(t(tg)), use = "everything")
+  regulon.split[[n]]
 }
 
-
-
-use_MI_method <- function(n, regulon.split, expMatrix, peakMatrix, tf_re.merge,
-    n_pseudobulk) {
-
-    if (tf_re.merge) {
-        tf_re <- expMatrix[regulon.split[[n]]$tf, , drop = FALSE] *
-            peakMatrix[as.character(regulon.split[[n]]$idxATAC), , drop = FALSE]
-    } else {
-        tf_re <- expMatrix[regulon.split[[n]]$tf, , drop = FALSE]
-    }
-    tg <- expMatrix[regulon.split[[n]]$target, , drop = FALSE]
-
-    regulon.split[[n]]$weight <- mapply(MI_per_row, as.data.frame(t(tf_re)),
-        as.data.frame(t(tg)))
-    regulon.split[[n]]
-}
-
-MI_per_row <- function(tf_re, tg) {
+MI_per_row <- function(tf_re, tg, ...) {
     if (length(unique(tf_re)) == 1 | length(unique(tg)) == 1)
         return(0)
     y2d <- entropy::discretize2d(tf_re, tg, numBins1 = min(10,
         length(unique(tf_re))), numBins2 = min(10, length(unique(tg))))
     entropy::mi.empirical(y2d)
 }
-
-
 

@@ -68,11 +68,11 @@ gene_sce <- scuttle::logNormCounts(gene_sce)
 rownames(gene_sce) <- paste0('Gene_',1:2000)
 
 # create a mock singleCellExperiment object for peak matrix
-peak_gr <- GenomicRanges::GRanges(seqnames = 'chr1',
-                   ranges = IRanges::IRanges(start = seq(from = 1, to = 10000, by = 100), width = 100))
+peak_gr <- GRanges(seqnames = 'chr1',
+                   ranges = IRanges(start = seq(from = 1, to = 10000, by = 100), width = 100))
 peak_counts <- matrix(sample(x = 0:4, size = ncol(gene_sce)*length(peak_gr), replace = TRUE),
                       nrow = length(peak_gr), ncol=ncol(gene_sce))
-peak_sce <- SingleCellExperiment::SingleCellExperiment(list(counts = peak_counts), colData = SummarizedExperiment::colData(gene_sce))
+peak_sce <- SingleCellExperiment(list(counts = peak_counts), colData = colData(gene_sce))
 rownames(peak_sce) <- paste0('Peak_',1:100)
 
 # create a mock regulon

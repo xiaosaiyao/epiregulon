@@ -17,8 +17,8 @@
 #' }
 #'
 #' # retrieve motif info
-#' peaks <- GenomicRanges::GRanges(seqnames = c('chr12','chr19','chr19','chr11','chr6'),
-#' ranges = IRanges::IRanges(start = c(124914563,50850845, 50850844, 101034172, 151616327),
+#' peaks <- GRanges(seqnames = c('chr12','chr19','chr19','chr11','chr6'),
+#' ranges = IRanges(start = c(124914563,50850845, 50850844, 101034172, 151616327),
 #' end = c(124914662,50850929, 50850929, 101034277, 151616394)))
 #' grl <- getTFMotifInfo(genome = 'hg38', mode = 'motif', peaks=peaks)
 #'
@@ -87,8 +87,8 @@ getTFMotifInfo <- function(genome = c("hg38",
 #' library(motifmatchr)
 #' library(chromVARmotifs)
 #' data("human_pwms_v1")
-#' peaks <- GenomicRanges::GRanges(seqnames = c("chr1","chr2","chr2"),
-#'                                ranges = IRanges::IRanges(start = c(76585873,42772928, 100183786),
+#' peaks <- GRanges(seqnames = c("chr1","chr2","chr2"),
+#'                                ranges = IRanges(start = c(76585873,42772928, 100183786),
 #'                                                          width = 500))
 #' eh <- AnnotationHub::query(ExperimentHub::ExperimentHub(),
 #' pattern = c("scMultiome", "TF motifs", "human"))
@@ -108,20 +108,20 @@ getTFMotifInfo <- function(genome = c("hg38",
 #' Gene = paste0('Gene_',1:10),Correlation = runif(10, 0,1))
 #'
 #' # create mock a GRanges list of TF binding sites
-#' grl <- GenomicRanges::GRangesList('TF1' = GenomicRanges::GRanges(seqnames = 'chr1',
-#' ranges = IRanges::IRanges(start = c(50,1050), width = 100)),
-#' 'TF2' = GenomicRanges::GRanges(seqnames = 'chr1',
-#' ranges = IRanges::IRanges(start = c(1050), width = 100))
+#' grl <- GRangesList('TF1' = GRanges(seqnames = 'chr1',
+#' ranges = IRanges(start = c(50,1050), width = 100)),
+#' 'TF2' = GRanges(seqnames = 'chr1',
+#' ranges = IRanges(start = c(1050), width = 100))
 #' )
 #'
 #' # create a mock singleCellExperiment object for peak matrix
-#' peak_gr <- GenomicRanges::GRanges(seqnames = 'chr1',
-#'              ranges = IRanges::IRanges(start = seq(from = 1, to = 10000, by = 1000),
+#' peak_gr <- GRanges(seqnames = 'chr1',
+#'              ranges = IRanges(start = seq(from = 1, to = 10000, by = 1000),
 #'              width = 100))
 #' peak_counts <- matrix(sample(x = 0:4, size = 100*length(peak_gr), replace = TRUE),
 #' nrow = length(peak_gr), ncol = 100)
-#' peak_sce <- SingleCellExperiment::SingleCellExperiment(list(counts = peak_counts))
-#' SummarizedExperiment::rowRanges(peak_sce) <- peak_gr
+#' peak_sce <- SingleCellExperiment(list(counts = peak_counts))
+#' rowRanges(peak_sce) <- peak_gr
 #' rownames(peak_sce) <- paste0('peak',1:10)
 #'
 #' # create overlaps between p2g matrix, TF binding sites and peak matrix
@@ -135,7 +135,7 @@ addTFMotifInfo <- function(p2g, grl, peakMatrix = NULL) {
     peakSet <- rowRanges(peakMatrix)
 
     message("Computing overlap...")
-    overlap <- GenomicRanges::findOverlaps(peakSet, grl)
+    overlap <- findOverlaps(peakSet, grl)
     overlap <- data.frame(overlap)
     colnames(overlap) <- c("idxATAC", "idxTF")
     overlap <- overlap[which(overlap$idxATAC %in% p2g$idxATAC), , drop=FALSE]
@@ -165,20 +165,20 @@ addTFMotifInfo <- function(p2g, grl, peakMatrix = NULL) {
 #' target = paste0('Gene_', 1:10), Correlation = runif(10, 0, 1))
 #'
 #' # create a Granges list of TF binding sites
-#' grl <- GenomicRanges::GRangesList('TF1' = GenomicRanges::GRanges(seqnames = 'chr1',
-#' ranges = IRanges::IRanges(start = c(50,1050), width = 100)),
-#' 'TF2' = GenomicRanges::GRanges(seqnames = 'chr1',
-#' ranges = IRanges::IRanges(start = c(1050), width = 100))
+#' grl <- GRangesList('TF1' = GRanges(seqnames = 'chr1',
+#' ranges = IRanges(start = c(50,1050), width = 100)),
+#' 'TF2' = GRanges(seqnames = 'chr1',
+#' ranges = IRanges(start = c(1050), width = 100))
 #' )
 #'
 #' # Create a mock peak matrix
-#' peak_gr <- GenomicRanges::GRanges(seqnames = 'chr1',
-#'                    ranges = IRanges::IRanges(start = seq(from = 1, to = 10000, by = 1000), width = 100))
+#' peak_gr <- GRanges(seqnames = 'chr1',
+#'                    ranges = IRanges(start = seq(from = 1, to = 10000, by = 1000), width = 100))
 #'
 #' peak_counts <- matrix(sample(x = 0:4, size = 100*length(peak_gr), replace = TRUE),
 #' nrow = length(peak_gr),ncol = 100)
-#' peak_sce <- SingleCellExperiment::SingleCellExperiment(list(counts = peak_counts))
-#' SummarizedExperiment::rowRanges(peak_sce) <- peak_gr
+#' peak_sce <- SingleCellExperiment(list(counts = peak_counts))
+#' rowRanges(peak_sce) <- peak_gr
 #' rownames(peak_sce) <- paste0('peak', 1:10)
 #'
 #' # create overlaps between p2g matrix, TF binding sites and peak matrix

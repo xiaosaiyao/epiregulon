@@ -41,8 +41,8 @@ getTFMotifInfo('mm10', 'atlas')
 }
 
 # retrieve motif info
-peaks <- GenomicRanges::GRanges(seqnames = c('chr12','chr19','chr19','chr11','chr6'),
-ranges = IRanges::IRanges(start = c(124914563,50850845, 50850844, 101034172, 151616327),
+peaks <- GRanges(seqnames = c('chr12','chr19','chr19','chr11','chr6'),
+ranges = IRanges(start = c(124914563,50850845, 50850844, 101034172, 151616327),
 end = c(124914662,50850929, 50850929, 101034277, 151616394)))
 grl <- getTFMotifInfo(genome = 'hg38', mode = 'motif', peaks=peaks)
 
