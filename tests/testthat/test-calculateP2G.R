@@ -60,7 +60,7 @@ test_that("pseudobulk works correctly", {
 non.zero.genes <- which(rowSums(geneExpMatrix.avg) != 0)
 non.zero.peaks <- which(rowSums(peakMatrix.avg) != 0)
 
-gene.start <- promoters(gene.ranges[non.zero.genes,])
+gene.start <- resize(gene.ranges[non.zero.genes,], width=1)
 peak.ranges <- peak.ranges[non.zero.peaks,]
 overlap <- S4Vectors::DataFrame(findOverlaps(resize(gene.start, 5000, "center"),
                                        peak.ranges))
@@ -71,7 +71,7 @@ SingleCellExperiment::altExp(sce_grouped) <- altExp(sce_grouped)[which(rowSums(a
 
 # get gene information
 geneSet <- rowRanges(sce_grouped)
-geneStart <- promoters(geneSet)
+geneStart <- resize(geneSet, width = 1)
 
 # get peak range information
 peakSet <- rowRanges(altExp(sce_grouped))
