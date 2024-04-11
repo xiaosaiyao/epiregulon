@@ -17,6 +17,9 @@ calculateP2G(
   gene_symbol = "name",
   clusters = NULL,
   cor_method = c("pearson", "kendall", "spearman"),
+  assignment_method = c("correlation", "nearest"),
+  frac_RNA = 0,
+  frac_ATAC = 0,
   BPPARAM = BiocParallel::SerialParam()
 )
 }
@@ -48,6 +51,14 @@ Default correlation cutoff is 0.5.}
 all clusters. See details for the use of clusters}
 
 \item{cor_method}{String indicating which correlation coefficient is to be computed. One of 'pearson' (default), 'kendall', or 'spearman'.}
+
+\item{assignment_method}{String indicating the method used to assign target genes to regulatory elements. 'Correlation' is based on correlation between ATAC and RNA
+above a correlation threshold set by cor_cutoff. 'Nearest' assigns the closest expressed gene to regulatory element meeting a correlation threshold set by cor_cutoff.
+Set cor_cutoff to 0 if wishing to assign the closest expressed gene without any correlation cutoff}
+
+\item{frac_RNA}{An integer to indicate the fraction of cells expressing a gene. It is used to filter the gene expression matrix for expressed genes}
+
+\item{frac_ATAC}{An integer to indication the fraction of cells showing chromatin accessibility. It is used to filter the peak Matrix for open regions}
 
 \item{BPPARAM}{A BiocParallelParam object specifying whether summation should be parallelized. Use BiocParallel::SerialParam() for
 serial evaluation and use BiocParallel::MulticoreParam() for parallel evaluation}
