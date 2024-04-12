@@ -6,7 +6,7 @@
 \usage{
 getTFMotifInfo(
   genome = c("hg38", "hg19", "mm10"),
-  source = c("atlas", "cistrome"),
+  source = c("atlas", "cistrome", "encode.sample", "atlas.sample", "atlas.tissue"),
   metadata = FALSE,
   mode = c("occupancy", "motif"),
   peaks = NULL
