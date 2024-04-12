@@ -1,4 +1,9 @@
+# epiregulon 0.9.12
+* in `calculateP2G` staring position of the gene has been corrected.
+
 # epiregulon 0.99.11
+* new function `aggregateAcrossCells` has been added, which is implemented in c++ and makes 
+run time for `calculateP2G` much shorter. 
 
 # epiregulon 0.99.5
 
