@@ -35,35 +35,9 @@ getTFMotifInfo <- function(genome = c("hg38", "hg19", "mm10"),
     
 
     if (mode == "occupancy") {
-      key <- paste0(c(genome, source), collapse=".")
-      to_file_dict <- c(hg38.atlas="tfBinding_hg38_atlas.rds",
-                        hg38.cistrome="tfBinding_hg38_cistrome.rds",
-                        hg19.atlas = "tfBinding_hg19_atlas.rds",
-                        hg19.cistrome = "tfBinding_hg19_cistrome.rds",
-                        mm10.atlas = "tfBinding_mm10_atlas.rds",
-                        mm10.cistrome = "tfBinding_mm10_cistrome.rds",
-                        hg38.atlas.sample="tfBinding_hg38_atlas.sample.rds",
-                        hg19.atlas.sample = "tfBinding_hg19_atlas.sample.rds",
-                        mm10.atlas.sample = "tfBinding_mm10_atlas.sample.rds",
-                        hg38.encode.sample = "tfBinding_hg38_encode.sample.rds",
-                        hg19.encode.sample = "tfBinding_hg19_encode.sample.rds",
-                        mm10.encode.sample = "tfBinding_mm10_encode.sample.rds",
-                        hg38.atlas.tissue = "tfBinding_hg38_atlas.tissue.rds",
-                        hg19.atlas.tissue = "tfBinding_hg19_atlas.tissue.rds",
-                        mm10.atlas.tissue = "tfBinding_mm10_atlas.tissue.rds")
-      eh <- AnnotationHub::query(ExperimentHub::ExperimentHub(),
-                                 pattern = c("scMultiome", "tfBinding", to_file_dict[key]))
-      
-      eh_ID <- eh$ah_id
-      
-      grl <-
-        if (metadata) {
-          eh[eh_ID]
-        } else {
-          readRDS(eh[[eh_ID]])
-        }
-
-    } else if (mode == "motif") {
+      grl <- scMultiome::tfBinding(genome,
+                                   source, metadata)
+    } else {
 
 
         species <- switch(genome, hg38 = "human",
