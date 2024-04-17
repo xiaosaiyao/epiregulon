@@ -110,6 +110,8 @@ aggregateAcrossCells <- function(x, factors, num.threads = 1) {
   assign("clusters",clusters,envir = caller_env)
 }
 
+#' @importFrom stats setNames
+#' @importFrom SingleCellExperiment altExps altExps<- altExpNames
 aggregateAcrossCells.fast <- function(sce, ids, assay.name="counts", fun_name="mean",
                                       aggregateColData = TRUE) {
   

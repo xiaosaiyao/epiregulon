@@ -28,7 +28,7 @@
 #' @details Cluster information is sometimes helpful to avoid the [Simpsons's paradox](https://en.wikipedia.org/wiki/Simpson%27s_paradox) in which baseline differences
 #' between cell lines or cell types can create artificial or even inverse correlations between peak accessibility and gene expression. If Cluster information is provided,
 #' correlation is performed within cell aggregates of each cluster.
-#' @importFrom GenomicRanges GRanges promoters resize findOverlaps start end seqnames GRanges distance
+#' @importFrom GenomicRanges GRanges promoters resize findOverlaps start end seqnames GRanges distance distanceToNearest
 #' @importFrom SummarizedExperiment rowRanges rowData colData rowRanges<- rowData<- 
 #' @importFrom SingleCellExperiment altExp applySCE altExp<- reducedDim<-
 #' @importFrom IRanges IRanges 
