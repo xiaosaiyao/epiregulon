@@ -110,11 +110,33 @@ aggregateAcrossCells <- function(x, factors, num.threads = 1) {
   assign("clusters",clusters,envir = caller_env)
 }
 
+
+#' Aggregate cells in SingleCellExperiment
+#' 
+#' #' Aggregate expression values across cells in SingleCellExperiment based on one 
+#' or more grouping factors. This is primarily used to create pseudo-bulk profiles 
+#' for each cluster/sample combination.
+#' 
+#' @param sce A SingleCellExperiment object
+#' @param ids A vectors used as a grouping variable. The length should be equal to
+#' the number of cells.
+#' @param assay.name A character indicating the name of the assay containing the
+#' values to be aggregated.
+#' @param fun_name A character indicating the function used to aggregate data. The
+#' selection is restricted to "mean" or "sum".
+#' @param aggregateColData A logical specifying if the columns in the `colData`
+#' should be included in the output object. Only those columns are selected which
+#' can be decomposed by grouping variable into the vectors whose all elements
+#' are the same.
+#' @return A SingleCellExperiment object containing aggregated cells.
+#' 
 #' @importFrom stats setNames
 #' @importFrom SingleCellExperiment altExps altExps<- altExpNames
-aggregateAcrossCells.fast <- function(sce, ids, assay.name="counts", fun_name="mean",
+#' @export
+aggregateAcrossCells.fast <- function(sce, ids, assay.name="counts", fun_name=c("mean", "sum"),
                                       aggregateColData = TRUE) {
   
+  fun_name <- match.arg(fun_name, several.ok = FALSE)
   # aggregate counts in assay
   if(!is.null(assay.name)) x <- setNames(assays(sce)[assay.name], assay.name)
   else x <- setNames(assays(sce), names(assays(sce)))
