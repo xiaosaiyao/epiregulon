@@ -113,12 +113,13 @@ aggregateAcrossCells <- function(x, factors, num.threads = 1) {
 
 #' Aggregate cells in SingleCellExperiment
 #' 
-#' #' Aggregate expression values across cells in SingleCellExperiment based on one 
-#' or more grouping factors. This is primarily used to create pseudo-bulk profiles 
-#' for each cluster/sample combination.
+#' Aggregate expression values across cells in SingleCellExperiment based on a
+#' grouping factor. This is primarily used to create pseudo-bulk profiles 
+#' for each cluster/sample combination. It is wrapped around `aggregateAcrossCells`, 
+#' which relies on the C++ code. 
 #' 
 #' @param sce A SingleCellExperiment object
-#' @param ids A vectors used as a grouping variable. The length should be equal to
+#' @param ids A vector used as a grouping variable. The length should be equal to
 #' the number of cells.
 #' @param assay.name A character indicating the name of the assay containing the
 #' values to be aggregated.
