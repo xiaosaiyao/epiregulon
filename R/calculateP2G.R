@@ -29,9 +29,9 @@
 #' between cell lines or cell types can create artificial or even inverse correlations between peak accessibility and gene expression. If Cluster information is provided,
 #' correlation is performed within cell aggregates of each cluster.
 #' @importFrom GenomicRanges GRanges promoters resize findOverlaps start end seqnames GRanges distance distanceToNearest
-#' @importFrom SummarizedExperiment rowRanges rowData colData rowRanges<- rowData<- 
+#' @importFrom SummarizedExperiment rowRanges rowData colData rowRanges<- rowData<-
 #' @importFrom SingleCellExperiment altExp applySCE altExp<- reducedDim<-
-#' @importFrom IRanges IRanges 
+#' @importFrom IRanges IRanges
 #' @importFrom S4Vectors Rle mcols mcols<- DataFrame
 #' @importClassesFrom SingleCellExperiment SingleCellExperiment
 #' @export
@@ -118,8 +118,8 @@ calculateP2G <- function(peakMatrix = NULL,
         cluster_numb_warning <- length(unique(kclusters)) < 5
 
         # aggregate sce by k-means clusters
-        sce_grouped <- aggregateAcrossCells.fast(sce, ids = kclusters, 
-                                                     assay.name = NULL, 
+        sce_grouped <- aggregateAcrossCellsFast(sce, ids = kclusters,
+                                                     assay.name = NULL,
                                                      fun_name = "mean", aggregateColData = TRUE)
 
         # some sces have strand information in metadata that conflicts with genomic ranges

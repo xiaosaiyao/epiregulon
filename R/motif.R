@@ -86,7 +86,7 @@ addMotifScore <- function(regulon, field_name = "motif",
 
 
     lapply(tfs_with_motif, function(tf){
-      regulon[which(regulon$tf == tf), field_name] <<- motifs[match(regulon$idxATAC[which(regulon$tf == tf)],
+      regulon[which(regulon$tf == tf), field_name] <- motifs[match(regulon$idxATAC[which(regulon$tf == tf)],
                                                                    peaks.idx), tf]
     })
     regulon[, field_name] <- as.numeric(regulon[,

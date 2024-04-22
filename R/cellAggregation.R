@@ -12,7 +12,7 @@
 #' @return A list containing:
 #' \itemize{
 #' \item \code{sums}, a numeric matrix where each row corresponds to a gene and each column corresponds to a unique combination of grouping levels.
-#' Each entry contains the summed expression across all cells with that combination. 
+#' Each entry contains the summed expression across all cells with that combination.
 #' \item \code{detected}, an integer matrix where each row corresponds to a gene and each column corresponds to a unique combination of grouping levels.
 #' Each entry contains the number of cells with detected expression in that combination.
 #' \item \code{combinations}, a data frame describing the levels for each unique combination.
@@ -39,25 +39,25 @@
 #' samples <- sample(1:5, 100, replace=TRUE)
 #' agg2 <- aggregateAcrossCells(y, list(cluster=clusters, sample=samples))
 #' str(agg2)
-#' 
+#'
 #' @export
 aggregateAcrossCells <- function(x, factors, num.threads = 1) {
-  f <- lapply(factors, factor) 
+  f <- lapply(factors, factor)
   f0 <- lapply(f, as.integer)
-  
+
   x <- beachmat::initializeCpp(x)
   output <- aggregate_across_cells(x, f0, num.threads)
   rownames(output$sums) <- rownames(output$detected) <- rownames(x)
-  
+
   for (i in seq_along(output$combinations)) {
     current <- output$combinations[[i]]
     output$combinations[[i]] <- levels(f[[i]])[current]
   }
-  
+
   names(output$combinations) <- names(factors)
   output$combinations <- data.frame(output$combinations)
   output$index <- output$index + 1L
-  
+
   output
 }
 
@@ -70,10 +70,10 @@ aggregateAcrossCells <- function(x, factors, num.threads = 1) {
   barcodes <- list()
   kclusters <- list()
   if (!is.null(clusters)) {
-    
+
     #add cluster info to expMatrix
     colData(expMatrix)[, "cluster_for_pseudobulk"] <- clusters
-    
+
     # K-means clustering
     kclusters <- list()
     for (cluster in unique(clusters)) {
@@ -87,22 +87,22 @@ aggregateAcrossCells <- function(x, factors, num.threads = 1) {
     kclusters <- unlist(kclusters)
     barcodes <- unlist(barcodes)
     names(kclusters) <- barcodes
-    
-    
+
+
   } else {
     kclusters <- scran::clusterCells(expMatrix, use.dimred = useDim, BLUSPARAM = bluster::KmeansParam(centers = trunc(ncol(peakMatrix)/cellNum),
                                                                                                       iter.max = 5000))
   }
-  
+
   kclusters <- kclusters[colnames(expMatrix)]
-  
+
   #replace clusters with clusters of pseudobulked samples
-  
-  expMatrix <- aggregateAcrossCells.fast(expMatrix, ids = kclusters, fun_name="sum", 
+
+  expMatrix <- aggregateAcrossCellsFast(expMatrix, ids = kclusters, fun_name="sum",
                                          assay.name = exp_assay)
-  peakMatrix <- aggregateAcrossCells.fast(peakMatrix, ids = kclusters, fun_name="sum", 
+  peakMatrix <- aggregateAcrossCellsFast(peakMatrix, ids = kclusters, fun_name="sum",
                                           assay.name = peak_assay)
-  
+
   if (!is.null(clusters))
     clusters <- colData(expMatrix)[, "cluster_for_pseudobulk"]
   assign("expMatrix",expMatrix,envir = caller_env)
@@ -112,12 +112,12 @@ aggregateAcrossCells <- function(x, factors, num.threads = 1) {
 
 
 #' Aggregate cells in SingleCellExperiment
-#' 
+#'
 #' Aggregate expression values across cells in SingleCellExperiment based on a
-#' grouping factor. This is primarily used to create pseudo-bulk profiles 
-#' for each cluster/sample combination. It is wrapped around `aggregateAcrossCells`, 
-#' which relies on the C++ code. 
-#' 
+#' grouping factor. This is primarily used to create pseudo-bulk profiles
+#' for each cluster/sample combination. It is wrapped around `aggregateAcrossCells`,
+#' which relies on the C++ code.
+#'
 #' @param sce A SingleCellExperiment object
 #' @param ids A vector used as a grouping variable. The length should be equal to
 #' the number of cells.
@@ -125,32 +125,39 @@ aggregateAcrossCells <- function(x, factors, num.threads = 1) {
 #' values to be aggregated.
 #' @param fun_name A character indicating the function used to aggregate data. The
 #' selection is restricted to "mean" or "sum".
+#' @param num.threads Integer specifying the number of threads to be used for aggregation.
 #' @param aggregateColData A logical specifying if the columns in the `colData`
 #' should be included in the output object. Only those columns are selected which
 #' can be decomposed by grouping variable into the vectors whose all elements
 #' are the same.
 #' @return A SingleCellExperiment object containing aggregated cells.
-#' 
+#'
 #' @importFrom stats setNames
 #' @importFrom SingleCellExperiment altExps altExps<- altExpNames
+#' @examples
+#' # create a mock singleCellExperiment object for gene expression matrix
+#' set.seed(1000)
+#' example_sce <- scuttle::mockSCE()
+#' ids <- sample(LETTERS[1:5], ncol(example_sce), replace=TRUE)
+#' out <- aggregateAcrossCellsFast(example_sce, ids)
 #' @export
-aggregateAcrossCells.fast <- function(sce, ids, assay.name="counts", fun_name=c("mean", "sum"),
-                                      aggregateColData = TRUE) {
-  
+aggregateAcrossCellsFast <- function(sce, ids, assay.name="counts", fun_name=c("mean", "sum"),
+                                     num.threads=1, aggregateColData = TRUE) {
+
   fun_name <- match.arg(fun_name, several.ok = FALSE)
   # aggregate counts in assay
   if(!is.null(assay.name)) x <- setNames(assays(sce)[assay.name], assay.name)
   else x <- setNames(assays(sce), names(assays(sce)))
-  aggr.counts <- lapply(x, aggregateAcrossCells, factors = list(ids))
-  if(fun_name=="sum") assay_matrices <- setNames(lapply(aggr.counts, "[[", "sums"), names(x)) 
+  aggr.counts <- lapply(x, aggregateAcrossCells, factors = list(ids), num.threads=num.threads)
+  if(fun_name=="sum") assay_matrices <- setNames(lapply(aggr.counts, "[[", "sums"), names(x))
   else assay_matrices <- setNames(lapply(aggr.counts, function(x) t(t(x$sums)/x$counts)), names(x)) #mean
   altExps_list <- NULL
   if(length(altExps(sce))>0){
-    altExps_list <- lapply(altExps(sce), aggregateAcrossCells.fast, ids, NULL, fun_name,
+    altExps_list <- lapply(altExps(sce), aggregateAcrossCellsFast, ids, NULL, fun_name,
                            FALSE)
     names(altExps_list) <- altExpNames(sce)
   }
-  
+
   # reassemble the singleCellExperiment object
   sce.bulk <- SingleCellExperiment(assay_matrices,
                                    rowData = rowData(sce))
@@ -161,7 +168,7 @@ aggregateAcrossCells.fast <- function(sce, ids, assay.name="counts", fun_name=c(
   if(aggregateColData){
     colData.sce.consistent <- .select_consistent_columns(colData(sce), ids)
     first.position <- match(aggr.counts[[1]]$combinations[,1],ids)
-    if(!is.null(colData.sce.consistent)) 
+    if(!is.null(colData.sce.consistent))
       colData(sce.bulk) <- cbind(colData(sce.bulk), colData.sce.consistent[first.position,, drop=FALSE])
   }
   rowRanges(sce.bulk) <- rowRanges(sce)
