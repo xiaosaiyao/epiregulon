@@ -1,5 +1,5 @@
 ---
-title: "Multiome tutorial - MultiAssayExperiment"
+title: "Epiregulon tutorial with MultiAssayExperiment"
 author: "Xiaosai Yao"
 email: "yao.xiaosai@gene.com"
 output:
@@ -10,7 +10,7 @@ output:
     titlecaps: true
 package: "epiregulon"
 vignette: >
-  %\VignetteIndexEntry{Multiome tutorial - MultiAssayExperiment}
+  %\VignetteIndexEntry{Epiregulon tutorial with MultiAssayExperiment}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
@@ -25,32 +25,33 @@ knitr::opts_chunk$set(
 
 # Introduction
 
-Gene regulatory networks model the underlying gene regulation hierarchies that drive gene expression and cell states. The main functions of the `epiregulon` package are to construct gene regulatory networks and infer transcription factor (TF) activity at the single cell level by integrating scATAC-seq and scRNA-seq data and incorporating of public bulk TF ChIP-seq data.
+Gene regulatory networks model the underlying gene regulation hierarchies that drive gene expression and cell states. The main functions of this package are to construct gene regulatory networks and infer transcription factor (TF) activity at the single cell level by integrating scATAC-seq and scRNA-seq data and incorporating of public bulk TF ChIP-seq data.
 
-There are three related packages: `epiregulon`, `epiregulon.extra` and `epiregulon.archr`, the two of which are available through Bioconductor and the last of which is only available through [github](https://github.com/xiaosaiyao/epiregulon.archr). The basic `epiregulon` package takes in gene expression and chromatin accessibility matrices in the form of `SingleCellExperiment` objects, constructs gene regulatory networks ("regulons") and outputs the activity of transcription factors at the single cell level. The `epiregulon.extra` package provides a suite of tools for enrichment analysis of target genes, visualization of target genes and transcription factor activity, and network analysis which can be run on the `epireglon` output. If the users would like to start from `ArchR` projects instead of `SingleCellExperiment` objects, they may choose to use `epiregulon.archr` package, which allows for seamless integration with the [ArchR](https://www.archrproject.com/) package, and continue with the rest of the workflow offered in `epiregulon.extra`.
+There are three related packages: `r BiocStyle::Biocpkg("epiregulon")`, `r BiocStyle::Biocpkg("epiregulon.extra")` and `epiregulon.archr`, the two of which are available through Bioconductor and the last of which is only available through [github](https://github.com/xiaosaiyao/epiregulon.archr). The basic `epiregulon` package takes in gene expression and chromatin accessibility matrices in the form of `SingleCellExperiment` objects, constructs gene regulatory networks ("regulons") and outputs the activity of transcription factors at the single cell level. The `epiregulon.extra` package provides a suite of tools for enrichment analysis of target genes, visualization of target genes and transcription factor activity, and network analysis which can be run on the `epiregulon` output. If the users would like to start from `ArchR` projects instead of `SingleCellExperiment` objects, they may choose to use `epiregulon.archr` package, which allows for seamless integration with the [ArchR](https://www.archrproject.com/) package, and continue with the rest of the workflow offered in `epiregulon.extra`.
 
-For full documentation of the `epiregulon` package, please refer to the [epiregulon book](https://github.com/xiaosaiyao/epiregulon.book).
 
-This tutorial demonstrates the basic functions of `epiregulon`, using the reprogram-seq dataset which can be downloaded from the `r Biocpkg("scMultiome")` package. In this example, prostate cancer cells (LNCaP) were infected in separate wells with viruses encoding 4 transcription factors (NKX2-1, GATA6, FOXA1 and FOXA2) and a positive control (mNeonGreen) before pooling. The identity of the infected transcription factors was tracked through cell hashing (available in the field `hash_assignment` of the `colData`) and serves as the ground truth.
-
+For full documentation of the `epiregulon` package, please refer to the [epiregulon book](https://xiaosaiyao.github.io/epiregulon.book/).
 
 # Installation
 
-```{r, results='hide', message=FALSE}
-# if (!require("BiocManager", quietly = TRUE))
-#     install.packages("BiocManager")
-# 
-# BiocManager::install("epiregulon")
-library(epiregulon)
+```{r, results='hide', message=FALSE, eval=FALSE}
+if (!require("BiocManager", quietly = TRUE))
+    install.packages("BiocManager")
+ 
+BiocManager::install("epiregulon")
+
 ```
 
 Alternatively, you could install from github 
 
 ```{r setup, message=FALSE, eval=FALSE}
 devtools::install_github(repo ='xiaosaiyao/epiregulon')
+```
 
+Load package
+
+```{r}
 library(epiregulon)
-
 ```
 
 # Data preparation
@@ -58,8 +59,9 @@ library(epiregulon)
 Prior to using `epiregulon`, single cell preprocessing needs to performed by user's favorite methods. The following components are required: <br>
 1. Peak matrix from scATAC-seq containing the chromatin accessibility information <br>
 2. Gene expression matrix from either paired or unpaired scRNA-seq. RNA-seq integration needs to be performed for unpaired dataset. <br>
-3. Dimensionality reduction matrix from with either single modalities or joint scRNA-seq and scATAC-seq <br>
+3. Dimensionality reduction matrix from either single modality dataset or joint scRNA-seq and scATAC-seq <br>
 
+This tutorial demonstrates the basic functions of `epiregulon`, using the reprogram-seq dataset which can be downloaded from the `r Biocpkg("scMultiome")` package. In this example, prostate cancer cells (LNCaP) were infected in separate wells with viruses encoding 4 transcription factors (NKX2-1, GATA6, FOXA1 and FOXA2) and a positive control (mNeonGreen) before pooling. The identity of the infected transcription factors was tracked through cell hashing (available in the field `hash_assignment` of the `colData`) and serves as the ground truth.
 
 ```{r}
 # load the MAE object
@@ -75,14 +77,16 @@ GeneExpressionMatrix <- mae[["GeneExpressionMatrix"]]
 rownames(GeneExpressionMatrix) <- rowData(GeneExpressionMatrix)$name
 
 # define the order of hash_assigment
-GeneExpressionMatrix$hash_assignment <- factor(as.character(GeneExpressionMatrix$hash_assignment),
-                                               levels = c("HTO10_GATA6_UTR", "HTO2_GATA6_v2", "HTO8_NKX2.1_UTR", "HTO3_NKX2.1_v2", 
-                                                          "HTO1_FOXA2_v2", "HTO4_mFOXA1_v2", "HTO6_hFOXA1_UTR", "HTO5_NeonG_v2"))
+GeneExpressionMatrix$hash_assignment <- 
+  factor(as.character(GeneExpressionMatrix$hash_assignment),
+         levels = c("HTO10_GATA6_UTR", "HTO2_GATA6_v2", "HTO8_NKX2.1_UTR", "HTO3_NKX2.1_v2",
+                    "HTO1_FOXA2_v2", "HTO4_mFOXA1_v2", "HTO6_hFOXA1_UTR", "HTO5_NeonG_v2"))
 # extract dimensional reduction matrix
 reducedDimMatrix <- reducedDim(mae[['TileMatrix500']], "LSI_ATAC")
 
 # transfer UMAP_combined from TileMatrix to GeneExpressionMatrix
-reducedDim(GeneExpressionMatrix, "UMAP_Combined") <- reducedDim(mae[['TileMatrix500']], "UMAP_Combined")
+reducedDim(GeneExpressionMatrix, "UMAP_Combined") <- 
+  reducedDim(mae[['TileMatrix500']], "UMAP_Combined")
 ```
 Visualize singleCellExperiment by UMAP
 
@@ -106,11 +110,19 @@ grl <- getTFMotifInfo(genome = "hg38")
 grl
 ```
 
+We recommend the use of ChIP-seq data over motif for estimating TF occupancy. However, if the user would like to start from motifs, it is possible to switch to the `motif` mode. The user can provide the peak regions as a `GRanges` object and the location of the motifs will be annotated based on Cisbp from chromVARmotifs (human_pwms_v2 and mouse_pwms_v2, version 0.2) 
+```{r eval=FALSE}
+grl.motif <- getTFMotifInfo(genome = "hg38",  
+                            mode = "motif", 
+                            peaks = rowRanges(PeakMatrix))
+```
 ## Link ATAC-seq peaks to target genes
 
 Next, we try to link ATAC-seq peaks to their putative target genes. We assign a peak to a gene within a size window (default ±250kb) if the chromatin accessibility of the peak and expression of the target genes are highly correlated (default threshold 0.5). To compute correlations, we first create cell aggregates by performing k-means clustering on the reduced dimensionality matrix. Then we aggregate the counts of the gene expression and peak matrix and average across the number of cells. Correlations are computed on the averaged gene expression and chromatin accessibility.
 
 If cluster labels are provided, peak-to-gene correlations are computed on all the cells and for each cluster. Peak-to-gene links are retained as long as any of the correlations pass the threshold; the longer list of peak-to-gene links capture both inter- and intra-cluster variations.
+
+We also provide a second method of target gene assignment based on the nearest expressed genes to each ATAC-seq peak. To use this function, the user can specify `assignment_method = "nearest"`. With this option, we will still calculate the correlation and apply a correlation cutoff. If no correlation filter is needed, the user can set `cor_cutoff` to 0.
 ```{r calculateP2G}
 set.seed(1010)
 p2g <- calculateP2G(peakMatrix = PeakMatrix, 
@@ -135,7 +147,8 @@ The next step is to add the TF binding information by overlapping regions of the
 
 ```{r addTFMotifInfo}
 
-overlap <- addTFMotifInfo(grl = grl, p2g = p2g, peakMatrix = PeakMatrix)
+overlap <- addTFMotifInfo(grl = grl, p2g = p2g, 
+                          peakMatrix = PeakMatrix)
 head(overlap)
 ```
 
@@ -157,7 +170,8 @@ this field is a matrix with columns names corresponding to correlation across al
 
 ```{r, warning=FALSE, getRegulon}
 
-regulon <- getRegulon(p2g = p2g, overlap = overlap, aggregate = FALSE)
+regulon <- getRegulon(p2g = p2g, overlap = overlap, 
+                      aggregate = FALSE)
 regulon
 
 ```
@@ -176,7 +190,8 @@ pruned.regulon <- pruneRegulon(expMatrix = GeneExpressionMatrix,
                                peakMatrix = PeakMatrix,
                                peak_assay = "counts",
                                test = "chi.sq",
-                               regulon[regulon$tf %in% c("NKX2-1","GATA6","FOXA1","FOXA2", "AR"),],
+                               regulon = regulon[regulon$tf %in% 
+                                         c("NKX2-1","GATA6","FOXA1","FOXA2", "AR"),],
                                clusters = GeneExpressionMatrix$Clusters,
                                prune_value = "pval",
                                regulon_cutoff = 0.05
@@ -209,7 +224,7 @@ regulon.w
 
 ## (Optional) Annotate with TF motifs
 
-So far the gene regulatory network was constructed from TF ChIP-seq exclusively. Some users would prefer to further annotate regulatory elements with the presence of motifs. We provide an option to annotate peaks with motifs from the Cisbp database. If no motifs are present for this particular factor (as in the case of co-factors or chromatin modifiers), we return NA. If motifs are available for a factor and the RE contains a motif, we return 1. If motifs are available and the RE does not contain a motif, we return 0. 
+So far the gene regulatory network was constructed from TF ChIP-seq exclusively. Some users would prefer to further annotate regulatory elements with the presence of motifs. We provide an option to annotate peaks with motifs from the Cisbp database. If no motifs are present for this particular factor (as in the case of co-factors or chromatin modifiers), we return NA. If motifs are available for a factor and the RE contains a motif, we return 1. If motifs are available and the RE does not contain a motif, we return 0. The users can also provide their own motif annotation through the `pwms` argument.
 
 
 ```{r addMotifScore}
@@ -227,7 +242,7 @@ regulon.w.motif
 ## (Optional) Annotate with log fold changes
 
 It is sometimes helpful to filter the regulons based on gene expression changes between two conditions. The `addLogFC` function is a wrapper around `scran::findMarkers` and adds extra columns of log changes to the regulon DataFrame. The users can specify the reference condition in `logFC_ref` and conditions for comparison in
-`logFC_condition`. If these are not provided, log fold changes are conducted for every condition in the cluster labels against the rest of the conditions.
+`logFC_condition`. If these are not provided, log fold changes are calculated for every condition in the cluster labels against the rest of the conditions.
  
 ```{r add logFC}
 regulon.w <- addLogFC(regulon = regulon.w,
@@ -235,7 +250,9 @@ regulon.w <- addLogFC(regulon = regulon.w,
                       expMatrix  = GeneExpressionMatrix,
                       assay.type  = "normalizedCounts",
                       pval.type = "any",
-                      logFC_condition = c("HTO10_GATA6_UTR", "HTO2_GATA6_v2", "HTO8_NKX2.1_UTR"),
+                      logFC_condition = c("HTO10_GATA6_UTR", 
+                                          "HTO2_GATA6_v2", 
+                                          "HTO8_NKX2.1_UTR"),
                       logFC_ref = "HTO5_NeonG_v2")
 
 regulon.w
