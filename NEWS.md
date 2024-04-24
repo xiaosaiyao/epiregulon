@@ -1,3 +1,6 @@
+#epiregulon 0.99.20
+* the function aggregateAcrossCellsFast has been added.
+
 # epiregulon 0.9.12
 * in `calculateP2G` staring position of the gene has been corrected.
 
