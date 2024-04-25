@@ -177,7 +177,7 @@ aggregateAcrossCellsFast <- function(sce, clusters, assay.name="counts", fun_nam
 
 .select_consistent_columns <- function(df, ids){
   if(ncol(df)==1){
-    if(!is.null(ncol(df[,1]))) df[[1]] <- .select_consistent_columns(df[,1],ids)
+    if(is.numeric(ncol(df[,1]))) df[[1]] <- .select_consistent_columns(df[,1],ids)
     else df <- df[,.is_consistent(df[,1], ids),drop=FALSE]
   }
   else{
@@ -190,7 +190,7 @@ aggregateAcrossCellsFast <- function(sce, clusters, assay.name="counts", fun_nam
 }
 
 .return_consistent_column <- function(i, df, ids){
-  if(is.vector(df[,i])) {
+  if(length(dim(df[,i]))<2) {        # select vectors and 1-dim arrays
     if(.is_consistent(df[,i],ids)) return(df[,i,drop=FALSE])
     else return(NULL)
   }
@@ -200,3 +200,4 @@ aggregateAcrossCellsFast <- function(sce, clusters, assay.name="counts", fun_nam
 .is_consistent <- function(x1, x2){
   all(unlist(lapply(split(x1, x2), function(x) length(unique(x))==1)))
 }
+debugonce(epiregulon:::.select_consistent_columns)
