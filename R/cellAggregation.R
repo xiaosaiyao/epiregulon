@@ -67,15 +67,15 @@ aggregateAcrossCells <- function(x, factors, num.threads = 1) {
 .aggregateCells <- function(cellNum, expMatrix, peakMatrix, caller_env, useDim,
                             exp_assay, peak_assay, BPPARAM, clusters=NULL){
   message("performing pseudobulk using an average of ", cellNum, " cells")
-  barcodes <- list()
-  kclusters <- list()
+
   if (!is.null(clusters)) {
+    kclusters <- list()
+    barcodes <- list()
 
     #add cluster info to expMatrix
     colData(expMatrix)[, "cluster_for_pseudobulk"] <- clusters
 
     # K-means clustering
-    kclusters <- list()
     for (cluster in unique(clusters)) {
       sce <- expMatrix[, which(clusters == cluster)]
       kNum <- trunc(ncol(sce)/cellNum)
