@@ -30,7 +30,7 @@ test_that("addWeights works correctly using Wilcoxon test with moving cutoff", {
   regulon.w <- addWeights(regulon = regulon,
                           expMatrix = expMatrix.sce,
                           method = "wilcoxon",
-                          peakMatrix = peakMatrix,
+                          peakMatrix = SingleCellExperiment(assays= list(PeakMatrix=peakMatrix)),
                           min_targets = 0,
                           exp_cutoff = NULL)
   expect_identical(as.vector(regulon.w$weight[,1]), regulon$weight, tolerance = 1e-8)
@@ -63,7 +63,7 @@ test_that("addWeights works correctly using Wilcoxon test with clusters", {
   regulon.w <- addWeights(regulon = regulon,
                           expMatrix = expMatrix.sce,
                           method = "wilcoxon",
-                          peakMatrix = peakMatrix,
+                          peakMatrix = SingleCellExperiment(assays= list(PeakMatrix=peakMatrix)),
                           min_targets = 0,
                           exp_cutoff = NULL,
                           clusters = clusters)
@@ -90,7 +90,7 @@ test_that("addWeights works correctly using Wilcoxon test with fixed cutoff", {
   regulon.w <- addWeights(regulon = regulon,
                           expMatrix = expMatrix.sce,
                           method = "wilcoxon",
-                          peakMatrix = peakMatrix,
+                          peakMatrix = SingleCellExperiment(assays= list(PeakMatrix=peakMatrix)),
                           min_targets = 0,
                           exp_cutoff = 1)
   expect_identical(as.vector(regulon.w$weight[,1]), regulon$weight, tolerance = 1e-8)

@@ -118,7 +118,7 @@ calculateP2G <- function(peakMatrix = NULL,
         cluster_numb_warning <- length(unique(kclusters)) < 5
 
         # aggregate sce by k-means clusters
-        sce_grouped <- aggregateAcrossCellsFast(sce, ids = kclusters,
+        sce_grouped <- aggregateAcrossCellsFast(sce, clusters = kclusters,
                                                      assay.name = NULL,
                                                      fun_name = "mean", aggregateColData = TRUE)
 

@@ -38,8 +38,8 @@ for(i in 1:4){
 
 test_that("pruneRegulon calculates p-values with binomial test correctly", {
   regulon.p <- pruneRegulon(regulon = regulon,
-                            expMatrix = geneM,
-                            peakMatrix = peakM,
+                            expMatrix = SingleCellExperiment(assays= list(logcounts=geneM)),
+                            peakMatrix = SingleCellExperiment(assays= list(PeakMatrix=peakM)),
                             regulon_cutoff = 2,
                             test = "binom")
   expect_identical(unname(regulon.p$pval[,"all"]), pvals, tolerance = 1e-3)
@@ -54,8 +54,8 @@ for(i in 1:4){
 
 test_that("pruneRegulon calculates p-values with chi-square test correctly", {
   regulon.p <- pruneRegulon(regulon = regulon,
-                            expMatrix = geneM,
-                            peakMatrix = peakM,
+                            expMatrix = SingleCellExperiment(assays= list(logcounts=geneM)),
+                            peakMatrix = SingleCellExperiment(assays= list(PeakMatrix=peakM)),
                             regulon_cutoff = 2,
                             test ="chi.sq")
 
@@ -95,8 +95,8 @@ for(i in 1:4){
 
 test_that("pruneRegulon calculates cluster p-values with binomial test correctly", {
   regulon.p <- pruneRegulon(regulon = regulon,
-                            expMatrix = geneM,
-                            peakMatrix = peakM,
+                            expMatrix = SingleCellExperiment(assays= list(logcounts=geneM)),
+                            peakMatrix = SingleCellExperiment(assays= list(PeakMatrix=peakM)),
                             regulon_cutoff = 2,
                             clusters = rep(c("C1", "C2"), each = 50),
                             test = "binom")
@@ -127,8 +127,8 @@ pvals <- suppressWarnings(pvals[is.finite(apply(pvals,1,function(x) min(x, na.rm
 
 test_that("pruneRegulon calculates cluster p-values with chi-square test correctly", {
   regulon.p <- pruneRegulon(regulon = regulon,
-                            expMatrix = geneM,
-                            peakMatrix = peakM,
+                            expMatrix = SingleCellExperiment(assays= list(logcounts=geneM)),
+                            peakMatrix = SingleCellExperiment(assays= list(PeakMatrix=peakM)),
                             regulon_cutoff = 2,
                             clusters = rep(c("C1", "C2"), each = 50),
                             test = "chi.sq")
@@ -143,8 +143,8 @@ pvals <- pvals[selected_rows,]
 
 test_that("pruneRegulon correctly applies 'regulon_cutoff'", {
   regulon.p <- pruneRegulon(regulon = regulon,
-                            expMatrix = geneM,
-                            peakMatrix = peakM,
+                            expMatrix = SingleCellExperiment(assays= list(logcounts=geneM)),
+                            peakMatrix = SingleCellExperiment(assays= list(PeakMatrix=peakM)),
                             regulon_cutoff = 0.05,
                             clusters = rep(c("C1", "C2"), each = 50),
                             test = "chi.sq")
@@ -172,8 +172,8 @@ for(i in 1:4){
 
 test_that("pruneRegulon calculates p-values with binomial test correctly when using moving cutoffs", {
   regulon.p <- pruneRegulon(regulon = regulon,
-                            expMatrix = geneM,
-                            peakMatrix = peakM,
+                            expMatrix = SingleCellExperiment(assays= list(logcounts=geneM)),
+                            peakMatrix = SingleCellExperiment(assays= list(PeakMatrix=peakM)),
                             regulon_cutoff = 2,
                             test = "binom",
                             peak_cutoff = NULL,
@@ -241,8 +241,8 @@ pvals <- suppressWarnings(pvals[is.finite(apply(pvals,1,function(x) min(x, na.rm
 
 test_that("pruneRegulon calculates cluster p-values with chi-square test correctly when moving cutoffs are used", {
   regulon.p <- pruneRegulon(regulon = regulon,
-                            expMatrix = geneM,
-                            peakMatrix = peakM,
+                            expMatrix = SingleCellExperiment(assays= list(logcounts=geneM)),
+                            peakMatrix = SingleCellExperiment(assays= list(PeakMatrix=peakM)),
                             regulon_cutoff = 2,
                             clusters = rep(c("C1", "C2"), each = 50),
                             test = "chi.sq",

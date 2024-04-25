@@ -102,8 +102,21 @@ addWeights <- function(regulon,
     # choose method
     method <- match.arg(method)
     message("adding weights using ", method, "...")
+    .validate_input_sce(expMatrix, exp_assay, peakMatrix, peak_assay, tf_re.merge)
 
     if(!is.null(clusters)) .validate_clusters(clusters, expMatrix)
+    
+    checkmate::testMultiClass(regulon, c("data.frame", "DFrame"))
+    
+    if (nrow(regulon) == 0)
+      stop("Regulon with zero rows")
+    
+    if (!is.null(clusters)) {
+      if (!is.character(clusters) | !is.vector(clusters))
+        tryCatch(clusters <- as.character(as.vector(clusters)), error = function(e) stop("'clusters' agrument should be coercible to a character vector"))
+    }
+    
+    checkmate::assert_logical(tf_re.merge, len = 1)
 
     # pseudobulk
     if (aggregateCells && method != "wilcoxon")
@@ -111,42 +124,21 @@ addWeights <- function(regulon,
     else if (aggregateCells && method == "wilcoxon") .aggregateCells(cellNum, expMatrix, peakMatrix, environment(),
                                                                      useDim, exp_assay, peak_assay, BPPARAM, clusters)
 
-    # extract matrices from SE
-    if (checkmate::test_class(expMatrix, classes = "SummarizedExperiment")) {
-        expMatrix <- assay(expMatrix, exp_assay)
-    }
+    # extract matrices from SCE
+    expMatrix <- assay(expMatrix, exp_assay)
 
-    if (any(dim(expMatrix) == 0))
-        stop("expMatrix with no data")
-
-    if (checkmate::test_class(peakMatrix, classes = "SummarizedExperiment")) {
-        peakMatrix <- assay(peakMatrix, peak_assay)
-    }
-
-    if (!is.null(peakMatrix)) {
-        checkmate::testMultiClass(peakMatrix, c("matrix", "dgeMatrix", "lgCMatrix",
-            "dgCMatrix", "CsparseMatrix"))
-    }
-
-    checkmate::testMultiClass(regulon, c("data.frame", "DFrame"))
-
-    if (nrow(regulon) == 0)
-        stop("Regulon with zero rows")
-
-    checkmate::assert_logical(tf_re.merge, len = 1)
-
-    if (!is.null(clusters)) {
-        if (!is.character(clusters) | !is.vector(clusters))
-            tryCatch(clusters <- as.character(as.vector(clusters)), error = function(e) stop("'clusters' agrument should be coercible to a character vector"))
-    }
-
+    if(!is.null(peakMatrix)){
+      peakMatrix <- assay(peakMatrix, peak_assay)
+      checkmate::testMultiClass(peakMatrix, c("matrix", "dgeMatrix", "lgCMatrix",
+                                              "dgCMatrix", "CsparseMatrix"))
+    } 
+    
     if (method %in% c("wilcoxon") | tf_re.merge) {
-        if (is.null(peakMatrix))
-            stop("Peak matrix should be provided")
-        if (any(dim(peakMatrix) == 0))
-            stop("Peak matrix is empty")
+      if (is.null(peakMatrix))
+        stop("Peak matrix should be provided")
+      if (any(dim(peakMatrix) == 0))
+        stop("Peak matrix is empty")
     }
-
 
     expMatrix <- as(expMatrix, "CsparseMatrix")
 
