@@ -99,17 +99,16 @@ calculateActivity <- function(expMatrix = NULL, exp_assay = "logcounts", regulon
         checkmate::assertMultiClass(regulon, c("data.frame", "DFrame"))
     if (!is.null(regulon) && !mode %in% colnames(regulon))
         stop("No such column in the regulon: ", mode)
+    .validate_input_sce(expMatrix, exp_assay)
+    if(!is.null(clusters)) .validate_clusters(clusters, expMatrix)
     method <- tolower(method)
     method <- match.arg(method)
     FUN <- match.arg(FUN)
 
     regulon <- S4Vectors::DataFrame(regulon)
     # convert expMatrix to CsparseMatrix
-    if (checkmate::test_class(expMatrix, classes = "SummarizedExperiment")) {
-        expMatrix <- assay(expMatrix, exp_assay)
-        expMatrix <- as(expMatrix, "CsparseMatrix")
-    }
-
+    expMatrix <- assay(expMatrix, exp_assay)
+    expMatrix <- as(expMatrix, "CsparseMatrix")
 
     # convert genesets to regulon
     if (!is.null(genesets)) {

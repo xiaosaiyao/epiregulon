@@ -98,9 +98,9 @@ aggregateAcrossCells <- function(x, factors, num.threads = 1) {
 
   #replace clusters with clusters of pseudobulked samples
 
-  expMatrix <- aggregateAcrossCellsFast(expMatrix, ids = kclusters, fun_name="sum",
+  expMatrix <- aggregateAcrossCellsFast(expMatrix, clusters = kclusters, fun_name="sum",
                                          assay.name = exp_assay)
-  peakMatrix <- aggregateAcrossCellsFast(peakMatrix, ids = kclusters, fun_name="sum",
+  peakMatrix <- aggregateAcrossCellsFast(peakMatrix, clusters = kclusters, fun_name="sum",
                                           assay.name = peak_assay)
 
   if (!is.null(clusters))
@@ -119,7 +119,7 @@ aggregateAcrossCells <- function(x, factors, num.threads = 1) {
 #' which relies on the C++ code.
 #'
 #' @param sce A SingleCellExperiment object
-#' @param ids A vector used as a grouping variable. The length should be equal to
+#' @param clusters A vector used as a grouping variable. The length should be equal to
 #' the number of cells.
 #' @param assay.name A character indicating the name of the assay containing the
 #' values to be aggregated.
@@ -141,19 +141,20 @@ aggregateAcrossCells <- function(x, factors, num.threads = 1) {
 #' ids <- sample(LETTERS[1:5], ncol(example_sce), replace=TRUE)
 #' out <- aggregateAcrossCellsFast(example_sce, ids)
 #' @export
-aggregateAcrossCellsFast <- function(sce, ids, assay.name="counts", fun_name=c("mean", "sum"),
+aggregateAcrossCellsFast <- function(sce, clusters, assay.name="counts", fun_name=c("mean", "sum"),
                                      num.threads=1, aggregateColData = TRUE) {
-
+  .validate_input_sce(sce, assay.name)
+  .validate_clusters(clusters, sce)
   fun_name <- match.arg(fun_name, several.ok = FALSE)
   # aggregate counts in assay
   if(!is.null(assay.name)) x <- setNames(assays(sce)[assay.name], assay.name)
   else x <- setNames(assays(sce), names(assays(sce)))
-  aggr.counts <- lapply(x, aggregateAcrossCells, factors = list(ids), num.threads=num.threads)
+  aggr.counts <- lapply(x, aggregateAcrossCells, factors = list(clusters), num.threads=num.threads)
   if(fun_name=="sum") assay_matrices <- setNames(lapply(aggr.counts, "[[", "sums"), names(x))
   else assay_matrices <- setNames(lapply(aggr.counts, function(x) t(t(x$sums)/x$counts)), names(x)) #mean
   altExps_list <- NULL
   if(length(altExps(sce))>0){
-    altExps_list <- lapply(altExps(sce), aggregateAcrossCellsFast, ids, NULL, fun_name,
+    altExps_list <- lapply(altExps(sce), aggregateAcrossCellsFast, clusters, NULL, fun_name,
                            FALSE)
     names(altExps_list) <- altExpNames(sce)
   }
@@ -161,13 +162,12 @@ aggregateAcrossCellsFast <- function(sce, ids, assay.name="counts", fun_name=c("
   # reassemble the singleCellExperiment object
   sce.bulk <- SingleCellExperiment(assay_matrices,
                                    rowData = rowData(sce))
-  rownames(colData(sce.bulk)) <-aggr.counts[[1]]$combinations[,1]
-  colData(sce.bulk)$idx <- aggr.counts[[1]]$combinations[,1]
+  rownames(colData(sce.bulk)) <- colData(sce.bulk)$idx <- aggr.counts[[1]]$combinations[,1]
   colData(sce.bulk)$ncells <- aggr.counts[[1]]$counts
   altExps(sce.bulk) <- altExps_list
   if(aggregateColData){
-    colData.sce.consistent <- .select_consistent_columns(colData(sce), ids)
-    first.position <- match(aggr.counts[[1]]$combinations[,1],ids)
+    colData.sce.consistent <- .select_consistent_columns(colData(sce), clusters)
+    first.position <- match(aggr.counts[[1]]$combinations[,1],clusters)
     if(!is.null(colData.sce.consistent))
       colData(sce.bulk) <- cbind(colData(sce.bulk), colData.sce.consistent[first.position,, drop=FALSE])
   }

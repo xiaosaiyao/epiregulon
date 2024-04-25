@@ -6,7 +6,7 @@
 \usage{
 aggregateAcrossCellsFast(
   sce,
-  ids,
+  clusters,
   assay.name = "counts",
   fun_name = c("mean", "sum"),
   num.threads = 1,
@@ -16,7 +16,7 @@ aggregateAcrossCellsFast(
 \arguments{
 \item{sce}{A SingleCellExperiment object}
 
-\item{ids}{A vector used as a grouping variable. The length should be equal to
+\item{clusters}{A vector used as a grouping variable. The length should be equal to
 the number of cells.}
 
 \item{assay.name}{A character indicating the name of the assay containing the

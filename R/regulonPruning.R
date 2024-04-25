@@ -115,9 +115,8 @@ pruneRegulon <- function(regulon,
                          useDim = "IterativeLSI_ATAC",
                          cellNum = 10,
                          BPPARAM = BiocParallel::SerialParam(progressbar = TRUE)) {
-    tryCatch(ncol(peakMatrix), error = function(cond) stop("'ncol' method should be defined for the 'peakMatrix' object"))
-    tryCatch(ncol(expMatrix), error = function(cond) stop("'ncol' method should be defined for the 'expMatrix' object"))
-    stopifnot(ncol(peakMatrix) == ncol(expMatrix))
+    if(is.null(peakMatrix)) stop("peakMatrix should be provided")
+    .validate_input_sce(expMatrix, exp_assay, peakMatrix, peak_assay) 
     if(!is.null(clusters)) .validate_clusters(clusters, expMatrix)
     # choose test method
     test <- match.arg(test)
