@@ -102,6 +102,7 @@ addWeights <- function(regulon,
     # choose method
     method <- match.arg(method)
     message("adding weights using ", method, "...")
+    checkmate::assert_logical(tf_re.merge, len = 1)
     .validate_input_sce(expMatrix, exp_assay, peakMatrix, peak_assay, tf_re.merge)
 
     if(!is.null(clusters)) .validate_clusters(clusters, expMatrix)
@@ -110,13 +111,6 @@ addWeights <- function(regulon,
     
     if (nrow(regulon) == 0)
       stop("Regulon with zero rows")
-    
-    if (!is.null(clusters)) {
-      if (!is.character(clusters) | !is.vector(clusters))
-        tryCatch(clusters <- as.character(as.vector(clusters)), error = function(e) stop("'clusters' agrument should be coercible to a character vector"))
-    }
-    
-    checkmate::assert_logical(tf_re.merge, len = 1)
 
     # pseudobulk
     if (aggregateCells && method != "wilcoxon")
@@ -133,11 +127,8 @@ addWeights <- function(regulon,
                                               "dgCMatrix", "CsparseMatrix"))
     } 
     
-    if (method %in% c("wilcoxon") | tf_re.merge) {
-      if (is.null(peakMatrix))
+    if (method=="wilcoxon" & is.null(peakMatrix)) {
         stop("Peak matrix should be provided")
-      if (any(dim(peakMatrix) == 0))
-        stop("Peak matrix is empty")
     }
 
     expMatrix <- as(expMatrix, "CsparseMatrix")
