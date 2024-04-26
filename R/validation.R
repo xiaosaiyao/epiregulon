@@ -29,10 +29,11 @@
 .validate_input_sce <- function(expMatrix, exp_assay, peakMatrix=NULL, peak_assay=NULL, tf_re.merge=FALSE){
   checkmate::assert_class(expMatrix, "SingleCellExperiment")
   stopifnot(exp_assay %in% names(assays(expMatrix)))
-  if (any(dim(expMatrix) == 0)) stop("expMatrix with no data")
+  if (any(dim(expMatrix) == 0)) stop("SingleCellExperiment with no data")
   if(tf_re.merge | !is.null(peakMatrix)){
     checkmate::assert_class(peakMatrix, "SingleCellExperiment")
     stopifnot(peak_assay %in% names(assays(peakMatrix)))
     stopifnot(ncol(peakMatrix) == ncol(expMatrix))
+    if(nrow(peakMatrix)==0) stop("peakMatrix with no data")
   }
 }

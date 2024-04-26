@@ -200,4 +200,3 @@ aggregateAcrossCellsFast <- function(sce, clusters, assay.name="counts", fun_nam
 .is_consistent <- function(x1, x2){
   all(unlist(lapply(split(x1, x2), function(x) length(unique(x))==1)))
 }
-debugonce(epiregulon:::.select_consistent_columns)
