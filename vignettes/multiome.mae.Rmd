@@ -66,6 +66,7 @@ This tutorial demonstrates the basic functions of `epiregulon`, using the reprog
 ```{r}
 # load the MAE object
 library(scMultiome)
+library(beachmat.hdf5)
 
 mae <- scMultiome::reprogramSeq()
 
