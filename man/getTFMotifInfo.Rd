@@ -24,8 +24,8 @@ TF binding information is retrieved from  \link[scMultiome:tfBinding]{scMultiome
 motif information was obtained from \href{https://github.com/GreenleafLab/chromVARmotifs}{chromVARmotifs} (human_pwms_v2 and mouse_pwms_v2,
 version 0.2 with filtering of cisBP motifs) and is also hosted on scMultiome.}
 
-\item{peaks}{A GRanges object indicating the peaks to perform motif annotation on if ArchR project is not provided.
-The peak indices should match the \code{re} column in the regulon}
+\item{peaks}{A GRanges object indicating the peaks to perform motif annotation on.
+The peak indices should match the \code{idxATAC} column in the regulon.}
 }
 \value{
 A list of TF binding sites as a \code{GrangesList} object.

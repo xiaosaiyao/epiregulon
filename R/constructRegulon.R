@@ -6,8 +6,8 @@
 #' TF binding information is retrieved from  [scMultiome::tfBinding]. The
 #' motif information was obtained from [chromVARmotifs](https://github.com/GreenleafLab/chromVARmotifs) (human_pwms_v2 and mouse_pwms_v2,
 #' version 0.2 with filtering of cisBP motifs) and is also hosted on scMultiome.
-#' @param peaks A GRanges object indicating the peaks to perform motif annotation on if ArchR project is not provided.
-#' The peak indices should match the `re` column in the regulon
+#' @param peaks A GRanges object indicating the peaks to perform motif annotation on.
+#' The peak indices should match the `idxATAC` column in the regulon.
 
 #' @inherit scMultiome::tfBinding params return references
 #' @examples
@@ -24,22 +24,21 @@
 #'
 #' @export
 #'
-getTFMotifInfo <- function(genome = c("hg38", "hg19", "mm10"), 
+getTFMotifInfo <- function(genome = c("hg38", "hg19", "mm10"),
                            source = c("atlas", "cistrome", "encode.sample", "atlas.sample","atlas.tissue"),
-                           metadata = FALSE, 
+                           metadata = FALSE,
                            mode = c("occupancy", "motif"),
                            peaks = NULL) {
     genome <- match.arg(genome)
     source <- match.arg(source)
     mode <- match.arg(mode)
-    
+
 
     if (mode == "occupancy") {
       grl <- scMultiome::tfBinding(genome,
                                    source, metadata)
     } else {
-
-
+        checkmate::assert_class(peaks, "GRanges")
         species <- switch(genome, hg38 = "human",
             hg19 = "human", mm10 = "mouse")
         BS.genome <- switch(genome,
