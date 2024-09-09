@@ -13,8 +13,6 @@
 #' @param peak_cutoff A scalar indicating the minimum peak accessibility above which peak is
 #' considered open.
 #' @param block_factor String specifying the field in the colData of the SingleCellExperiment object to be used as blocking factor (such as batch)
-#' @param aggregation_function Function being used for summarizing weights from the transcription factor-target gene pair with
-#' many regulatory elements.
 #' @param min_targets Integer specifying the minimum number of targets for each tf in the regulon with 10 targets as the default
 #' @param tf_re.merge A logical to indicate whether to consider both TF expression and chromatin accessibility. See details.
 #' @param aggregateCells A logical to indicate whether to aggregate cells into groups determined by cellNum. This option can be used to
@@ -92,7 +90,6 @@ addWeights <- function(regulon,
                        exp_cutoff = 1,
                        peak_cutoff = 0,
                        block_factor = NULL,
-                       aggregation_function = mean,
                        min_targets = 10,
                        tf_re.merge = FALSE,
                        aggregateCells = FALSE,
@@ -106,9 +103,9 @@ addWeights <- function(regulon,
     .validate_input_sce(expMatrix, exp_assay, peakMatrix, peak_assay, tf_re.merge)
 
     if(!is.null(clusters)) .validate_clusters(clusters, expMatrix)
-    
+
     checkmate::testMultiClass(regulon, c("data.frame", "DFrame"))
-    
+
     if (nrow(regulon) == 0)
       stop("Regulon with zero rows")
 
@@ -125,8 +122,8 @@ addWeights <- function(regulon,
       peakMatrix <- assay(peakMatrix, peak_assay)
       checkmate::testMultiClass(peakMatrix, c("matrix", "dgeMatrix", "lgCMatrix",
                                               "dgCMatrix", "CsparseMatrix"))
-    } 
-    
+    }
+
     if (method=="wilcoxon" & is.null(peakMatrix)) {
         stop("Peak matrix should be provided")
     }

@@ -15,7 +15,6 @@ addWeights(
   exp_cutoff = 1,
   peak_cutoff = 0,
   block_factor = NULL,
-  aggregation_function = mean,
   min_targets = 10,
   tf_re.merge = FALSE,
   aggregateCells = FALSE,
@@ -47,9 +46,6 @@ cell is considered as having expressed transcription factor.}
 considered open.}
 
 \item{block_factor}{String specifying the field in the colData of the SingleCellExperiment object to be used as blocking factor (such as batch)}
-
-\item{aggregation_function}{Function being used for summarizing weights from the transcription factor-target gene pair with
-many regulatory elements.}
 
 \item{min_targets}{Integer specifying the minimum number of targets for each tf in the regulon with 10 targets as the default}
 
