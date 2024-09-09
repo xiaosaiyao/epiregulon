@@ -53,7 +53,8 @@ Suggests:
     beachmat.hdf5
 LinkingTo: 
     Rcpp,
-    beachmat
+    beachmat,
+    assorthead
 VignetteBuilder: knitr
 URL: https://github.com/xiaosaiyao/epiregulon/
 biocViews: SingleCell, GeneRegulation,NetworkInference,Network, GeneExpression, Transcription, GeneTarget
