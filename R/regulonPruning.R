@@ -513,38 +513,37 @@ addLogFC <- function(expMatrix,
                      logFC_condition = NULL,
                      logFC_ref = NULL,
                      ...){
-  
+
   pval.type <- match.arg(pval.type)
   sig <- match.arg(sig_type)
-  
+
   if (!is.null(logFC_condition)){
     if (!all(logFC_condition %in% unique(clusters))) {
       stop("not all conditions in logFC_conditions are found in clusters")
     }
   }
-  
-  
+
+
   if (!is.null(logFC_ref)){
     if (!logFC_ref %in% unique(clusters)) {
       stop("condition in logFC_ref is not found in clusters")
     }
   }
-  
-  
-  
+
+
+
   if (is.null(logFC_condition)){
     samples <- unique(clusters)
   } else {
     samples <- logFC_condition
   }
-  
-  
+
+
   # find differential genes
-  
+
   if (is.null(logFC_ref)){
     de_list <- scran::findMarkers(x=expMatrix, groups=clusters, pval.type=pval.type, full.stats = FALSE, sorted=FALSE,...)
-    
-    
+
     # combine differential genes from all clusters
     de.df <- lapply(samples, function(sample){
       de_genes <- as.data.frame(de_list[[sample]])
@@ -553,40 +552,28 @@ addLogFC <- function(expMatrix,
       colnames(de_genes) <- c(paste0(combined_name, ".",sig_type), paste0(combined_name, ".logFC"))
       de_genes
     })
-    
-    
-    if (!isTRUE(logvalues)){
-      
-    }
-    
-    
+
   } else {
     de_list <- scran::findMarkers(x=expMatrix, groups=clusters, pval.type=pval.type, full.stats = TRUE, sorted=FALSE, ...)
-    
-    if (log.values) {
-      # combine differential genes from all clusters
-      de.df <- lapply(samples, function(sample){
-        de_genes <- as.data.frame(de_list[[sample]][,paste0("stats", ".",logFC_ref)])
-        de_genes <- de_genes[,c(paste0("log.", sig_type),"logFC")]
-        combined_name <- paste0(sample,".vs.",logFC_ref)
-        colnames(de_genes) <- c(paste0(combined_name, ".",sig_type), paste0(combined_name, ".logFC"))
-        de_genes[,1] <- 10^(de_genes[,1])
-        de_genes
-      })
-    } 
-    
-    if (!isTRUE(logvalues)){
-      
-    }
-    
-    
+
+    # combine differential genes from all clusters
+    de.df <- lapply(samples, function(sample){
+      de_genes <- as.data.frame(de_list[[sample]][,paste0("stats", ".",logFC_ref)])
+      de_genes <- de_genes[,c(paste0("log.", sig_type),"logFC")]
+      combined_name <- paste0(sample,".vs.",logFC_ref)
+      colnames(de_genes) <- c(paste0(combined_name, ".",sig_type), paste0(combined_name, ".logFC"))
+      de_genes[,1] <- 10^(de_genes[,1])
+      de_genes
+    })
+
+
   }
-  
+
   de.df <- do.call(cbind, de.df)
-  
-  
+
+
   # add stats
   regulon.de <- cbind(regulon, de.df[regulon$target,])
-  
-  
+
+
 }
