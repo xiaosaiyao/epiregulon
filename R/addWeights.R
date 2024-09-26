@@ -100,7 +100,7 @@ addWeights <- function(regulon,
     method <- match.arg(method)
     message("adding weights using ", method, "...")
     checkmate::assert_logical(tf_re.merge, len = 1)
-    .validate_input_sce(expMatrix, exp_assay, peakMatrix, peak_assay, tf_re.merge)
+    .validate_input_sce(expMatrix, exp_assay, peakMatrix, peak_assay, tf_re.merge, env=environment())
 
     if(!is.null(clusters)) .validate_clusters(clusters, expMatrix)
 

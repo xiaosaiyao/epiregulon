@@ -87,18 +87,8 @@ calculateP2G <- function(peakMatrix = NULL,
 
         cor_method <- match.arg(cor_method)
         assignment_method <- match.arg(assignment_method)
-
-        checkmate::assert_class(rowRanges(peakMatrix), "GRanges")
-
-        if (length(rowRanges(peakMatrix)) == 0) {
-            stop("peakMatrix should contain non-empty rowRanges")
-        }
-
-        checkmate::assert_class(rowRanges(expMatrix), "GRanges")
-
-        if (length(rowRanges(expMatrix)) == 0) {
-            stop("expMatrix should contain non-empty rowRanges")
-        }
+        .validate_input_sce(expMatrix=expMatrix, exp_assay=exp_assay, peakMatrix=peakMatrix,
+                            peak_assay=peak_assay, env=environment())
 
         if (!gene_symbol %in% colnames(rowData(expMatrix))) {
             stop("colData of expMatrix does not contain ", gene_symbol)

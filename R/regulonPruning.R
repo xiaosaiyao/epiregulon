@@ -116,7 +116,7 @@ pruneRegulon <- function(regulon,
                          cellNum = 10,
                          BPPARAM = BiocParallel::SerialParam(progressbar = TRUE)) {
     if(is.null(peakMatrix)) stop("peakMatrix should be provided")
-    .validate_input_sce(expMatrix, exp_assay, peakMatrix, peak_assay) 
+    .validate_input_sce(expMatrix, exp_assay, peakMatrix, peak_assay, env=environment())
     if(!is.null(clusters)) .validate_clusters(clusters, expMatrix)
     # choose test method
     test <- match.arg(test)
