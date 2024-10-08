@@ -32,9 +32,9 @@ test_that(".validate_clusters thorws the error when clusters are specified incor
 })
 
 gene_sce_incomplete <- gene_sce
-rowRanges(gene_sce_uncomplete) <- NULL
+rowRanges(gene_sce_incomplete) <- NULL
 peak_sce_incomplete <- gene_sce
-rowRanges(peak_sce_uncomplete) <- NULL
+rowRanges(peak_sce_incomplete) <- NULL
 
 test_that(".validate_input_sce thorws the error when input data is incorrect", {
     expect_error(.validate_input_sce(expMatrix = gene_sce[,0], exp_assay = "logcounts"),
