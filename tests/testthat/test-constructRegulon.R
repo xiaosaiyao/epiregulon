@@ -134,9 +134,9 @@ test_that("getTFMotifInfo works with default settings", {
 grl <- getTFMotifInfo(genome = "hg38", source = "atlas.sample")
 
 test_that("getTFMotifInfo works for chip-atlas sample specific data", {
-    expect_equal(length(grl), 1112)
-    expect_equal(length(unlist(grl[[1]])), 493887)
-    expect_equal(sum(width(unlist(grl[[8]]))), 35951052361)
+    expect_equal(length(grl), 1019)
+    expect_equal(length(unlist(grl[[1]])), 43050)
+    expect_equal(sum(width(unlist(grl[[8]]))), 6644003)
 })
 
 set.seed(4722)

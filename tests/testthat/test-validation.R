@@ -24,10 +24,11 @@ rowRanges(gene_sce) <- gene.ranges
 clusters_missing <- gene_sce$Clusters
 clusters_missing[sample(length(clusters_missing),1)] <- NA
 test_that(".validate_clusters thorws the error when clusters are specified incorrectly", {
-  expect_error(.validate_clusters(gene_sce, gene_sce$Clusters[(sample(seq_along(gene_sce$Clusters),
-                                                                      length(gene_sce$Clusters)-5))]),
+  expect_error(.validate_clusters(gene_sce$Clusters[(sample(seq_along(gene_sce$Clusters),
+                                                                      length(gene_sce$Clusters)-5))],
+                                  gene_sce),
                "'clusters' length should be equal to the number of cells")
-    expect_error(.validate_clusters(gene_sce, clusters_missing),
+    expect_error(.validate_clusters(clusters_missing, gene_sce),
                  "'clusters' object contains NA")
 })
 
@@ -37,25 +38,29 @@ peak_sce_incomplete <- gene_sce
 rowRanges(peak_sce_incomplete) <- NULL
 
 test_that(".validate_input_sce thorws the error when input data is incorrect", {
-    expect_error(.validate_input_sce(expMatrix = gene_sce[,0], exp_assay = "logcounts"),
+    expect_error(.validate_input_sce(expMatrix = gene_sce[,0], exp_assay = "logcounts", env = environment()),
                  "SingleCellExperiment with no data")
     expect_error(.validate_input_sce(expMatrix = gene_sce, exp_assay = "logcounts",
-                                     peakMatrix = peak_sce[0,], peak_assay = "counts"),
+                                     peakMatrix = peak_sce[0,], peak_assay = "counts",
+                                     env = environment()),
                  "peakMatrix with no data")
     expect_error(.validate_input_sce(expMatrix = gene_sce, exp_assay = "logcounts",
-                                     peakMatrix = peak_sce, peak_assay = "no_such_assay"))
+                                     peakMatrix = peak_sce, peak_assay = "no_such_assay",
+                                     env = environment()))
     expect_error(.validate_input_sce(expMatrix = gene_sce, exp_assay = "no_such_assay",
-                                     peakMatrix = peak_sce, peak_assay = "counts"))
+                                     peakMatrix = peak_sce, peak_assay = "counts",
+                                     env = environment()))
     expect_error(.validate_input_sce(expMatrix = gene_sce[,sample(ncol(gene_sce), ncol(gene_sce)-5)], exp_assay = "logcounts",
-                                     peakMatrix = peak_sce, peak_assay = "counts"))
+                                     peakMatrix = peak_sce, peak_assay = "counts",
+                                     env = environment()))
     expect_error(.validate_input_sce(expMatrix = gene_sce_incomplete,
                                      exp_assay = "logcounts",
                                      peakMatrix = peak_sce, peak_assay = "counts",
-                                     row.ranges = TRUE))
+                                     row.ranges = TRUE, env = environment()))
     expect_error(.validate_input_sce(expMatrix = gene_sce,
                                      exp_assay = "logcounts",
                                      peakMatrix = peak_sce_incomplete, peak_assay = "counts",
-                                     row.ranges = TRUE))
+                                     row.ranges = TRUE, env = environment()))
 })
 
 
