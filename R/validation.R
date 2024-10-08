@@ -32,7 +32,7 @@
     stopifnot(exp_assay %in% names(assays(expMatrix)))
     if (any(dim(expMatrix) == 0)) stop("SingleCellExperiment with no data")
     conversion_failed <- FALSE
-    tryCatch(assay(expMatrix, exp_assay) <- as(assay(expMatrix, exp_assay), "sparseMatrix"),
+    tryCatch(assay(expMatrix, exp_assay) <- as(assay(expMatrix, exp_assay), "CsparseMatrix"),
                                           error = function(cond) {
                                               if(show_warning) message("Gene expression assay cannot be coerced to CSparseMatrix. This might affect negatively function performance.")
                                               conversion_failed <<- TRUE}
@@ -44,7 +44,7 @@
         stopifnot(ncol(peakMatrix) == ncol(expMatrix))
         if(nrow(peakMatrix)==0) stop("peakMatrix with no data")
         conversion_failed <- FALSE
-        tryCatch(assay(peakMatrix, peak_assay) <- as(assay(peakMatrix, peak_assay), "sparseMatrix"),
+        tryCatch(assay(peakMatrix, peak_assay) <- as(assay(peakMatrix, peak_assay), "CsparseMatrix"),
                                                 error = function(cond) {
                                                     if(show_warning) message("Peak count assay cannot be coerced to CSparseMatrix. This might affect negatively function performance.")
                                                     conversion_failed <<- TRUE}

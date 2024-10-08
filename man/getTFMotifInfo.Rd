@@ -60,14 +60,4 @@ Oki S, Ohta T, Shioi G, Hatanaka H, Ogasawara O, Okuda Y, Kawaji H, Nakaki R, Se
 \href{http://dx.doi.org/10.15252/embr.201846255}{doi:10.15252/embr.201846255}
 
 ENCODE: {https://www.encodeproject.org/}
-
-Cistrome Data Browser: expanded datasets and new tools for gene regulatory analysis.
-Zheng R, Wan C, Mei S, Qin Q, Wu Q, Sun H, Chen CH, Brown M, Zhang X, Meyer CA, Liu XS
-\emph{Nucleic Acids Res}, 2018 Nov 20.
-\href{https://academic.oup.com/nar/article/47/D1/D729/5193328}{doi:10.1093/nar/gky1094}
-
-Cistrome data browser: a data portal for ChIP-Seq and chromatin accessibility data in human and mouse.
-Mei S, Qin Q, Wu Q, Sun H, Zheng R, Zang C, Zhu M, Wu J, Shi X, Taing L, Liu T, Brown M, Meyer CA, Liu XS
-\emph{Nucleic Acids Res}, 2017 Jan 4;45(D1):D658-D662.
-\href{https://academic.oup.com/nar/article/45/D1/D658/2333932}{doi:10.1093/nar/gkw983}
 }
