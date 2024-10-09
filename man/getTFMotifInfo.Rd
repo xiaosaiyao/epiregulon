@@ -13,12 +13,6 @@ getTFMotifInfo(
 )
 }
 \arguments{
-\item{genome}{character string specifying the genomic build}
-
-\item{source}{character string specifying the ChIP-seq data source}
-
-\item{metadata}{logical flag specifying whether to return data or metadata only}
-
 \item{mode}{a string indicating whether to download a GRangelist of TF binding sites ('occupancy') or motif matches ('motif').
 TF binding information is retrieved from  \link[scMultiome:tfBinding]{scMultiome::tfBinding}. The
 motif information was obtained from \href{https://github.com/GreenleafLab/chromVARmotifs}{chromVARmotifs} (human_pwms_v2 and mouse_pwms_v2,
@@ -26,9 +20,6 @@ version 0.2 with filtering of cisBP motifs) and is also hosted on scMultiome.}
 
 \item{peaks}{A GRanges object indicating the peaks to perform motif annotation on.
 The peak indices should match the \code{idxATAC} column in the regulon.}
-}
-\value{
-A list of TF binding sites as a \code{GrangesList} object.
 }
 \description{
 Combined transcription factor ChIP-seq data from ChIP-Atlas and ENCODE or
@@ -46,18 +37,4 @@ ranges = IRanges(start = c(124914563,50850845, 50850844, 101034172, 151616327),
 end = c(124914662,50850929, 50850929, 101034277, 151616394)))
 grl <- getTFMotifInfo(genome = 'hg38', mode = 'motif', peaks=peaks)
 
-}
-\references{
-ChIP-Atlas 2021 update: a data-mining suite for exploring epigenomic landscapes by
-fully integrating ChIP-seq, ATAC-seq and Bisulfite-seq data.
-Zou Z, Ohta T, Miura F, Oki S.
-\emph{Nucleic Acids Research. Oxford University Press (OUP);} 2022.
-\href{http://dx.doi.org/10.1093/nar/gkac199}{doi:10.1093/nar/gkac199}
-
-ChIP‐Atlas: a data‐mining suite powered by full integration of public ChIP‐seq data.
-Oki S, Ohta T, Shioi G, Hatanaka H, Ogasawara O, Okuda Y, Kawaji H, Nakaki R, Sese J, Meno C.
-\emph{EMBO}; Vol. 19, EMBO reports. 2018.
-\href{http://dx.doi.org/10.15252/embr.201846255}{doi:10.15252/embr.201846255}
-
-ENCODE: {https://www.encodeproject.org/}
 }
