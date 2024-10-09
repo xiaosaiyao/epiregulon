@@ -2,6 +2,11 @@
 #'
 #' Combined transcription factor ChIP-seq data from ChIP-Atlas and ENCODE or
 #' from CistromeDB and ENCODE.
+#' @param genome character string specifying the genomic build
+#' @param source character string specifying the ChIP-seq data source and data specificity. Source followed by dot and `sample`
+#' indicates sample-specific Chip-seq data. Adding `.tissue` to source string result in returning tissue specific data.
+#' Providing source name without suffix tells the function to return data merged from different tissues and samples.
+#' @param metadata logical flag specifying whether to return data or metadata only
 #' @param mode a string indicating whether to download a GRangelist of TF binding sites ('occupancy') or motif matches ('motif').
 #' TF binding information is retrieved from  [scMultiome::tfBinding]. The
 #' motif information was obtained from [chromVARmotifs](https://github.com/GreenleafLab/chromVARmotifs) (human_pwms_v2 and mouse_pwms_v2,
@@ -13,7 +18,9 @@
 #' @examples
 #' # retrieve TF binding info
 #' \donttest{
-#' getTFMotifInfo('mm10', 'atlas')
+#' getTFMotifInfo('mm10', 'atlas.sample')
+#' getTFMotifInfo('atlas.tissue')
+#' getTFMotifInfo('atlas')
 #' }
 #'
 #' # retrieve motif info

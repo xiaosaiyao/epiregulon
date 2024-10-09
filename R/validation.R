@@ -25,6 +25,7 @@
                       c("increasing", "decreasing")[(prop < 1e-04) + 1]))
   }
 }
+#' @importFrom SummarizedExperiment assay<-
 
 .validate_input_sce <- function(expMatrix, exp_assay, peakMatrix=NULL, peak_assay=NULL, tf_re.merge=FALSE, env, row.ranges=FALSE,
                                 show_warning = TRUE){

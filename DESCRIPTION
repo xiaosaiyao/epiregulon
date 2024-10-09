@@ -37,7 +37,8 @@ Imports:
     BSgenome.Hsapiens.UCSC.hg38,
     BSgenome.Mmusculus.UCSC.mm10,
     motifmatchr,
-    IRanges
+    IRanges,
+    beachmat
 Depends:
     R (>= 4.4),
     SingleCellExperiment
