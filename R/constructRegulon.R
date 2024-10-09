@@ -14,13 +14,13 @@
 #' @param peaks A GRanges object indicating the peaks to perform motif annotation on.
 #' The peak indices should match the `idxATAC` column in the regulon.
 
-#' @inherit scMultiome::tfBinding params return references
+#' @inherit scMultiome::tfBinding return references
 #' @examples
 #' # retrieve TF binding info
 #' \donttest{
 #' getTFMotifInfo('mm10', 'atlas.sample')
-#' getTFMotifInfo('atlas.tissue')
-#' getTFMotifInfo('atlas')
+#' getTFMotifInfo('hg38','atlas.tissue')
+#' getTFMotifInfo('hg19','atlas')
 #' }
 #'
 #' # retrieve motif info
