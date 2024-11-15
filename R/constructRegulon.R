@@ -2,18 +2,25 @@
 #'
 #' Combined transcription factor ChIP-seq data from ChIP-Atlas and ENCODE or
 #' from CistromeDB and ENCODE.
+#' @param genome character string specifying the genomic build
+#' @param source character string specifying the ChIP-seq data source and data specificity. Source followed by dot and `sample`
+#' indicates sample-specific Chip-seq data. Adding `.tissue` to source string result in returning tissue specific data.
+#' Providing source name without suffix tells the function to return data merged from different tissues and samples.
+#' @param metadata logical flag specifying whether to return data or metadata only
 #' @param mode a string indicating whether to download a GRangelist of TF binding sites ('occupancy') or motif matches ('motif').
 #' TF binding information is retrieved from  [scMultiome::tfBinding]. The
 #' motif information was obtained from [chromVARmotifs](https://github.com/GreenleafLab/chromVARmotifs) (human_pwms_v2 and mouse_pwms_v2,
 #' version 0.2 with filtering of cisBP motifs) and is also hosted on scMultiome.
-#' @param peaks A GRanges object indicating the peaks to perform motif annotation on if ArchR project is not provided.
-#' The peak indices should match the `re` column in the regulon
+#' @param peaks A GRanges object indicating the peaks to perform motif annotation on.
+#' The peak indices should match the `idxATAC` column in the regulon.
 
-#' @inherit scMultiome::tfBinding params return references
+#' @inherit scMultiome::tfBinding return references
 #' @examples
 #' # retrieve TF binding info
 #' \donttest{
-#' getTFMotifInfo('mm10', 'atlas')
+#' getTFMotifInfo('mm10', 'atlas.sample')
+#' getTFMotifInfo('hg38','atlas.tissue')
+#' getTFMotifInfo('hg19','atlas')
 #' }
 #'
 #' # retrieve motif info
@@ -24,22 +31,21 @@
 #'
 #' @export
 #'
-getTFMotifInfo <- function(genome = c("hg38", "hg19", "mm10"), 
+getTFMotifInfo <- function(genome = c("hg38", "hg19", "mm10"),
                            source = c("atlas", "cistrome", "encode.sample", "atlas.sample","atlas.tissue"),
-                           metadata = FALSE, 
+                           metadata = FALSE,
                            mode = c("occupancy", "motif"),
                            peaks = NULL) {
     genome <- match.arg(genome)
     source <- match.arg(source)
     mode <- match.arg(mode)
-    
+
 
     if (mode == "occupancy") {
       grl <- scMultiome::tfBinding(genome,
                                    source, metadata)
     } else {
-
-
+        checkmate::assert_class(peaks, "GRanges")
         species <- switch(genome, hg38 = "human",
             hg19 = "human", mm10 = "mouse")
         BS.genome <- switch(genome,
