@@ -1,7 +1,6 @@
 #' Retrieve TF binding sites or motif positions
 #'
-#' Combined transcription factor ChIP-seq data from ChIP-Atlas and ENCODE or
-#' from CistromeDB and ENCODE.
+#' Combined transcription factor ChIP-seq data from ChIP-Atlas and ENCODE
 #' @param genome character string specifying the genomic build
 #' @param source character string specifying the ChIP-seq data source and data specificity. Source followed by dot and `sample`
 #' indicates sample-specific Chip-seq data. Adding `.tissue` to source string result in returning tissue specific data.
@@ -33,7 +32,7 @@
 #' @export
 #'
 getTFMotifInfo <- function(genome = c("hg38", "hg19", "mm10"),
-                           source = c("atlas", "cistrome", "encode.sample", "atlas.sample","atlas.tissue"),
+                           source = c("atlas", "encode.sample", "atlas.sample","atlas.tissue"),
                            metadata = FALSE,
                            mode = c("occupancy", "motif"),
                            peaks = NULL,
