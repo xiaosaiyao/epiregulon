@@ -13,6 +13,9 @@
 #' @param peaks A GRanges object indicating the peaks to perform motif annotation on.
 #' The peak indices should match the `idxATAC` column in the regulon.
 #' @param version numeric indicating data version (for details see \link[scMultiome]{tfBinding})
+#' @param peak_number numeric indicating threshold to be applied to the number of peaks
+#' per transcription factor in the combined version of GenomicRanges
+#' (from all samples and tissues).
 
 #' @inherit scMultiome::tfBinding return references
 #' @examples
@@ -36,18 +39,19 @@ getTFMotifInfo <- function(genome = c("hg38", "hg19", "mm10"),
                            metadata = FALSE,
                            mode = c("occupancy", "motif"),
                            peaks = NULL,
-                           version = 1) {
+                           version = 1,
+                           peak_number = 1000) {
     genome <- match.arg(genome)
     source <- match.arg(source)
     mode <- match.arg(mode)
-
 
     if (mode == "occupancy") {
         if("version" %in% names(formals(scMultiome::tfBinding))){
             grl <- scMultiome::tfBinding(genome=genome,
                                          source=source,
                                          metadata=metadata,
-                                         version = version)
+                                         version = version,
+                                         peak_number = peak_number)
         }
         else{
             if(version!=1) {

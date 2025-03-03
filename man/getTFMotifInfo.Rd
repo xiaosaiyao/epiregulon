@@ -6,11 +6,12 @@
 \usage{
 getTFMotifInfo(
   genome = c("hg38", "hg19", "mm10"),
-  source = c("atlas", "cistrome", "encode.sample", "atlas.sample", "atlas.tissue"),
+  source = c("atlas", "encode.sample", "atlas.sample", "atlas.tissue"),
   metadata = FALSE,
   mode = c("occupancy", "motif"),
   peaks = NULL,
-  version = 1
+  version = 1,
+  peak_number = 1000
 )
 }
 \arguments{
@@ -31,13 +32,16 @@ version 0.2 with filtering of cisBP motifs) and is also hosted on scMultiome.}
 The peak indices should match the \code{idxATAC} column in the regulon.}
 
 \item{version}{numeric indicating data version (for details see \link[scMultiome]{tfBinding})}
+
+\item{peak_number}{numeric indicating threshold to be applied to the number of peaks
+per transcription factor in the combined version of GenomicRanges
+(from all samples and tissues).}
 }
 \value{
 A list of TF binding sites as a \code{GrangesList} object.
 }
 \description{
-Combined transcription factor ChIP-seq data from ChIP-Atlas and ENCODE or
-from CistromeDB and ENCODE.
+Combined transcription factor ChIP-seq data from ChIP-Atlas and ENCODE
 }
 \examples{
 # retrieve TF binding info
