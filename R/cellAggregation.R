@@ -118,7 +118,7 @@ aggregateAcrossCells <- function(x, factors, num.threads = 1) {
 #' for each cluster/sample combination. It is wrapped around `aggregateAcrossCells`,
 #' which relies on the C++ code.
 #'
-#' @param sce A SingleCellExperiment object
+#' @param sce A SingleCellExperiment, SummarizedExperiment or RangedSummarizedExperiment object
 #' @param clusters A vector used as a grouping variable. The length should be equal to
 #' the number of cells.
 #' @param assay.name A character indicating the name of the assay containing the
@@ -143,18 +143,27 @@ aggregateAcrossCells <- function(x, factors, num.threads = 1) {
 #' @export
 aggregateAcrossCellsFast <- function(sce, clusters, assay.name="counts", fun_name=c("mean", "sum"),
                                      num.threads=1, aggregateColData = TRUE) {
-  .validate_input_sce(SCE=sce, assay_name=assay.name)
+  .validate_input_sce(SCE=sce, assay_name=assay.name,
+                      accepted_classes = c("SingleCellExperiment", "SummarizedExperiment", "RangedSummarizedExperiment"))
   .validate_clusters(clusters, sce)
   clusters <- as.vector(clusters)
   fun_name <- match.arg(fun_name, several.ok = FALSE)
   # aggregate counts in assay
-  if(!is.null(assay.name)) x <- setNames(assays(sce)[assay.name], assay.name)
-  else x <- setNames(assays(sce), names(assays(sce)))
+  if(!is.null(assay.name)) {
+      x <- setNames(assays(sce)[assay.name], assay.name)
+  }
+  else {
+      x <- setNames(assays(sce), names(assays(sce)))
+  }
   aggr.counts <- lapply(x, aggregateAcrossCells, factors = list(clusters), num.threads=num.threads)
-  if(fun_name=="sum") assay_matrices <- setNames(lapply(aggr.counts, "[[", "sums"), names(x))
-  else assay_matrices <- setNames(lapply(aggr.counts, function(x) t(t(x$sums)/x$counts)), names(x)) #mean
+  if(fun_name=="sum") {
+      assay_matrices <- setNames(lapply(aggr.counts, "[[", "sums"), names(x))
+  }
+  else {
+      assay_matrices <- setNames(lapply(aggr.counts, function(x) t(t(x$sums)/x$counts)), names(x)) #mean
   altExps_list <- NULL
-  if(length(altExps(sce))>0){
+  }
+  if(is(sce, "SingleCellExperiment") && length(altExps(sce))>0){
     altExps_list <- lapply(altExps(sce), aggregateAcrossCellsFast, clusters, NULL, fun_name,
                            FALSE)
     names(altExps_list) <- altExpNames(sce)
@@ -165,37 +174,58 @@ aggregateAcrossCellsFast <- function(sce, clusters, assay.name="counts", fun_nam
                                    rowData = rowData(sce))
   rownames(colData(sce.bulk)) <- colData(sce.bulk)$idx <- aggr.counts[[1]]$combinations[,1]
   colData(sce.bulk)$ncells <- aggr.counts[[1]]$counts
-  altExps(sce.bulk) <- altExps_list
+  if(is(sce, "SingleCellExperiment") && length(altExps(sce))>0){
+      altExps(sce.bulk) <- altExps_list
+  }
   if(aggregateColData){
     colData.sce.consistent <- .select_consistent_columns(colData(sce), clusters)
-    first.position <- match(aggr.counts[[1]]$combinations[,1],clusters)
-    if(!is.null(colData.sce.consistent))
-      colData(sce.bulk) <- cbind(colData(sce.bulk), colData.sce.consistent[first.position,, drop=FALSE])
+    if(!is.null(colData.sce.consistent)){
+        duplicated_colnames <- intersect(colnames(colData(sce.bulk)), colnames(colData.sce.consistent))
+        if(length(duplicated_colnames)>0){
+            stop(spritnf("The following columns are already present in the colData: %s", paste(duplicated_colnames,collapse=", ")))
+        }
+        # one row per cluster
+        unique_clusters_idx <- match(aggr.counts[[1]]$combinations[,1], clusters)
+        colData(sce.bulk) <- cbind(colData(sce.bulk), colData.sce.consistent[unique_clusters_idx,,drop=FALSE])
+    }
   }
   rowRanges(sce.bulk) <- rowRanges(sce)
   sce.bulk
 }
 
 .select_consistent_columns <- function(df, ids){
-  if(ncol(df)==1){
-    if(is.numeric(ncol(df[,1]))) df[[1]] <- .select_consistent_columns(df[,1],ids)
-    else df <- df[,.is_consistent(df[,1], ids),drop=FALSE]
-  }
-  else{
-    cols <- lapply(seq_len(ncol(df)), .return_consistent_column, df, ids)
-    # remove NULLs and empty objects and bind columns into the final object
-    df <- do.call(cbind, cols[unlist(lapply(cols, function(x) length(x)!=0))])
-  }
-  if(is.null(df) || ncol(df)==0) return(NULL) # otherwise some columns might be composed of a DataFrame with one empty column
-  df
-}
-
-.return_consistent_column <- function(i, df, ids){
-  if(length(dim(df[,i]))<2) {        # select vectors and 1-dim arrays
-    if(.is_consistent(df[,i],ids)) return(df[,i,drop=FALSE])
-    else return(NULL)
-  }
-  else .select_consistent_columns(df[,i,drop=FALSE], ids)
+    if(is(df,"DataFrame")){ # handle DataFrame separately to preserve its hierarchical structure
+        current_col = 0
+        for(i in seq_len(ncol(df))){
+            current_col = current_col+1
+            if(length(dim(df[,current_col]))<2) { # select vectors and 1-dim arrays
+                if(!.is_consistent(df[,current_col],ids)) {
+                    df[[current_col]] <- NULL
+                    current_col = current_col-1
+                }
+            }
+            else{
+                consistent_data <- .select_consistent_columns(df[,current_col], ids)
+                df[[current_col]] <- consistent_data
+                if(is.null(consistent_data)){
+                    current_col = current_col-1
+                }
+            }
+        }
+    }
+    else{
+        preserve_columns <- integer(0)
+        for(i in seq_len(ncol(df))){
+            if(.is_consistent(df[,i],ids)){
+                preserve_columns <- c(preserve_columns, i)
+            }
+        }
+        df <- df[,preserve_columns,drop=FALSE]
+    }
+    if(ncol(df)==0){
+        df <- NULL
+    }
+    df
 }
 
 .is_consistent <- function(x1, x2){
