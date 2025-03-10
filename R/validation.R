@@ -28,8 +28,12 @@
   }
 }
 
-.validate_input_sce <- function(SCE, assay_name, row.ranges=FALSE){
-  checkmate::assert_multi_class(SCE, c("SingleCellExperiment", "RangedSummarizedExperiment"))
+
+.validate_input_sce <- function(SCE, 
+                                assay_name, 
+                                row.ranges=FALSE,
+                                accepted_classes = c("SingleCellExperiment", "RangedSummarizedExperiment")){
+  checkmate::assert_multi_class(SCE, accepted_classes)
   stopifnot(assay_name %in% names(assays(SCE)))
   data_object_name <- as.character(substitute(SCE))
   if (any(dim(SCE) == 0)){
@@ -45,3 +49,4 @@
     }
   }
 }
+
