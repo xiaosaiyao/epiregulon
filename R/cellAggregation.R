@@ -44,70 +44,85 @@
 aggregateAcrossCells <- function(x, factors, num.threads = 1) {
   f <- lapply(factors, factor)
   f0 <- lapply(f, as.integer)
-
+  
   x <- beachmat::initializeCpp(x)
   output <- aggregate_across_cells(x, f0, num.threads)
   rownames(output$sums) <- rownames(output$detected) <- rownames(x)
-
+  
   for (i in seq_along(output$combinations)) {
     current <- output$combinations[[i]]
     output$combinations[[i]] <- levels(f[[i]])[current]
   }
-
+  
   names(output$combinations) <- names(factors)
   output$combinations <- data.frame(output$combinations)
   output$index <- output$index + 1L
-
+  
   output
 }
 
 
 #' @importFrom SummarizedExperiment colData<-
 #' @importFrom SingleCellExperiment applySCE
-.aggregateCells <- function(cellNum, expMatrix, peakMatrix, caller_env, useDim,
-                            exp_assay, peak_assay, BPPARAM, clusters=NULL){
+.aggregateCells <- function(cellNum, 
+                            expMatrix, 
+                            peakMatrix, 
+                            caller_env, 
+                            useDim,
+                            exp_assay, 
+                            peak_assay, 
+                            BPPARAM, 
+                            clusters=NULL){
+  
   message("performing pseudobulk using an average of ", cellNum, " cells")
-
+  
   if (!is.null(clusters)) {
     kclusters <- list()
     barcodes <- list()
-
+    
     #add cluster info to expMatrix
     colData(expMatrix)[, "cluster_for_pseudobulk"] <- clusters
-
+    
     # K-means clustering
     for (cluster in unique(clusters)) {
       sce <- expMatrix[, which(clusters == cluster)]
       kNum <- trunc(ncol(sce)/cellNum)
-      kclusters[[cluster]] <- scran::clusterCells(sce, use.dimred = useDim,
+      kclusters[[cluster]] <- scran::clusterCells(sce, 
+                                                  use.dimred = useDim,
                                                   BLUSPARAM = bluster::KmeansParam(centers = kNum, iter.max = 5000))
       barcodes[[cluster]] <- names(kclusters[[cluster]])
       kclusters[[cluster]] <- paste(cluster, kclusters[[cluster]], sep = "_")
     }
+    
     kclusters <- unlist(kclusters)
     barcodes <- unlist(barcodes)
     names(kclusters) <- barcodes
-
-
+    
   } else {
-    kclusters <- scran::clusterCells(expMatrix, use.dimred = useDim, BLUSPARAM = bluster::KmeansParam(centers = trunc(ncol(peakMatrix)/cellNum),
-                                                                                                      iter.max = 5000))
+    kclusters <- scran::clusterCells(expMatrix, 
+                                     use.dimred = useDim, 
+                                     BLUSPARAM = bluster::KmeansParam(centers = trunc(ncol(peakMatrix)/cellNum),iter.max = 5000))
   }
-
+  
   kclusters <- kclusters[colnames(expMatrix)]
-
+  
   #replace clusters with clusters of pseudobulked samples
-
-  expMatrix <- aggregateAcrossCellsFast(expMatrix, clusters = kclusters, fun_name="sum",
-                                         assay.name = exp_assay)
-  peakMatrix <- aggregateAcrossCellsFast(peakMatrix, clusters = kclusters, fun_name="sum",
-                                          assay.name = peak_assay)
-
-  if (!is.null(clusters))
+  expMatrix <- aggregateAcrossCellsFast(expMatrix, 
+                                        clusters = kclusters, 
+                                        fun_name="sum",
+                                        assay.name = exp_assay)
+  peakMatrix <- aggregateAcrossCellsFast(peakMatrix, 
+                                         clusters = kclusters, 
+                                         fun_name="sum",
+                                         assay.name = peak_assay)
+  
+  if (!is.null(clusters)) {
     clusters <- colData(expMatrix)[, "cluster_for_pseudobulk"]
-  assign("expMatrix",expMatrix,envir = caller_env)
-  assign("peakMatrix",peakMatrix,envir = caller_env)
-  assign("clusters",clusters,envir = caller_env)
+  }
+  
+  assign("expMatrix", expMatrix,envir = caller_env)
+  assign("peakMatrix", peakMatrix,envir = caller_env)
+  assign("clusters", clusters,envir = caller_env)
 }
 
 
@@ -141,31 +156,44 @@ aggregateAcrossCells <- function(x, factors, num.threads = 1) {
 #' ids <- sample(LETTERS[1:5], ncol(example_sce), replace=TRUE)
 #' out <- aggregateAcrossCellsFast(example_sce, ids)
 #' @export
-aggregateAcrossCellsFast <- function(sce, clusters, assay.name="counts", fun_name=c("mean", "sum"),
-                                     num.threads=1, aggregateColData = TRUE) {
+aggregateAcrossCellsFast <- function(sce, 
+                                     clusters, 
+                                     assay.name="counts", 
+                                     fun_name=c("mean", "sum"),
+                                     num.threads=1, 
+                                     aggregateColData = TRUE) {
   .validate_input_sce(SCE=sce, assay_name=assay.name)
   .validate_clusters(clusters, sce)
   clusters <- as.vector(clusters)
   fun_name <- match.arg(fun_name, several.ok = FALSE)
   # aggregate counts in assay
-  if(!is.null(assay.name)) x <- setNames(assays(sce)[assay.name], assay.name)
-  else x <- setNames(assays(sce), names(assays(sce)))
+  if(!is.null(assay.name)) {
+    x <- setNames(assays(sce)[assay.name], assay.name)
+  } else {
+    x <- setNames(assays(sce), names(assays(sce)))
+  }
+  
   aggr.counts <- lapply(x, aggregateAcrossCells, factors = list(clusters), num.threads=num.threads)
-  if(fun_name=="sum") assay_matrices <- setNames(lapply(aggr.counts, "[[", "sums"), names(x))
-  else assay_matrices <- setNames(lapply(aggr.counts, function(x) t(t(x$sums)/x$counts)), names(x)) #mean
+  if(fun_name=="sum") {
+    assay_matrices <- setNames(lapply(aggr.counts, "[[", "sums"), names(x))
+  } else {
+    assay_matrices <- setNames(lapply(aggr.counts, function(x) t(t(x$sums)/x$counts)), names(x)) #mean
+  }
+  
   altExps_list <- NULL
+  
   if(length(altExps(sce))>0){
-    altExps_list <- lapply(altExps(sce), aggregateAcrossCellsFast, clusters, NULL, fun_name,
-                           FALSE)
+    altExps_list <- lapply(altExps(sce), aggregateAcrossCellsFast, clusters, NULL, fun_name, FALSE)
     names(altExps_list) <- altExpNames(sce)
   }
-
+  
   # reassemble the singleCellExperiment object
   sce.bulk <- SingleCellExperiment(assay_matrices,
                                    rowData = rowData(sce))
   rownames(colData(sce.bulk)) <- colData(sce.bulk)$idx <- aggr.counts[[1]]$combinations[,1]
   colData(sce.bulk)$ncells <- aggr.counts[[1]]$counts
   altExps(sce.bulk) <- altExps_list
+  
   if(aggregateColData){
     colData.sce.consistent <- .select_consistent_columns(colData(sce), clusters)
     first.position <- match(aggr.counts[[1]]$combinations[,1],clusters)
@@ -178,24 +206,35 @@ aggregateAcrossCellsFast <- function(sce, clusters, assay.name="counts", fun_nam
 
 .select_consistent_columns <- function(df, ids){
   if(ncol(df)==1){
-    if(is.numeric(ncol(df[,1]))) df[[1]] <- .select_consistent_columns(df[,1],ids)
-    else df <- df[,.is_consistent(df[,1], ids),drop=FALSE]
-  }
-  else{
+    if (is.numeric(ncol(df[,1]))) {
+      df[[1]] <- .select_consistent_columns(df[,1],ids)
+    } else {
+      df <- df[,.is_consistent(df[,1], ids),drop=FALSE]
+    }
+    
+  } else {
     cols <- lapply(seq_len(ncol(df)), .return_consistent_column, df, ids)
     # remove NULLs and empty objects and bind columns into the final object
     df <- do.call(cbind, cols[unlist(lapply(cols, function(x) length(x)!=0))])
   }
-  if(is.null(df) || ncol(df)==0) return(NULL) # otherwise some columns might be composed of a DataFrame with one empty column
+  
+  if(is.null(df) || ncol(df)==0) {
+    return(NULL) # otherwise some columns might be composed of a DataFrame with one empty column
+  }
+  
   df
 }
 
 .return_consistent_column <- function(i, df, ids){
   if(length(dim(df[,i]))<2) {        # select vectors and 1-dim arrays
-    if(.is_consistent(df[,i],ids)) return(df[,i,drop=FALSE])
-    else return(NULL)
+    if(.is_consistent(df[,i],ids)) {
+      return(df[, i, drop=FALSE])
+    }else {
+      return(NULL)
+    }
+  } else {
+    .select_consistent_columns(df[,i,drop=FALSE], ids)
   }
-  else .select_consistent_columns(df[,i,drop=FALSE], ids)
 }
 
 .is_consistent <- function(x1, x2){
