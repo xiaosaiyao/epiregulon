@@ -136,7 +136,7 @@ test_that("addWeights works correctly using Wilcoxon test with fixed cutoff", {
 
 # prepare dataset for testing MI method
 set.seed(1010)
-regulon <- data.frame(tf= rep(LETTERS[1:5], each = 3), target = LETTERS [6:20])
+regulon <- data.frame(tf= rep(LETTERS[1:5], each = 3), target = LETTERS [6:20], idxATAC=0)
 expMatrix <- matrix(abs(rnorm(1e4)), nrow = 20, ncol = 1e4/20, dimnames = list(LETTERS[1:20], NULL))
 expMatrix[sample(seq_len(1e4), 1e4/2)] <- 0
 expMatrix <- as(expMatrix, "sparseMatrix")

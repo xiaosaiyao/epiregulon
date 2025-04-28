@@ -29,24 +29,43 @@
 }
 
 
-.validate_input_sce <- function(SCE, 
-                                assay_name, 
+.validate_input_sce <- function(SCE,
+                                assay_name,
                                 row.ranges=FALSE,
-                                accepted_classes = c("SingleCellExperiment", "RangedSummarizedExperiment")){
-  checkmate::assert_multi_class(SCE, accepted_classes)
-  stopifnot(assay_name %in% names(assays(SCE)))
-  data_object_name <- as.character(substitute(SCE))
-  if (any(dim(SCE) == 0)){
-    stop(sprintf("%s with no data", data_object_name))
-  }
-  if(row.ranges){
-    if (length(rowRanges(SCE)) == 0) {
-      stop(sprintf("%s should contain non-empty rowRanges", data_object_name))
+                                accepted_classes = c("SingleCellExperiment", "RangedSummarizedExperiment"),
+                                unique_features = FALSE){
+    checkmate::assert_multi_class(SCE, accepted_classes)
+    stopifnot(assay_name %in% names(assays(SCE)))
+    data_object_name <- as.character(substitute(SCE))
+    if (any(dim(SCE) == 0)){
+        stop(sprintf("%s with no data", data_object_name))
     }
-    checkmate::assert_class(rowRanges(SCE), "GRanges")
-    if (length(rowRanges(SCE)) == 0) {
-      stop(sprintf("%s should contain non-empty rowRanges", data_object_name))
+    if (unique_features){
+        if (any(duplicated(rownames(SCE)))){
+            stop(sprintf("Feature names in %s should be unique", data_object_name))
+        }
     }
-  }
+    if(row.ranges){
+        if (length(rowRanges(SCE)) == 0) {
+            stop(sprintf("%s should contain non-empty rowRanges", data_object_name))
+        }
+        checkmate::assert_class(rowRanges(SCE), "GRanges")
+        if (length(rowRanges(SCE)) == 0) {
+            stop(sprintf("%s should contain non-empty rowRanges", data_object_name))
+        }
+    }
 }
 
+.validate_regulon <- function(regulon, required_columns = c("tf", "target", "idxATAC")){
+    checkmate::assert_multi_class(regulon, c("DataFrame", "data.frame", "DFrame"))
+    if (!all(required_columns %in% colnames(regulon))) {
+        stop(paste("regulon should contain the following columns: ", paste(required_columns, sep = ", "),sep = ""))
+    }
+    if (nrow(regulon)==0){
+        stop("regulon should not be empty")
+    }
+    columns_with_NA <- required_columns[unlist(lapply(regulon[,required_columns], function(x) any(is.na(x))))]
+    if (length(columns_with_NA)>0){
+        warning(paste("The following regulon column(s) contain NA value(s): ", paste(columns_with_NA, sep = ", "),sep = ""))
+    }
+}
