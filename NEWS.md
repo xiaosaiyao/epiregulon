@@ -1,5 +1,12 @@
-#epiregulon 0.99.20
-* the function aggregateAcrossCellsFast has been added.
+# epiregulon 1.5.1
+* checking for the duplicated gene names in the input gene expression SingleCellExperiment
+* validation of the regulon object passed to pruneRegulon, addWeights, and calculateActivity 
+
+# epiregulon 1.0.1
+* the function `addMotifScore` returns correct values instead of NA.
+
+# epiregulon 0.99.20
+* the function `aggregateAcrossCellsFast` has been added.
 
 # epiregulon 0.9.12
 * in `calculateP2G` staring position of the gene has been corrected.

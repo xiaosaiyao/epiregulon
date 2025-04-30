@@ -23,85 +23,79 @@
 #' end = c(124914662,50850929, 50850929, 101034277, 151616394,2000)))
 #' regulon <- addMotifScore(regulon, peaks=peaks)
 
-addMotifScore <- function(regulon, field_name = "motif",
-    peaks = NULL, pwms = NULL, species = c("human",
-        "mouse"), genome = c("hg38", "hg19",
-        "mm10"), ...) {
-
-    species <- match.arg(species)
-    genome <- match.arg(genome)
-
-    if (!is.null(peaks) && is(peaks, "GRanges")) {
-        if (length(peaks) == 0)
-            stop("No peaks provided.")
-        message("annotating peaks with motifs")
-        BS.genome <- switch(genome, hg38 = "BSgenome.Hsapiens.UCSC.hg38",
-            hg19 = "BSgenome.Hsapiens.UCSC.hg19",
-            mm10 = "BSgenome.Mmusculus.UCSC.mm10")
-
-        peaks.pruned <- GenomeInfoDb::keepStandardChromosomes(peaks,
-            pruning.mode = "coarse")
-        if (length(peaks.pruned) == 0) {
-            warning("No peaks in standard chromosomes. NAs returned.")
-            regulon[, field_name] <- NA
-            return(regulon)
-        }
-        # peaks shoud by unique otherwise some idxATAC values will be missing
-        # in peaks.idx object because match function always returns the first index
-        if(any(duplicated(peaks.pruned))) stop("Duplicated peaks provided.")
-
-        # store original peak indices to match them to regulon idxATAC
-        peaks.idx <- GenomicRanges::match(peaks.pruned,
-            peaks)
-        peaks.pruned <- peaks.pruned[peaks.idx %in%
-            regulon$idxATAC]
-        peaks.idx <- peaks.idx[peaks.idx %in%
-            regulon$idxATAC]
-        motifs <- annotateMotif(species,
-            peaks.pruned, BS.genome, pwms,
-            ...)
-        motifs <- assay(motifs, "motifMatches")
-
-        # Convert motifs to gene names
-        motif_names <- unlist(lapply(strsplit(colnames(motifs),
-            split = "_|\\."), "[", 3))
-
-        colnames(motifs) <- matchNames(motif_names,
-            regulon)
-
-    } else {
-
-        stop("supply a GenomicRanges object for peaks")
+addMotifScore <- function(regulon, 
+                          field_name = "motif", peaks = NULL, 
+                          pwms = NULL, 
+                          species = c("human","mouse"), 
+                          genome = c("hg38", "hg19","mm10"), ...) {
+  
+  species <- match.arg(species)
+  genome <- match.arg(genome)
+  
+  if (!is.null(peaks) && is(peaks, "GRanges")) {
+    if (length(peaks) == 0) {
+      stop("No peaks provided.") 
     }
-
-    # Remove motifs not found in regulon
-    motifs <- motifs[, colnames(motifs) %in%
-        unique(regulon$tf), drop = FALSE]
-
-    # Add motif information
-    regulon[, field_name] <- NA
-
-    tfs_with_motif <- intersect(colnames(motifs),
-        unique(regulon$tf))
-
-    for (tf in tfs_with_motif){
-      regulon[which(regulon$tf ==tf), field_name] <- motifs[match(regulon$idxATAC[which(regulon$tf ==tf)], peaks.idx),tf]
+    message("annotating peaks with motifs")
+    BS.genome <- switch(genome, hg38 = "BSgenome.Hsapiens.UCSC.hg38",
+                        hg19 = "BSgenome.Hsapiens.UCSC.hg19",
+                        mm10 = "BSgenome.Mmusculus.UCSC.mm10")
+    
+    peaks.pruned <- GenomeInfoDb::keepStandardChromosomes(peaks, pruning.mode = "coarse")
+    
+    if (length(peaks.pruned) == 0) {
+      warning("No peaks in standard chromosomes. NAs returned.")
+      regulon[, field_name] <- NA
+      return(regulon)
     }
     
-    regulon[, field_name] <- as.numeric(regulon[,
-        field_name])
-
-    regulon
+    # peaks shoud by unique otherwise some idxATAC values will be missing
+    # in peaks.idx object because match function always returns the first index
+    if (any(duplicated(peaks.pruned))) {
+      stop("Duplicated peaks provided.")
+    }
+    
+    # store original peak indices to match them to regulon idxATAC
+    peaks.idx <- GenomicRanges::match(peaks.pruned, peaks)
+    peaks.pruned <- peaks.pruned[peaks.idx %in% regulon$idxATAC]
+    peaks.idx <- peaks.idx[peaks.idx %in% regulon$idxATAC]
+    motifs <- annotateMotif(species, peaks.pruned, BS.genome, pwms, ...)
+    motifs <- assay(motifs, "motifMatches")
+    
+    # Convert motifs to gene names
+    motif_names <- unlist(lapply(strsplit(colnames(motifs), split = "_|\\."), "[", 3))
+    
+    colnames(motifs) <- matchNames(motif_names, regulon)
+    
+  } else {
+    stop("supply a GenomicRanges object for peaks")
+  }
+  
+  # Remove motifs not found in regulon
+  motifs <- motifs[, colnames(motifs) %in% unique(regulon$tf), drop = FALSE]
+  
+  # Add motif information
+  regulon[, field_name] <- NA
+  
+  tfs_with_motif <- intersect(colnames(motifs), unique(regulon$tf))
+  
+  for (tf in tfs_with_motif){
+    regulon[which(regulon$tf ==tf), field_name] <- 
+      motifs[match(regulon$idxATAC[which(regulon$tf ==tf)], peaks.idx),tf]
+  }
+  
+  regulon[, field_name] <- as.numeric(regulon[, field_name])
+  
+  regulon
 }
 
 annotateMotif <- function(species, peaks, genome, pwms = NULL, ...) {
-
-    if (is.null(pwms)) {
-        pwms <- species_motif(species)
-    }
-    motifs <- motifmatchr::matchMotifs(pwms = pwms, subject = peaks,
-        genome = genome, ...)
-
+  
+  if (is.null(pwms)) {
+    pwms <- species_motif(species)
+  }
+  motifs <- motifmatchr::matchMotifs(pwms = pwms, subject = peaks, genome = genome, ...)
+  
 }
 
 species_motif <- function(species) {
@@ -112,17 +106,17 @@ species_motif <- function(species) {
 }
 
 matchNames <- function(motif_names, regulon) {
-    unique_tf <- data.frame(original = unique(regulon$tf),
-        after = unique(regulon$tf))
-    # remove underscore
-    unique_tf$after <- gsub("\\_", "", unique_tf$original)
-
-    # remove dash
-    unique_tf$after <- gsub("\\-", "", unique_tf$after)
-
-    # remove dot
-    unique_tf$after <- gsub("\\.", "", unique_tf$after)
-    official <- unique_tf$original[match(motif_names, unique_tf$after)]
-    official[which(is.na(official))] <- motif_names[which(is.na(official))]
-    official
+  unique_tf <- data.frame(original = unique(regulon$tf),
+                          after = unique(regulon$tf))
+  # remove underscore
+  unique_tf$after <- gsub("\\_", "", unique_tf$original)
+  
+  # remove dash
+  unique_tf$after <- gsub("\\-", "", unique_tf$after)
+  
+  # remove dot
+  unique_tf$after <- gsub("\\.", "", unique_tf$after)
+  official <- unique_tf$original[match(motif_names, unique_tf$after)]
+  official[which(is.na(official))] <- motif_names[which(is.na(official))]
+  official
 }

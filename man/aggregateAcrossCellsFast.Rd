@@ -14,7 +14,7 @@ aggregateAcrossCellsFast(
 )
 }
 \arguments{
-\item{sce}{A SingleCellExperiment object}
+\item{sce}{A SingleCellExperiment, SummarizedExperiment or RangedSummarizedExperiment object}
 
 \item{clusters}{A vector used as a grouping variable. The length should be equal to
 the number of cells.}

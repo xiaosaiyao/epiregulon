@@ -6,10 +6,12 @@
 \usage{
 getTFMotifInfo(
   genome = c("hg38", "hg19", "mm10"),
-  source = c("atlas", "cistrome", "encode.sample", "atlas.sample", "atlas.tissue"),
+  source = c("atlas", "encode.sample", "atlas.sample", "atlas.tissue"),
   metadata = FALSE,
   mode = c("occupancy", "motif"),
-  peaks = NULL
+  peaks = NULL,
+  version = 1,
+  peak_number = 1000
 )
 }
 \arguments{
@@ -22,19 +24,24 @@ Providing source name without suffix tells the function to return data merged fr
 \item{metadata}{logical flag specifying whether to return data or metadata only}
 
 \item{mode}{a string indicating whether to download a GRangelist of TF binding sites ('occupancy') or motif matches ('motif').
-TF binding information is retrieved from  \link[scMultiome:tfBinding]{scMultiome::tfBinding}. The
+TF binding information is retrieved from \code{\link[scMultiome:tfBinding]{scMultiome::tfBinding()}}. The
 motif information was obtained from \href{https://github.com/GreenleafLab/chromVARmotifs}{chromVARmotifs} (human_pwms_v2 and mouse_pwms_v2,
 version 0.2 with filtering of cisBP motifs) and is also hosted on scMultiome.}
 
 \item{peaks}{A GRanges object indicating the peaks to perform motif annotation on.
 The peak indices should match the \code{idxATAC} column in the regulon.}
+
+\item{version}{numeric indicating data version (for details see \link[scMultiome]{tfBinding})}
+
+\item{peak_number}{numeric indicating threshold to be applied to the number of peaks
+per transcription factor in the combined version of GenomicRanges
+(from all samples and tissues).}
 }
 \value{
 A list of TF binding sites as a \code{GrangesList} object.
 }
 \description{
-Combined transcription factor ChIP-seq data from ChIP-Atlas and ENCODE or
-from CistromeDB and ENCODE.
+Combined transcription factor ChIP-seq data from ChIP-Atlas and ENCODE
 }
 \examples{
 # retrieve TF binding info

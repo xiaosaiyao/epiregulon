@@ -92,20 +92,34 @@
 
 #' @author Xiaosai Yao, Shang-yang Chen
 
-calculateActivity <- function(expMatrix = NULL, exp_assay = "logcounts", regulon = NULL,
-    normalize = FALSE, mode = "weight", method = c("weightedmean", "aucell"), genesets = NULL,
-    clusters = NULL, FUN = c("mean", "sum"), ncore = 1, BPPARAM = BiocParallel::SerialParam()) {
-    if (!is.null(regulon))
-        checkmate::assertMultiClass(regulon, c("data.frame", "DFrame"))
-    if (!is.null(regulon) && !mode %in% colnames(regulon))
-        stop("No such column in the regulon: ", mode)
-    .validate_input_sce(expMatrix, exp_assay, env=environment())
-    if(!is.null(clusters)) .validate_clusters(clusters, expMatrix)
+calculateActivity <- function(expMatrix = NULL,
+                              exp_assay = "logcounts",
+                              regulon = NULL,
+                              normalize = FALSE,
+                              mode = "weight",
+                              method = c("weightedmean", "aucell"),
+                              genesets = NULL,
+                              clusters = NULL,
+                              FUN = c("mean", "sum"),
+                              ncore = 1,
+                              BPPARAM = BiocParallel::SerialParam()) {
+
+    .validate_input_sce(SCE=expMatrix, assay_name=exp_assay, unique_features = TRUE)
+
+    if(!is.null(clusters)) {
+        .validate_clusters(clusters, expMatrix)
+        clusters <- as.vector(clusters)
+
+        if(!all(clusters %in% colnames(regulon[, mode]))) {
+            stop(paste(strwrap(sprintf("Each unique cluster should correspond to a separate column in
+                                  the %s matrix. It seems that addWeights function was run without
+                                  clusters argument or with 'corr' method.", mode)), collapse ="\n"))
+        }
+    }
     method <- tolower(method)
     method <- match.arg(method)
     FUN <- match.arg(FUN)
 
-    regulon <- S4Vectors::DataFrame(regulon)
     # convert expMatrix to CsparseMatrix
     expMatrix <- assay(expMatrix, exp_assay)
     expMatrix <- as(expMatrix, "CsparseMatrix")
@@ -113,24 +127,26 @@ calculateActivity <- function(expMatrix = NULL, exp_assay = "logcounts", regulon
     # convert genesets to regulon
     if (!is.null(genesets)) {
         if (is.list(genesets) | is(genesets, "CompressedSplitDFrameList")) {
-            regulon <- genesets2regulon(genesets)
+            regulon <- genesets2regulon(genesets, mode)
         } else {
             stop("genesets should be a list of data frames or character vectors")
         }
     }
 
+    .validate_regulon(regulon, required_columns = c("tf", "target", mode))
+
     # remove rows with zero weight
     if (is.matrix(regulon[[mode]]) & !is.null(clusters)) {
         #  check all cluster columns
-        regulon <- regulon[which(apply(regulon[[mode]], 1, function(x) any(x[2:length(x)] !=
-            0))), ,drop=FALSE]
+        regulon <- regulon[which(apply(regulon[[mode]], 1,
+                                       function(x) any(x[2:length(x)] !=0))), , drop=FALSE]
     } else if (is.matrix(regulon[[mode]]) & is.null(clusters)) {
         # check all cells column
-        regulon <- regulon[which(apply(regulon[[mode]], 1, function(x) x[1] != 0)), ,
-                           drop=FALSE]
+        regulon <- regulon[which(apply(regulon[[mode]], 1, function(x) x[1] != 0)), , drop=FALSE]
     } else {
         regulon <- regulon[which(regulon[, mode] != 0), , drop=FALSE]
     }
+
     if (nrow(regulon) == 0) {
         warning("No non-zero weight in the regulon")
         return(NULL)
@@ -150,18 +166,17 @@ calculateActivity <- function(expMatrix = NULL, exp_assay = "logcounts", regulon
     if (method == "weightedmean") {
         message("calculating TF activity from regulon using ", method)
 
-
-        # aggregate weights across the same tf-target pairs
         if (is.null(clusters) & length(regulon[1, mode]) > 1) {
-            warning("The ", mode, " column contains multiple subcolumns but no cluster information was provided. Using first column to compute activity...")
+            warning("The ", mode, " column contains multiple subcolumns but no cluster information was provided.
+              Using first column to compute activity...")
             regulon[, mode] <- regulon[, mode][, 1]
         }
 
-        # aggregate weights across the same tf-target pairs
         if (!is.null(clusters)) {
             regulon[, mode] <- I(as.matrix(regulon[, mode]))
         }
 
+        # aggregate weights across the same tf-target pairs
         message("aggregating regulons...")
         aggregated.regulon <- aggregateMatrix(regulon, mode, FUN)
 
@@ -193,11 +208,9 @@ calculateActivity <- function(expMatrix = NULL, exp_assay = "logcounts", regulon
             score.combine <- normalizeByFrequency(score.combine, freq)
 
         } else if (!is.null(clusters)) {
-
             # Calculate the number of targets per cluster
             # freq is a table of tf x clusters and the elements represent the number of targets per tf
-            freq <- initiateMatCluster(clusters, nrow = length(unique(regulon$tf)),
-                value = 1)
+            freq <- initiateMatCluster(clusters, nrow = length(unique(regulon$tf)), value = 1)
             rownames(freq) <- unique(regulon$tf)
 
             message("calculating frequency...")
@@ -207,23 +220,21 @@ calculateActivity <- function(expMatrix = NULL, exp_assay = "logcounts", regulon
             score.combine <- matrix(0, nrow = ncol(expMatrix), ncol = length(unique(regulon$tf)))
             rownames(score.combine) <- colnames(expMatrix)
             colnames(score.combine) <- colnames(tf_target_mat[[1]])
-            score.combine <- as(score.combine, "CsparseMatrix")
 
             message("calculating activity scores...")
-            score.combine <- calculateScore(expMatrix, tf_target_mat, clusters = clusters,
-                score.combine)
+            score.combine <- calculateScore(expMatrix, tf_target_mat, clusters = clusters, score.combine)
 
 
             # if normalize gene expression (taking the mean across all cells)
             if (normalize) {
                 message("normalize by mean...")
                 meanExpr <- Matrix::rowMeans(expMatrix[rownames(tf_target_mat[[1]]),
-                  ])
+                ])
                 for (cluster in sort(unique(clusters))) {
-                  # calculate cluster-specific mean
-                  mean_activity <- meanExpr %*% tf_target_mat[[cluster]]
-                  score.combine[clusters == cluster, ] <- sweep(score.combine[clusters ==
-                    cluster, ,drop=FALSE], 2, mean_activity, "-")
+                    # calculate cluster-specific mean
+                    mean_activity <- meanExpr %*% tf_target_mat[[cluster]]
+                    score.combine[clusters == cluster, ] <- sweep(score.combine[clusters == cluster, ,drop=FALSE],
+                                                                  2, mean_activity, "-")
                 }
             }
 
@@ -239,43 +250,35 @@ calculateActivity <- function(expMatrix = NULL, exp_assay = "logcounts", regulon
         geneSets <- split(regulon$target, regulon$tf)
         message("ranking cells...")
         cells_rankings <- AUCell::AUCell_buildRankings(expMatrix, splitByBlocks = TRUE,
-            plotStats = FALSE, BPPARAM = BPPARAM)
+                                                       plotStats = FALSE, BPPARAM = BPPARAM)
         message("calculating AUC...")
         cells_AUC <- AUCell::AUCell_calcAUC(geneSets, rankings = cells_rankings,
-            nCores = ncore)
+                                            nCores = ncore)
 
         score.combine <- AUCell::getAUC(cells_AUC)
     }
     return(score.combine)
 }
 
-genesets2regulon <- function(genesets) {
+genesets2regulon <- function(genesets, mode) {
     regulon <- list()
     for (i in seq_len(length(genesets))) {
         if (is(genesets[[i]], "DFrame") | is(genesets[[i]], "data.frame")) {
-            regulon[[i]] <- S4Vectors::DataFrame(tf = names(genesets)[i],
-                target = genesets[[i]][, 1], weight = genesets[[i]][, 2])
+            # prevent evaluation by quoting
+            geneset_expression <- quote(S4Vectors::DataFrame(tf = names(genesets)[i],
+                                                 target = genesets[[i]][, 1],
+                                                 weight_column = genesets[[i]][, 2]))
         } else if (is.vector(genesets[[i]])) {
-            regulon[[i]] <- S4Vectors::DataFrame(tf = names(genesets)[i],
-                target = genesets[[i]], weight = 1)
+            geneset_expression <- quote(S4Vectors::DataFrame(tf = names(genesets)[i],
+                                                 target = genesets[[i]],
+                                                 weight_column = 1))
         }
+        # change call argument name
+        names(geneset_expression)[names(geneset_expression)=="weight_column"] <- mode
+        regulon[[i]] <- eval(geneset_expression)
     }
 
     regulon <- do.call(rbind, as.list(regulon))
-}
-
-
-genesets2regulon <- function(genesets) {
-  regulon <- lapply(seq_along(genesets), function(i){
-    if(is(genesets[[i]], "DFrame") | is(genesets[[i]], "data.frame")){
-      S4Vectors::DataFrame(tf = names(genesets)[i],
-                           target = genesets[[i]][, 1], weight = genesets[[i]][, 2])
-    }
-    else if (is.vector(genesets[[i]])) {
-      S4Vectors::DataFrame(tf = names(genesets)[i], target = genesets[[i]], weight = 1)
-    }
-  })
-  regulon <- do.call(rbind, as.list(regulon))
 }
 
 
@@ -288,8 +291,10 @@ createTfTgMat <- function(regulon, mode, clusters = NULL) {
     n_tf <- length(unique(regulon$tf))
 
     if (is.null(clusters)) {
-        tf_target_mat <- Matrix::sparseMatrix(x = as.vector(regulon[, mode]), i = regulon$targetidx,
-            j = regulon$tfidx, dims = c(n_target, n_tf))
+        tf_target_mat <- Matrix::sparseMatrix(x = as.vector(regulon[, mode]),
+                                              i = regulon$targetidx,
+                                              j = regulon$tfidx,
+                                              dims = c(n_target, n_tf))
 
         colnames(tf_target_mat) <- levels(as.factor(regulon$tf))
         rownames(tf_target_mat) <- levels(as.factor(regulon$target))
@@ -298,9 +303,10 @@ createTfTgMat <- function(regulon, mode, clusters = NULL) {
     } else if (!is.null(clusters)) {
         tf_target_mat <- list()
         for (cluster in unique(clusters)) {
-            tf_target_mat[[cluster]] <- Matrix::sparseMatrix(x = as.vector(regulon[,
-                mode][, cluster]), i = regulon$targetidx, j = regulon$tfidx, dims = c(n_target,
-                n_tf))
+            tf_target_mat[[cluster]] <- Matrix::sparseMatrix(x = as.vector(regulon[, mode][, cluster]),
+                                                             i = regulon$targetidx,
+                                                             j = regulon$tfidx,
+                                                             dims = c(n_target, n_tf))
 
             colnames(tf_target_mat[[cluster]]) <- levels(as.factor(regulon$tf))
             rownames(tf_target_mat[[cluster]]) <- levels(as.factor(regulon$target))
@@ -313,11 +319,10 @@ createTfTgMat <- function(regulon, mode, clusters = NULL) {
 
 
 
-calculateScore <- function(expMatrix, tf_target_mat, clusters = NULL,
-    score.combine = NULL) {
+calculateScore <- function(expMatrix, tf_target_mat, clusters = NULL, score.combine = NULL) {
     if (is.null(clusters)) {
         score.combine <- Matrix::t(expMatrix[rownames(tf_target_mat),
-            , drop = FALSE]) %*% tf_target_mat
+                                             , drop = FALSE]) %*% tf_target_mat
         rownames(score.combine) <- colnames(expMatrix)
         colnames(score.combine) <- colnames(tf_target_mat)
 
@@ -325,9 +330,9 @@ calculateScore <- function(expMatrix, tf_target_mat, clusters = NULL,
 
         for (cluster in sort(unique(clusters))) {
             expr_data <- expMatrix[rownames(tf_target_mat[[cluster]]),
-                clusters == cluster, drop = FALSE]
-            score.combine[clusters == cluster, ] <- Matrix::t(expr_data) %*%
-                tf_target_mat[[cluster]]
+                                   clusters == cluster, drop = FALSE]
+            score.combine[clusters == cluster, ] <- as.matrix(Matrix::t(expr_data) %*%
+                                                                  tf_target_mat[[cluster]])
         }
     }
     score.combine
@@ -339,8 +344,7 @@ calculateFrequency <- function(freq = NULL, regulon, mode) {
         freq[freq == 0 | is.na(freq)] <- 1
     } else {
         for (cluster in colnames(regulon[, mode])) {
-            freq_counts <- table(regulon$tf[which(regulon[, mode][, cluster] !=
-                0)])
+            freq_counts <- table(regulon$tf[which(regulon[, mode][, cluster] != 0)])
             freq_counts[freq_counts == 0] <- 1
             freq[names(freq_counts), cluster] <- freq_counts
         }
@@ -349,18 +353,14 @@ calculateFrequency <- function(freq = NULL, regulon, mode) {
     freq
 }
 
-normalizeByFrequency <- function(score.combine,
-    freq, clusters = NULL) {
+normalizeByFrequency <- function(score.combine, freq, clusters = NULL) {
     if (is.null(clusters)) {
-        score.combine[, names(freq)] <- sweep(score.combine[,
-            names(freq), drop = FALSE], 2, freq,
-            "/")
+        score.combine[, names(freq)] <- sweep(score.combine[, names(freq), drop = FALSE], 2, freq, "/")
     } else {
         for (cluster in unique(clusters)) {
             score.combine[clusters == cluster,
-                rownames(freq)] <- sweep(score.combine[clusters ==
-                cluster, rownames(freq), drop = FALSE],
-                2, freq[, cluster], "/")
+                          rownames(freq)] <- sweep(score.combine[clusters == cluster, rownames(freq), drop = FALSE],
+                                                   2, freq[, cluster], "/")
         }
     }
     score.combine
