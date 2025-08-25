@@ -29,16 +29,18 @@ Imports:
     scuttle,
     stats,
     utils,
-    scMultiome,
+    AnnotationHub,
     GenomeInfoDb,
     GenomicRanges,
-    AUCell,
     BSgenome.Hsapiens.UCSC.hg19,
     BSgenome.Hsapiens.UCSC.hg38,
     BSgenome.Mmusculus.UCSC.mm10,
     motifmatchr,
     IRanges,
-    beachmat
+    beachmat,
+    HDF5Array,
+    rhdf5,
+    MultiAssayExperiment
 Depends:
     R (>= 4.4),
     SingleCellExperiment

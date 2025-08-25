@@ -10,7 +10,7 @@ calculateActivity(
   regulon = NULL,
   normalize = FALSE,
   mode = "weight",
-  method = c("weightedmean", "aucell"),
+  method = deprecated(),
   genesets = NULL,
   clusters = NULL,
   FUN = c("mean", "sum"),
@@ -31,8 +31,6 @@ indicating degree of association between tf and target such as 'mor' or 'corr' o
 \item{normalize}{Logical indicating whether row means should be subtracted from expression matrix. default is FALSE}
 
 \item{mode}{String indicating the name of column to be used as the weights}
-
-\item{method}{String indicating the method for calculating activity. Available methods are \code{weightedMean} or \code{aucell}}
 
 \item{genesets}{A list of genesets. Each list element can be a dataframe with the first column indicating the genes and second column indicating the weights.
 Alternatively, each list element is a character vector corresponding to the genes in the geneset. A feature set collection in the form of CompressedSplitDataFrameList that

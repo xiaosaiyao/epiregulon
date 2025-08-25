@@ -8,7 +8,6 @@
 #' indicating degree of association between tf and target such as 'mor' or 'corr' obtained from `addWeights`.
 #' @param normalize Logical indicating whether row means should be subtracted from expression matrix. default is FALSE
 #' @param mode String indicating the name of column to be used as the weights
-#' @param method String indicating the method for calculating activity. Available methods are `weightedMean` or `aucell`
 #' @param genesets A list of genesets. Each list element can be a dataframe with the first column indicating the genes and second column indicating the weights.
 #' Alternatively, each list element is a character vector corresponding to the genes in the geneset. A feature set collection in the form of CompressedSplitDataFrameList that
 #' contains genes in the first column and weights in the second column. See details
@@ -97,12 +96,16 @@ calculateActivity <- function(expMatrix = NULL,
                               regulon = NULL,
                               normalize = FALSE,
                               mode = "weight",
-                              method = c("weightedmean", "aucell"),
+                              method = deprecated(),
                               genesets = NULL,
                               clusters = NULL,
                               FUN = c("mean", "sum"),
                               ncore = 1,
                               BPPARAM = BiocParallel::SerialParam()) {
+
+    if (lifecycle::is_present(method)) {
+        warning("Argument 'method' to calculateActivity was deprecated in epiregulon 2.0.0")
+    }
 
     .validate_input_sce(SCE=expMatrix, assay_name=exp_assay, unique_features = TRUE)
 
@@ -116,8 +119,6 @@ calculateActivity <- function(expMatrix = NULL,
                                   clusters argument or with 'corr' method.", mode)), collapse ="\n"))
         }
     }
-    method <- tolower(method)
-    method <- match.arg(method)
     FUN <- match.arg(FUN)
 
     # convert expMatrix to CsparseMatrix
@@ -163,101 +164,86 @@ calculateActivity <- function(expMatrix = NULL,
     regulon <- regulon[which(regulon$target %in% rownames(expMatrix)), , drop = FALSE]
 
     # calculate activity
-    if (method == "weightedmean") {
-        message("calculating TF activity from regulon using ", method)
+    message("calculating TF activity from regulon using ", method)
 
-        if (is.null(clusters) & length(regulon[1, mode]) > 1) {
-            warning("The ", mode, " column contains multiple subcolumns but no cluster information was provided.
-              Using first column to compute activity...")
-            regulon[, mode] <- regulon[, mode][, 1]
-        }
-
-        if (!is.null(clusters)) {
-            regulon[, mode] <- I(as.matrix(regulon[, mode]))
-        }
-
-        # aggregate weights across the same tf-target pairs
-        message("aggregating regulons...")
-        aggregated.regulon <- aggregateMatrix(regulon, mode, FUN)
-
-
-        # create tf x target matrix of weights
-        message("creating weight matrix...")
-        tf_target_mat <- createTfTgMat(aggregated.regulon, mode, clusters = clusters)
-
-
-        # if cluster information is provided and if there are cluster-specific weights provided,
-        # compute total activity by summation of cluster-specific activity
-        if (is.null(clusters)) {
-            # if no cluster information is provided, calculate activity for all cells
-
-            message("calculating activity scores...")
-            # cross product of expMatrix and tf_target matrix
-            score.combine <- calculateScore(expMatrix, tf_target_mat)
-
-            # need to normalize
-            if (normalize) {
-                message("normalize by mean...")
-                meanExpr <- Matrix::rowMeans(expMatrix[rownames(tf_target_mat), ,drop=FALSE])
-                mean_activity <- meanExpr %*% tf_target_mat
-                score.combine <- sweep(score.combine, 2, mean_activity, "-")
-            }
-            message("normalize by the number of targets...")
-            #normalize by number of targets
-            freq <- calculateFrequency(regulon = aggregated.regulon, mode = mode)
-            score.combine <- normalizeByFrequency(score.combine, freq)
-
-        } else if (!is.null(clusters)) {
-            # Calculate the number of targets per cluster
-            # freq is a table of tf x clusters and the elements represent the number of targets per tf
-            freq <- initiateMatCluster(clusters, nrow = length(unique(regulon$tf)), value = 1)
-            rownames(freq) <- unique(regulon$tf)
-
-            message("calculating frequency...")
-            freq <- calculateFrequency(freq, aggregated.regulon, mode = mode)
-
-            # Calculating scores
-            score.combine <- matrix(0, nrow = ncol(expMatrix), ncol = length(unique(regulon$tf)))
-            rownames(score.combine) <- colnames(expMatrix)
-            colnames(score.combine) <- colnames(tf_target_mat[[1]])
-
-            message("calculating activity scores...")
-            score.combine <- calculateScore(expMatrix, tf_target_mat, clusters = clusters, score.combine)
-
-
-            # if normalize gene expression (taking the mean across all cells)
-            if (normalize) {
-                message("normalize by mean...")
-                meanExpr <- Matrix::rowMeans(expMatrix[rownames(tf_target_mat[[1]]),
-                ])
-                for (cluster in sort(unique(clusters))) {
-                    # calculate cluster-specific mean
-                    mean_activity <- meanExpr %*% tf_target_mat[[cluster]]
-                    score.combine[clusters == cluster, ] <- sweep(score.combine[clusters == cluster, ,drop=FALSE],
-                                                                  2, mean_activity, "-")
-                }
-            }
-
-            message("normalize by number of targets...")
-            # normalize by the number of target genes
-            score.combine <- normalizeByFrequency(score.combine, freq, clusters = clusters)
-
-        }
-        score.combine <- Matrix::t(score.combine)
-
-    } else if (method == "aucell") {
-        message("calculating TF activity from regulon using ", method)
-        geneSets <- split(regulon$target, regulon$tf)
-        message("ranking cells...")
-        cells_rankings <- AUCell::AUCell_buildRankings(expMatrix, splitByBlocks = TRUE,
-                                                       plotStats = FALSE, BPPARAM = BPPARAM)
-        message("calculating AUC...")
-        cells_AUC <- AUCell::AUCell_calcAUC(geneSets, rankings = cells_rankings,
-                                            nCores = ncore)
-
-        score.combine <- AUCell::getAUC(cells_AUC)
+    if (is.null(clusters) & length(regulon[1, mode]) > 1) {
+        warning("The ", mode, " column contains multiple subcolumns but no cluster information was provided.
+          Using first column to compute activity...")
+        regulon[, mode] <- regulon[, mode][, 1]
     }
-    return(score.combine)
+
+    if (!is.null(clusters)) {
+        regulon[, mode] <- I(as.matrix(regulon[, mode]))
+    }
+
+    # aggregate weights across the same tf-target pairs
+    message("aggregating regulons...")
+    aggregated.regulon <- aggregateMatrix(regulon, mode, FUN)
+
+
+    # create tf x target matrix of weights
+    message("creating weight matrix...")
+    tf_target_mat <- createTfTgMat(aggregated.regulon, mode, clusters = clusters)
+
+
+    # if cluster information is provided and if there are cluster-specific weights provided,
+    # compute total activity by summation of cluster-specific activity
+    if (is.null(clusters)) {
+        # if no cluster information is provided, calculate activity for all cells
+
+        message("calculating activity scores...")
+        # cross product of expMatrix and tf_target matrix
+        score.combine <- calculateScore(expMatrix, tf_target_mat)
+
+        # need to normalize
+        if (normalize) {
+            message("normalize by mean...")
+            meanExpr <- Matrix::rowMeans(expMatrix[rownames(tf_target_mat), ,drop=FALSE])
+            mean_activity <- meanExpr %*% tf_target_mat
+            score.combine <- sweep(score.combine, 2, mean_activity, "-")
+        }
+        message("normalize by the number of targets...")
+        #normalize by number of targets
+        freq <- calculateFrequency(regulon = aggregated.regulon, mode = mode)
+        score.combine <- normalizeByFrequency(score.combine, freq)
+
+    } else if (!is.null(clusters)) {
+        # Calculate the number of targets per cluster
+        # freq is a table of tf x clusters and the elements represent the number of targets per tf
+        freq <- initiateMatCluster(clusters, nrow = length(unique(regulon$tf)), value = 1)
+        rownames(freq) <- unique(regulon$tf)
+
+        message("calculating frequency...")
+        freq <- calculateFrequency(freq, aggregated.regulon, mode = mode)
+
+        # Calculating scores
+        score.combine <- matrix(0, nrow = ncol(expMatrix), ncol = length(unique(regulon$tf)))
+        rownames(score.combine) <- colnames(expMatrix)
+        colnames(score.combine) <- colnames(tf_target_mat[[1]])
+
+        message("calculating activity scores...")
+        score.combine <- calculateScore(expMatrix, tf_target_mat, clusters = clusters, score.combine)
+
+
+        # if normalize gene expression (taking the mean across all cells)
+        if (normalize) {
+            message("normalize by mean...")
+            meanExpr <- Matrix::rowMeans(expMatrix[rownames(tf_target_mat[[1]]),
+            ])
+            for (cluster in sort(unique(clusters))) {
+                # calculate cluster-specific mean
+                mean_activity <- meanExpr %*% tf_target_mat[[cluster]]
+                score.combine[clusters == cluster, ] <- sweep(score.combine[clusters == cluster, ,drop=FALSE],
+                                                              2, mean_activity, "-")
+            }
+        }
+
+        message("normalize by number of targets...")
+        # normalize by the number of target genes
+        score.combine <- normalizeByFrequency(score.combine, freq, clusters = clusters)
+
+    }
+    score.combine <- Matrix::t(score.combine)
 }
 
 genesets2regulon <- function(genesets, mode) {

@@ -10,7 +10,7 @@ getTFMotifInfo(
   metadata = FALSE,
   mode = c("occupancy", "motif"),
   peaks = NULL,
-  version = 1,
+  version = 2,
   peak_number = 1000
 )
 }

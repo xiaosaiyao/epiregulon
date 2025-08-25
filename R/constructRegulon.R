@@ -1,3 +1,71 @@
+# code copied from scMultiome package
+
+tfBinding <- function(genome = c("hg38", "hg19", "mm10"),
+                      source = c("atlas", "encode.sample", "atlas.sample","atlas.tissue"),
+                      metadata = FALSE,
+                      version=1,
+                      peak_number = 1000) {
+    checkmate::assertFlag(metadata)
+    genome <- match.arg(genome, several.ok = FALSE)
+    source <- match.arg(source, several.ok = FALSE)
+    checkmate::assert_choice(version, c(1,2))
+    key <- paste0(c(genome, source), collapse=".")
+    if(version==1){
+        message("Retrieving chip-seq data, version 1")
+        to_file_dict <- c(hg38.atlas="tfBinding_hg38_atlas.rds",
+                          hg19.atlas = "tfBinding_hg19_atlas.rds",
+                          mm10.atlas = "tfBinding_mm10_atlas.rds",
+                          hg38.atlas.sample="tfBinding_hg38_atlas.sample.rds",
+                          hg19.atlas.sample = "tfBinding_hg19_atlas.sample.rds",
+                          mm10.atlas.sample = "tfBinding_mm10_atlas.sample.rds",
+                          hg38.encode.sample = "tfBinding_hg38_encode.sample.rds",
+                          hg19.encode.sample = "tfBinding_hg19_encode.sample.rds",
+                          mm10.encode.sample = "tfBinding_mm10_encode.sample.rds",
+                          hg38.atlas.tissue = "tfBinding_hg38_atlas.tissue.rds",
+                          hg19.atlas.tissue = "tfBinding_hg19_atlas.tissue.rds",
+                          mm10.atlas.tissue = "tfBinding_mm10_atlas.tissue.rds")
+    }
+    else{
+        message("Version 2 of the chip-seq data is being retrieved. For reproducibility with the scMultiome version < 1.7.1 please set version = 1.")
+        to_file_dict <- c(hg38.atlas="tfBinding_hg38_atlas.rds",
+                          hg19.atlas = "tfBinding_hg19_atlas.rds",
+                          mm10.atlas = "tfBinding_mm10_atlas.rds",
+                          hg38.atlas.sample="tfBinding_hg38_atlas.sample_v2.rds",
+                          hg19.atlas.sample = "tfBinding_hg19_atlas.sample_v2.rds",
+                          mm10.atlas.sample = "tfBinding_mm10_atlas.sample_v2.rds",
+                          hg38.encode.sample = "tfBinding_hg38_encode.sample_v2.rds",
+                          hg19.encode.sample = "tfBinding_hg19_encode.sample_v2.rds",
+                          mm10.encode.sample = "tfBinding_mm10_encode.sample_v2.rds",
+                          hg38.atlas.tissue = "tfBinding_hg38_atlas.tissue_v2.rds",
+                          hg19.atlas.tissue = "tfBinding_hg19_atlas.tissue_v2.rds",
+                          mm10.atlas.tissue = "tfBinding_mm10_atlas.tissue_v2.rds")
+
+    }
+
+    eh <- AnnotationHub::query(ExperimentHub::ExperimentHub(),
+                               pattern = c("scMultiome", "tfBinding", to_file_dict[key]))
+
+    if (source %in% c("atlas")) {
+        eh_ID <- sort(eh$ah_id)[1]
+    } else {
+        eh_ID <- eh$ah_id
+    }
+
+
+    ans <-
+        if (metadata) {
+            eh[eh_ID]
+        } else {
+            readRDS(eh[[eh_ID]])
+        }
+
+    if(version==2 && !grepl("(sample|tissue)", to_file_dict[key])){
+        ans <- ans[unlist(lapply(ans,length)) >= peak_number]
+    }
+
+    return(ans)
+}
+
 #' Retrieve TF binding sites or motif positions
 #'
 #' Combined transcription factor ChIP-seq data from ChIP-Atlas and ENCODE
@@ -39,31 +107,18 @@ getTFMotifInfo <- function(genome = c("hg38", "hg19", "mm10"),
                            metadata = FALSE,
                            mode = c("occupancy", "motif"),
                            peaks = NULL,
-                           version = 1,
+                           version = 2,
                            peak_number = 1000) {
     genome <- match.arg(genome)
     source <- match.arg(source)
     mode <- match.arg(mode)
 
     if (mode == "occupancy") {
-        if("version" %in% names(formals(scMultiome::tfBinding))){
-            grl <- scMultiome::tfBinding(genome=genome,
-                                         source=source,
-                                         metadata=metadata,
-                                         version = version,
-                                         peak_number = peak_number)
-        }
-        else{
-            if(version!=1) {
-                stop(paste(strwrap("Only version 1 of  the chip-seq data is
-                available from the current installation of scMultime package. To
-                     access version 2, please install scMultiome version 1.7.1
-                                   or greater."),collapse = "\n"))
-            }
-            grl <- scMultiome::tfBinding(genome=genome,
-                                         source=source,
-                                         metadata=metadata)
-        }
+        grl <- tfBinding(genome=genome,
+                         source=source,
+                         metadata=metadata,
+                         version = version,
+                         peak_number = peak_number)
 
     } else {
         checkmate::assert_class(peaks, "GRanges")
@@ -86,7 +141,6 @@ getTFMotifInfo <- function(genome = c("hg38", "hg19", "mm10"),
     }
     grl
 }
-
 
 
 #' Add TF binding motif occupancy information to the peak2gene object
