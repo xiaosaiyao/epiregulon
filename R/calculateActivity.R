@@ -341,12 +341,12 @@ calculateFrequency <- function(freq = NULL, regulon, mode) {
 
 normalizeByFrequency <- function(score.combine, freq, clusters = NULL) {
     if (is.null(clusters)) {
-        score.combine[, names(freq)] <- sweep(score.combine[, names(freq), drop = FALSE], 2, freq, "/")
+        score.combine[, names(freq)]@x <- score.combine[, names(freq)]@x/freq[score.combine[, names(freq)]@i+1]
     } else {
         for (cluster in unique(clusters)) {
-            score.combine[clusters == cluster,
-                          rownames(freq)] <- sweep(score.combine[clusters == cluster, rownames(freq), drop = FALSE],
-                                                   2, freq[, cluster], "/")
+            score.combine[clusters == cluster, names(freq)]@x <- score.combine[clusters == cluster,
+                                                                               names(freq)]@x/freq[, cluster][score.combine[clusters == cluster,
+                                                                                                                            names(freq)]@i+1]
         }
     }
     score.combine
