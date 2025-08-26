@@ -63,24 +63,11 @@ Prior to using `epiregulon`, single cell preprocessing needs to performed by use
 
 This tutorial demonstrates the basic functions of `epiregulon`, using the reprogram-seq dataset which can be downloaded from the `r BiocStyle::Biocpkg("scMultiome")` package. In this example, prostate cancer cells (LNCaP) were infected in separate wells with viruses encoding 4 transcription factors (NKX2-1, GATA6, FOXA1 and FOXA2) and a positive control (mNeonGreen) before pooling. The identity of the infected transcription factors was tracked through cell hashing (available in the field `hash_assignment` of the `colData`) and serves as the ground truth.
 
-```{r eval=FALSE}
+```{r}
 # load the MAE object
 library(scMultiome)
-library(beachmat.hdf5)
 mae <- scMultiome::reprogramSeq()
 
-```
-```{r echo=FALSE}
-library(ExperimentHub)
-experiments = c("TileMatrix500",
-                "GeneExpressionMatrix",
-                "PeakMatrix")
-
-eh <- query(ExperimentHub(), pattern = c("scMultiome", "reprogramSeq"))
-EH_ID <- names(eh[[1]])
-mae <- epiregulon:::loadMAE(file = eh[[EH_ID]], experiments, verbose=TRUE)
-```
-```{r}
 # extract peak matrix
 PeakMatrix <- mae[["PeakMatrix"]]
 

@@ -37,10 +37,7 @@ Imports:
     BSgenome.Mmusculus.UCSC.mm10,
     motifmatchr,
     IRanges,
-    beachmat,
-    HDF5Array,
-    rhdf5,
-    MultiAssayExperiment
+    beachmat
 Depends:
     R (>= 4.4),
     SingleCellExperiment
@@ -52,7 +49,7 @@ Suggests:
     testthat (>= 3.0.0),
     coin,
     scater,
-    beachmat.hdf5
+    scMultiome
 LinkingTo: 
     Rcpp,
     beachmat,
