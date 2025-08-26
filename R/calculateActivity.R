@@ -198,9 +198,9 @@ calculateActivity <- function(expMatrix = NULL,
         # need to normalize
         if (normalize) {
             message("normalize by mean...")
-            meanExpr <- Matrix::rowMeans(expMatrix[rownames(tf_target_mat), ,drop=FALSE])
-            mean_activity <- meanExpr %*% tf_target_mat
-            score.combine <- sweep(score.combine, 2, mean_activity, "-")
+            meanExpr <- Matrix::rowMeans(expMatrix[colnames(tf_target_mat), ,drop=FALSE])
+            mean_activity <- tf_target_mat %*% meanExpr
+            score.combine <- sweep(score.combine, 1, mean_activity, "-")
         }
         message("normalize by the number of targets...")
         #normalize by number of targets
@@ -217,9 +217,10 @@ calculateActivity <- function(expMatrix = NULL,
         freq <- calculateFrequency(freq, aggregated.regulon, mode = mode)
 
         # Calculating scores
-        score.combine <- matrix(0, nrow = ncol(expMatrix), ncol = length(unique(regulon$tf)))
-        rownames(score.combine) <- colnames(expMatrix)
-        colnames(score.combine) <- colnames(tf_target_mat[[1]])
+        score.combine <- as(matrix(0, nrow = length(unique(regulon$tf)), ncol = ncol(expMatrix)), "CsparseMatrix")
+        rownames(score.combine) <- rownames(tf_target_mat[[1]])
+        colnames(score.combine) <- colnames(expMatrix)
+
 
         message("calculating activity scores...")
         score.combine <- calculateScore(expMatrix, tf_target_mat, clusters = clusters, score.combine)
@@ -228,13 +229,13 @@ calculateActivity <- function(expMatrix = NULL,
         # if normalize gene expression (taking the mean across all cells)
         if (normalize) {
             message("normalize by mean...")
-            meanExpr <- Matrix::rowMeans(expMatrix[rownames(tf_target_mat[[1]]),
+            meanExpr <- Matrix::rowMeans(expMatrix[colnames(tf_target_mat[[1]]),
             ])
             for (cluster in sort(unique(clusters))) {
                 # calculate cluster-specific mean
-                mean_activity <- meanExpr %*% tf_target_mat[[cluster]]
-                score.combine[clusters == cluster, ] <- sweep(score.combine[clusters == cluster, ,drop=FALSE],
-                                                              2, mean_activity, "-")
+                mean_activity <-  tf_target_mat[[cluster]] %*%  meanExpr
+                score.combine[,clusters == cluster] <- sweep(score.combine[,clusters == cluster,drop=FALSE],
+                                                              1, mean_activity, "-")
             }
         }
 
@@ -243,7 +244,7 @@ calculateActivity <- function(expMatrix = NULL,
         score.combine <- normalizeByFrequency(score.combine, freq, clusters = clusters)
 
     }
-    score.combine <- Matrix::t(score.combine)
+    score.combine
 }
 
 genesets2regulon <- function(genesets, mode) {
@@ -277,25 +278,27 @@ createTfTgMat <- function(regulon, mode, clusters = NULL) {
     n_tf <- length(unique(regulon$tf))
 
     if (is.null(clusters)) {
-        tf_target_mat <- Matrix::sparseMatrix(x = as.vector(regulon[, mode]),
-                                              i = regulon$targetidx,
-                                              j = regulon$tfidx,
-                                              dims = c(n_target, n_tf))
+        regulon <- regulon[,]
+        # prevent zeros from being included in the x slot of the sparse matrix
+        tf_target_mat <- Matrix::sparseMatrix(x = as.vector(regulon[, mode])[regulon[, mode]!=0],
+                                              i = regulon$tfidx[regulon[, mode]!=0],
+                                              j = regulon$targetidx[regulon[, mode]!=0],
+                                              dims = c(n_tf, n_target))
 
-        colnames(tf_target_mat) <- levels(as.factor(regulon$tf))
-        rownames(tf_target_mat) <- levels(as.factor(regulon$target))
+        rownames(tf_target_mat) <- levels(as.factor(regulon$tf))
+        colnames(tf_target_mat) <- levels(as.factor(regulon$target))
         tf_target_mat[is.na(tf_target_mat)] <- 0
 
     } else if (!is.null(clusters)) {
         tf_target_mat <- list()
         for (cluster in unique(clusters)) {
-            tf_target_mat[[cluster]] <- Matrix::sparseMatrix(x = as.vector(regulon[, mode][, cluster]),
-                                                             i = regulon$targetidx,
-                                                             j = regulon$tfidx,
-                                                             dims = c(n_target, n_tf))
+            tf_target_mat[[cluster]] <- Matrix::sparseMatrix(x = as.vector(regulon[, mode][, cluster])[regulon[, mode][, cluster]!=0],
+                                                             i = regulon$tfidx[regulon[, mode][, cluster]!=0],
+                                                             j = regulon$targetidx[regulon[, mode][, cluster]!=0],
+                                                             dims = c(n_tf, n_target))
 
-            colnames(tf_target_mat[[cluster]]) <- levels(as.factor(regulon$tf))
-            rownames(tf_target_mat[[cluster]]) <- levels(as.factor(regulon$target))
+            rownames(tf_target_mat[[cluster]]) <- levels(as.factor(regulon$tf))
+            colnames(tf_target_mat[[cluster]]) <- levels(as.factor(regulon$target))
             tf_target_mat[[cluster]][is.na(tf_target_mat[[cluster]])] <- 0
         }
     }
@@ -307,18 +310,18 @@ createTfTgMat <- function(regulon, mode, clusters = NULL) {
 
 calculateScore <- function(expMatrix, tf_target_mat, clusters = NULL, score.combine = NULL) {
     if (is.null(clusters)) {
-        score.combine <- Matrix::t(expMatrix[rownames(tf_target_mat),
-                                             , drop = FALSE]) %*% tf_target_mat
-        rownames(score.combine) <- colnames(expMatrix)
-        colnames(score.combine) <- colnames(tf_target_mat)
+        score.combine <- tf_target_mat %*% expMatrix[colnames(tf_target_mat),
+                                             , drop = FALSE]
+        rownames(score.combine) <- rownames(tf_target_mat)
+        colnames(score.combine) <- colnames(expMatrix)
 
     } else {
 
         for (cluster in sort(unique(clusters))) {
-            expr_data <- expMatrix[rownames(tf_target_mat[[cluster]]),
+            expr_data <- expMatrix[colnames(tf_target_mat[[cluster]]),
                                    clusters == cluster, drop = FALSE]
-            score.combine[clusters == cluster, ] <- as.matrix(Matrix::t(expr_data) %*%
-                                                                  tf_target_mat[[cluster]])
+            score.combine[rownames(tf_target_mat[[cluster]]), clusters == cluster] <- tf_target_mat[[cluster]] %*% expr_data
+            score.combine[rownames(tf_target_mat[[cluster]]), clusters == cluster] <- (tf_target_mat[[cluster]] %*% expr_data)[,]
         }
     }
     score.combine
@@ -341,12 +344,29 @@ calculateFrequency <- function(freq = NULL, regulon, mode) {
 
 normalizeByFrequency <- function(score.combine, freq, clusters = NULL) {
     if (is.null(clusters)) {
-        score.combine[, names(freq)]@x <- score.combine[, names(freq)]@x/freq[score.combine[, names(freq)]@i+1]
+        freq <- setNames(as.numeric(freq), names(freq))
+        if (is(score.combine, "CsparseMatrix")){
+            score.combine[names(freq), ]@x <- score.combine[names(freq),]@x/freq[score.combine[names(freq),]@i+1]
+        }
+        else{
+            score.combine[names(freq), ] <- sweep(score.combine[names(freq),, drop = FALSE], 1, freq,"/")
+        }
     } else {
+        freq <- matrix(as.numeric(freq), nrow=dim(freq)[1], ncol=dim(freq)[2], dimnames=dimnames(freq))
         for (cluster in unique(clusters)) {
-            score.combine[clusters == cluster, names(freq)]@x <- score.combine[clusters == cluster,
-                                                                               names(freq)]@x/freq[, cluster][score.combine[clusters == cluster,
-                                                                                                                            names(freq)]@i+1]
+            freq_c = freq[, cluster]
+            if(is(score.combine, "CsparseMatrix")){
+                # find corresponding frequency for each value in the the score.combine
+                freq_x = freq_c[score.combine[rownames(freq),clusters == cluster]@i+1]
+                score.combine[rownames(freq),clusters == cluster]@x <- score.combine[rownames(freq), clusters == cluster]@x/freq_x
+            }
+            else{
+                score.combine[rownames(freq), clusters == cluster] <- sweep(score.combine[rownames(freq),
+                                                                                          clusters == cluster,
+                                                                                          drop = FALSE], 1, freq_c, "/")
+
+            }
+
         }
     }
     score.combine
