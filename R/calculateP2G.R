@@ -79,9 +79,9 @@ calculateP2G <- function(peakMatrix = NULL,
                          frac_RNA = 0,
                          frac_ATAC = 0,
                          BPPARAM = BiocParallel::SerialParam()) {
-  
+
   writeLines("Using epiregulon to compute peak to gene links...")
-  
+
   # check inputs
   cor_method <- match.arg(cor_method)
   assignment_method <- match.arg(assignment_method)
@@ -95,129 +95,127 @@ calculateP2G <- function(peakMatrix = NULL,
     .validate_clusters(clusters, expMatrix)
     clusters <- as.vector(clusters)
   }
-  
+
   if (!gene_symbol %in% colnames(rowData(expMatrix))) {
     stop("colData of expMatrix does not contain ", gene_symbol)
   }
   if (cellNum > ncol(expMatrix)) stop("The value of 'cellNum' parameter cannot be greater than the total number of cells")
-  
+
   # Package expression matrix and peak matrix into a single sce
   sce <- combineSCE(expMatrix, exp_assay, peakMatrix, peak_assay, reducedDim, useDim)
-  
+
   message("performing k means clustering to form metacells")
-  
+
   kNum <- trunc(ncol(sce)/cellNum)
-  kclusters <- scran::clusterCells(sce, 
-                                   use.dimred = useDim, 
-                                   BLUSPARAM = bluster::KmeansParam(centers = kNum,iter.max = 5000))
+  cluster_numb_warning <- kNum < 5
+  kclusters <- scrapper::clusterKmeans(t(as.matrix(reducedDim(sce,useDim))),k = kNum)$clusters
   kclusters <- as.character(kclusters)
-  cluster_numb_warning <- length(unique(kclusters)) < 5
-  
+
   # aggregate sce by k-means clusters
-  sce_grouped <- aggregateAcrossCellsFast(sce, 
+  sce_grouped <- aggregateAcrossCellsFast(sce,
                                           clusters = kclusters,
                                           assay.name = NULL,
                                           fun_name = "mean", aggregateColData = TRUE)
-  
+
   # some sces have strand information in metadata that conflicts with genomic ranges
   mcols(expMatrix)$strand <- NULL
-  
+
   # keep track of original ATAC and expression indices
   rowData(sce_grouped)$old.idxRNA <- seq_len(nrow(sce_grouped))
   rowData(altExp(sce_grouped))$old.idxATAC <- seq_len(nrow(altExp(sce_grouped)))
-  
+
   # filter gene expression matrix based on fraction of cells expressing gene
   cells_express_rna <- rowSums(assay(sce_grouped) > 0)
   frac_expressed_rna <- cells_express_rna/ncol(assay(sce_grouped))
   sce_grouped <- sce_grouped[frac_expressed_rna > frac_RNA, ]
-  
+
   # filter peak matrix based on fraction of cells showing chromatin accessibility
   cells_express_atac <- rowSums(assay(altExp(sce_grouped),"counts") > 0)
   frac_expressed_atac <- cells_express_atac/ncol(assay(altExp(sce_grouped),"counts"))
   altExp(sce_grouped) <- altExp(sce_grouped)[frac_expressed_atac > frac_ATAC, ]
-  
+
   # extract gene expression and peak matrix
   expGroupMatrix <- assay(sce_grouped, "counts")
   peakGroupMatrix <- assay(altExp(sce_grouped), "counts")
-  
-  
+
+
   # get gene information
   geneSet <- rowRanges(sce_grouped)
   geneStart <- resize(geneSet,width = 1)
-  
+
   # get peak range information
   peakSet <- rowRanges(altExp(sce_grouped))
-  
+
   # find overlap after resizing
-  
+
   if (assignment_method == "correlation"){
     o <- DataFrame(findOverlaps(resize(geneStart, maxDist, "center"),
                                 peakSet, ignore.strand = TRUE))
   } else if (assignment_method == "nearest") {
-    
+
     # assign every regulatory element to its nearest gene
     nearest_gene <- DataFrame(distanceToNearest(peakSet, geneStart))
-    
+
     # flip order of query and subject to be consistent with correlation mode
     o <- DataFrame(queryHits=nearest_gene$subjectHits,
                    subjectHits=nearest_gene$queryHits,
                    distance=nearest_gene$distance)
-    
+
     # filter by distance
     o <- o[which(o$distance < maxDist), ]
-    
+
   }
-  
-  
-  
-  
+
+
+
+
   #Get Distance from Fixed point A B
   o$distance <- distance(geneStart[o[, 1]], peakSet[o[, 2]])
   colnames(o) <- c("RNA", "ATAC", "distance")
-  
-  
+
+
   # add old idxRNA and idxATAC
   o$old.idxRNA <- rowData(sce_grouped)[o[, 1], "old.idxRNA"]
   o$old.idxATAC <- rowData(altExp(sce_grouped))[o[, 2], "old.idxATAC"]
-  
+
   #add metadata to o
   o$Gene <- rowData(sce_grouped)[o[, 1], gene_symbol]
   o$chr <- as.character(seqnames(rowRanges(altExp(sce_grouped))[o[, 2]]))
   o$start <- start(rowRanges(altExp(sce_grouped))[o[, 2], ])
   o$end <- end(rowRanges(altExp(sce_grouped))[o[, 2], ])
-  
+
   # Calculate correlation
   expCorMatrix <- expGroupMatrix[as.integer(o$RNA), ]
   peakCorMatrix <- peakGroupMatrix[as.integer(o$ATAC), ]
-  
+
   writeLines("Computing correlation")
-  
+
   # if a cluster is named 'all', replace it to distinguish from all cells
   clusters <- renameCluster(clusters)
-  
+
   unique_clusters <- sort(unique(clusters))
   if (any(unique_clusters=="")) {
     stop("Some of the culster lables are empty strings.")
   }
-  
+
   o$Correlation <- initiateMatCluster(clusters, nrow = nrow(expCorMatrix))
   o$Correlation[, "all"] <- mapply(stats::cor, as.data.frame(t(expCorMatrix)),
                                    as.data.frame(t(peakCorMatrix)), MoreArgs = list(method = cor_method))
-  
+
   # compute correlation within each cluster
   if (!is.null(clusters)) {
     # composition of kcluster
     cluster_composition <- table(clusters, kclusters)
-    cluster_composition <- sweep(cluster_composition, 2, 
+    cluster_composition <- sweep(cluster_composition, 2,
                                  STATS = colSums(cluster_composition),
                                  FUN = "/")
     for (cluster in unique_clusters) {
       clusters_idx <- colnames(cluster_composition)[cluster_composition[cluster,] >= 1/length(unique_clusters)]
-      
+
       if(length(clusters_idx)<5) {
         cluster_numb_warning <- TRUE
       }
-      
+
       if(length(clusters_idx)<3) {
         o$Correlation[, cluster] <- NA
       } else{
@@ -232,43 +230,43 @@ calculateP2G <- function(peakMatrix = NULL,
     if(!is.null(clusters)) {
       suggested_numb <- suggested_numb/length(unique_clusters)
     }
-    
+
     if(round(suggested_numb)<10) {
       warning("The number of aggregated cells in user-specified cluster is low. Consider providing lesser number of clusters")
     }else {
-      warning(sprintf("The number of aggregated cells in user-specified cluster is low. 
+      warning(sprintf("The number of aggregated cells in user-specified cluster is low.
                         Consider dropping cells from small clusters or changing cellNum parameter to %d", round(suggested_numb)))
     }
   }
-  
+
   p2g_merged <- o[, c("old.idxATAC", "chr", "start", "end", "old.idxRNA", "Gene","Correlation", "distance")]
   colnames(p2g_merged) <- c("idxATAC", "chr", "start", "end", "idxRNA", "target","Correlation", "distance")
-  
+
   correlation_max <- apply(p2g_merged$Correlation, 1, max, na.rm = TRUE)
   p2g_merged <- p2g_merged[correlation_max > cor_cutoff, , drop = FALSE]
-  
+
   p2g_merged <- p2g_merged[order(p2g_merged$idxATAC, p2g_merged$idxRNA), , drop = FALSE]
   return(p2g_merged)
-  
+
 }
 
 
 combineSCE <- function(expMatrix, exp_assay, peakMatrix, peak_assay, reducedDim, useDim) {
-  
+
   # convert expMatrix and peakMatrix in case they weren't already so
   expMatrix <- as(expMatrix, "SingleCellExperiment")
   peakMatrix <- as(peakMatrix, "SingleCellExperiment")
-  
-  
-  sce <- SingleCellExperiment(list(counts = assay(expMatrix, exp_assay)), 
+
+
+  sce <- SingleCellExperiment(list(counts = assay(expMatrix, exp_assay)),
                               altExps = list(peakMatrix = SingleCellExperiment(list(counts = assay(peakMatrix,peak_assay)))))
-  
+
   rowRanges(sce) <- rowRanges(expMatrix)
   rowRanges(altExp(sce)) <- rowRanges(peakMatrix)
-  
+
   # add reduced dimension information to sce object
   reducedDim(sce, useDim) <- reducedDim
-  
+
   sce
-  
+
 }

@@ -37,7 +37,8 @@ Imports:
     BSgenome.Mmusculus.UCSC.mm10,
     motifmatchr,
     IRanges,
-    beachmat
+    beachmat,
+    scrapper
 Depends:
     R (>= 4.4),
     SingleCellExperiment
