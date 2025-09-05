@@ -23,8 +23,7 @@ gene.ranges$name <- paste0("Gene_", 1:100)
 rowRanges(gene_sce) <- gene.ranges
 
 # set seed to assure reproducibility with scran::clusterCells
-set.seed(1100)
-clusters <- kmeans(reducedDimMatrix, 10)$cluster
+clusters <- scrapper::clusterKmeans(t(reducedDimMatrix), k=10)$cluster
 
 
 
@@ -90,10 +89,7 @@ test_that("overlap works correctly", {
 
 ### test calculateP2G
 overlap$Correlation <- mapply(cor, asplit(geneExpMatrix.avg[non.zero.genes,][overlap[,1],],1),
-                              asplit(peakMatrix.avg[non.zero.peaks,][overlap[,2],],1))
-
-overlap$Correlation <- mapply(cor, as.data.frame(t(geneExpMatrix.avg[non.zero.genes,][overlap[,1],])),
-                              as.data.frame(t(peakMatrix.avg[non.zero.peaks,][overlap[,2],])))
+                              asplit(peakMatrix.avg[non.zero.peaks,][overlap[,2],],1),MoreArgs = list(method="spearman"))
 
 overlap$distance <- distance(gene.start[overlap[,1], ], peak.ranges[overlap[,2], ])
 
@@ -111,8 +107,6 @@ overlap <- overlap[order(overlap[,2], overlap[,1]),]
 overlap <- overlap[overlap$Correlation > 0.5,]
 overlap <- as.data.frame(overlap)
 
-
-set.seed(1100)
 P2G <- calculateP2G(peakMatrix = peak_sce,
                     peak_assay = "counts",
                     expMatrix = gene_sce,

@@ -16,7 +16,7 @@ calculateP2G(
   peak_assay = "counts",
   gene_symbol = "name",
   clusters = NULL,
-  cor_method = c("pearson", "kendall", "spearman"),
+  cor_method = c("spearman", "pearson", "kendall"),
   assignment_method = c("correlation", "nearest"),
   frac_RNA = 0,
   frac_ATAC = 0,

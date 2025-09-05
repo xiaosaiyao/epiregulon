@@ -37,7 +37,8 @@ Imports:
     BSgenome.Mmusculus.UCSC.mm10,
     motifmatchr,
     IRanges,
-    beachmat
+    beachmat,
+    scrapper
 Depends:
     R (>= 4.4),
     SingleCellExperiment
@@ -51,9 +52,7 @@ Suggests:
     scater,
     scMultiome
 LinkingTo: 
-    Rcpp,
-    beachmat,
-    assorthead
+    Rcpp
 VignetteBuilder: knitr
 URL: https://github.com/xiaosaiyao/epiregulon/
 biocViews: SingleCell, GeneRegulation,NetworkInference,Network, GeneExpression, Transcription, GeneTarget

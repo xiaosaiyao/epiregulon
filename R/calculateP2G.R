@@ -202,23 +202,6 @@ calculateP2G <- function(peakMatrix = NULL,
   o$Correlation[, "all"] <- mapply(stats::cor, as.data.frame(t(expCorMatrix)),
                                    as.data.frame(t(peakCorMatrix)), MoreArgs = list(method = cor_method))
 
-  random_peak_idx <- sample(seq_len(nrow(peakGroupMatrix)), 10^4, replace=TRUE)
-  seq_peaks <- unique(seqnames(peakSet[random_peak_idx]))
-  peak_order <- c()
-  gene_order <- c()
-  for(seq_peak in seq_peaks){
-      seq_peak_idx <- which(as.logical(seqnames(peakSet[random_peak_idx])==seq_peak))
-      remote_gene_idx <- which(as.logical(seqnames(geneStart)!=seq_peak))
-      gene_order <- c(gene_order, sample(remote_gene_idx, length(seq_peak_idx), replace=TRUE))
-      peak_order <- c(peak_order, seq_peak_idx)
-  }
-  randExpCorMatrix <- expGroupMatrix[gene_order, ]
-  randPeakCorMatrix <- peakGroupMatrix[random_peak_idx[peak_order], ]
-  null_correlations <- mapply(stats::cor, as.data.frame(t(randExpCorMatrix)),
-                              as.data.frame(t(randPeakCorMatrix)), MoreArgs = list(method = cor_method))
-  rand_corr_distr_pos <- ecdf(null_correlations[null_correlations>=0])
-  rand_corr_distr_neg <- ecdf(null_correlations[null_correlations<=0])
-
   # compute correlation within each cluster
   if (!is.null(clusters)) {
     # composition of kcluster
@@ -258,18 +241,6 @@ calculateP2G <- function(peakMatrix = NULL,
 
   p2g_merged <- o[, c("old.idxATAC", "chr", "start", "end", "old.idxRNA", "Gene","Correlation", "distance")]
   colnames(p2g_merged) <- c("idxATAC", "chr", "start", "end", "idxRNA", "target","Correlation", "distance")
-  calculate_pval <- function(x){
-      y <- rep(NA, length(x))
-      y[x==0] <- 1
-      y[x<0] <- rand_corr_distr_neg(x[x<0])
-      y[x>0] <- (1-rand_corr_distr_pos(x[x>0]))
-      y
-  }
-  p2g_merged$p_val <- calculate_pval(p2g_merged$Correlation[,"all"])
-  p2g_merged$FDR <- NA
-  p2g_merged$FDR[p2g_merged$Correlation[,"all"]==0] <- 1
-  p2g_merged$FDR[p2g_merged$Correlation[,"all"]<0] <- p.adjust(p2g_merged$p_val[p2g_merged$Correlation[,"all"]<0],method="BH")
-  p2g_merged$FDR[p2g_merged$Correlation[,"all"]>0] <- p.adjust(p2g_merged$p_val[p2g_merged$Correlation[,"all"]>0],method="BH")
 
   correlation_max <- apply(p2g_merged$Correlation, 1, max, na.rm = TRUE)
   p2g_merged <- p2g_merged[correlation_max > cor_cutoff, , drop = FALSE]

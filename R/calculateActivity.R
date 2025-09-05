@@ -200,7 +200,7 @@ calculateActivity <- function(expMatrix = NULL,
             message("normalize by mean...")
             meanExpr <- Matrix::rowMeans(expMatrix[colnames(tf_target_mat), ,drop=FALSE])
             mean_activity <- tf_target_mat %*% meanExpr
-            score.combine <- sweep(score.combine, 1, mean_activity, "-")
+            score.combine <- as.matrix(score.combine) - mean_activity
         }
         message("normalize by the number of targets...")
         #normalize by number of targets
@@ -234,8 +234,7 @@ calculateActivity <- function(expMatrix = NULL,
             for (cluster in sort(unique(clusters))) {
                 # calculate cluster-specific mean
                 mean_activity <-  tf_target_mat[[cluster]] %*%  meanExpr
-                score.combine[,clusters == cluster] <- sweep(score.combine[,clusters == cluster,drop=FALSE],
-                                                              1, mean_activity, "-")
+                score.combine[,clusters == cluster] <- as.matrix(score.combine)[,clusters == cluster,drop=FALSE] - mean_activity
             }
         }
 
@@ -349,7 +348,7 @@ normalizeByFrequency <- function(score.combine, freq, clusters = NULL) {
             score.combine[names(freq), ]@x <- score.combine[names(freq),]@x/freq[score.combine[names(freq),]@i+1]
         }
         else{
-            score.combine[names(freq), ] <- sweep(score.combine[names(freq),, drop = FALSE], 1, freq,"/")
+            score.combine[names(freq), ] <- score.combine[names(freq),,drop = FALSE]/freq
         }
     } else {
         freq <- matrix(as.numeric(freq), nrow=dim(freq)[1], ncol=dim(freq)[2], dimnames=dimnames(freq))
@@ -361,9 +360,9 @@ normalizeByFrequency <- function(score.combine, freq, clusters = NULL) {
                 score.combine[rownames(freq),clusters == cluster]@x <- score.combine[rownames(freq), clusters == cluster]@x/freq_x
             }
             else{
-                score.combine[rownames(freq), clusters == cluster] <- sweep(score.combine[rownames(freq),
+                score.combine[rownames(freq), clusters == cluster] <- sscore.combine[rownames(freq),
                                                                                           clusters == cluster,
-                                                                                          drop = FALSE], 1, freq_c, "/")
+                                                                                          drop = FALSE]/freq_c
 
             }
 
