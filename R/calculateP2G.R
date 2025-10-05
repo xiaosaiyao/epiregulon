@@ -76,7 +76,7 @@ calculateP2G <- function(peakMatrix = NULL,
                          nRandConns = 1e5,
                          BPPARAM = BiocParallel::SerialParam(progressbar = TRUE),
                          knn=0,
-                         knn_dist=1,
+                         addCells=2000,
                          verbose = TRUE
 ) {
     if(verbose){
@@ -118,7 +118,7 @@ calculateP2G <- function(peakMatrix = NULL,
     kNum = round(ncol(expMatrix)/cellNum)
     agg_data_list <- .create_metacells(expMatrix, exp_assay, peakMatrix, peak_assay, reducedDim,
                                        gene_symbol, frac_RNA, frac_ATAC, kNum=kNum,
-                                       knn=knn, knn_dist=knn_dist)
+                                       knn=knn, addCells=addCells)
 
     # find overlap between RE and resized TG
     if(verbose){
@@ -174,30 +174,36 @@ calculateP2G <- function(peakMatrix = NULL,
 #' @importFrom scrapper aggregateAcrossCells clusterKmeans
 #' @importFrom FNN get.knn
 .create_metacells <- function(expMatrix, exp_assay, peakMatrix, peak_assay, reducedDim,
-                              gene_symbol, frac_RNA, frac_ATAC, kNum, knn, knn_dist){
+                              gene_symbol, frac_RNA, frac_ATAC, kNum, knn, addCells){
 
     kclusters <- clusterKmeans(t(as.matrix(reducedDim)),k = kNum)$clusters
     kclusters <- as.character(kclusters)
     geneStart <- resize(rowRanges(expMatrix), width=1)
     mcols(geneStart)[,gene_symbol] <- rowData(expMatrix)[,gene_symbol]
     if(knn>0){
-        mean.nn.dist <- mean(get.knn(reducedDim, knn_dist)$nn.dist)
         nn_res <- get.knn(reducedDim, knn)
-        dist_mask <- nn_res$nn.dist<=mean.nn.dist
-        cluster_labels <- c()
-        new_cell_idx <- c()
+        resampled_cell_df <- data.frame()
         for (k in unique(kclusters)){
+            cluster_idx <- which(kclusters==k)
             # get indices of cells originally included in the clusters
             # and all nearest neighbors
-            included_cell_idx <- unique(c(nn_res$nn.index[kclusters==k,,drop=TRUE][dist_mask[kclusters==k,,drop=TRUE]], which(kclusters==k)))
-            cluster_labels <- c(cluster_labels, rep(k, length(included_cell_idx)))
-            new_cell_idx <- c(new_cell_idx, included_cell_idx)
+            dist_matrix <- matrix(NA, nrow=length(cluster_idx), ncol=length(kclusters))
+            dist_matrix[rep(seq_along(cluster_idx), each=knn)*as.numeric(nn_res$nn.index[cluster_idx,])] <- as.numeric(nn_res$nn.dist[cluster_idx,])
+            min_distances <- apply(dist_matrix,2,function(x) min(x,na.rm=TRUE))
+            resampled_cell_df <- rbind(resampled_cell_df, data.frame(kclusters=k, cell_idx=seq_along(kclusters), min_dist=min_distances))
         }
-        kclusters <- cluster_labels
+        resampled_cell_df <- resampled_cell_df[is.finite(resampled_cell_df$min_dist),]
+        dist_quantile <- addCells/nrow(resampled_cell_df)
+        if(dist_quantile<1){
+            threshold_dist <- quantile(resampled_cell_df$min_dist, dist_quantile, type=3)
+            resampled_cell_df <- resampled_cell_df[resampled_cell_df$min_dist<=threshold_dist,]
+        }
+        new_cell_idx <- c(seq_along(kclusters), resampled_cell_df$cell_idx)
+        kclusters <- c(kclusters, resampled_cell_df$kclusters)
         print(paste0("Size of extended dataset: ", length(kclusters)))
     }
     else{
-        new_cell_idx <- seq_len(ncol(expMatrix))
+        new_cell_idx <- seq_along(kclusters)
     }
     data_to_aggregate <- as(assay(expMatrix, exp_assay), "CsparseMatrix")[,new_cell_idx]
     # aggregate by k-means clusters
