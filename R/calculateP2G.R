@@ -5,8 +5,10 @@
 #' @param expMatrix A SingleCellExperiment object containing gene expression counts from scRNA-seq. `rowRanges` should contain genomic positions of
 #' the genes in the form of `GRanges`. `rowData` should contain a column of gene symbols with column name matching the `gene_symbol` argument.
 #' @param reducedDim A matrix of dimension reduced values
-#' @param FDR_cutoff A numeric scalar to specify the FDR cutoff for correlation between ATAC-seq peaks and RNA-seq genes to assign peak to gene links.
-#'  Default FDR cutoff is 0.05.
+#' @param cutoff_stat A names of a statistic used to determine significant links to assign peak to gene links.
+#' Should be `Correlation`, `p_val` or `FDR`.
+#' @param sig_cutoff A numeric scalar to specify the cutoff for the links between ATAC-seq peaks and RNA-seq genes .
+#' Default is set to 0.5.
 #' @param cellNum A numeric to specify the average number of cells per K-mean cluster. Alternatively, an object of the class `CellNumSol`
 #' returned by `optimizeMetacellNumber` function. If set to `NULL`, its value is determined automatically, based on the number of cells.
 #' @param maxDist An integer to specify the base pair extension from transcription start start for overlap with peak regions
@@ -23,6 +25,10 @@
 #' will be used to calculate empirical p-values of correlation coefficients
 #' @param BPPARAM A BiocParallelParam object specifying whether summation should be parallelized. Use BiocParallel::SerialParam() for
 #' serial evaluation and use BiocParallel::MulticoreParam() for parallel evaluation
+#' @param knn Number of the nearest neighbors of each cells which are then used for
+#' increasing cluster sizes by cell resampling
+#' @param addCells The total number of resampled cells to be added to the clusters. This
+#' actual value might be greater due to the ties in the ranking distances to nearest neighbors
 #' @param verbose A boolean indicating whether messages should be emitted during computation
 #'
 #' @return A DataFrame of Peak to Gene correlation
@@ -63,9 +69,10 @@
 calculateP2G <- function(peakMatrix = NULL,
                          expMatrix = NULL,
                          reducedDim = NULL,
-                         maxDist = 250000,
-                         FDR_cutoff = 0.05,
+                         cutoff_stat = c("Correlation", "p_val", "FDR"),
+                         cutoff_sig = 0.05,
                          cellNum = NULL,
+                         maxDist = 250000,
                          exp_assay = "logcounts",
                          peak_assay = "counts",
                          gene_symbol = "name",
@@ -84,6 +91,7 @@ calculateP2G <- function(peakMatrix = NULL,
     }
 
     # check inputs
+    cutoff_stat <- match.arg(cutoff_stat)
     cor_method <- match.arg(cor_method)
     assignment_method <- match.arg(assignment_method)
     .validate_input_sce(SCE=expMatrix, assay_name=exp_assay, row.ranges=TRUE)
@@ -97,8 +105,8 @@ calculateP2G <- function(peakMatrix = NULL,
         stop("rowData of expMatrix does not contain ", gene_symbol)
     }
     if(class(cellNum)!="CellNumSol" && as.list(sys.call(sys.nframe()-1))[[1]]!="optimizeMetacellNumber"){
-        message("Value of the paramater 'cellNum' has not been optimized.
-                Consider running function 'optimizeMetacellNumber' and use output to set 'cellNum'")
+        message(strwrap("Value of the paramater 'cellNum' has not been optimized.
+                Consider running function 'optimizeMetacellNumber' and use output to set 'cellNum'"))
     }
     if(class(cellNum)=="CellNumSol") {
         if (cellNum@args$cor_method != cor_method){
@@ -118,7 +126,7 @@ calculateP2G <- function(peakMatrix = NULL,
     kNum = round(ncol(expMatrix)/cellNum)
     agg_data_list <- .create_metacells(expMatrix, exp_assay, peakMatrix, peak_assay, reducedDim,
                                        gene_symbol, frac_RNA, frac_ATAC, kNum=kNum,
-                                       knn=knn, addCells=addCells)
+                                       knn=knn, addCells=addCells, verbose=verbose)
 
     # find overlap between RE and resized TG
     if(verbose){
@@ -162,7 +170,13 @@ calculateP2G <- function(peakMatrix = NULL,
 
     p2g_merged <- o[, c("old.idxATAC", "chr", "start", "end", "old.idxRNA", "Gene","Correlation", "p_val", "FDR", "distance")]
     colnames(p2g_merged) <- c("idxATAC", "chr", "start", "end", "idxRNA", "target","Correlation", "p_val", "FDR", "distance")
-    p2g_merged <- p2g_merged[p2g_merged$FDR < FDR_cutoff, , drop = FALSE]
+    if(cutoff_stat=="Correlation"){
+        relation_fun <- get(">")
+    }
+    else{
+        realtion_fun <- get("<")
+    }
+    p2g_merged <- p2g_merged[relation_fun(p2g_merged[,cutoff_stat], cutoff_sig), , drop = FALSE]
 
     p2g_merged <- p2g_merged[order(p2g_merged$idxATAC, p2g_merged$idxRNA), , drop = FALSE]
     return(p2g_merged)
@@ -174,7 +188,8 @@ calculateP2G <- function(peakMatrix = NULL,
 #' @importFrom scrapper aggregateAcrossCells clusterKmeans
 #' @importFrom FNN get.knn
 .create_metacells <- function(expMatrix, exp_assay, peakMatrix, peak_assay, reducedDim,
-                              gene_symbol, frac_RNA, frac_ATAC, kNum, knn, addCells){
+                              gene_symbol, frac_RNA, frac_ATAC, kNum, knn, addCells,
+                              verbose){
 
     kclusters <- clusterKmeans(t(as.matrix(reducedDim)),k = kNum)$clusters
     kclusters <- as.character(kclusters)
@@ -187,9 +202,9 @@ calculateP2G <- function(peakMatrix = NULL,
             cluster_idx <- which(kclusters==k)
             # get indices of cells originally included in the clusters
             # and all nearest neighbors
-            dist_matrix <- matrix(NA, nrow=length(cluster_idx), ncol=length(kclusters))
-            dist_matrix[rep(seq_along(cluster_idx), each=knn)*as.numeric(nn_res$nn.index[cluster_idx,])] <- as.numeric(nn_res$nn.dist[cluster_idx,])
-            min_distances <- apply(dist_matrix,2,function(x) min(x,na.rm=TRUE))
+            dist_matrix <- matrix(NA, nrow=length(kclusters), ncol=length(cluster_idx))
+            dist_matrix[(rep(seq_along(cluster_idx), knn)-1)*length(kclusters) + as.numeric(nn_res$nn.index[cluster_idx,])] <- as.numeric(nn_res$nn.dist[cluster_idx,])
+            min_distances <- apply(dist_matrix,1,function(x) min(c(Inf,x),na.rm=TRUE)) # use Inf to avoid warnings in all elements in x are NA
             resampled_cell_df <- rbind(resampled_cell_df, data.frame(kclusters=k, cell_idx=seq_along(kclusters), min_dist=min_distances))
         }
         resampled_cell_df <- resampled_cell_df[is.finite(resampled_cell_df$min_dist),]
@@ -200,7 +215,9 @@ calculateP2G <- function(peakMatrix = NULL,
         }
         new_cell_idx <- c(seq_along(kclusters), resampled_cell_df$cell_idx)
         kclusters <- c(kclusters, resampled_cell_df$kclusters)
-        print(paste0("Size of extended dataset: ", length(kclusters)))
+        if(verbose){
+            writeLines(paste0("The toal number of cells after resampling: ", length(kclusters)))
+        }
     }
     else{
         new_cell_idx <- seq_along(kclusters)
@@ -414,7 +431,7 @@ optimizeMetacellNumber <- function(peakMatrix,
             peak_assay = peak_assay,
             cellNum = evaluation_points[i]^2,
             verbose = FALSE,
-            FDR_cutoff = 2,
+            cutoff_sig = -2,
             ...
         )
         p_val_pos_reg <- p2g$p_val[p2g$Correlation>=0] # should (all) zeros be included?
@@ -458,7 +475,7 @@ optimizeMetacellNumber <- function(peakMatrix,
                     peak_assay = peak_assay,
                     cellNum = evaluation_points_new[i]^2,
                     verbose = FALSE,
-                    FDR_cutoff = 2,
+                    cutoff_sig = -2,
                     ...
                 )
                 p_val_pos_reg <- p2g$p_val[p2g$Correlation>=0]
@@ -493,7 +510,7 @@ optimizeMetacellNumber <- function(peakMatrix,
         warning("Coefficient of quadratic term in linear regression is not potitive.")
         estimation_issue <- TRUE
     }
-    if(sol==max(evaluation_points)||sol==min(evaluation_points)){
+    if(any(abs(sol-range(evaluation_points))<1e-4)){
         warning("Solution at the boundary of examined range.")
         estimation_issue <- TRUE
     }
@@ -524,6 +541,7 @@ optimizeMetacellNumber <- function(peakMatrix,
         evaluation_points=evaluation_points,
         AUC = areas,
         regr_coefficients = lin_model$coefficients,
+        r_squared = summary(lin_model)$r.squared,
         n_cells = n_cells,
         last_iteration=last_iteration,
         args=c(args, p2g_args)
@@ -557,4 +575,9 @@ setMethod("plot", signature=c(x="CellNumSol"), function(x){
 })
 
 
-
+setMethod("show", "CellNumSol", function(object){
+    cat("A CellNumSol object.\n")
+    cat(sprintf("Estimated optimal number of cells per cluster: %.2f\n", object@solution^2))
+    cat(paste0("Evaluation points: ", paste(object@evaluation_points, collapse=", "), "\n"))
+    cat(paste0("Mean p-values: ", paste(object@AUC, collapse=", "), "\n"))
+})
