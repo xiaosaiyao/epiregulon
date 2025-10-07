@@ -529,11 +529,14 @@ optimizeMetacellNumber <- function(peakMatrix,
                         p-value null distribution (`nRandConns` argument)"),
                         strwrap("5. Icreasing the proportion of featured to be subsampled
                         (`subsample_prop` argument)")),collapse="\n"))
-        # message(strwrap("Skipping polynomial regression and finding
-        # solution as the evaluation point with the lowest area under curve."))
-        message("Solution not found")
-        #sol <- evaluation_points[which.min(areas)]
-        sol <- NULL
+        message(strwrap("Skipping polynomial regression and guessing the
+        solution based on the number of cells."))
+        if(n_cells >= 272120){
+            sol=41.97144
+        }
+        else{
+            sol=sqrt(sum(c(1.665007e+02,1.172364e-02,-2.154153e-08)*c(1,n_cells,n_cells^2)))
+        }
     }
 
 
