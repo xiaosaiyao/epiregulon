@@ -5,8 +5,10 @@
 #' @param expMatrix A SingleCellExperiment object containing gene expression counts from scRNA-seq. `rowRanges` should contain genomic positions of
 #' the genes in the form of `GRanges`. `rowData` should contain a column of gene symbols with column name matching the `gene_symbol` argument.
 #' @param reducedDim A matrix of dimension reduced values
-#' @param FDR_cutoff A numeric scalar to specify the FDR cutoff for correlation between ATAC-seq peaks and RNA-seq genes to assign peak to gene links.
-#'  Default FDR cutoff is 0.05.
+#' @param cutoff_stat A names of a statistic used to determine significant links to assign peak to gene links.
+#' Should be `Correlation`, `p_val` or `FDR`.
+#' @param cutoff_sig A numeric scalar to specify the cutoff for the links between ATAC-seq peaks and RNA-seq genes .
+#' Default is set to 0.5.
 #' @param cellNum A numeric to specify the average number of cells per K-mean cluster. Alternatively, an object of the class `CellNumSol`
 #' returned by `optimizeMetacellNumber` function. If set to `NULL`, its value is determined automatically, based on the number of cells.
 #' @param maxDist An integer to specify the base pair extension from transcription start start for overlap with peak regions
@@ -63,9 +65,10 @@
 calculateP2G <- function(peakMatrix = NULL,
                          expMatrix = NULL,
                          reducedDim = NULL,
-                         maxDist = 250000,
-                         FDR_cutoff = 0.05,
+                         cutoff_stat = c("p_val", "FDR", "Correlation"),
+                         cutoff_sig = 0.05,
                          cellNum = NULL,
+                         maxDist = 250000,
                          exp_assay = "logcounts",
                          peak_assay = "counts",
                          gene_symbol = "name",
@@ -160,11 +163,16 @@ calculateP2G <- function(peakMatrix = NULL,
 
     p2g_merged <- o[, c("old.idxATAC", "chr", "start", "end", "old.idxRNA", "Gene","Correlation", "p_val", "FDR", "distance")]
     colnames(p2g_merged) <- c("idxATAC", "chr", "start", "end", "idxRNA", "target","Correlation", "p_val", "FDR", "distance")
-    p2g_merged <- p2g_merged[p2g_merged$FDR < FDR_cutoff, , drop = FALSE]
+    if(cutoff_stat=="Correlation"){
+        relation_fun <- get(">")
+    }
+    else{
+        realtion_fun <- get("<")
+    }
+    p2g_merged <- p2g_merged[relation_fun(p2g_merged[,cutoff_stat], cutoff_sig), , drop = FALSE]
 
     p2g_merged <- p2g_merged[order(p2g_merged$idxATAC, p2g_merged$idxRNA), , drop = FALSE]
     return(p2g_merged)
-
 }
 
 
