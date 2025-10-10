@@ -104,7 +104,7 @@ calculateActivity <- function(expMatrix = NULL,
                               BPPARAM = BiocParallel::SerialParam()) {
 
     if (lifecycle::is_present(method)) {
-        warning("Argument 'method' to calculateActivity was deprecated in epiregulon 2.0.0")
+        warning("Argument 'method' to calculateActivity was deprecated as of epiregulon version 2.0.0")
     }
 
     .validate_input_sce(SCE=expMatrix, assay_name=exp_assay, unique_features = TRUE)

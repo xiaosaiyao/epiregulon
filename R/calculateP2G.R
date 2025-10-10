@@ -78,8 +78,14 @@ calculateP2G <- function(peakMatrix = NULL,
                          frac_ATAC = 0,
                          nRandConns = 1e5,
                          BPPARAM = BiocParallel::SerialParam(progressbar = TRUE),
-                         verbose = TRUE
+                         verbose = TRUE,
+                         clusters=deprecated()
 ) {
+
+    if (lifecycle::is_present(clusters)) {
+        warning("Argument 'clusters' to calculateP2G was deprecated as of epiregulon version 2.0.0")
+    }
+
     if(verbose){
         writeLines("Using epiregulon to compute peak to gene links...")
     }
