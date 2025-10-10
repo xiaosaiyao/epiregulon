@@ -479,11 +479,11 @@ optimizeMetacellNumber <- function(peakMatrix,
         warning("Coefficient of quadratic term in linear regression is not potitive.")
         estimation_issue <- TRUE
     }
-    if(sol==max(evaluation_points)||sol==min(evaluation_points)){
+    if(any(abs(sol-range(evaluation_points))<1e-4)){
         warning("Solution at the boundary of examined range.")
         estimation_issue <- TRUE
     }
-    if(summary(lin_model)$r.squared<0.7) {
+    if(summary(lin_model)$r.squared<0.7) { # check if points are not too far from the curve
         warning("Coefficient of determination of the regression model is lower thant 0.7")
         estimation_issue <- TRUE
     }
@@ -496,14 +496,9 @@ optimizeMetacellNumber <- function(peakMatrix,
                         "3. Increasing the number of iterations (`n_iter` argument)",
                         strwrap("4. Increasing the number of false connections used to compute
                         p-value null distribution (`nRandConns` argument)"),
-                        strwrap("5. Icreasing the proportion of featured to be subsampled
-                        (`subsample_prop` argument)")),collapse="\n"))
-        # message(strwrap("Skipping polynomial regression and finding
-        # solution as the evaluation point with the lowest area under curve."))
-        message("Solution not found using quadratic regression. Using cluster sie with the lowerst mean p-value.")
+        message("Solution not found using quadratic regression. Using cluster size with the lowest mean p-value.")
         sol <- evaluation_points[which.min(areas)]
     }
-
 
     new("CellNumSol", solution=sol,
         evaluation_points=evaluation_points,
@@ -514,7 +509,6 @@ optimizeMetacellNumber <- function(peakMatrix,
         args=c(args, p2g_args)
         )
 }
-
 
 .RE_TG_correlation <- function(ind, idx_pairs, exprMatrix, peakMatrix, cor_method){
     # select pairs to be included in this batch
