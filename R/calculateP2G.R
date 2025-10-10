@@ -117,11 +117,17 @@ calculateP2G <- function(peakMatrix = NULL,
         writeLines("Creating metacells...")
     }
     kNum = round(ncol(expMatrix)/cellNum)
-    agg_data_list <- .create_metacells(expMatrix, exp_assay, peakMatrix, peak_assay, reducedDim,
-                                       gene_symbol, frac_RNA, frac_ATAC, kNum=kNum,
-                                       BPPARAM=BPPARAM)
+    agg_data_list <- .create_metacells(expMatrix,
+                                       exp_assay,
+                                       peakMatrix,
+                                       peak_assay,
+                                       reducedDim,
+                                       gene_symbol,
+                                       frac_RNA,
+                                       frac_ATAC,
+                                       kNum=kNum)
 
-    # find overlap between RE and resized TG
+    # find overlaps between REs and resized TGs
     if(verbose){
         writeLines("Looking for regulatory elements near target genes...")
     }
@@ -179,7 +185,7 @@ calculateP2G <- function(peakMatrix = NULL,
 #' @importFrom GenomicRanges resize mcols rowRanges
 #' @importFrom scrapper aggregateAcrossCells clusterKmeans
 .create_metacells <- function(expMatrix, exp_assay, peakMatrix, peak_assay, reducedDim,
-                              gene_symbol, frac_RNA, frac_ATAC, kNum, BPPARAM){
+                              gene_symbol, frac_RNA, frac_ATAC, kNum){
 
     kclusters <- clusterKmeans(t(as.matrix(reducedDim)),k = kNum)$clusters
     kclusters <- as.character(kclusters)
@@ -482,20 +488,20 @@ optimizeMetacellNumber <- function(peakMatrix,
         estimation_issue <- TRUE
     }
     if(estimation_issue){
-        message(strwrap("An issue detected during estimation optimal number of metacells. # TO DO: reference to the on-line documentation
-                        Consider at least one of the following actions:\n
-                        1. Change of `cellNumMin` and `cellNumMax` paramaters.\n
-                        2. Increasing the number of evaluation points (`n_evaluation_points` argument)\n
-                        3. Increasing the number of iterations (`n_iter` argument)\n
-                        4. Increasing the number of false connections used to compute
-                        p-value null distribution (`nRandConns` argument)\n
-                        5. Icreasing the proportion of featured to be subsampled
-                        (`subsample_prop` argument)\n",collapse="\n"))
+        # TO DO: reference to the on-line documentation
+        message(paste(c(strwrap("An issue detected during estimation optimal number of metacells.
+                        Consider at least one of the following actions:"),
+                        "1. Change of the `cellNumMin` and `cellNumMax` paramaters",
+                        "2. Increasing the number of evaluation points (`n_evaluation_points` argument)",
+                        "3. Increasing the number of iterations (`n_iter` argument)",
+                        strwrap("4. Increasing the number of false connections used to compute
+                        p-value null distribution (`nRandConns` argument)"),
+                        strwrap("5. Icreasing the proportion of featured to be subsampled
+                        (`subsample_prop` argument)")),collapse="\n"))
         # message(strwrap("Skipping polynomial regression and finding
         # solution as the evaluation point with the lowest area under curve."))
-        message("Solution not found")
-        #sol <- evaluation_points[which.min(areas)]
-        sol <- NULL
+        message("Solution not found using quadratic regression. Using cluster sie with the lowerst mean p-value.")
+        sol <- evaluation_points[which.min(areas)]
     }
 
 
