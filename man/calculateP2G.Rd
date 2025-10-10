@@ -21,7 +21,8 @@ calculateP2G(
   frac_ATAC = 0,
   nRandConns = 1e+05,
   BPPARAM = BiocParallel::SerialParam(progressbar = TRUE),
-  verbose = TRUE
+  verbose = TRUE,
+  clusters = deprecated()
 )
 }
 \arguments{
