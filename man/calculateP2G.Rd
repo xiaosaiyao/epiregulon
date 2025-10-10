@@ -10,7 +10,7 @@ calculateP2G(
   reducedDim = NULL,
   cutoff_stat = c("p_val", "FDR", "Correlation"),
   cutoff_sig = 0.05,
-  cellNum = NULL,
+  cellNum = 100,
   maxDist = 250000,
   exp_assay = "logcounts",
   peak_assay = "counts",

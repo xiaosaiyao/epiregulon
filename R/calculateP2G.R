@@ -67,7 +67,7 @@ calculateP2G <- function(peakMatrix = NULL,
                          reducedDim = NULL,
                          cutoff_stat = c("p_val", "FDR", "Correlation"),
                          cutoff_sig = 0.05,
-                         cellNum = NULL,
+                         cellNum = 100,
                          maxDist = 250000,
                          exp_assay = "logcounts",
                          peak_assay = "counts",
@@ -188,8 +188,8 @@ calculateP2G <- function(peakMatrix = NULL,
     return(p2g_merged)
 }
 
-
-#' @importFrom GenomicRanges resize mcols rowRanges
+#' @importForm SummarizedExperiment rowRanges
+#' @importFrom GenomicRanges resize mcols
 #' @importFrom scrapper aggregateAcrossCells clusterKmeans
 .create_metacells <- function(expMatrix, exp_assay, peakMatrix, peak_assay, reducedDim,
                               gene_symbol, frac_RNA, frac_ATAC, kNum){
