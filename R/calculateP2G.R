@@ -188,7 +188,7 @@ calculateP2G <- function(peakMatrix = NULL,
     return(p2g_merged)
 }
 
-#' @importForm SummarizedExperiment rowRanges
+#' @importFrom SummarizedExperiment rowRanges
 #' @importFrom GenomicRanges resize mcols
 #' @importFrom scrapper aggregateAcrossCells clusterKmeans
 .create_metacells <- function(expMatrix, exp_assay, peakMatrix, peak_assay, reducedDim,
