@@ -87,6 +87,7 @@ calculateP2G <- function(peakMatrix = NULL,
     # check inputs
     cor_method <- match.arg(cor_method)
     assignment_method <- match.arg(assignment_method)
+    cutoff_stat <- match.arg(cutoff_stat)
     .validate_input_sce(SCE=expMatrix, assay_name=exp_assay, row.ranges=TRUE)
     .validate_input_sce(SCE=peakMatrix, assay_name=peak_assay, row.ranges=TRUE)
     if (!identical(colnames(expMatrix), colnames(peakMatrix))){
@@ -173,7 +174,7 @@ calculateP2G <- function(peakMatrix = NULL,
         relation_fun <- get(">")
     }
     else{
-        realtion_fun <- get("<")
+        relation_fun <- get("<")
     }
     p2g_merged <- p2g_merged[relation_fun(p2g_merged[,cutoff_stat], cutoff_sig), , drop = FALSE]
 
@@ -408,7 +409,7 @@ optimizeMetacellNumber <- function(peakMatrix,
             peak_assay = peak_assay,
             cellNum = evaluation_points[i]^2,
             verbose = FALSE,
-            FDR_cutoff = 2,
+            cutoff_sig = 2,
             ...
         )
         p_val_pos_reg <- p2g$p_val[p2g$Correlation>=0] # should (all) zeros be included?
@@ -456,7 +457,7 @@ optimizeMetacellNumber <- function(peakMatrix,
                     peak_assay = peak_assay,
                     cellNum = evaluation_points_new[i]^2,
                     verbose = FALSE,
-                    FDR_cutoff = 2,
+                    cutoff_sig = 2,
                     ...
                 )
                 p_val_pos_reg <- p2g$p_val[p2g$Correlation>=0]
@@ -511,7 +512,7 @@ optimizeMetacellNumber <- function(peakMatrix,
                         "2. Increasing the number of evaluation points (`n_evaluation_points` argument)",
                         "3. Increasing the number of iterations (`n_iter` argument)",
                         strwrap("4. Increasing the number of false connections used to compute
-                        p-value null distribution (`nRandConns` argument)"),
+                        p-value null distribution (`nRandConns` argument)"))))
         message("Solution not found using quadratic regression. Using cluster size with the lowest mean p-value.")
         sol <- evaluation_points[which.min(areas)]
     }
