@@ -35,7 +35,7 @@ peakMatrix <- matrix(0, nrow = n_peaks,
 
 for(peak_idx in unique(regulatory_pairs[,2])){
     target_genes <- unique(regulatory_pairs[,1][regulatory_pairs[,2]==peak_idx])
-    target_expression <- colSums(geneExpMatrix[target_genes,,drop=FALSE])
+    target_expression <- Matrix::colSums(geneExpMatrix[target_genes,,drop=FALSE])
     target_expression_norm <- target_expression/max(target_expression)
     peakMatrix[peak_idx,] <- rbinom(length(target_expression_norm), 1, target_expression_norm)
 }
@@ -44,8 +44,8 @@ for(peak_idx in unique(regulatory_pairs[,2])){
 peakMatrix[sample(length(peakMatrix), round(length(peakMatrix)*0.3))] <- 0
 geneExpMatrix[sample(length(geneExpMatrix), round(length(geneExpMatrix)*0.3))] <- 0
 
-non.zero.genes <- which(rowSums(geneExpMatrix) != 0)
-non.zero.peaks <- which(rowSums(peakMatrix) != 0)
+non.zero.genes <- which(Matrix::rowSums(geneExpMatrix) != 0)
+non.zero.peaks <- which(Matrix::rowSums(peakMatrix) != 0)
 
 new_gene_idx <- seq_along(non.zero.genes)
 new_peak_idx <- seq_along(non.zero.peaks)
@@ -64,7 +64,7 @@ null_correlations <- c()
 for(peak_idx in unique(overlap[,2])){
     peak_chromosome = seqnames(peak.ranges[peak_idx])
     n_rep <- sum(overlap[,2]==peak_idx)
-    distant_genes_idx <- which(seqnames(gene.ranges)!=peak_chromosome)
+    distant_genes_idx <- which(as.logical(seqnames(gene.ranges)!=peak_chromosome))
     selected_genes <- sample(distant_genes_idx, 200*n_rep,replace=TRUE)
     for(j in seq_along(selected_genes)){
         null_correlations <- c(null_correlations, cor(peakMatrix[peak_idx,], geneExpMatrix[selected_genes[j],]))
@@ -73,7 +73,7 @@ for(peak_idx in unique(overlap[,2])){
 
 overlap$Correlation <- NA
 for(i in seq_len(nrow(overlap))){
-    overlap$Correlation <- cor(peakMatrix[overlap[i,2],], geneExpMatrix[overlap[i,1],])
+    overlap$Correlation[i] <- cor(peakMatrix[overlap[i,2],], geneExpMatrix[overlap[i,1],])
 }
 overlap$p_val <- 1
 non_neg_cor_idx <- which(overlap$Correlation>=0)
@@ -108,17 +108,16 @@ mcols(gene.ranges)$name <- rownames(geneExpMatrix)
 peakMatrix_sce <- SingleCellExperiment(assay=list(counts=peakMatrix), rowRanges=peak.ranges)
 geneExpMatrix_sce <- SingleCellExperiment(assay=list(counts=geneExpMatrix), rowRanges=gene.ranges)
 cellNum <- optimizeMetacellNumber(peakMatrix_sce, geneExpMatrix_sce,
-                                  reducedDim=t(geneExpMatrix), exp_assay="counts",
+                                  reducedDim=Matrix::t(geneExpMatrix), exp_assay="counts",
                       peak_assay="counts", subsample_prop=0.1,
                       n_iter=1, cellNumMin=NULL,
                       cellNumMax=NULL, n_evaluation_points=4)
 
-min_eval_point <- min(20, round(ncol(peakMatrix)/10))
-max_eval_point <- min(2000, round(ncol(peakMatrix)/10))
+min_eval_point <- sqrt(min(20, round(ncol(peakMatrix)/10)))
+max_eval_point <- sqrt(min(2000, round(ncol(peakMatrix)/10)))
 test_that("optimizeMetacellNumber works correctly", {
     expect_s4_class(cellNum, "CellNumSol")
     expect_equal(max(cellNum@evaluation_points), max_eval_point)
     expect_equal(min(cellNum@evaluation_points), min_eval_point)
-    expect_s3_class(cellNum@regr_model, "lm")
-    expect_length(cellNum@regr_model$fitted.values, length(cellNum@evaluation_points))
+    expect_length(cellNum@AUC, length(cellNum@evaluation_points))
 })
