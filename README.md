@@ -56,6 +56,6 @@ Functions in the suite of Epiregulon packages
 # Reference
 [Tomasz Włodarczyk, Aaron Lun, Diana Wu, Shreya Menon, Shushan Toneyan, Kerstin Seidel, Liang Wang, 
 Jenille Tan, Shang-Yang Chen, Timothy Keyes, Aleksander Chlebowski, Yu Guo, Ciara Metcalfe, Marc Hafner, 
-Christian W. Siebel, M. Ryan Corces, Robert Yauch, Shiqi Xie, Xiaosai Yao. 2023. "Inference of single-cell transcription factor activity to dissect mechanisms of lineage plasticity and drug response" Nat Commun 16, 7118 (2025). https://doi.org/10.1038/s41467-025-62252-5](https://www.nature.com/articles/s41467-025-62252-5)
+Christian W. Siebel, M. Ryan Corces, Robert Yauch, Shiqi Xie, Xiaosai Yao. 2025. "Inference of single-cell transcription factor activity to dissect mechanisms of lineage plasticity and drug response" Nat Commun 16, 7118 (2025). https://doi.org/10.1038/s41467-025-62252-5](https://www.nature.com/articles/s41467-025-62252-5)
 
 Contact: [Xiaosai Yao](mailto:yao.xiaosai@gene.com), Genentech Inc.
