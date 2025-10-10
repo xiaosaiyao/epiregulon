@@ -380,6 +380,9 @@ optimizeMetacellNumber <- function(peakMatrix,
     }
     cells_per_cluster_min <- min(cells_per_cluster_min, cells_per_cluster_max)
 
+    assay(expMatrix, exp_assay) <- as(assay(expMatrix, exp_assay), "CsparseMatrix")
+    assay(peakMatrix, peak_assay) <- as(assay(peakMatrix, peak_assay), "CsparseMatrix")
+
     if(subsample_prop<1){
         selected_peak_idx <- sort(sample(nrow(peakMatrix), round(subsample_prop*nrow(peakMatrix))))
         peakMatrix <- peakMatrix[selected_peak_idx,]
