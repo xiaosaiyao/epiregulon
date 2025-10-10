@@ -8,13 +8,14 @@ calculateP2G(
   peakMatrix = NULL,
   expMatrix = NULL,
   reducedDim = NULL,
-  maxDist = 250000,
-  FDR_cutoff = 0.05,
+  cutoff_stat = c("p_val", "FDR", "Correlation"),
+  cutoff_sig = 0.05,
   cellNum = NULL,
+  maxDist = 250000,
   exp_assay = "logcounts",
   peak_assay = "counts",
   gene_symbol = "name",
-  cor_method = c("spearman", "pearson", "kendall"),
+  cor_method = c("pearson", "spearman", "kendall"),
   assignment_method = c("correlation", "nearest"),
   frac_RNA = 0,
   frac_ATAC = 0,
@@ -32,13 +33,16 @@ the genes in the form of \code{GRanges}. \code{rowData} should contain a column 
 
 \item{reducedDim}{A matrix of dimension reduced values}
 
+\item{cutoff_stat}{A names of a statistic used to determine significant links to assign peak to gene links.
+Should be \code{Correlation}, \code{p_val} or \code{FDR}.}
+
+\item{cutoff_sig}{A numeric scalar to specify the cutoff for the links between ATAC-seq peaks and RNA-seq genes .
+Default is set to 0.5.}
+
+\item{cellNum}{A numeric to specify the average number of cells per K-mean cluster. Alternatively, an object of the class \code{CellNumSol}
+returned by \code{optimizeMetacellNumber} function. If set to \code{NULL}, its value is determined automatically, based on the number of cells.}
+
 \item{maxDist}{An integer to specify the base pair extension from transcription start start for overlap with peak regions}
-
-\item{FDR_cutoff}{A numeric scalar to specify the FDR cutoff for correlation between ATAC-seq peaks and RNA-seq genes to assign peak to gene links.
-Default FDR cutoff is 0.05.}
-
-\item{cellNum}{A numeric to specify the average number of cells per K-mean cluster. If set to \code{NULL},
-its value is optimized automatically.}
 
 \item{exp_assay}{String indicating the name of the assay in expMatrix for gene expression}
 
@@ -69,11 +73,6 @@ A DataFrame of Peak to Gene correlation
 }
 \description{
 Establish peak to gene links based on correlations between ATAC-seq peaks and RNA-seq genes
-}
-\details{
-Cluster information is sometimes helpful to avoid the \href{https://en.wikipedia.org/wiki/Simpson\%27s_paradox}{Simpsons's paradox} in which baseline differences
-between cell lines or cell types can create artificial or even inverse correlations between peak accessibility and gene expression. If Cluster information is provided,
-correlation is performed within cell aggregates of each cluster.
 }
 \examples{
 # create a mock singleCellExperiment object for gene expression matrix

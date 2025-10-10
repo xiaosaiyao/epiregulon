@@ -43,8 +43,8 @@ this parameter is ignored.}
 average number of cells per K-mean cluster in the first iteration of the optimization algorithm. If \code{cellNum} is not \code{NULL}
 this parameter is ignored.}
 
-\item{n_evaluation_points}{An integer defining the how many of cluster numbers are tested at
-the first iteration to find the optimal one}
+\item{n_evaluation_points}{An integer defining how many metacells numbers are tested in the first iteration to find
+the optimal one. If \code{n_inter} > 1 new evaluation points (metacell numbers) are added in the proximity of the current solution.}
 
 \item{...}{Other arguments passed to \code{calculateP2G} function}
 }
