@@ -75,8 +75,6 @@ calculateP2G <- function(peakMatrix = NULL,
                          frac_ATAC = 0,
                          nRandConns = 1e5,
                          BPPARAM = BiocParallel::SerialParam(progressbar = TRUE),
-                         knn=0,
-                         knn_dist=1,
                          verbose = TRUE
 ) {
     if(verbose){
@@ -118,7 +116,7 @@ calculateP2G <- function(peakMatrix = NULL,
     kNum = round(ncol(expMatrix)/cellNum)
     agg_data_list <- .create_metacells(expMatrix, exp_assay, peakMatrix, peak_assay, reducedDim,
                                        gene_symbol, frac_RNA, frac_ATAC, kNum=kNum,
-                                       knn=knn, knn_dist=knn_dist)
+                                       BPPARAM=BPPARAM)
 
     # find overlap between RE and resized TG
     if(verbose){
@@ -172,41 +170,21 @@ calculateP2G <- function(peakMatrix = NULL,
 
 #' @importFrom GenomicRanges resize mcols rowRanges
 #' @importFrom scrapper aggregateAcrossCells clusterKmeans
-#' @importFrom FNN get.knn
 .create_metacells <- function(expMatrix, exp_assay, peakMatrix, peak_assay, reducedDim,
-                              gene_symbol, frac_RNA, frac_ATAC, kNum, knn, knn_dist){
+                              gene_symbol, frac_RNA, frac_ATAC, kNum, BPPARAM){
 
     kclusters <- clusterKmeans(t(as.matrix(reducedDim)),k = kNum)$clusters
     kclusters <- as.character(kclusters)
     geneStart <- resize(rowRanges(expMatrix), width=1)
     mcols(geneStart)[,gene_symbol] <- rowData(expMatrix)[,gene_symbol]
-    if(knn>0){
-        mean.nn.dist <- mean(get.knn(reducedDim, knn_dist)$nn.dist)
-        nn_res <- get.knn(reducedDim, knn)
-        dist_mask <- nn_res$nn.dist<=mean.nn.dist
-        cluster_labels <- c()
-        new_cell_idx <- c()
-        for (k in unique(kclusters)){
-            # get indices of cells originally included in the clusters
-            # and all nearest neighbors
-            included_cell_idx <- unique(c(nn_res$nn.index[kclusters==k,,drop=TRUE][dist_mask[kclusters==k,,drop=TRUE]], which(kclusters==k)))
-            cluster_labels <- c(cluster_labels, rep(k, length(included_cell_idx)))
-            new_cell_idx <- c(new_cell_idx, included_cell_idx)
-        }
-        kclusters <- cluster_labels
-        print(paste0("Size of extended dataset: ", length(kclusters)))
-    }
-    else{
-        new_cell_idx <- seq_len(ncol(expMatrix))
-    }
-    data_to_aggregate <- as(assay(expMatrix, exp_assay), "CsparseMatrix")[,new_cell_idx]
+    data_to_aggregate <- as(assay(expMatrix, exp_assay), "CsparseMatrix")
     # aggregate by k-means clusters
     res <- aggregateAcrossCells(data_to_aggregate, factors = list(kclusters))
 
     expMatrix <- t(t(res$sums)/res$counts)
 
     peakSet = rowRanges(peakMatrix)
-    data_to_aggregate <- as(assay(peakMatrix, peak_assay), "CsparseMatrix")[,new_cell_idx]
+    data_to_aggregate <- as(assay(peakMatrix, peak_assay), "CsparseMatrix")
     res <- aggregateAcrossCells(data_to_aggregate, factors = list(kclusters))
     peakMatrix <- t(t(res$sums)/res$counts)
     # keep track of the original ATAC and expression indices
@@ -496,16 +474,15 @@ optimizeMetacellNumber <- function(peakMatrix,
         estimation_issue <- TRUE
     }
     if(estimation_issue){
-        # TO DO: reference to the on-line documentation
-        message(paste(c(strwrap("An issue detected during estimation optimal number of metacells.
-                        Consider at least one of the following actions:"),
-                        "1. Change of the `cellNumMin` and `cellNumMax` paramaters",
-                        "2. Increasing the number of evaluation points (`n_evaluation_points` argument)",
-                        "3. Increasing the number of iterations (`n_iter` argument)",
-                        strwrap("4. Increasing the number of false connections used to compute
-                        p-value null distribution (`nRandConns` argument)"),
-                        strwrap("5. Icreasing the proportion of featured to be subsampled
-                        (`subsample_prop` argument)")),collapse="\n"))
+        message(strwrap("An issue detected during estimation optimal number of metacells. # TO DO: reference to the on-line documentation
+                        Consider at least one of the following actions:\n
+                        1. Change of `cellNumMin` and `cellNumMax` paramaters.\n
+                        2. Increasing the number of evaluation points (`n_evaluation_points` argument)\n
+                        3. Increasing the number of iterations (`n_iter` argument)\n
+                        4. Increasing the number of false connections used to compute
+                        p-value null distribution (`nRandConns` argument)\n
+                        5. Icreasing the proportion of featured to be subsampled
+                        (`subsample_prop` argument)\n",collapse="\n"))
         # message(strwrap("Skipping polynomial regression and finding
         # solution as the evaluation point with the lowest area under curve."))
         message("Solution not found")
@@ -543,11 +520,9 @@ setMethod("plot", signature=c(x="CellNumSol"), function(x){
     df2$y <- cbind(1, df2$x, df2$x^2) %*% x@regr_coefficients
     plot(y~x, data=df2, type="l", xlab="Square root of the number of cells per cluster",
              ylab="Area under curve", ylim=range(c(df2$y,y_val)))
-    points(x_val,y_val,pch=16)
     sol=x@solution
-    if(!is.null(sol)){
-        lines(c(sol, sol), range(c(df2$y,y_val)), lt=2, col="red")
-    }
+    points(x_val,y_val,pch=16)
+    lines(c(sol, sol), range(c(df2$y,y_val)), lt=2, col="red")
 })
 
 
