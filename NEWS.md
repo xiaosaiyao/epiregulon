@@ -1,3 +1,12 @@
+# epiregulon 2.0.0
+* New function in the workflow, `optimizeMatacellNumber`, which estimates the optimal value of the `cellNum` parameter
+passed to `calculateP2G`.
+* Using `scrapper::clusterKmeans` implementing deterministic algorithm of determination k-mean cluster.
+It is used to create metacells in the `calculateP2G` function.
+* Adding to the output of `calculateP2G` function empirical p-values and FDR. The null distribution
+is calculated based on random links of peaks to the genes from other chromosomes.
+* Arguments `method` to `calculateActivity` and `clusters` to `calculateP2G` have been deprecated.
+
 # epiregulon 1.5.1
 * checking for the duplicated gene names in the input gene expression SingleCellExperiment
 * validation of the regulon object passed to pruneRegulon, addWeights, and calculateActivity 
