@@ -1,5 +1,6 @@
 #' @importFrom SummarizedExperiment colData<-
 #' @importFrom SingleCellExperiment applySCE
+#' @importFrom scrapper clusterKmeans
 .aggregateCells <- function(cellNum,
                             expMatrix,
                             peakMatrix,
@@ -22,24 +23,20 @@
     for (cluster in unique(clusters)) {
       sce <- expMatrix[, which(clusters == cluster)]
       kNum <- trunc(ncol(sce)/cellNum)
-      kclusters[[cluster]] <- scran::clusterCells(sce,
-                                                  use.dimred = useDim,
-                                                  BLUSPARAM = bluster::KmeansParam(centers = kNum, iter.max = 5000))
-      barcodes[[cluster]] <- names(kclusters[[cluster]])
+      kclusters[[cluster]] <- clusterKmeans(t(as.matrix(reducedDim(sce, useDim))),k = kNum)$clusters
+      barcodes[[cluster]] <- colnames(sce)
       kclusters[[cluster]] <- paste(cluster, kclusters[[cluster]], sep = "_")
     }
     kclusters <- unlist(kclusters)
     barcodes <- unlist(barcodes)
     names(kclusters) <- barcodes
-
+    kclusters <- kclusters[colnames(expMatrix)]
 
   } else {
-    kclusters <- scran::clusterCells(expMatrix,
-                                     use.dimred = useDim,
-                                     BLUSPARAM = bluster::KmeansParam(centers = trunc(ncol(peakMatrix)/cellNum), iter.max = 5000))
+    kNum = trunc(ncol(expMatrix)/cellNum)
+    klcusters <- clusterKmeans(t(as.matrix(reducedDim(sce, useDim))),k = kNum)$clusters
   }
 
-  kclusters <- kclusters[colnames(expMatrix)]
 
   #replace clusters with clusters of pseudobulked samples
 
