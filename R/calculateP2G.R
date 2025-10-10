@@ -194,7 +194,6 @@ calculateP2G <- function(peakMatrix = NULL,
     data_to_aggregate <- as(assay(expMatrix, exp_assay), "CsparseMatrix")
     # aggregate by k-means clusters
     res <- aggregateAcrossCells(data_to_aggregate, factors = list(kclusters))
-
     expMatrix <- t(t(res$sums)/res$counts)
 
     peakSet = rowRanges(peakMatrix)
@@ -279,15 +278,18 @@ calculateP2G <- function(peakMatrix = NULL,
     # take a sample from the marginal distribution of peaks in RE-TG connections
     random_peak_idx <- sample(df[,"ATAC"], n_random_conns, replace=TRUE)
     seq_peaks <- unique(seqnames(peakSet[random_peak_idx]))
-    peak_order <- c()
-    gene_order <- c()
+    aligned_random_peaks <- c()
+    aligned_random_genes <- c()
     for(seq_peak in seq_peaks){
         seq_peak_idx <- which(as.logical(seqnames(peakSet[random_peak_idx])==seq_peak))
+        # find genes in other chromosomes
         remote_gene_idx <- which(as.logical(seqnames(geneStart)!=seq_peak))
-        gene_order <- c(gene_order, sample(remote_gene_idx, length(seq_peak_idx), replace=TRUE))
-        peak_order <- c(peak_order, random_peak_idx[seq_peak_idx])
+        aligned_random_genes <- c(aligned_random_genes, sample(remote_gene_idx, length(seq_peak_idx), replace=TRUE))
+        aligned_random_peaks <- c(aligned_random_peaks, random_peak_idx[seq_peak_idx])
     }
-    idx_pairs <- mapply(function(x,y) list(c(x,y)), gene_order, peak_order)
+    # tie matching genes and peaks into pairs
+    idx_pairs <- mapply(function(x,y) list(c(x,y)), aligned_random_genes, aligned_random_peaks)
+    # determine chunk limits for parallelization
     split_points <- seq(1,length(idx_pairs), by = 2e4)
     null_correlations <- unlist(BiocParallel::bplapply(X = split_points,
                                                       FUN = .RE_TG_correlation,
@@ -306,8 +308,8 @@ calculateP2G <- function(peakMatrix = NULL,
     df$p_val[correlations>0] <- (1-rand_corr_distr_pos(correlations[correlations>0]))
     df$FDR <- NA
     df$FDR[df$Correlation==0] <- 1
-    df$FDR[df$Correlation<0] <- p.adjust(df$p_val[df$Correlation<0],method="BH")
-    df$FDR[df$Correlation>0] <- p.adjust(df$p_val[df$Correlation>0],method="BH")
+    df$FDR[df$Correlation<0] <- p.adjust(df$p_val[df$Correlation<0], method="BH")
+    df$FDR[df$Correlation>0] <- p.adjust(df$p_val[df$Correlation>0], method="BH")
     return(df)
 }
 
@@ -335,7 +337,7 @@ calculateP2G <- function(peakMatrix = NULL,
 #' average number of cells per K-mean cluster in the first iteration of the optimization algorithm. If `cellNum` is not `NULL`
 #' this parameter is ignored.
 #' @param n_evaluation_points An integer defining how many metacells numbers are tested in the first iteration to find
-#' the optimal one. If `n_inter` > 1 new evaluation points (metacell numbers) are added in the proximity of the current solution.
+#' the optimal one. Must not be less than 3. If `n_inter` > 1 new evaluation points (metacell numbers) are added in the proximity of the current solution.
 #' @param ... Other arguments passed to `calculateP2G` function
 #'
 #' @return An object of the class `CellNumSol` to be passed to `calculateP2G` as `cellNum` paramater.
@@ -371,7 +373,6 @@ optimizeMetacellNumber <- function(peakMatrix,
     }
 
     if(is.null(cellNumMax)){
-        #cells_per_cluster_max <- min(1000, round(n_cells/3))
         cells_per_cluster_max <- min(2000, round(n_cells/10))
     }
     else{
@@ -379,14 +380,18 @@ optimizeMetacellNumber <- function(peakMatrix,
     }
     cells_per_cluster_min <- min(cells_per_cluster_min, cells_per_cluster_max)
 
-    selected_peak_idx <- sort(sample(nrow(peakMatrix), round(subsample_prop*nrow(peakMatrix))))
-    peakMatrix <- peakMatrix[selected_peak_idx,]
-    selected_gene_idx <- sort(sample(nrow(expMatrix), round(subsample_prop*nrow(expMatrix))))
-    expMatrix <- expMatrix[selected_gene_idx,]
-    evaluation_points <- sqrt(c(cells_per_cluster_min, cells_per_cluster_max))
-    evaluation_points <- seq(sqrt(cells_per_cluster_min), sqrt(cells_per_cluster_max), length.out=n_evaluation_points)
-    # translate cellNum to kNum and drop duplicates
-    evaluation_points <- evaluation_points[!duplicated(round(n_cells/evaluation_points^2))]
+    if(subsample_prop<1){
+        selected_peak_idx <- sort(sample(nrow(peakMatrix), round(subsample_prop*nrow(peakMatrix))))
+        peakMatrix <- peakMatrix[selected_peak_idx,]
+        selected_gene_idx <- sort(sample(nrow(expMatrix), round(subsample_prop*nrow(expMatrix))))
+        expMatrix <- expMatrix[selected_gene_idx,]
+    }
+
+    evaluation_points <- seq(sqrt(cells_per_cluster_min), sqrt(cells_per_cluster_max),
+                             length.out=n_evaluation_points)
+    # drop evaluation points that are duplicates after mapping to cluster numbers
+    kNum <- round(n_cells/evaluation_points^2)
+    evaluation_points <- evaluation_points[!duplicated(kNum)]
     if(length(evaluation_points)<3){
         stop("To few evaluation points to optimize kNum paramater. Consider using more cells or changing cellNumMin or cellNumMax parameters.")
     }
@@ -420,9 +425,10 @@ optimizeMetacellNumber <- function(peakMatrix,
             # select three additional evaluation points from the interval
             # containing current solution and two adjacent ones
             sol_position <- findInterval(sol, evaluation_points)
-            # extend domain to account for solution being in extreme interval
+            # extend domain to account for solution being in the first or last interval
             extended_domain <- c(1,evaluation_points, sqrt(round(n_cells/3)))
-            # get limits of intervals in extended domain to be split (interval with solution and adjacent ones)
+            # get the points delimiting intervals that will be split
+            # (interval with solution and adjacent ones)
             interval_limits <- sol_position + 0:3
             evaluation_points_new <- extended_domain[interval_limits]
             # calculate mid-points of the selected intervals
@@ -432,9 +438,12 @@ optimizeMetacellNumber <- function(peakMatrix,
             already_used_filter <- kNum_new %in% round(n_cells/evaluation_points^2)
             kNum_new <- kNum_new[!already_used_filter]
             if(length(kNum_new)==0) break
+            # adjust evaluation points to kNum
             evaluation_points_new <- evaluation_points_new[!already_used_filter]
+            # duplicates might be generated as a result of rounding
             evaluation_points_new[!duplicated(kNum_new)]
             areas_new <- c()
+            # calculate AUC (mean p-value) for each evaluation point
             for (i in seq_along(evaluation_points_new)){
                 p2g <- calculateP2G(
                     peakMatrix = peakMatrix,
@@ -465,14 +474,18 @@ optimizeMetacellNumber <- function(peakMatrix,
             last_iteration <- last_iteration+1L
         }
     }
+    # get values of some arguments used in the function call
+    # as that might help in troubleshooting
     arg_names <- c("n_iter", "n_evaluation_points", "cellNumMin",
               "cellNumMax", "subsample_prop")
     default_args <- arg_names[!arg_names %in% names(as.list(match.call()))]
     args <- as.list(match.call())[setdiff(arg_names, default_args)]
+    # add default arguments from the function definition
     args <- c(args, formals(sys.function())[default_args])
     args <- args[arg_names]
     p2g_args = formals(calculateP2G)[c("nRandConns", "cor_method", "maxDist", "frac_RNA", "frac_ATAC")]
     user_specified_args <- intersect(names(p2g_args), names(list(...)))
+    # replace deafults with the user specified arguments passed to calculateP2G
     p2g_args[user_specified_args] <- list(...)[user_specified_args]
     estimation_issue <- FALSE
     if(lin_model$coefficients[3] <= 0){
