@@ -556,5 +556,10 @@ setMethod("plot", signature=c(x="CellNumSol"), function(x){
     lines(c(sol, sol), range(c(df2$y,y_val)), lt=2, col="red")
 })
 
-
+setMethod("show", "CellNumSol", function(object){
+    cat("A CellNumSol object.\n")
+    cat(sprintf("Estimated optimal number of cells per cluster: %.2f\n", object@solution^2))
+    cat(paste0("Evaluation points: ", paste(object@evaluation_points, collapse=", "), "\n"))
+    cat(paste0("Mean p-values: ", paste(object@AUC, collapse=", "), "\n"))
+})
 
