@@ -79,11 +79,16 @@ calculateP2G <- function(peakMatrix = NULL,
                          nRandConns = 1e5,
                          BPPARAM = BiocParallel::SerialParam(progressbar = TRUE),
                          verbose = TRUE,
-                         clusters=deprecated()
+                         clusters=deprecated(),
+                         cor_cutoff=deprecated()
 ) {
 
     if (lifecycle::is_present(clusters)) {
         warning("Argument 'clusters' to calculateP2G was deprecated as of epiregulon version 2.0.0")
+    }
+
+    if (lifecycle::is_present(cor_cutoff)) {
+        warning("Argument 'cor_cutoff' to calculateP2G was deprecated as of epiregulon version 2.0.0")
     }
 
     if(verbose){
