@@ -182,8 +182,10 @@ calculateP2G <- function(peakMatrix = NULL,
     else{
         relation_fun <- get("<")
     }
-    p2g_merged <- p2g_merged[relation_fun(p2g_merged[,cutoff_stat], cutoff_sig), , drop = FALSE]
-
+    if(as.list(sys.call(sys.nframe()-1))[[1]]!="optimizeMetacellNumber"){
+        p2g_merged <- p2g_merged[relation_fun(p2g_merged[,cutoff_stat], cutoff_sig), , drop = FALSE]
+    }
+                        
     p2g_merged <- p2g_merged[order(p2g_merged$idxATAC, p2g_merged$idxRNA), , drop = FALSE]
     return(p2g_merged)
 }
@@ -405,6 +407,7 @@ optimizeMetacellNumber <- function(peakMatrix,
     if(length(evaluation_points)<3){
         stop("To few evaluation points to optimize kNum paramater. Consider using more cells or changing cellNumMin or cellNumMax parameters.")
     }
+
     areas <- c()
     for (i in seq_along(evaluation_points)){
         p2g <- calculateP2G(
@@ -415,7 +418,6 @@ optimizeMetacellNumber <- function(peakMatrix,
             peak_assay = peak_assay,
             cellNum = evaluation_points[i]^2,
             verbose = FALSE,
-            cutoff_sig = 2,
             ...
         )
         p_val_pos_reg <- p2g$p_val[p2g$Correlation>=0] # should (all) zeros be included?
