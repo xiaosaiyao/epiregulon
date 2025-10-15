@@ -1,6 +1,6 @@
 ---
 title: "Epiregulon tutorial with MultiAssayExperiment"
-author: "Xiaosai Yao"
+author: "Xiaosai Yao, Tomasz Włodarczyk"
 email: "yao.xiaosai@gene.com"
 output:
   BiocStyle::html_document:
@@ -117,21 +117,39 @@ grl.motif <- getTFMotifInfo(genome = "hg38",
 ```
 ## Link ATAC-seq peaks to target genes
 
-Next, we try to link ATAC-seq peaks to their putative target genes. We assign a peak to a gene within a size window (default ±250kb) if the chromatin accessibility of the peak and expression of the target genes are highly correlated (default threshold 0.5). To compute correlations, we first create cell aggregates by performing k-means clustering on the reduced dimensionality matrix. Then we aggregate the counts of the gene expression and peak matrix and average across the number of cells. Correlations are computed on the averaged gene expression and chromatin accessibility.
+Next, we try to link ATAC-seq peaks to their putative target genes. We assign a peak to a gene within a size window (default ±250kb) if the chromatin accessibility of the peak and expression of the target genes are highly correlated (default p-vale threshold 0.05). To compute correlations, we first create cell aggregates by performing k-means clustering on the reduced dimensionality matrix. Then we aggregate the counts of the gene expression and peak matrix and average across the number of cells. Correlations are computed on the averaged gene expression and chromatin accessibility.
 
-If cluster labels are provided, peak-to-gene correlations are computed on all the cells and for each cluster. Peak-to-gene links are retained as long as any of the correlations pass the threshold; the longer list of peak-to-gene links capture both inter- and intra-cluster variations.
+The number of metacells used to aggregate cells into meta-cells is a sensitive parameter, as it should strike the correct balance between averaging out biological variation and reducing signal noise caused by sparsity in single cells. Therefore, we provide a separate function, `optimizeMetacellNumber`, to automatically select the optimal value for this parameter. The algorithm samples different possible values and calculates the mean empirical p-value of RE–TG connections for each value. Then, a quadratic regression is fitted to the relationship, and the minimum of the function is determined.
 
-We also provide a second method of target gene assignment based on the nearest expressed genes to each ATAC-seq peak. To use this function, the user can specify `assignment_method = "nearest"`. With this option, we will still calculate the correlation and apply a correlation cutoff. If no correlation filter is needed, the user can set `cor_cutoff` to 0.
+```{r optimizeMetacellNumber}
+cellNum <- optimizeMetacellNumber(peakMatrix = PeakMatrix,
+                                  expMatrix = GeneExpressionMatrix,
+                                  reducedDim = reducedDimMatrix,
+                                  exp_assay = "normalizedCounts",
+                                  peak_assay = "counts",
+                                  BPPARAM=BiocParallel::SerialParam(progressbar = FALSE))
+```
+
+We can plot the results to make sure that the relationship is correctly generalized.
+
+```{r optim_plot}
+plot(cellNum)
+```
+
+The output of `optimizeMetacellNumber` function is then passed to `calculateP2G` as `cellNum` argument.
+
+If cluster labels are provided, peak-to-gene correlations are computed on all the cells and for each cluster. Peak-to-gene links are retained as long as any of the p-values pass the threshold; the longer list of peak-to-gene links capture both inter- and intra-cluster variations.
 ```{r calculateP2G}
 set.seed(1010)
 p2g <- calculateP2G(peakMatrix = PeakMatrix, 
                     expMatrix = GeneExpressionMatrix, 
                     reducedDim = reducedDimMatrix,
                     exp_assay = "normalizedCounts",
-                    peak_assay = "counts")
+                    peak_assay = "counts",
+                    cellNum = cellNum,
+                    BPPARAM=BiocParallel::SerialParam(progressbar = FALSE))
 
 p2g
-
 ```
 
 

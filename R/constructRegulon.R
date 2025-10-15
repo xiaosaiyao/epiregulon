@@ -3,7 +3,7 @@
 tfBinding <- function(genome = c("hg38", "hg19", "mm10"),
                       source = c("atlas", "encode.sample", "atlas.sample","atlas.tissue"),
                       metadata = FALSE,
-                      version=1,
+                      version=2,
                       peak_number = 1000) {
     checkmate::assertFlag(metadata)
     genome <- match.arg(genome, several.ok = FALSE)
@@ -26,7 +26,7 @@ tfBinding <- function(genome = c("hg38", "hg19", "mm10"),
                           mm10.atlas.tissue = "tfBinding_mm10_atlas.tissue.rds")
     }
     else{
-        message("Version 2 of the chip-seq data is being retrieved. For reproducibility with the scMultiome version < 1.7.1 please set version = 1.")
+        message("Retrieving chip-seq data, version 2")
         to_file_dict <- c(hg38.atlas="tfBinding_hg38_atlas.rds",
                           hg19.atlas = "tfBinding_hg19_atlas.rds",
                           mm10.atlas = "tfBinding_mm10_atlas.rds",

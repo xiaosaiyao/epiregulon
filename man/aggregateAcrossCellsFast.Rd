@@ -38,7 +38,7 @@ A SingleCellExperiment object containing aggregated cells.
 \description{
 Aggregate expression values across cells in SingleCellExperiment based on a
 grouping factor. This is primarily used to create pseudo-bulk profiles
-for each cluster/sample combination. It is wrapped around \code{aggregateAcrossCells},
+for each cluster/sample combination. It is wrapped around \code{scrapper::aggregateAcrossCells},
 which relies on the C++ code.
 }
 \examples{
