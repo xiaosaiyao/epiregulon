@@ -13,9 +13,6 @@
 #' contains genes in the first column and weights in the second column. See details
 #' @param clusters A vector indicating cluster assignment
 #' @param FUN function to aggregate the weights
-#' @param ncore Integer specifying the number of cores to be used in AUCell
-#' @param BPPARAM A BiocParallelParam object specifying whether summation should be parallelized. Use BiocParallel::SerialParam() for
-#' serial evaluation and use BiocParallel::MulticoreParam() for parallel evaluation
 #' @return A matrix of inferred transcription factor (row) activities in single cells (columns)
 #' @export
 #' @import methods utils
@@ -99,9 +96,7 @@ calculateActivity <- function(expMatrix = NULL,
                               method = deprecated(),
                               genesets = NULL,
                               clusters = NULL,
-                              FUN = c("mean", "sum"),
-                              ncore = 1,
-                              BPPARAM = BiocParallel::SerialParam()) {
+                              FUN = c("mean", "sum")) {
 
     if (lifecycle::is_present(method)) {
         warning("Argument 'method' to calculateActivity was deprecated as of epiregulon version 2.0.0")
@@ -354,18 +349,9 @@ normalizeByFrequency <- function(score.combine, freq, clusters = NULL) {
         freq <- matrix(as.numeric(freq), nrow=dim(freq)[1], ncol=dim(freq)[2], dimnames=dimnames(freq))
         for (cluster in unique(clusters)) {
             freq_c = freq[, cluster]
-            if(is(score.combine, "CsparseMatrix")){
-                # find corresponding frequency for each value in the the score.combine
-                freq_x = freq_c[score.combine[rownames(freq),clusters == cluster]@i+1]
-                score.combine[rownames(freq),clusters == cluster]@x <- score.combine[rownames(freq), clusters == cluster]@x/freq_x
-            }
-            else{
-                score.combine[rownames(freq), clusters == cluster] <- sscore.combine[rownames(freq),
-                                                                                          clusters == cluster,
-                                                                                          drop = FALSE]/freq_c
-
-            }
-
+            # find corresponding frequency for each value in the the score.combine
+            freq_x = freq_c[score.combine[rownames(freq),clusters == cluster]@i+1]
+            score.combine[rownames(freq),clusters == cluster]@x <- score.combine[rownames(freq), clusters == cluster]@x/freq_x
         }
     }
     score.combine

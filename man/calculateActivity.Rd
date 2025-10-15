@@ -13,9 +13,7 @@ calculateActivity(
   method = deprecated(),
   genesets = NULL,
   clusters = NULL,
-  FUN = c("mean", "sum"),
-  ncore = 1,
-  BPPARAM = BiocParallel::SerialParam()
+  FUN = c("mean", "sum")
 )
 }
 \arguments{
@@ -39,11 +37,6 @@ contains genes in the first column and weights in the second column. See details
 \item{clusters}{A vector indicating cluster assignment}
 
 \item{FUN}{function to aggregate the weights}
-
-\item{ncore}{Integer specifying the number of cores to be used in AUCell}
-
-\item{BPPARAM}{A BiocParallelParam object specifying whether summation should be parallelized. Use BiocParallel::SerialParam() for
-serial evaluation and use BiocParallel::MulticoreParam() for parallel evaluation}
 }
 \value{
 A matrix of inferred transcription factor (row) activities in single cells (columns)
