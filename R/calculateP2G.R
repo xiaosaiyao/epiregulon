@@ -259,7 +259,8 @@ calculateP2G <- function(peakMatrix = NULL,
     stat_extreme <- apply(p2g_merged[,cutoff_stat], 1, extreme_fun, na.rm = TRUE)
     p2g_merged <- p2g_merged[relation_fun(stat_extreme, cutoff_sig), , drop = FALSE]
   }
-
+  colnames(p2g_merged)[colnames(p2g_merged)=="p_val"] <- "p_val_peak_gene"
+  colnames(p2g_merged)[colnames(p2g_merged)=="FDR"] <- "FDR_peak_gene"
   p2g_merged <- p2g_merged[order(p2g_merged$idxATAC, p2g_merged$idxRNA), , drop = FALSE]
   return(p2g_merged)
 }
@@ -512,7 +513,7 @@ optimizeMetacellNumber <- function(peakMatrix,
       verbose = FALSE,
       ...
     )
-    p_val <- apply(p2g$p_val, 1, min, na.rm = TRUE)
+    p_val <- apply(p2g$p_val_peak_gene, 1, min, na.rm = TRUE)
     # calculate area under p-value cumulative distribution curve
     areas <- c(areas, mean(p_val))
   }
@@ -559,7 +560,7 @@ optimizeMetacellNumber <- function(peakMatrix,
           verbose = FALSE,
           ...
         )
-        p_val <- apply(p2g$p_val, 1, min, na.rm = TRUE)
+        p_val <- apply(p2g$p_val_peak_gene, 1, min, na.rm = TRUE)
         # calculate area under p-value cumulative distribution curve
         areas_new <- c(areas_new, mean(p_val))
       }
