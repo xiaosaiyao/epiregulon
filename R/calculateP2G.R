@@ -124,7 +124,8 @@ calculateP2G <- function(peakMatrix = NULL,
     }
     cellNum <- cellNum@solution^2
   }
-  checkmate::check_double(cellNum,lower=1, upper=ncol(expMatrix))
+  # the minimum number of metacells: 5
+  checkmate::check_double(cellNum,lower=1, upper=ncol(expMatrix)/5)
 
   if(verbose){
     writeLines("Creating metacells...")
@@ -458,16 +459,18 @@ optimizeMetacellNumber <- function(peakMatrix,
     cells_per_cluster_min <- min(20, round(n_cells/10))
   }
   else{
-    cells_per_cluster_min <- cellNumMin
+    cells_per_cluster_min <- max(1,cellNumMin)
   }
 
   if(is.null(cellNumMax)){
     cells_per_cluster_max <- min(2000, round(n_cells/10))
   }
   else{
-    cells_per_cluster_max <- min(cellNumMax, n_cells/3)
+    cells_per_cluster_max <- min(cellNumMax, n_cells/5)
   }
-  cells_per_cluster_min <- min(cells_per_cluster_min, cells_per_cluster_max)
+  if(cells_per_cluster_max < cells_per_cluster_min){
+      stop("Minimum number of cells per cluster should be greater than the maximum number.")
+  }
 
   assay(expMatrix, exp_assay) <- as(assay(expMatrix, exp_assay), "CsparseMatrix")
   assay(peakMatrix, peak_assay) <- as(assay(peakMatrix, peak_assay), "CsparseMatrix")
