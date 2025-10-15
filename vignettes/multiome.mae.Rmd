@@ -138,7 +138,6 @@ plot(cellNum)
 
 The output of `optimizeMetacellNumber` function is then passed to `calculateP2G` as `cellNum` argument.
 
-If cluster labels are provided, peak-to-gene correlations are computed on all the cells and for each cluster. Peak-to-gene links are retained as long as any of the p-values pass the threshold; the longer list of peak-to-gene links capture both inter- and intra-cluster variations.
 ```{r calculateP2G}
 set.seed(1010)
 p2g <- calculateP2G(peakMatrix = PeakMatrix, 
