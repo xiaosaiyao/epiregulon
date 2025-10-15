@@ -19,11 +19,14 @@ optimizeMetacellNumber(
 )
 }
 \arguments{
-\item{peakMatrix}{A SingleCellExperiment object containing counts of chromatin accessibility at each peak region or genomic bin from scATAC-seq.
+\item{peakMatrix}{A SingleCellExperiment object containing counts of chromatin
+accessibility at each peak region or genomic bin from scATAC-seq.
 \code{rowRanges} should contain genomic positions of the peaks in the form of \code{GRanges}.}
 
-\item{expMatrix}{A SingleCellExperiment object containing gene expression counts from scRNA-seq. \code{rowRanges} should contain genomic positions of
-the genes in the form of \code{GRanges}. \code{rowData} should contain a column of gene symbols with column name matching the \code{gene_symbol} argument.}
+\item{expMatrix}{A SingleCellExperiment object containing gene expression
+counts from scRNA-seq. \code{rowRanges} should contain genomic positions of
+the genes in the form of \code{GRanges}. \code{rowData} should contain a column of
+gene symbols with column name matching the \code{gene_symbol} argument.}
 
 \item{reducedDim}{A matrix of dimension reduced values}
 
@@ -31,20 +34,27 @@ the genes in the form of \code{GRanges}. \code{rowData} should contain a column 
 
 \item{peak_assay}{String indicating the name of the assay in peakMatrix for chromatin accessibility}
 
-\item{subsample_prop}{A numeric indicating the fraction of features from \code{expMatrix} and \code{peakMatrix} used to optimize \code{kNum}}
+\item{subsample_prop}{A numeric indicating the fraction of features
+from \code{expMatrix} and \code{peakMatrix} used to optimize \code{kNum}}
 
-\item{n_iter}{An integer indicating the number of iterations before in which the value of \code{kNum} parameter is optimized}
+\item{n_iter}{An integer indicating the number of iterations before in which
+the value of \code{kNum} parameter is optimized}
 
-\item{cellNumMin}{A numeric used to optimize value of \code{cellNum} parameter. Corresponds to the lower bound for the
-average number of cells per K-mean cluster in the first iteration of the optimization algorithm. If \code{cellNum} is not \code{NULL}
+\item{cellNumMin}{A numeric used to optimize value of \code{cellNum} parameter.
+Corresponds to the lower bound for the
+average number of cells per K-mean cluster in the first iteration of the
+optimization algorithm. If \code{cellNum} is not \code{NULL}
 this parameter is ignored.}
 
-\item{cellNumMax}{A numeric used to optimize value of \code{cellNum} parameter. Corresponds to the upper bound for the
-average number of cells per K-mean cluster in the first iteration of the optimization algorithm. If \code{cellNum} is not \code{NULL}
-this parameter is ignored.}
+\item{cellNumMax}{A numeric used to optimize value of \code{cellNum} parameter.
+Corresponds to the upper bound for the
+average number of cells per K-mean cluster in the first iteration of the
+optimization algorithm. If \code{cellNum} is not \code{NULL} this parameter is ignored.}
 
-\item{n_evaluation_points}{An integer defining how many metacells numbers are tested in the first iteration to find
-the optimal one. Must not be less than 3. If \code{n_inter} > 1 new evaluation points (metacell numbers) are added in the proximity of the current solution.}
+\item{n_evaluation_points}{An integer defining how many metacells numbers are tested
+in the first iteration to find
+the optimal one. Must not be less than 3. If \code{n_inter} > 1 new evaluation points
+(metacell numbers) are added in the proximity of the current solution.}
 
 \item{...}{Other arguments passed to \code{calculateP2G} function}
 }
