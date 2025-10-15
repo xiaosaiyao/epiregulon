@@ -22,6 +22,7 @@ calculateP2G(
   frac_RNA = 0,
   frac_ATAC = 0,
   nRandConns = 1e+05,
+  batch_size = 20000,
   BPPARAM = BiocParallel::SerialParam(progressbar = TRUE),
   verbose = TRUE
 )
@@ -70,6 +71,9 @@ Set cor_cutoff to 0 if wishing to assign the closest expressed gene without any 
 
 \item{nRandConns}{An integer specifying the number of false connections between regulatory elements and target genes which
 will be used to calculate empirical p-values of correlation coefficients}
+
+\item{batch_size}{An integer specifying how many peak–gene pairs are
+processed per batch during parallel correlation calculations.}
 
 \item{BPPARAM}{A BiocParallelParam object specifying whether summation should be parallelized. Use BiocParallel::SerialParam() for
 serial evaluation and use BiocParallel::MulticoreParam() for parallel evaluation}

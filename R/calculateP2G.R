@@ -29,6 +29,8 @@
 #' @param frac_ATAC An integer to indication the fraction of cells showing chromatin accessibility. It is used to filter the peak Matrix for open regions
 #' @param nRandConns An integer specifying the number of false connections between regulatory elements and target genes which
 #' will be used to calculate empirical p-values of correlation coefficients
+#' @param batch_size An integer specifying how many peak–gene pairs are
+#' processed per batch during parallel correlation calculations.
 #' @param BPPARAM A BiocParallelParam object specifying whether summation should be parallelized. Use BiocParallel::SerialParam() for
 #' serial evaluation and use BiocParallel::MulticoreParam() for parallel evaluation
 #' @param verbose A boolean indicating whether messages should be emitted during computation
@@ -85,6 +87,7 @@ calculateP2G <- function(peakMatrix = NULL,
                          frac_RNA = 0,
                          frac_ATAC = 0,
                          nRandConns = 1e5,
+                         batch_size=2e4,
                          BPPARAM = BiocParallel::SerialParam(progressbar = TRUE),
                          verbose = TRUE
 ) {
@@ -168,13 +171,14 @@ calculateP2G <- function(peakMatrix = NULL,
 
   o$Correlation <- initiateMatCluster(clusters, nrow = nrow(o))
   idx_pairs <- mapply(function(x,y) list(c(x,y)), as.integer(o$RNA), as.integer(o$ATAC))
-  split_points <- seq(1,length(idx_pairs), by = 2e4)
+  split_points <- seq(1,length(idx_pairs), by = batch_size)
   o$Correlation[, "all"] <- unlist(BiocParallel::bplapply(X = split_points,
                                                  FUN = .RE_TG_correlation,
                                                  idx_pairs=idx_pairs,
                                                  exprMatrix=agg_data_list[["geneExpr"]],
                                                  peakMatrix=agg_data_list[["peakCounts"]],
                                                  cor_method=cor_method,
+                                                 batch_size=batch_size,
                                                  BPPARAM = BPPARAM))
 
   o$p_val <- initiateMatCluster(clusters, nrow = nrow(o))
@@ -188,6 +192,7 @@ calculateP2G <- function(peakMatrix = NULL,
                n_random_conns = nRandConns,
                cor_method = cor_method,
                cluster = "all",
+               batch_size=batch_size,
                BPPARAM = BPPARAM)
 
   o$p_val[,"all"] <- stats_all[["p_val"]]
@@ -214,6 +219,7 @@ calculateP2G <- function(peakMatrix = NULL,
                                                                   exprMatrix=agg_data_list[["geneExpr"]][,clusters_idx],
                                                                   peakMatrix=agg_data_list[["peakCounts"]][, clusters_idx],
                                                                   cor_method=cor_method,
+                                                                  batch_size=batch_size,
                                                                   BPPARAM = BPPARAM))
 
         stats_cluster <- .addFDR(df=o,
@@ -224,6 +230,7 @@ calculateP2G <- function(peakMatrix = NULL,
                              n_random_conns = nRandConns,
                              cor_method = cor_method,
                              cluster = cluster,
+                             batch_size=batch_size,
                              BPPARAM = BPPARAM)
 
         o$p_val[,cluster] <- stats_cluster[["p_val"]]
@@ -354,6 +361,7 @@ calculateP2G <- function(peakMatrix = NULL,
                     n_random_conns,
                     cor_method,
                     cluster,
+                    batch_size,
                     BPPARAM){
   # take a sample from the marginal distribution of peaks in RE-TG connections
   random_peak_idx <- sample(df[,"ATAC"], n_random_conns, replace=TRUE)
@@ -370,13 +378,14 @@ calculateP2G <- function(peakMatrix = NULL,
   # tie matching genes and peaks into pairs
   idx_pairs <- mapply(function(x,y) list(c(x,y)), aligned_random_genes, aligned_random_peaks)
   # determine chunk limits for parallelization
-  split_points <- seq(1,length(idx_pairs), by = 2e4)
+  split_points <- seq(1,length(idx_pairs), by = batch_size)
   null_correlations <- unlist(BiocParallel::bplapply(X = split_points,
                                                      FUN = .RE_TG_correlation,
                                                      idx_pairs=idx_pairs,
                                                      exprMatrix=geneExpr,
                                                      peakMatrix=peakCounts,
                                                      cor_method=cor_method,
+                                                     batch_size=batch_size,
                                                      BPPARAM = BPPARAM))
 
   rand_corr_distr_pos <- ecdf(null_correlations[which(null_correlations>=0)])
@@ -617,9 +626,10 @@ optimizeMetacellNumber <- function(peakMatrix,
   )
 }
 
-.RE_TG_correlation <- function(ind, idx_pairs, exprMatrix, peakMatrix, cor_method){
+.RE_TG_correlation <- function(ind, idx_pairs, exprMatrix, peakMatrix, cor_method,
+                               batch_size){
   # select pairs to be included in this batch
-  idx_pairs <- idx_pairs[ind:min(ind+2e4-1,length(idx_pairs))]
+  idx_pairs <- idx_pairs[ind:min(ind+batch_size-1,length(idx_pairs))]
   suppressWarnings(
     vapply(idx_pairs,
          function(idx_pair) stats::cor(exprMatrix[idx_pair[1],],
