@@ -148,7 +148,6 @@ pruneRegulon <- function(regulon,
                     useDim,
                     exp_assay,
                     peak_assay,
-                    BPPARAM,
                     clusters)}
 
   # extracting assays from SCE and coverting to SsparseMatrix

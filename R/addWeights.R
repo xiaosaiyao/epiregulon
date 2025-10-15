@@ -120,7 +120,7 @@ addWeights <- function(regulon,
   if (aggregateCells && method != "wilcoxon") {
     message("Cell aggregation is possible only with 'wilcoxon' method.")
   } else if (aggregateCells && method == "wilcoxon") {
-    .aggregateCells(cellNum, expMatrix, peakMatrix, environment(), useDim, exp_assay, peak_assay, BPPARAM, clusters)
+    .aggregateCells(cellNum, expMatrix, peakMatrix, environment(), useDim, exp_assay, peak_assay, clusters)
   }
 
   # extract matrices from SCE

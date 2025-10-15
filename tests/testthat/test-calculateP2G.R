@@ -102,6 +102,7 @@ stat_list <- .addFDR(overlap, geneStart = gene.ranges, peakSet = peak.ranges,
               geneExpr = geneExpMatrix, peakCounts = peakMatrix,
               n_random_conns = 1e5,
               cor_method = "pearson",
+              batch_size=2e4,
               BPPARAM=BiocParallel::MulticoreParam())
 
 df <- overlap
