@@ -105,6 +105,7 @@ calculateP2G <- function(peakMatrix = NULL,
   if(is.null(reducedDim)) stop("reducedDim argument is NULL.")
 
   if(!is.null(clusters)) .validate_clusters(clusters, expMatrix)
+  clusters <- as.character(clusters)
 
   if (!gene_symbol %in% colnames(rowData(expMatrix))) {
     stop("rowData of expMatrix does not contain ", gene_symbol)
@@ -190,9 +191,9 @@ calculateP2G <- function(peakMatrix = NULL,
 
   o$p_val[,"all"] <- stats_all[["p_val"]]
   o$FDR[,"all"] <- stats_all[["FDR"]]
-
+  small_cluster_warning <- FALSE
   # compute stats within each cluster
-  if (!is.null(clusters)) {
+  if (length(clusters)>0) {
     cluster_composition <- table(clusters, agg_data_list[["clust"]])
     cluster_composition <- sweep(cluster_composition, 2, STATS = colSums(cluster_composition),
                                  FUN = "/")
@@ -203,6 +204,7 @@ calculateP2G <- function(peakMatrix = NULL,
         o$Correlation[, cluster] <- NA
         o$p_val[, cluster] <- NA
         o$FDR[, cluster] <- NA
+        small_cluster_warning <- TRUE
       }
       else{
         o$Correlation[, cluster] <- unlist(BiocParallel::bplapply(X = split_points,
@@ -227,6 +229,10 @@ calculateP2G <- function(peakMatrix = NULL,
         o$FDR[,cluster] <- stats_cluster[["FDR"]]
       }
     }
+  }
+  if(small_cluster_warning){
+      warning(strwrap("Some clusters contain too few metacells to
+                      calculate cluster-specific correlations. NAs were generated."))
   }
 
 
@@ -394,23 +400,33 @@ calculateP2G <- function(peakMatrix = NULL,
 #' to overcome the effect of data sparsity, whereas too few clusters may result in
 #' excessive averaging and loss of important biological variability.
 #'
-#' @param peakMatrix A SingleCellExperiment object containing counts of chromatin accessibility at each peak region or genomic bin from scATAC-seq.
+#' @param peakMatrix A SingleCellExperiment object containing counts of chromatin
+#' accessibility at each peak region or genomic bin from scATAC-seq.
 #' `rowRanges` should contain genomic positions of the peaks in the form of `GRanges`.
-#' @param expMatrix A SingleCellExperiment object containing gene expression counts from scRNA-seq. `rowRanges` should contain genomic positions of
-#' the genes in the form of `GRanges`. `rowData` should contain a column of gene symbols with column name matching the `gene_symbol` argument.
+#' @param expMatrix A SingleCellExperiment object containing gene expression
+#' counts from scRNA-seq. `rowRanges` should contain genomic positions of
+#' the genes in the form of `GRanges`. `rowData` should contain a column of
+#' gene symbols with column name matching the `gene_symbol` argument.
 #' @param reducedDim A matrix of dimension reduced values
 #' @param exp_assay String indicating the name of the assay in expMatrix for gene expression
 #' @param peak_assay String indicating the name of the assay in peakMatrix for chromatin accessibility
-#' @param subsample_prop A numeric indicating the fraction of features from `expMatrix` and `peakMatrix` used to optimize `kNum`
-#' @param n_iter An integer indicating the number of iterations before in which the value of `kNum` parameter is optimized
-#' @param cellNumMin A numeric used to optimize value of `cellNum` parameter. Corresponds to the lower bound for the
-#' average number of cells per K-mean cluster in the first iteration of the optimization algorithm. If `cellNum` is not `NULL`
+#' @param subsample_prop A numeric indicating the fraction of features
+#' from `expMatrix` and `peakMatrix` used to optimize `kNum`
+#' @param n_iter An integer indicating the number of iterations before in which
+#' the value of `kNum` parameter is optimized
+#' @param cellNumMin A numeric used to optimize value of `cellNum` parameter.
+#' Corresponds to the lower bound for the
+#' average number of cells per K-mean cluster in the first iteration of the
+#' optimization algorithm. If `cellNum` is not `NULL`
 #' this parameter is ignored.
-#' @param cellNumMax A numeric used to optimize value of `cellNum` parameter. Corresponds to the upper bound for the
-#' average number of cells per K-mean cluster in the first iteration of the optimization algorithm. If `cellNum` is not `NULL`
-#' this parameter is ignored.
-#' @param n_evaluation_points An integer defining how many metacells numbers are tested in the first iteration to find
-#' the optimal one. Must not be less than 3. If `n_inter` > 1 new evaluation points (metacell numbers) are added in the proximity of the current solution.
+#' @param cellNumMax A numeric used to optimize value of `cellNum` parameter.
+#' Corresponds to the upper bound for the
+#' average number of cells per K-mean cluster in the first iteration of the
+#' optimization algorithm. If `cellNum` is not `NULL` this parameter is ignored.
+#' @param n_evaluation_points An integer defining how many metacells numbers are tested
+#' in the first iteration to find
+#' the optimal one. Must not be less than 3. If `n_inter` > 1 new evaluation points
+#' (metacell numbers) are added in the proximity of the current solution.
 #' @param ... Other arguments passed to `calculateP2G` function
 #'
 #' @return An object of the class `CellNumSol` to be passed to `calculateP2G` as `cellNum` paramater.
