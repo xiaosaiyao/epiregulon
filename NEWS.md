@@ -5,7 +5,8 @@ passed to `calculateP2G`.
 It is used to create metacells in the `calculateP2G` function.
 * Adding to the output of `calculateP2G` function empirical p-values and FDR. The null distribution
 is calculated based on random links of peaks to the genes from other chromosomes.
-* Arguments `method` to `calculateActivity` and `clusters` to `calculateP2G` have been deprecated.
+* Argument `method` to `calculateActivity` is deprecated.
+* Chip-seq data, version 2 is used by default.
 
 # epiregulon 1.5.1
 * checking for the duplicated gene names in the input gene expression SingleCellExperiment
