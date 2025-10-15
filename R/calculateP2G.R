@@ -7,14 +7,18 @@
 #' @param reducedDim A matrix of dimension reduced values
 #' @param cutoff_stat A names of a statistic used to determine significant links to assign peak to gene links.
 #' Should be `Correlation`, `p_val` or `FDR`.
-#' @param cutoff_sig A numeric scalar to specify the cutoff for the links between ATAC-seq peaks and RNA-seq genes .
-#' Default is set to 0.5.
+#' @param cor_cutoff A numeric scalar to specify the correlation cutoff between ATAC-seq peaks and RNA-seq genes to assign peak to gene links.
+#'  Default correlation cutoff is 0.5. Takes effect only of `cutoff_stat` is set to `Correlation`.
+#' @param cutoff_sig A numeric scalar to specify the p-value or FDR cutoff for the links between ATAC-seq peaks and RNA-seq genes .
+#' Default is set to 0.05.
 #' @param cellNum A numeric to specify the average number of cells per K-mean cluster. Alternatively, an object of the class `CellNumSol`
 #' returned by `optimizeMetacellNumber` function. If set to `NULL`, its value is determined automatically, based on the number of cells.
 #' @param maxDist An integer to specify the base pair extension from transcription start start for overlap with peak regions
 #' @param exp_assay String indicating the name of the assay in expMatrix for gene expression
 #' @param peak_assay String indicating the name of the assay in peakMatrix for chromatin accessibility
 #' @param gene_symbol String indicating the column name in the rowData of expMatrix that corresponds to gene symbol
+#' @param clusters A vector corresponding to the cluster labels for calculation of correlations within each cluster. If left NULL, correlation is calculated across
+#' all clusters. See details for the use of clusters
 #' @param cor_method String indicating which correlation coefficient is to be computed. One of 'pearson' (default), 'kendall', or 'spearman'.
 #' @param assignment_method String indicating the method used to assign target genes to regulatory elements. 'Correlation' is based on correlation between ATAC and RNA
 #' above a correlation threshold set by cor_cutoff. 'Nearest' assigns the closest expressed gene to regulatory element meeting a correlation threshold set by cor_cutoff.
@@ -69,35 +73,26 @@ calculateP2G <- function(peakMatrix = NULL,
                          reducedDim = NULL,
                          cutoff_stat = c("p_val", "FDR", "Correlation"),
                          cutoff_sig = 0.05,
+                         cor_cutoff = 0.5,
                          cellNum = 100,
                          maxDist = 250000,
                          exp_assay = "logcounts",
                          peak_assay = "counts",
                          gene_symbol = "name",
+                         clusters = NULL,
                          cor_method = c("pearson", "spearman", "kendall"),
                          assignment_method = c("correlation","nearest"),
-                         clusters = NULL,
                          frac_RNA = 0,
                          frac_ATAC = 0,
                          nRandConns = 1e5,
                          BPPARAM = BiocParallel::SerialParam(progressbar = TRUE),
-                         verbose = TRUE,
-                         clusters=NULL,
-                         cor_cutoff=deprecated()
+                         verbose = TRUE
 ) {
-  
-  if (lifecycle::is_present(clusters)) {
-    warning("Argument 'clusters' to calculateP2G was deprecated as of epiregulon version 2.0.0")
-  }
-  
-  if (lifecycle::is_present(cor_cutoff)) {
-    warning("Argument 'cor_cutoff' to calculateP2G was deprecated as of epiregulon version 2.0.0")
-  }
-  
+
   if(verbose){
     writeLines("Using epiregulon to compute peak to gene links...")
   }
-  
+
   # check inputs
   cor_method <- match.arg(cor_method)
   assignment_method <- match.arg(assignment_method)
@@ -108,7 +103,9 @@ calculateP2G <- function(peakMatrix = NULL,
     stop("Cell names in expMatrix and peakMatrix should be identical")
   }
   if(is.null(reducedDim)) stop("reducedDim argument is NULL.")
-  
+
+  if(!is.null(clusters)) .validate_clusters(clusters, expMatrix)
+
   if (!gene_symbol %in% colnames(rowData(expMatrix))) {
     stop("rowData of expMatrix does not contain ", gene_symbol)
   }
@@ -127,7 +124,7 @@ calculateP2G <- function(peakMatrix = NULL,
     cellNum <- cellNum@solution^2
   }
   checkmate::check_double(cellNum,lower=1, upper=ncol(expMatrix))
-  
+
   if(verbose){
     writeLines("Creating metacells...")
   }
@@ -141,7 +138,7 @@ calculateP2G <- function(peakMatrix = NULL,
                                      frac_RNA,
                                      frac_ATAC,
                                      kNum=kNum)
-  
+
   # find overlaps between REs and resized TGs
   if(verbose){
     writeLines("Looking for regulatory elements near target genes...")
@@ -155,19 +152,19 @@ calculateP2G <- function(peakMatrix = NULL,
                         maxDist=maxDist,
                         gene_symbol=gene_symbol,
                         assignment_method=assignment_method)
-  
+
   # Calculate correlation
   if(verbose){
     writeLines("Computing correlations...")
   }
-  
+
   # if a cluster is named 'all', replace it to distinguish from all cells
   clusters <- renameCluster(clusters)
-  
+
   unique_clusters <- sort(unique(clusters))
   if(any(unique_clusters=="")) stop("Some of the culster lables are empty strings.")
-  
-  o$Correlation <- initiateMatCluster(clusters, nrow = nrow(agg_data_list[["geneExpr"]]))
+
+  o$Correlation <- initiateMatCluster(clusters, nrow = nrow(o))
   idx_pairs <- mapply(function(x,y) list(c(x,y)), as.integer(o$RNA), as.integer(o$ATAC))
   split_points <- seq(1,length(idx_pairs), by = 2e4)
   o$Correlation[, "all"] <- unlist(BiocParallel::bplapply(X = split_points,
@@ -177,10 +174,10 @@ calculateP2G <- function(peakMatrix = NULL,
                                                  peakMatrix=agg_data_list[["peakCounts"]],
                                                  cor_method=cor_method,
                                                  BPPARAM = BPPARAM))
-  
-  o$p_val <- initiateMatCluster(clusters, nrow = nrow(agg_data_list[["geneExpr"]]))
-  o$FDR <- initiateMatCluster(clusters, nrow = nrow(agg_data_list[["geneExpr"]]))
-  
+
+  o$p_val <- initiateMatCluster(clusters, nrow = nrow(o))
+  o$FDR <- initiateMatCluster(clusters, nrow = nrow(o))
+
   stats_all <- .addFDR(df=o,
                geneStart = agg_data_list[["geneStart"]],
                peakSet=agg_data_list[["peakSet"]],
@@ -188,15 +185,15 @@ calculateP2G <- function(peakMatrix = NULL,
                peakCounts = agg_data_list[["peakCounts"]],
                n_random_conns = nRandConns,
                cor_method = cor_method,
+               cluster = "all",
                BPPARAM = BPPARAM)
-  
+
   o$p_val[,"all"] <- stats_all[["p_val"]]
   o$FDR[,"all"] <- stats_all[["FDR"]]
-  
+
   # compute stats within each cluster
   if (!is.null(clusters)) {
-    # composition of kcluster
-    cluster_composition <- table(clusters, kclusters)
+    cluster_composition <- table(clusters, agg_data_list[["clust"]])
     cluster_composition <- sweep(cluster_composition, 2, STATS = colSums(cluster_composition),
                                  FUN = "/")
     for (cluster in unique_clusters) {
@@ -215,7 +212,7 @@ calculateP2G <- function(peakMatrix = NULL,
                                                                   peakMatrix=agg_data_list[["peakCounts"]][, clusters_idx],
                                                                   cor_method=cor_method,
                                                                   BPPARAM = BPPARAM))
-        
+
         stats_cluster <- .addFDR(df=o,
                              geneStart = agg_data_list[["geneStart"]],
                              peakSet=agg_data_list[["peakSet"]],
@@ -223,20 +220,22 @@ calculateP2G <- function(peakMatrix = NULL,
                              peakCounts = agg_data_list[["peakCounts"]][,clusters_idx],
                              n_random_conns = nRandConns,
                              cor_method = cor_method,
+                             cluster = cluster,
                              BPPARAM = BPPARAM)
-        
+
         o$p_val[,cluster] <- stats_cluster[["p_val"]]
         o$FDR[,cluster] <- stats_cluster[["FDR"]]
       }
     }
   }
-  
-  
+
+
   p2g_merged <- o[, c("old.idxATAC", "chr", "start", "end", "old.idxRNA", "Gene","Correlation", "p_val", "FDR", "distance")]
   colnames(p2g_merged) <- c("idxATAC", "chr", "start", "end", "idxRNA", "target","Correlation", "p_val", "FDR", "distance")
   if(cutoff_stat=="Correlation"){
     relation_fun <- get(">")
     extreme_fun <- max
+    cutoff_sig <- cor_cutoff
   }
   else{
     relation_fun <- get("<")
@@ -246,7 +245,7 @@ calculateP2G <- function(peakMatrix = NULL,
     stat_extreme <- apply(p2g_merged[,cutoff_stat], 1, extreme_fun, na.rm = TRUE)
     p2g_merged <- p2g_merged[relation_fun(stat_extreme, cutoff_sig), , drop = FALSE]
   }
-  
+
   p2g_merged <- p2g_merged[order(p2g_merged$idxATAC, p2g_merged$idxRNA), , drop = FALSE]
   return(p2g_merged)
 }
@@ -256,7 +255,7 @@ calculateP2G <- function(peakMatrix = NULL,
 #' @importFrom scrapper aggregateAcrossCells clusterKmeans
 .create_metacells <- function(expMatrix, exp_assay, peakMatrix, peak_assay, reducedDim,
                               gene_symbol, frac_RNA, frac_ATAC, kNum){
-  
+
   kclusters <- clusterKmeans(t(as.matrix(reducedDim)),k = kNum)$clusters
   kclusters <- as.character(kclusters)
   geneStart <- resize(rowRanges(expMatrix), width=1)
@@ -265,36 +264,39 @@ calculateP2G <- function(peakMatrix = NULL,
   # aggregate by k-means clusters
   res <- aggregateAcrossCells(data_to_aggregate, factors = list(kclusters))
   expMatrix <- t(t(res$sums)/res$counts)
-  
+  colnames(expMatrix) <- res$combinations[,1]
+
   peakSet = rowRanges(peakMatrix)
   data_to_aggregate <- as(assay(peakMatrix, peak_assay), "CsparseMatrix")
   res <- aggregateAcrossCells(data_to_aggregate, factors = list(kclusters))
   peakMatrix <- t(t(res$sums)/res$counts)
+  colnames(peakMatrix) <- res$combinations[,1]
   # keep track of the original ATAC and expression indices
   old.idxRNA <- seq_len(nrow(expMatrix))
   old.idxATAC <- seq_len(nrow(peakMatrix))
-  
+
   # filter gene expression matrix based on fraction of cells expressing gene
   cells_express_rna <- rowSums(expMatrix > 0)
   frac_expressed_rna <- cells_express_rna/ncol(expMatrix)
   expMatrix <- expMatrix[frac_expressed_rna > frac_RNA, ]
   old.idxRNA <- old.idxRNA[frac_expressed_rna > frac_RNA]
   geneStart <- geneStart[frac_expressed_rna > frac_RNA]
-  
+
   # filter peak matrix based on fraction of cells showing chromatin accessibility
   cells_express_atac <- rowSums(peakMatrix > 0)
   frac_expressed_atac <- cells_express_atac/ncol(peakMatrix)
   peakMatrix <- peakMatrix[frac_expressed_atac > frac_ATAC, ]
   old.idxATAC <- old.idxATAC[frac_expressed_atac > frac_ATAC]
   peakSet <- peakSet[frac_expressed_atac > frac_ATAC]
-  
+
   # return gene expression and peak matrix
   return(list(geneExpr = expMatrix,
               peakCounts = peakMatrix,
               geneStart=geneStart,
               peakSet = peakSet,
               old.idxRNA = old.idxRNA,
-              old.idxATAC = old.idxATAC))
+              old.idxATAC = old.idxATAC,
+              clust = kclusters))
 }
 
 #' @importFrom GenomicRanges findOverlaps start end distance distanceToNearest mcols
@@ -306,28 +308,28 @@ calculateP2G <- function(peakMatrix = NULL,
     o <- DataFrame(findOverlaps(resize(geneStart, maxDist, "center"),
                                 peakSet, ignore.strand = TRUE))
   } else if (assignment_method == "nearest") {
-    
+
     # assign every regulatory element to its nearest gene
     nearest_gene <- DataFrame(distanceToNearest(peakSet, geneStart))
-    
+
     # flip order of query and subject to be consistent with correlation mode
     o <- DataFrame(queryHits=nearest_gene$subjectHits,
                    subjectHits=nearest_gene$queryHits,
                    distance=nearest_gene$distance)
-    
+
     # filter by distance
     o <- o[which(o$distance < maxDist), ]
-    
+
   }
-  
+
   #Get Distance from Fixed point A B
   o$distance <- distance(geneStart[o[, 1]], peakSet[o[, 2]])
   colnames(o) <- c("RNA", "ATAC", "distance")
-  
+
   # add old idxRNA and idxATAC
   o$old.idxRNA <- old.idxRNA[o[, 1]]
   o$old.idxATAC <- old.idxATAC[o[, 2]]
-  
+
   #add metadata to o
   o$Gene <- mcols(geneStart)[o[, 1], gene_symbol]
   o$chr <- as.character(seqnames(peakSet)[o[, 2]])
@@ -344,6 +346,7 @@ calculateP2G <- function(peakMatrix = NULL,
                     peakCounts,
                     n_random_conns,
                     cor_method,
+                    cluster,
                     BPPARAM){
   # take a sample from the marginal distribution of peaks in RE-TG connections
   random_peak_idx <- sample(df[,"ATAC"], n_random_conns, replace=TRUE)
@@ -368,18 +371,18 @@ calculateP2G <- function(peakMatrix = NULL,
                                                      peakMatrix=peakCounts,
                                                      cor_method=cor_method,
                                                      BPPARAM = BPPARAM))
-  
-  rand_corr_distr_pos <- ecdf(null_correlations[null_correlations>=0])
-  rand_corr_distr_neg <- ecdf(null_correlations[null_correlations<=0])
-  correlations <- df$Correlation
+
+  rand_corr_distr_pos <- ecdf(null_correlations[which(null_correlations>=0)])
+  rand_corr_distr_neg <- ecdf(null_correlations[which(null_correlations<=0)])
+  correlations <- df$Correlation[,cluster]
   p_val <- rep(NA, nrow(df))
-  p_val[correlations==0] <- 1
-  p_val[correlations<0] <- rand_corr_distr_neg(correlations[correlations<0])
-  p_val[correlations>0] <- (1-rand_corr_distr_pos(correlations[correlations>0]))
+  p_val[which(correlations==0)] <- 1
+  p_val[which(correlations<0)] <- rand_corr_distr_neg(correlations[which(correlations<0)])
+  p_val[which(correlations>0)] <- (1-rand_corr_distr_pos(correlations[which(correlations>0)]))
   FDR <- rep(NA, nrow(df))
-  FDR[df$Correlation==0] <- 1
-  FDR[df$Correlation<0] <- p.adjust(p_val[df$Correlation<0], method="BH")
-  FDR[df$Correlation>0] <- p.adjust(p_val[df$Correlation>0], method="BH")
+  FDR[which(correlations==0)] <- 1
+  FDR[which(correlations<0)] <- p.adjust(p_val[which(correlations<0)], method="BH")
+  FDR[which(correlations>0)] <- p.adjust(p_val[which(correlations>0)], method="BH")
   return(list(p_val=p_val, FDR=FDR))
 }
 
@@ -418,11 +421,11 @@ optimizeMetacellNumber <- function(peakMatrix,
                                    reducedDim,
                                    exp_assay,
                                    peak_assay,
-                                   subsample_prop=0.1,
-                                   n_iter=1,
+                                   subsample_prop=1,
+                                   n_iter=2,
                                    cellNumMin=NULL,
                                    cellNumMax=NULL,
-                                   n_evaluation_points=4,
+                                   n_evaluation_points=5,
                                    ...){
   # check inputs
   .validate_input_sce(SCE=expMatrix, assay_name=exp_assay, row.ranges=TRUE)
@@ -433,7 +436,7 @@ optimizeMetacellNumber <- function(peakMatrix,
   if(is.null(reducedDim)) stop("reducedDim argument is NULL.")
   checkmate::check_double(subsample_prop,lower=0, upper=1)
   checkmate::check_integer(n_evaluation_points, lower=3)
-  
+
   n_cells <- ncol(peakMatrix)
   if(is.null(cellNumMin)){
     cells_per_cluster_min <- min(20, round(n_cells/10))
@@ -441,7 +444,7 @@ optimizeMetacellNumber <- function(peakMatrix,
   else{
     cells_per_cluster_min <- cellNumMin
   }
-  
+
   if(is.null(cellNumMax)){
     cells_per_cluster_max <- min(2000, round(n_cells/10))
   }
@@ -449,17 +452,17 @@ optimizeMetacellNumber <- function(peakMatrix,
     cells_per_cluster_max <- min(cellNumMax, n_cells/3)
   }
   cells_per_cluster_min <- min(cells_per_cluster_min, cells_per_cluster_max)
-  
+
   assay(expMatrix, exp_assay) <- as(assay(expMatrix, exp_assay), "CsparseMatrix")
   assay(peakMatrix, peak_assay) <- as(assay(peakMatrix, peak_assay), "CsparseMatrix")
-  
+
   if(subsample_prop<1){
     selected_peak_idx <- sort(sample(nrow(peakMatrix), round(subsample_prop*nrow(peakMatrix))))
     peakMatrix <- peakMatrix[selected_peak_idx,]
     selected_gene_idx <- sort(sample(nrow(expMatrix), round(subsample_prop*nrow(expMatrix))))
     expMatrix <- expMatrix[selected_gene_idx,]
   }
-  
+
   evaluation_points <- seq(sqrt(cells_per_cluster_min), sqrt(cells_per_cluster_max),
                            length.out=n_evaluation_points)
   # drop evaluation points that are duplicates after mapping to cluster numbers
@@ -468,7 +471,7 @@ optimizeMetacellNumber <- function(peakMatrix,
   if(length(evaluation_points)<3){
     stop("To few evaluation points to optimize kNum paramater. Consider using more cells or changing cellNumMin or cellNumMax parameters.")
   }
-  
+
   areas <- c()
   for (i in seq_along(evaluation_points)){
     p2g <- calculateP2G(
@@ -481,9 +484,9 @@ optimizeMetacellNumber <- function(peakMatrix,
       verbose = FALSE,
       ...
     )
-    p_val_pos_reg <- p2g$p_val[p2g$Correlation>=0] # should (all) zeros be included?
+    p_val <- apply(p2g$p_val, 1, min, na.rm = TRUE)
     # calculate area under p-value cumulative distribution curve
-    areas <- c(areas, mean(p_val_pos_reg))
+    areas <- c(areas, mean(p_val))
   }
   regr_data = data.frame(areas=areas, sqrt_cellNum=evaluation_points)
   lin_model <- lm(areas~poly(sqrt_cellNum,2,raw=TRUE), data=regr_data)
@@ -526,12 +529,11 @@ optimizeMetacellNumber <- function(peakMatrix,
           peak_assay = peak_assay,
           cellNum = evaluation_points_new[i]^2,
           verbose = FALSE,
-          cutoff_sig = 2,
           ...
         )
-        p_val_pos_reg <- p2g$p_val[p2g$Correlation>=0]
+        p_val <- apply(p2g$p_val, 1, min, na.rm = TRUE)
         # calculate area under p-value cumulative distribution curve
-        areas_new <- c(areas_new, mean(p_val_pos_reg))
+        areas_new <- c(areas_new, mean(p_val))
       }
       evaluation_points <- c(evaluation_points, evaluation_points_new)
       areas <- c(areas, areas_new)
@@ -557,6 +559,7 @@ optimizeMetacellNumber <- function(peakMatrix,
   args <- c(args, formals(sys.function())[default_args])
   args <- args[arg_names]
   p2g_args = formals(calculateP2G)[c("nRandConns", "cor_method", "maxDist", "frac_RNA", "frac_ATAC")]
+  p2g_args$cor_method <- eval(p2g_args$cor_method)[1]
   user_specified_args <- intersect(names(p2g_args), names(list(...)))
   # replace deafults with the user specified arguments passed to calculateP2G
   p2g_args[user_specified_args] <- list(...)[user_specified_args]
@@ -585,7 +588,6 @@ optimizeMetacellNumber <- function(peakMatrix,
     message("Solution not found using quadratic regression. Using cluster size with the lowest mean p-value.")
     sol <- evaluation_points[which.min(areas)]
   }
-  
   new("CellNumSol", solution=sol,
       evaluation_points=evaluation_points,
       AUC = areas,
@@ -599,11 +601,12 @@ optimizeMetacellNumber <- function(peakMatrix,
 .RE_TG_correlation <- function(ind, idx_pairs, exprMatrix, peakMatrix, cor_method){
   # select pairs to be included in this batch
   idx_pairs <- idx_pairs[ind:min(ind+2e4-1,length(idx_pairs))]
-  vapply(idx_pairs,
+  suppressWarnings(
+    vapply(idx_pairs,
          function(idx_pair) stats::cor(exprMatrix[idx_pair[1],],
                                        peakMatrix[idx_pair[2],],
                                        method=cor_method),
-         numeric(1))
+         numeric(1)))
 }
 
 setMethod("plot", signature=c(x="CellNumSol"), function(x){

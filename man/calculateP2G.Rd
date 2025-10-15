@@ -10,19 +10,20 @@ calculateP2G(
   reducedDim = NULL,
   cutoff_stat = c("p_val", "FDR", "Correlation"),
   cutoff_sig = 0.05,
+  cor_cutoff = 0.5,
   cellNum = 100,
   maxDist = 250000,
   exp_assay = "logcounts",
   peak_assay = "counts",
   gene_symbol = "name",
+  clusters = NULL,
   cor_method = c("pearson", "spearman", "kendall"),
   assignment_method = c("correlation", "nearest"),
   frac_RNA = 0,
   frac_ATAC = 0,
   nRandConns = 1e+05,
   BPPARAM = BiocParallel::SerialParam(progressbar = TRUE),
-  verbose = TRUE,
-  clusters = deprecated()
+  verbose = TRUE
 )
 }
 \arguments{
@@ -37,8 +38,11 @@ the genes in the form of \code{GRanges}. \code{rowData} should contain a column 
 \item{cutoff_stat}{A names of a statistic used to determine significant links to assign peak to gene links.
 Should be \code{Correlation}, \code{p_val} or \code{FDR}.}
 
-\item{cutoff_sig}{A numeric scalar to specify the cutoff for the links between ATAC-seq peaks and RNA-seq genes .
-Default is set to 0.5.}
+\item{cutoff_sig}{A numeric scalar to specify the p-value or FDR cutoff for the links between ATAC-seq peaks and RNA-seq genes .
+Default is set to 0.05.}
+
+\item{cor_cutoff}{A numeric scalar to specify the correlation cutoff between ATAC-seq peaks and RNA-seq genes to assign peak to gene links.
+Default correlation cutoff is 0.5. Takes effect only of \code{cutoff_stat} is set to \code{Correlation}.}
 
 \item{cellNum}{A numeric to specify the average number of cells per K-mean cluster. Alternatively, an object of the class \code{CellNumSol}
 returned by \code{optimizeMetacellNumber} function. If set to \code{NULL}, its value is determined automatically, based on the number of cells.}
@@ -50,6 +54,9 @@ returned by \code{optimizeMetacellNumber} function. If set to \code{NULL}, its v
 \item{peak_assay}{String indicating the name of the assay in peakMatrix for chromatin accessibility}
 
 \item{gene_symbol}{String indicating the column name in the rowData of expMatrix that corresponds to gene symbol}
+
+\item{clusters}{A vector corresponding to the cluster labels for calculation of correlations within each cluster. If left NULL, correlation is calculated across
+all clusters. See details for the use of clusters}
 
 \item{cor_method}{String indicating which correlation coefficient is to be computed. One of 'pearson' (default), 'kendall', or 'spearman'.}
 

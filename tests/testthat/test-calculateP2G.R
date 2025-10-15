@@ -71,38 +71,52 @@ for(peak_idx in unique(overlap[,2])){
     }
 }
 
-overlap$Correlation <- NA
+overlap$Correlation <- matrix(NA, nrow=nrow(overlap), ncol=1)
+colnames(overlap$Correlation) <- "all"
 for(i in seq_len(nrow(overlap))){
-    overlap$Correlation[i] <- cor(peakMatrix[overlap[i,2],], geneExpMatrix[overlap[i,1],])
+    overlap$Correlation[i,"all"] <- cor(peakMatrix[overlap[i,2],], geneExpMatrix[overlap[i,1],])
 }
-overlap$p_val <- 1
-non_neg_cor_idx <- which(overlap$Correlation>=0)
+
+df <- overlap
+
+overlap$p_val <- matrix(1, nrow=nrow(overlap), ncol=1)
+colnames(overlap$p_val) <- "all"
+non_neg_cor_idx <- which(overlap$Correlation[,"all"]>=0)
 non_neg_corr_null <- null_correlations[null_correlations>=0]
 for(i in non_neg_cor_idx){
-    overlap$p_val[i] <- sum(non_neg_corr_null > overlap$Correlation[i])/length(non_neg_corr_null)
+    overlap$p_val[i,"all"] <- sum(non_neg_corr_null > overlap$Correlation[i,"all"])/length(non_neg_corr_null)
 }
 
 non_pos_cor_idx <- which(overlap$Correlation<=0)
 non_pos_corr_null <- null_correlations[null_correlations<=0]
 for(i in non_pos_cor_idx){
-    overlap$p_val[i] <- sum(non_pos_corr_null < overlap$Correlation[i])/length(non_pos_corr_null)
+    overlap$p_val[i,"all"] <- sum(non_pos_corr_null < overlap$Correlation[i,"all"])/length(non_pos_corr_null)
 }
 
-overlap$FDR <- 1
-overlap$FDR[overlap$Correlation>0] <- p.adjust(overlap$p_val[overlap$Correlation>0],method="BH")
-overlap$FDR[overlap$Correlation<0] <- p.adjust(overlap$p_val[overlap$Correlation<0],method="BH")
+overlap$FDR <- matrix(1, nrow=nrow(overlap), ncol=1)
+colnames(overlap$FDR) <- "all"
+overlap$FDR[overlap$Correlation[,"all"]>0, "all"] <- p.adjust(overlap$p_val[overlap$Correlation[,"all"]>0,"all"],method="BH")
+overlap$FDR[overlap$Correlation[,"all"]<0, "all"] <- p.adjust(overlap$p_val[overlap$Correlation[,"all"]<0,"all"],method="BH")
 
-df <- .addFDR(overlap, geneStart = gene.ranges, peakSet = peak.ranges,
+stat_list <- .addFDR(overlap, geneStart = gene.ranges, peakSet = peak.ranges,
               geneExpr = geneExpMatrix, peakCounts = peakMatrix,
               n_random_conns = 1e5,
               cor_method = "pearson",
               BPPARAM=BiocParallel::MulticoreParam())
 
+df <- overlap
+df$p_val <- matrix(stat_list$p_val, nrow=nrow(overlap), ncol=1)
+colnames(df$p_val) <- "all"
+df$FDR <- matrix(stat_list$FDR, nrow=nrow(overlap), ncol=1)
+colnames(df$FDR) <- "all"
+
+
+
 test_that(".addFDR works correctly", {
-    expect_equal(df$p_val, overlap$p_val, tolerance = 2e-2)
-    expect_true(cor(overlap$p_val,df$p_val)>0.9999)
-    expect_true(cor(overlap$FDR,df$FDR)>0.999)
-    expect_equal(df$Correlation, overlap$Correlation)
+    expect_equal(df$p_val[,"all"], overlap$p_val[,"all"], tolerance = 2e-2)
+    expect_true(cor(overlap$p_val[,"all"],df$p_val[,"all"])>0.9999)
+    expect_true(cor(overlap$FDR[,"all"],df$FDR[,"all"])>0.999)
+    expect_equal(df$Correlation[,"all"], overlap$Correlation[,"all"])
 })
 mcols(gene.ranges)$name <- rownames(geneExpMatrix)
 peakMatrix_sce <- SingleCellExperiment(assay=list(counts=peakMatrix), rowRanges=peak.ranges)

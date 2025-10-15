@@ -10,11 +10,11 @@ optimizeMetacellNumber(
   reducedDim,
   exp_assay,
   peak_assay,
-  subsample_prop = 0.1,
-  n_iter = 1,
+  subsample_prop = 1,
+  n_iter = 2,
   cellNumMin = NULL,
   cellNumMax = NULL,
-  n_evaluation_points = 4,
+  n_evaluation_points = 5,
   ...
 )
 }
