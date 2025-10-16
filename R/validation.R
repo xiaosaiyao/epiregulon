@@ -3,10 +3,13 @@
     message("'clusters' argument should be coercible to a vector")
     stop(cond)
   })
-  if (length(clusters) != ncol(expMatrix)) {
+  if (!is.atomic(as.vector(clusters))) {
+      stop("'clusters' argument should be coercible to an atomic vector")
+  }
+  if (length(as.vector(clusters)) != ncol(expMatrix)) {
     stop("'clusters' length should be equal to the number of cells")
   }
-  if (any(is.na(clusters))) {
+  if (any(is.na(as.vector(clusters)))) {
     stop("'clusters' object contains NA")
   }
 }
