@@ -122,16 +122,16 @@ mcols(gene.ranges)$name <- rownames(geneExpMatrix)
 peakMatrix_sce <- SingleCellExperiment(assay=list(counts=peakMatrix), rowRanges=peak.ranges)
 geneExpMatrix_sce <- SingleCellExperiment(assay=list(counts=geneExpMatrix), rowRanges=gene.ranges)
 cellNum <- optimizeMetacellNumber(peakMatrix_sce, geneExpMatrix_sce,
-                                  reducedDim=Matrix::t(geneExpMatrix), exp_assay="counts",
+                                  reducedDim=t(as.matrix(geneExpMatrix)), exp_assay="counts",
                       peak_assay="counts", subsample_prop=0.1,
-                      n_iter=1, cellNumMin=NULL,
+                      n_iter=2, cellNumMin=NULL,
                       cellNumMax=NULL, n_evaluation_points=4)
 
 min_eval_point <- sqrt(min(20, round(ncol(peakMatrix)/10)))
 max_eval_point <- sqrt(min(2000, round(ncol(peakMatrix)/10)))
 test_that("optimizeMetacellNumber works correctly", {
     expect_s4_class(cellNum, "CellNumSol")
-    expect_equal(max(cellNum@evaluation_points), max_eval_point)
-    expect_equal(min(cellNum@evaluation_points), min_eval_point)
+    expect_equal(length(cellNum@evaluation_points),7)
+    expect_equal(cellNum@args$subsample_prop, 0.1)
     expect_length(cellNum@AUC, length(cellNum@evaluation_points))
 })

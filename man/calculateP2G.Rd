@@ -45,19 +45,19 @@ Default is set to 0.05.}
 \item{cor_cutoff}{A numeric scalar to specify the correlation cutoff between ATAC-seq peaks and RNA-seq genes to assign peak to gene links.
 Default correlation cutoff is 0.5. Takes effect only of \code{cutoff_stat} is set to \code{Correlation}.}
 
-\item{cellNum}{A numeric to specify the average number of cells per K-mean cluster. Alternatively, an object of the class \code{CellNumSol}
-returned by \code{optimizeMetacellNumber} function. If set to \code{NULL}, its value is determined automatically, based on the number of cells.}
+\item{cellNum}{An object of the class \code{CellNumSol} returned by \code{optimizeMetacellNumber}
+or a numeric to specify the average number of cells per K-mean cluster.}
 
 \item{maxDist}{An integer to specify the base pair extension from transcription start start for overlap with peak regions}
 
-\item{exp_assay}{String indicating the name of the assay in expMatrix for gene expression}
+\item{exp_assay}{String indicating the name of the assay in \code{expMatrix} for gene expression}
 
-\item{peak_assay}{String indicating the name of the assay in peakMatrix for chromatin accessibility}
+\item{peak_assay}{String indicating the name of the assay in \code{peakMatrix} for chromatin accessibility}
 
-\item{gene_symbol}{String indicating the column name in the rowData of expMatrix that corresponds to gene symbol}
+\item{gene_symbol}{String indicating the column name in the rowData of \code{expMatrix} that corresponds to gene symbol}
 
-\item{clusters}{A vector corresponding to the cluster labels for calculation of correlations within each cluster. If left NULL, correlation is calculated across
-all clusters. See details for the use of clusters}
+\item{clusters}{A vector corresponding to the cluster labels for calculation of correlations within each cluster.
+If left \code{NULL}, correlation is calculated across all clusters. See details for the use of clusters}
 
 \item{cor_method}{String indicating which correlation coefficient is to be computed. One of 'pearson' (default), 'kendall', or 'spearman'.}
 
@@ -86,6 +86,11 @@ A DataFrame of Peak to Gene correlation
 \description{
 Establish peak to gene links based on correlations between ATAC-seq peaks and RNA-seq genes
 }
+\details{
+Cluster information is sometimes helpful to avoid the \href{https://en.wikipedia.org/wiki/Simpson\%27s_paradox}{Simpsons's paradox} in which baseline differences
+between cell lines or cell types can create artificial or even inverse correlations between peak accessibility and gene expression. If Cluster information is provided,
+correlation is performed within cell aggregates of each cluster.
+}
 \examples{
 # create a mock singleCellExperiment object for gene expression matrix
 set.seed(1000)
@@ -108,6 +113,7 @@ rowRanges(peak_sce) <- peak_gr
 rownames(peak_sce) <- paste0('peak',1:10)
 # create a mock reducedDim matrix
 reducedDim_mat <- matrix(runif(ncol(gene_sce)*50, min = 0, max = 1), nrow = ncol(gene_sce), 50)
+rownames(reducedDim_mat) <- colnames(gene_sce)
 p2g <- calculateP2G(peakMatrix = peak_sce, expMatrix = gene_sce, reducedDim = reducedDim_mat,
                     cellNum = 20)
 }

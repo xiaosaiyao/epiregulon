@@ -11,20 +11,20 @@
 #'  Default correlation cutoff is 0.5. Takes effect only of `cutoff_stat` is set to `Correlation`.
 #' @param cutoff_sig A numeric scalar to specify the p-value or FDR cutoff for the links between ATAC-seq peaks and RNA-seq genes .
 #' Default is set to 0.05.
-#' @param cellNum A numeric to specify the average number of cells per K-mean cluster. Alternatively, an object of the class `CellNumSol`
-#' returned by `optimizeMetacellNumber` function. If set to `NULL`, its value is determined automatically, based on the number of cells.
+#' @param cellNum An object of the class `CellNumSol` returned by `optimizeMetacellNumber`
+#' or a numeric to specify the average number of cells per K-mean cluster.
 #' @param maxDist An integer to specify the base pair extension from transcription start start for overlap with peak regions
-#' @param exp_assay String indicating the name of the assay in expMatrix for gene expression
-#' @param peak_assay String indicating the name of the assay in peakMatrix for chromatin accessibility
-#' @param gene_symbol String indicating the column name in the rowData of expMatrix that corresponds to gene symbol
-#' @param clusters A vector corresponding to the cluster labels for calculation of correlations within each cluster. If left NULL, correlation is calculated across
+#' @param exp_assay String indicating the name of the assay in `expMatrix` for gene expression
+#' @param peak_assay String indicating the name of the assay in `peakMatrix` for chromatin accessibility
+#' @param gene_symbol String indicating the column name in the rowData of `expMatrix` that corresponds to gene symbol
+#' @param clusters A vector corresponding to the cluster labels for calculation of correlations within each cluster. If left `NULL`, correlation is calculated across
 #' all clusters. See details for the use of clusters
 #' @param cor_method String indicating which correlation coefficient is to be computed. One of 'pearson' (default), 'kendall', or 'spearman'.
 #' @param assignment_method String indicating the method used to assign target genes to regulatory elements. 'Correlation' is based on correlation between ATAC and RNA
 #' above a correlation threshold set by cor_cutoff. 'Nearest' assigns the closest expressed gene to regulatory element meeting a correlation threshold set by cor_cutoff.
 #' Set cor_cutoff to 0 if wishing to assign the closest expressed gene without any correlation cutoff
-#' @param clusters A vector corresponding to the cluster labels for calculation of correlations within each cluster. If left NULL, correlation is calculated across
-#' all clusters. See details for the use of clusters
+#' @param clusters A vector corresponding to the cluster labels for calculation of correlations within each cluster.
+#' If left `NULL`, correlation is calculated across all clusters. See details for the use of clusters
 #' @param frac_RNA An integer to indicate the fraction of cells expressing a gene. It is used to filter the gene expression matrix for expressed genes
 #' @param frac_ATAC An integer to indication the fraction of cells showing chromatin accessibility. It is used to filter the peak Matrix for open regions
 #' @param nRandConns An integer specifying the number of false connections between regulatory elements and target genes which
@@ -36,8 +36,10 @@
 #' @param verbose A boolean indicating whether messages should be emitted during computation
 #'
 #' @return A DataFrame of Peak to Gene correlation
+#' @details Cluster information is sometimes helpful to avoid the [Simpsons's paradox](https://en.wikipedia.org/wiki/Simpson%27s_paradox) in which baseline differences
+#' between cell lines or cell types can create artificial or even inverse correlations between peak accessibility and gene expression. If Cluster information is provided,
+#' correlation is performed within cell aggregates of each cluster.
 #' @importFrom SummarizedExperiment rowRanges rowData colData rowRanges<- rowData<-
-#' @importFrom SingleCellExperiment altExp altExp<- reducedDim<-
 #' @importFrom IRanges IRanges
 #' @importFrom S4Vectors Rle mcols mcols<- DataFrame
 #' @importClassesFrom SingleCellExperiment SingleCellExperiment
@@ -66,6 +68,7 @@
 
 #' # create a mock reducedDim matrix
 #' reducedDim_mat <- matrix(runif(ncol(gene_sce)*50, min = 0, max = 1), nrow = ncol(gene_sce), 50)
+#' rownames(reducedDim_mat) <- colnames(gene_sce)
 #' p2g <- calculateP2G(peakMatrix = peak_sce, expMatrix = gene_sce, reducedDim = reducedDim_mat,
 #'                     cellNum = 20)
 #' @author Xiaosai Yao, Shang-yang Chen
@@ -105,7 +108,12 @@ calculateP2G <- function(peakMatrix = NULL,
   if (!identical(colnames(expMatrix), colnames(peakMatrix))){
     stop("Cell names in expMatrix and peakMatrix should be identical")
   }
-  if(is.null(reducedDim)) stop("reducedDim argument is NULL.")
+  if(!is.matrix(reducedDim)){
+      stop("`reducedDim` argument is not a matrix")
+  }
+  if(!identical(rownames(reducedDim), colnames(expMatrix))){
+      stop("Row names of reducedDim should be the same as column names of `expMatrix`")
+  }
 
   if(!is.null(clusters)) {
       .validate_clusters(clusters, expMatrix)
@@ -586,8 +594,10 @@ optimizeMetacellNumber <- function(peakMatrix,
   # add default arguments from the function definition
   args <- c(args, formals(sys.function())[default_args])
   args <- args[arg_names]
-  p2g_args = formals(calculateP2G)[c("nRandConns", "cor_method", "maxDist", "frac_RNA", "frac_ATAC")]
+  p2g_args = formals(calculateP2G)[c("nRandConns", "cor_method", "maxDist",
+                                     "frac_RNA", "frac_ATAC", "assignment_method")]
   p2g_args$cor_method <- eval(p2g_args$cor_method)[1]
+  p2g_args$assignment_method <- eval(p2g_args$assignment_method)[1]
   user_specified_args <- intersect(names(p2g_args), names(list(...)))
   # replace deafults with the user specified arguments passed to calculateP2G
   p2g_args[user_specified_args] <- list(...)[user_specified_args]
