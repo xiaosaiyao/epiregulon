@@ -253,9 +253,9 @@ pruneRegulon <- function(regulon,
 
   if (p_adj) {
     "performing multiple testing correction..."
-    qvalue <- apply(regulon.combined$pval, 2, function(x) {
+    qvalue <- as.matrix(apply(regulon.combined$pval, 2, function(x) {
       stats::p.adjust(x, method = "holm", n = nrow(regulon.combined))
-    })
+    }))
     colnames(qvalue) <- unique_clusters
     regulon.combined <- S4Vectors::DataFrame(regulon.combined, qval = I(qvalue))
   }
