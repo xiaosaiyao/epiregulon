@@ -398,10 +398,7 @@ calculateP2G <- function(peakMatrix = NULL,
   p_val[which(correlations==0)] <- 1
   p_val[which(correlations<0)] <- rand_corr_distr_neg(correlations[which(correlations<0)])
   p_val[which(correlations>0)] <- (1-rand_corr_distr_pos(correlations[which(correlations>0)]))
-  FDR <- rep(NA, nrow(df))
-  FDR[which(correlations==0)] <- 1
-  FDR[which(correlations<0)] <- p.adjust(p_val[which(correlations<0)], method="BH")
-  FDR[which(correlations>0)] <- p.adjust(p_val[which(correlations>0)], method="BH")
+  FDR <- p.adjust(p_val, method="BH")
   return(list(p_val=p_val, FDR=FDR))
 }
 

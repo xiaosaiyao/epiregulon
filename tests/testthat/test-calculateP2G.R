@@ -95,8 +95,7 @@ for(i in non_pos_cor_idx){
 
 overlap$FDR <- matrix(1, nrow=nrow(overlap), ncol=1)
 colnames(overlap$FDR) <- "all"
-overlap$FDR[overlap$Correlation[,"all"]>0, "all"] <- p.adjust(overlap$p_val[overlap$Correlation[,"all"]>0,"all"],method="BH")
-overlap$FDR[overlap$Correlation[,"all"]<0, "all"] <- p.adjust(overlap$p_val[overlap$Correlation[,"all"]<0,"all"],method="BH")
+overlap$FDR[, "all"] <- p.adjust(overlap$p_val[,"all"],method="BH")
 
 stat_list <- .addFDR(overlap, geneStart = gene.ranges, peakSet = peak.ranges,
               geneExpr = geneExpMatrix, peakCounts = peakMatrix,
