@@ -107,8 +107,10 @@ calculateP2G <- function(peakMatrix = NULL,
   }
   if(is.null(reducedDim)) stop("reducedDim argument is NULL.")
 
-  if(!is.null(clusters)) .validate_clusters(clusters, expMatrix)
-  clusters <- as.character(clusters)
+  if(!is.null(clusters)) {
+      .validate_clusters(clusters, expMatrix)
+      clusters <- as.character(clusters)
+  }
 
   if (!gene_symbol %in% colnames(rowData(expMatrix))) {
     stop("rowData of expMatrix does not contain ", gene_symbol)
@@ -199,7 +201,7 @@ calculateP2G <- function(peakMatrix = NULL,
   o$FDR[,"all"] <- stats_all[["FDR"]]
   small_cluster_warning <- FALSE
   # compute stats within each cluster
-  if (length(clusters)>0) {
+  if (!is.null(clusters)) {
     cluster_composition <- table(clusters, agg_data_list[["clust"]])
     cluster_composition <- sweep(cluster_composition, 2, STATS = colSums(cluster_composition),
                                  FUN = "/")
