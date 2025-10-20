@@ -48,18 +48,19 @@ for(cluster in unique(clusters)){
   tfMatrix.c <- expMatrix[regulon$tf,selected_cells,drop = FALSE] > Matrix::rowMeans(expMatrix[regulon$tf,selected_cells,drop = FALSE])
   tf_re.c <- tfMatrix.c * peakMatrix[,selected_cells]
   for(i in 1:20){
-    if(length(unique(as.vector(tf_re.c[i,])))==1) weight_matrix[i,mat.col] <- 0
-    else
-    weight_matrix[i,mat.col] <- coin::wilcox_test(targetMatrix[i,selected_cells]~factor(tf_re.c[i,],
-                                                                          levels = c(1,0)))@statistic@teststatistic
-
+    if(length(unique(as.vector(tf_re.c[i,])))==1) {
+      weight_matrix[i,mat.col] <- 0
+    }else {
+      weight_matrix[i,mat.col] <- coin::wilcox_test(targetMatrix[i,selected_cells]~factor(tf_re.c[i,],
+                                                                                          levels = c(1,0)))@statistic@teststatistic
+    }
   }
 }
 # weights for all clusters have been divided by sqrt(n) prior to the previous test
 weight_matrix <- t(t(weight_matrix)/sqrt(c(1,10,10)))
 colnames(weight_matrix) <- c("all", "A", "B")
 expMatrix.sce <- SingleCellExperiment(list(logcounts = expMatrix))
-test_that("addWeights works correctly using Wilcoxon test with clusters", {
+test_that("addWeights works correctly using Wilcoxon test with 2 clusters", {
   regulon.w <- addWeights(regulon = regulon,
                           expMatrix = expMatrix.sce,
                           method = "wilcoxon",
@@ -69,6 +70,40 @@ test_that("addWeights works correctly using Wilcoxon test with clusters", {
                           clusters = clusters)
   expect_identical(regulon.w$weight,  weight_matrix, tolerance = 1e-8)
 })
+
+# 3 clusters
+clusters <- c(rep("A", 5), rep("C", 10), rep("B", 5))
+weight_matrix <- matrix(nrow = nrow(regulon), ncol = 4)
+weight_matrix[,1] <- weights
+mat.col = 1
+for(cluster in LETTERS[1:3]){
+    mat.col <- mat.col + 1
+    selected_cells <- which(clusters == cluster)
+    tfMatrix.c <- expMatrix[regulon$tf,selected_cells,drop = FALSE] > Matrix::rowMeans(expMatrix[regulon$tf,selected_cells,drop = FALSE])
+    tf_re.c <- tfMatrix.c * peakMatrix[,selected_cells]
+    for(i in 1:20){
+        if(length(unique(as.vector(tf_re.c[i,])))==1) weight_matrix[i,mat.col] <- 0
+        else
+            weight_matrix[i,mat.col] <- coin::wilcox_test(targetMatrix[i,selected_cells]~factor(tf_re.c[i,],
+                                                                                                levels = c(1,0)))@statistic@teststatistic
+
+    }
+}
+# weights for all clusters have been divided by sqrt(n) prior to the previous test
+weight_matrix <- t(t(weight_matrix)/sqrt(c(1,5,5,10)))
+colnames(weight_matrix) <- c("all", "A", "B", "C")
+expMatrix.sce <- SingleCellExperiment(list(logcounts = expMatrix))
+test_that("addWeights works correctly using Wilcoxon test with 3 clusters", {
+    regulon.w <- addWeights(regulon = regulon,
+                            expMatrix = expMatrix.sce,
+                            method = "wilcoxon",
+                            peakMatrix = SingleCellExperiment(assays= list(PeakMatrix=peakMatrix)),
+                            min_targets = 0,
+                            exp_cutoff = NULL,
+                            clusters = clusters)
+    expect_identical(regulon.w$weight,  weight_matrix, tolerance = 1e-8)
+})
+
 
 # fixed cutoff
 # mark cells with tf expression above cutoff
@@ -101,7 +136,7 @@ test_that("addWeights works correctly using Wilcoxon test with fixed cutoff", {
 
 # prepare dataset for testing MI method
 set.seed(1010)
-regulon <- data.frame(tf= rep(LETTERS[1:5], each = 3), target = LETTERS [6:20])
+regulon <- data.frame(tf= rep(LETTERS[1:5], each = 3), target = LETTERS [6:20], idxATAC=0)
 expMatrix <- matrix(abs(rnorm(1e4)), nrow = 20, ncol = 1e4/20, dimnames = list(LETTERS[1:20], NULL))
 expMatrix[sample(seq_len(1e4), 1e4/2)] <- 0
 expMatrix <- as(expMatrix, "sparseMatrix")

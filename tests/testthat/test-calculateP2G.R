@@ -1,131 +1,137 @@
 set.seed(1010)
 # set up expression and peak matrices
-n_cells <- 100
-geneExpMatrix <- matrix(abs(rnorm(1e4)), ncol = n_cells,
+n_cells <- 1000
+n_genes <- 200
+n_peaks <- 500
+n_cell_states <- 20
+cell_states <- sample(1:20, n_cells, replace = TRUE)
+expression_means <- matrix(runif(n_genes*n_cell_states)*3, ncol=n_cell_states)
+expression_means <- expression_means[,cell_states]
+geneExpMatrix <- matrix(rnorm(length(expression_means), mean=expression_means), ncol = n_cells,
                         dimnames = list(NULL, paste0("Cell_", seq_len(n_cells))))
 geneExpMatrix[geneExpMatrix < 0] <- 0
 geneExpMatrix <- as(geneExpMatrix, "sparseMatrix")
+rownames(geneExpMatrix) <- paste0("Gene_", seq_len(nrow(geneExpMatrix)))
 
-gene.ranges <- GRanges(seqnames = Rle(c("chr1", "chr2", "chr3", "chr4"), 25),
-                   ranges = IRanges(start = seq(from = 1, length.out=100, by = 1000),
+gene.ranges <- GRanges(seqnames = Rle(c("chr1", "chr2", "chr3", "chr4"), 50),
+                   ranges = IRanges(start = seq(from = 1, length.out=n_genes, by = 1000),
                                     width = 100))
-peak.ranges <- GRanges(seqnames = Rle(c("chr1", "chr2", "chr3", "chr4"), c(40,50,60,70)),
-                       ranges = IRanges(start = runif(220)*1e5, width = 100))
-peakMatrix <- matrix(sample(c(0,0,0,0,0,1,1,2,3), 220*n_cells, replace = TRUE),
-                     ncol = n_cells, dimnames = list(NULL, paste0("Cell_", seq_len(n_cells))))
-peakMatrix[c(80,90),] <- 0
-geneExpMatrix[c(10,30),] <- 0
-peak_sce <- SingleCellExperiment(assays = list(counts = peakMatrix))
-rowRanges(peak_sce) <- peak.ranges
-reducedDimMatrix <- matrix(runif(n_cells*40), nrow = n_cells)
-gene_sce <- SingleCellExperiment(assays = list(logcounts = geneExpMatrix))
-gene.ranges$name <- paste0("Gene_", 1:100)
-rowRanges(gene_sce) <- gene.ranges
+peak.ranges <- GRanges(seqnames = Rle(c("chr1", "chr2", "chr3", "chr4"), c(90,160,200,50)),
+                       ranges = IRanges(start = runif(n_peaks)*2e5, width = 100))
 
-# set seed to assure reproducibility with scran::clusterCells
-set.seed(1100)
-clusters <- kmeans(reducedDimMatrix, 10)$cluster
-
-
-
-### test pseudobulk
-
-sce_combined <- combineSCE(gene_sce, "logcounts", peak_sce, "counts", reducedDimMatrix, "reducedDim")
-sce_grouped <- applySCE(sce_combined,
-                        scuttle::aggregateAcrossCells,
-                        ids = clusters,
-                        statistics = "mean")
-sce_grouped_2 <- aggregateAcrossCellsFast(sce_combined, fun_name = "mean", clusters = clusters)
-
-
-# extract gene expression and peak matrix
-expGroupMatrix <- assay(sce_grouped, "counts")
-peakGroupMatrix <- assay(altExp(sce_grouped), "counts")
-
-
-geneExpMatrix.avg <- t(apply(geneExpMatrix, 1, function(x) tapply(x,clusters, mean)))
-peakMatrix.avg <- t(apply(peakMatrix, 1, function(x) tapply(x,clusters, mean)))
-
-
-test_that("pseudobulk works correctly", {
-  expect_equal(expGroupMatrix, geneExpMatrix.avg)
-  expect_equal(peakGroupMatrix, peakMatrix.avg)
-})
-
-
-### test overlap
-
-
-# remove genes that are equal to 0
-non.zero.genes <- which(rowSums(geneExpMatrix.avg) != 0)
-non.zero.peaks <- which(rowSums(peakMatrix.avg) != 0)
-
-gene.start <- resize(gene.ranges[non.zero.genes,], width=1)
-peak.ranges <- peak.ranges[non.zero.peaks,]
+gene.start <- resize(gene.ranges, width=1)
+peak.ranges <- peak.ranges
 overlap <- S4Vectors::DataFrame(findOverlaps(resize(gene.start, 5000, "center"),
-                                       peak.ranges))
-
-# remove genes and peaks that are equal to 0
-sce_grouped <- sce_grouped[which(rowSums(assay(sce_grouped)) != 0),]
-SingleCellExperiment::altExp(sce_grouped) <- altExp(sce_grouped)[which(rowSums(assay(altExp(sce_grouped), "counts")) != 0),]
-
-# get gene information
-geneSet <- rowRanges(sce_grouped)
-geneStart <- resize(geneSet, width = 1)
-
-# get peak range information
-peakSet <- rowRanges(altExp(sce_grouped))
-
-# find overlap after resizing
-o <- S4Vectors::DataFrame(findOverlaps(resize(geneStart, 5000, "center"),
-                                       peakSet,
-                                       ignore.strand = TRUE))
+                                             peak.ranges))
+colnames(overlap) <- c("RNA", "ATAC")
 
 
+regulatory_links_idx <- sample(nrow(overlap), round(nrow(overlap)*0.3))
+regulatory_pairs <- overlap[regulatory_links_idx,]
 
-test_that("overlap works correctly", {
-  expect_equal(o, overlap)
+peakMatrix <- matrix(0, nrow = n_peaks,
+                     ncol = n_cells,
+                     dimnames = list(NULL, paste0("Cell_", seq_len(n_cells))))
+
+for(peak_idx in unique(regulatory_pairs[,2])){
+    target_genes <- unique(regulatory_pairs[,1][regulatory_pairs[,2]==peak_idx])
+    target_expression <- Matrix::colSums(geneExpMatrix[target_genes,,drop=FALSE])
+    target_expression_norm <- target_expression/max(target_expression)
+    peakMatrix[peak_idx,] <- rbinom(length(target_expression_norm), 1, target_expression_norm)
+}
+
+# add sparsity
+peakMatrix[sample(length(peakMatrix), round(length(peakMatrix)*0.3))] <- 0
+geneExpMatrix[sample(length(geneExpMatrix), round(length(geneExpMatrix)*0.3))] <- 0
+
+non.zero.genes <- which(Matrix::rowSums(geneExpMatrix) != 0)
+non.zero.peaks <- which(Matrix::rowSums(peakMatrix) != 0)
+
+new_gene_idx <- seq_along(non.zero.genes)
+new_peak_idx <- seq_along(non.zero.peaks)
+
+overlap <- overlap[(overlap[,1] %in% non.zero.genes) & (overlap[,2] %in% non.zero.peaks),]
+
+overlap[,1] <- new_gene_idx[match(overlap[,1], sort(non.zero.genes))]
+overlap[,2] <- new_peak_idx[match(overlap[,2], sort(non.zero.peaks))]
+geneExpMatrix <- geneExpMatrix[non.zero.genes,]
+peakMatrix <- peakMatrix[non.zero.peaks,]
+gene.ranges <- gene.ranges[non.zero.genes]
+peak.ranges <- peak.ranges[non.zero.peaks]
+
+# calculate null distributions
+null_correlations <- c()
+for(peak_idx in unique(overlap[,2])){
+    peak_chromosome = seqnames(peak.ranges[peak_idx])
+    n_rep <- sum(overlap[,2]==peak_idx)
+    distant_genes_idx <- which(as.logical(seqnames(gene.ranges)!=peak_chromosome))
+    selected_genes <- sample(distant_genes_idx, 200*n_rep,replace=TRUE)
+    for(j in seq_along(selected_genes)){
+        null_correlations <- c(null_correlations, cor(peakMatrix[peak_idx,], geneExpMatrix[selected_genes[j],]))
+    }
+}
+
+overlap$Correlation <- matrix(NA, nrow=nrow(overlap), ncol=1)
+colnames(overlap$Correlation) <- "all"
+for(i in seq_len(nrow(overlap))){
+    overlap$Correlation[i,"all"] <- cor(peakMatrix[overlap[i,2],], geneExpMatrix[overlap[i,1],])
+}
+
+df <- overlap
+
+overlap$p_val <- matrix(1, nrow=nrow(overlap), ncol=1)
+colnames(overlap$p_val) <- "all"
+non_neg_cor_idx <- which(overlap$Correlation[,"all"]>=0)
+non_neg_corr_null <- null_correlations[null_correlations>=0]
+for(i in non_neg_cor_idx){
+    overlap$p_val[i,"all"] <- sum(non_neg_corr_null > overlap$Correlation[i,"all"])/length(non_neg_corr_null)
+}
+
+non_pos_cor_idx <- which(overlap$Correlation<=0)
+non_pos_corr_null <- null_correlations[null_correlations<=0]
+for(i in non_pos_cor_idx){
+    overlap$p_val[i,"all"] <- sum(non_pos_corr_null < overlap$Correlation[i,"all"])/length(non_pos_corr_null)
+}
+
+overlap$FDR <- matrix(1, nrow=nrow(overlap), ncol=1)
+colnames(overlap$FDR) <- "all"
+overlap$FDR[, "all"] <- p.adjust(overlap$p_val[,"all"],method="BH")
+
+stat_list <- .addFDR(overlap, geneStart = gene.ranges, peakSet = peak.ranges,
+              geneExpr = geneExpMatrix, peakCounts = peakMatrix,
+              n_random_conns = 1e5,
+              cor_method = "pearson",
+              batch_size=2e4,
+              BPPARAM=BiocParallel::MulticoreParam())
+
+df <- overlap
+df$p_val <- matrix(stat_list$p_val, nrow=nrow(overlap), ncol=1)
+colnames(df$p_val) <- "all"
+df$FDR <- matrix(stat_list$FDR, nrow=nrow(overlap), ncol=1)
+colnames(df$FDR) <- "all"
+
+
+
+test_that(".addFDR works correctly", {
+    expect_equal(df$p_val[,"all"], overlap$p_val[,"all"], tolerance = 2e-2)
+    expect_true(cor(overlap$p_val[,"all"],df$p_val[,"all"])>0.9999)
+    expect_true(cor(overlap$FDR[,"all"],df$FDR[,"all"])>0.999)
+    expect_equal(df$Correlation[,"all"], overlap$Correlation[,"all"])
 })
+mcols(gene.ranges)$name <- rownames(geneExpMatrix)
+peakMatrix_sce <- SingleCellExperiment(assay=list(counts=peakMatrix), rowRanges=peak.ranges)
+geneExpMatrix_sce <- SingleCellExperiment(assay=list(counts=geneExpMatrix), rowRanges=gene.ranges)
+cellNum <- optimizeMetacellNumber(peakMatrix_sce, geneExpMatrix_sce,
+                                  reducedDim=t(as.matrix(geneExpMatrix)), exp_assay="counts",
+                      peak_assay="counts", subsample_prop=0.1,
+                      n_iter=2, cellNumMin=NULL,
+                      cellNumMax=NULL, n_evaluation_points=4)
 
-
-### test calculateP2G
-overlap$Correlation <- mapply(cor, asplit(geneExpMatrix.avg[non.zero.genes,][overlap[,1],],1),
-                              asplit(peakMatrix.avg[non.zero.peaks,][overlap[,2],],1))
-
-overlap$Correlation <- mapply(cor, as.data.frame(t(geneExpMatrix.avg[non.zero.genes,][overlap[,1],])),
-                              as.data.frame(t(peakMatrix.avg[non.zero.peaks,][overlap[,2],])))
-
-overlap$distance <- distance(gene.start[overlap[,1], ], peak.ranges[overlap[,2], ])
-
-overlap$TStat <- (overlap$Correlation /
-              sqrt((pmax(1 - overlap$Correlation ^ 2, 0.00000000000000001, na.rm = TRUE))
-                  / (ncol(peakMatrix.avg) - 2))) #T-statistic P-value
-
-overlap$Pval <- 2 * stats::pt(-abs(overlap$TStat), ncol(peakMatrix.avg) - 2)
-overlap$FDR <- stats::p.adjust(overlap$Pval, method = "fdr")
-overlap$target <-  gene.ranges[non.zero.genes,][overlap[,1],]$name
-overlap$chr <- as.character(seqnames(peak.ranges[overlap[,2], ]))
-overlap$start <- GenomicRanges::start(peak.ranges[overlap[,2], ])
-overlap$end <- GenomicRanges::end(peak.ranges[overlap[,2], ])
-overlap <- overlap[order(overlap[,2], overlap[,1]),]
-overlap <- overlap[overlap$Correlation > 0.5,]
-overlap <- as.data.frame(overlap)
-
-
-set.seed(1100)
-P2G <- calculateP2G(peakMatrix = peak_sce,
-                    peak_assay = "counts",
-                    expMatrix = gene_sce,
-                    exp_assay = "logcounts",
-                    reducedDim = reducedDimMatrix,
-                    cellNum = 10,
-                    maxDist = 5000,
-                    cor_cutoff = 0.5)
-
-test_that("calculateP2G works correctly", {
-
-  expect_equal(as.vector(P2G$Correlation), as.vector(overlap$Correlation), tolerance = 1e-10)
-  expect_equal(data.frame(P2G[,c("distance","target","chr","start","end")]), overlap[,c("distance","target","chr","start","end")])
+min_eval_point <- sqrt(min(20, round(ncol(peakMatrix)/10)))
+max_eval_point <- sqrt(min(2000, round(ncol(peakMatrix)/10)))
+test_that("optimizeMetacellNumber works correctly", {
+    expect_s4_class(cellNum, "CellNumSol")
+    expect_equal(length(cellNum@evaluation_points),7)
+    expect_equal(cellNum@args$subsample_prop, 0.1)
+    expect_length(cellNum@AUC, length(cellNum@evaluation_points))
 })
-
-

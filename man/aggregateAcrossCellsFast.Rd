@@ -14,7 +14,7 @@ aggregateAcrossCellsFast(
 )
 }
 \arguments{
-\item{sce}{A SingleCellExperiment object}
+\item{sce}{A SingleCellExperiment, SummarizedExperiment or RangedSummarizedExperiment object}
 
 \item{clusters}{A vector used as a grouping variable. The length should be equal to
 the number of cells.}
@@ -38,11 +38,11 @@ A SingleCellExperiment object containing aggregated cells.
 \description{
 Aggregate expression values across cells in SingleCellExperiment based on a
 grouping factor. This is primarily used to create pseudo-bulk profiles
-for each cluster/sample combination. It is wrapped around \code{aggregateAcrossCells},
+for each cluster/sample combination. It is wrapped around \code{scrapper::aggregateAcrossCells},
 which relies on the C++ code.
 }
 \examples{
-# create a mock singleCellExperiment object for gene expression matrix
+# create a mock SingleCellExperiment object for gene expression matrix
 set.seed(1000)
 example_sce <- scuttle::mockSCE()
 ids <- sample(LETTERS[1:5], ncol(example_sce), replace=TRUE)

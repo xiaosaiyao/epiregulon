@@ -8,19 +8,23 @@ calculateP2G(
   peakMatrix = NULL,
   expMatrix = NULL,
   reducedDim = NULL,
-  useDim = "IterativeLSI",
-  maxDist = 250000,
+  cutoff_stat = c("p_val", "FDR", "Correlation"),
+  cutoff_sig = 0.05,
   cor_cutoff = 0.5,
   cellNum = 100,
+  maxDist = 250000,
   exp_assay = "logcounts",
   peak_assay = "counts",
   gene_symbol = "name",
   clusters = NULL,
-  cor_method = c("pearson", "kendall", "spearman"),
+  cor_method = c("pearson", "spearman", "kendall"),
   assignment_method = c("correlation", "nearest"),
   frac_RNA = 0,
   frac_ATAC = 0,
-  BPPARAM = BiocParallel::SerialParam()
+  nRandConns = 1e+05,
+  batch_size = 20000,
+  BPPARAM = BiocParallel::SerialParam(progressbar = TRUE),
+  verbose = TRUE
 )
 }
 \arguments{
@@ -32,23 +36,28 @@ the genes in the form of \code{GRanges}. \code{rowData} should contain a column 
 
 \item{reducedDim}{A matrix of dimension reduced values}
 
-\item{useDim}{String specifying the name of the reduced dimension matrix supplied by the user}
+\item{cutoff_stat}{A names of a statistic used to determine significant links to assign peak to gene links.
+Should be \code{Correlation}, \code{p_val} or \code{FDR}.}
+
+\item{cutoff_sig}{A numeric scalar to specify the p-value or FDR cutoff for the links between ATAC-seq peaks and RNA-seq genes .
+Default is set to 0.05.}
+
+\item{cor_cutoff}{A numeric scalar to specify the correlation cutoff between ATAC-seq peaks and RNA-seq genes to assign peak to gene links.
+Default correlation cutoff is 0.5. Takes effect only of \code{cutoff_stat} is set to \code{Correlation}.}
+
+\item{cellNum}{An object of the class \code{CellNumSol} returned by \code{optimizeMetacellNumber}
+or a numeric to specify the average number of cells per K-mean cluster.}
 
 \item{maxDist}{An integer to specify the base pair extension from transcription start start for overlap with peak regions}
 
-\item{cor_cutoff}{A numeric scalar to specify the correlation cutoff between ATAC-seq peaks and RNA-seq genes to assign peak to gene links.
-Default correlation cutoff is 0.5.}
+\item{exp_assay}{String indicating the name of the assay in \code{expMatrix} for gene expression}
 
-\item{cellNum}{An integer to specify the number of cells to include in each K-means cluster}
+\item{peak_assay}{String indicating the name of the assay in \code{peakMatrix} for chromatin accessibility}
 
-\item{exp_assay}{String indicating the name of the assay in expMatrix for gene expression}
+\item{gene_symbol}{String indicating the column name in the rowData of \code{expMatrix} that corresponds to gene symbol}
 
-\item{peak_assay}{String indicating the name of the assay in peakMatrix for chromatin accessibility}
-
-\item{gene_symbol}{String indicating the column name in the rowData of expMatrix that corresponds to gene symbol}
-
-\item{clusters}{A vector corresponding to the cluster labels for calculation of correlations within each cluster. If left NULL, correlation is calculated across
-all clusters. See details for the use of clusters}
+\item{clusters}{A vector corresponding to the cluster labels for calculation of correlations within each cluster.
+If left \code{NULL}, correlation is calculated across all clusters. See details for the use of clusters}
 
 \item{cor_method}{String indicating which correlation coefficient is to be computed. One of 'pearson' (default), 'kendall', or 'spearman'.}
 
@@ -60,8 +69,16 @@ Set cor_cutoff to 0 if wishing to assign the closest expressed gene without any 
 
 \item{frac_ATAC}{An integer to indication the fraction of cells showing chromatin accessibility. It is used to filter the peak Matrix for open regions}
 
+\item{nRandConns}{An integer specifying the number of false connections between regulatory elements and target genes which
+will be used to calculate empirical p-values of correlation coefficients}
+
+\item{batch_size}{An integer specifying how many peak–gene pairs are
+processed per batch during parallel correlation calculations.}
+
 \item{BPPARAM}{A BiocParallelParam object specifying whether summation should be parallelized. Use BiocParallel::SerialParam() for
 serial evaluation and use BiocParallel::MulticoreParam() for parallel evaluation}
+
+\item{verbose}{A boolean indicating whether messages should be emitted during computation}
 }
 \value{
 A DataFrame of Peak to Gene correlation
@@ -75,19 +92,20 @@ between cell lines or cell types can create artificial or even inverse correlati
 correlation is performed within cell aggregates of each cluster.
 }
 \examples{
-# create a mock singleCellExperiment object for gene expression matrix
+# create a mock SingleCellExperiment object for gene expression matrix
 set.seed(1000)
 gene_sce <- scuttle::mockSCE()
 gene_sce <- scuttle::logNormCounts(gene_sce)
-gene_gr <- GRanges(seqnames = Rle(c('chr1', 'chr2', 'chr3','chr4'), nrow(gene_sce)/4),
+gene_gr <- GenomicRanges::GRanges(seqnames = Rle(c('chr1', 'chr2', 'chr3','chr4'), 
+                   nrow(gene_sce)/4),
                    ranges = IRanges(start = seq(from = 1, length.out=nrow(gene_sce), by = 1000),
                    width = 100))
 rownames(gene_sce) <- rownames(gene_sce)
 gene_gr$name <- rownames(gene_sce)
 rowRanges(gene_sce) <- gene_gr
 
-# create a mock singleCellExperiment object for peak matrix
-peak_gr <- GRanges(seqnames = 'chr1',
+# create a mock SingleCellExperiment object for peak matrix
+peak_gr <- GenomicRanges::GRanges(seqnames = 'chr1',
                    ranges = IRanges(start = seq(from = 1, to = 10000, by = 1000), width = 100))
 peak_counts <- matrix(sample(x = 0:4, size = ncol(gene_sce)*length(peak_gr), replace = TRUE),
                       nrow = length(peak_gr), ncol=ncol(gene_sce))
@@ -96,8 +114,9 @@ rowRanges(peak_sce) <- peak_gr
 rownames(peak_sce) <- paste0('peak',1:10)
 # create a mock reducedDim matrix
 reducedDim_mat <- matrix(runif(ncol(gene_sce)*50, min = 0, max = 1), nrow = ncol(gene_sce), 50)
+rownames(reducedDim_mat) <- colnames(gene_sce)
 p2g <- calculateP2G(peakMatrix = peak_sce, expMatrix = gene_sce, reducedDim = reducedDim_mat,
-                    cellNum = 20, clusters = gene_sce$Treatment)
+                    cellNum = 20)
 }
 \author{
 Xiaosai Yao, Shang-yang Chen

@@ -132,7 +132,6 @@ test_that("pruneRegulon calculates cluster p-values with chi-square test correct
                             regulon_cutoff = 2,
                             clusters = rep(c("C1", "C2"), each = 50),
                             test = "chi.sq")
-  print(regulon.p)
   expect_identical(unname(regulon.p$pval[,"C1"]), pvals$C1, tolerance = 1e-8)
   expect_identical(unname(regulon.p$pval[,"C2"]), pvals$C2, tolerance = 1e-8)
 })
@@ -148,7 +147,6 @@ test_that("pruneRegulon correctly applies 'regulon_cutoff'", {
                             regulon_cutoff = 0.05,
                             clusters = rep(c("C1", "C2"), each = 50),
                             test = "chi.sq")
-  print(regulon.p)
   expect_identical(unname(regulon.p$pval[,"C1"]), pvals$C1, tolerance = 1e-6)
   expect_identical(unname(regulon.p$pval[,"C2"]), pvals$C2, tolerance = 1e-6)
 })

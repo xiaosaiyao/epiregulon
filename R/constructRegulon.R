@@ -1,19 +1,97 @@
+# code copied from scMultiome package
+
+tfBinding <- function(genome = c("hg38", "hg19", "mm10"),
+                      source = c("atlas", "encode.sample", "atlas.sample","atlas.tissue"),
+                      metadata = FALSE,
+                      version=2,
+                      peak_number = 1000) {
+    checkmate::assertFlag(metadata)
+    genome <- match.arg(genome, several.ok = FALSE)
+    source <- match.arg(source, several.ok = FALSE)
+    checkmate::assert_choice(version, c(1,2))
+    key <- paste0(c(genome, source), collapse=".")
+    if(version==1){
+        message("Retrieving chip-seq data, version 1")
+        to_file_dict <- c(hg38.atlas="tfBinding_hg38_atlas.rds",
+                          hg19.atlas = "tfBinding_hg19_atlas.rds",
+                          mm10.atlas = "tfBinding_mm10_atlas.rds",
+                          hg38.atlas.sample="tfBinding_hg38_atlas.sample.rds",
+                          hg19.atlas.sample = "tfBinding_hg19_atlas.sample.rds",
+                          mm10.atlas.sample = "tfBinding_mm10_atlas.sample.rds",
+                          hg38.encode.sample = "tfBinding_hg38_encode.sample.rds",
+                          hg19.encode.sample = "tfBinding_hg19_encode.sample.rds",
+                          mm10.encode.sample = "tfBinding_mm10_encode.sample.rds",
+                          hg38.atlas.tissue = "tfBinding_hg38_atlas.tissue.rds",
+                          hg19.atlas.tissue = "tfBinding_hg19_atlas.tissue.rds",
+                          mm10.atlas.tissue = "tfBinding_mm10_atlas.tissue.rds")
+    }
+    else{
+        message("Retrieving chip-seq data, version 2")
+        to_file_dict <- c(hg38.atlas="tfBinding_hg38_atlas.rds",
+                          hg19.atlas = "tfBinding_hg19_atlas.rds",
+                          mm10.atlas = "tfBinding_mm10_atlas.rds",
+                          hg38.atlas.sample="tfBinding_hg38_atlas.sample_v2.rds",
+                          hg19.atlas.sample = "tfBinding_hg19_atlas.sample_v2.rds",
+                          mm10.atlas.sample = "tfBinding_mm10_atlas.sample_v2.rds",
+                          hg38.encode.sample = "tfBinding_hg38_encode.sample_v2.rds",
+                          hg19.encode.sample = "tfBinding_hg19_encode.sample_v2.rds",
+                          mm10.encode.sample = "tfBinding_mm10_encode.sample_v2.rds",
+                          hg38.atlas.tissue = "tfBinding_hg38_atlas.tissue_v2.rds",
+                          hg19.atlas.tissue = "tfBinding_hg19_atlas.tissue_v2.rds",
+                          mm10.atlas.tissue = "tfBinding_mm10_atlas.tissue_v2.rds")
+
+    }
+
+    eh <- AnnotationHub::query(ExperimentHub::ExperimentHub(),
+                               pattern = c("scMultiome", "tfBinding", to_file_dict[key]))
+
+    if (source %in% c("atlas")) {
+        eh_ID <- sort(eh$ah_id)[1]
+    } else {
+        eh_ID <- eh$ah_id
+    }
+
+
+    ans <-
+        if (metadata) {
+            eh[eh_ID]
+        } else {
+            readRDS(eh[[eh_ID]])
+        }
+
+    if(version==2 && !grepl("(sample|tissue)", to_file_dict[key])){
+        ans <- ans[unlist(lapply(ans,length)) >= peak_number]
+    }
+
+    return(ans)
+}
+
 #' Retrieve TF binding sites or motif positions
 #'
-#' Combined transcription factor ChIP-seq data from ChIP-Atlas and ENCODE or
-#' from CistromeDB and ENCODE.
+#' Combined transcription factor ChIP-seq data from ChIP-Atlas and ENCODE
+#' @param genome character string specifying the genomic build
+#' @param source character string specifying the ChIP-seq data source and data specificity. Source followed by dot and `sample`
+#' indicates sample-specific Chip-seq data. Adding `.tissue` to source string result in returning tissue specific data.
+#' Providing source name without suffix tells the function to return data merged from different tissues and samples.
+#' @param metadata logical flag specifying whether to return data or metadata only
 #' @param mode a string indicating whether to download a GRangelist of TF binding sites ('occupancy') or motif matches ('motif').
-#' TF binding information is retrieved from  [scMultiome::tfBinding]. The
+#' TF binding information is retrieved from [scMultiome::tfBinding()]. The
 #' motif information was obtained from [chromVARmotifs](https://github.com/GreenleafLab/chromVARmotifs) (human_pwms_v2 and mouse_pwms_v2,
 #' version 0.2 with filtering of cisBP motifs) and is also hosted on scMultiome.
-#' @param peaks A GRanges object indicating the peaks to perform motif annotation on if ArchR project is not provided.
-#' The peak indices should match the `re` column in the regulon
+#' @param peaks A GRanges object indicating the peaks to perform motif annotation on.
+#' The peak indices should match the `idxATAC` column in the regulon.
+#' @param version numeric indicating data version (for details see \link[scMultiome]{tfBinding})
+#' @param peak_number numeric indicating threshold to be applied to the number of peaks
+#' per transcription factor in the combined version of GenomicRanges
+#' (from all samples and tissues).
 
-#' @inherit scMultiome::tfBinding params return references
+#' @inherit scMultiome::tfBinding return references
 #' @examples
 #' # retrieve TF binding info
 #' \donttest{
-#' getTFMotifInfo('mm10', 'atlas')
+#' getTFMotifInfo('mm10', 'atlas.sample')
+#' getTFMotifInfo('hg38','atlas.tissue')
+#' getTFMotifInfo('hg19','atlas')
 #' }
 #'
 #' # retrieve motif info
@@ -24,42 +102,45 @@
 #'
 #' @export
 #'
-getTFMotifInfo <- function(genome = c("hg38", "hg19", "mm10"), 
-                           source = c("atlas", "cistrome", "encode.sample", "atlas.sample","atlas.tissue"),
-                           metadata = FALSE, 
+getTFMotifInfo <- function(genome = c("hg38", "hg19", "mm10"),
+                           source = c("atlas", "encode.sample", "atlas.sample","atlas.tissue"),
+                           metadata = FALSE,
                            mode = c("occupancy", "motif"),
-                           peaks = NULL) {
+                           peaks = NULL,
+                           version = 2,
+                           peak_number = 1000) {
     genome <- match.arg(genome)
     source <- match.arg(source)
     mode <- match.arg(mode)
-    
 
     if (mode == "occupancy") {
-      grl <- scMultiome::tfBinding(genome,
-                                   source, metadata)
+        grl <- tfBinding(genome=genome,
+                         source=source,
+                         metadata=metadata,
+                         version = version,
+                         peak_number = peak_number)
+
     } else {
-
-
+        checkmate::assert_class(peaks, "GRanges")
         species <- switch(genome, hg38 = "human",
-            hg19 = "human", mm10 = "mouse")
+                          hg19 = "human", mm10 = "mouse")
         BS.genome <- switch(genome,
-            hg38 = BSgenome.Hsapiens.UCSC.hg38::BSgenome.Hsapiens.UCSC.hg38,
-            hg19 = BSgenome.Hsapiens.UCSC.hg19::BSgenome.Hsapiens.UCSC.hg19,
-            mm10 = BSgenome.Mmusculus.UCSC.mm10::BSgenome.Mmusculus.UCSC.mm10)
+                            hg38 = BSgenome.Hsapiens.UCSC.hg38::BSgenome.Hsapiens.UCSC.hg38,
+                            hg19 = BSgenome.Hsapiens.UCSC.hg19::BSgenome.Hsapiens.UCSC.hg19,
+                            mm10 = BSgenome.Mmusculus.UCSC.mm10::BSgenome.Mmusculus.UCSC.mm10)
 
         message("keeping only standard chromosomes..")
         peaks <- GenomeInfoDb::keepStandardChromosomes(peaks,
-            pruning.mode = "coarse")
+                                                       pruning.mode = "coarse")
 
         message("annotating peaks with motifs")
         grl <- annotateMotif(species,
-            peaks, BS.genome, out = "positions")
+                             peaks, BS.genome, out = "positions")
         names(grl) <- lapply(strsplit(names(grl),
-            split = "_|\\."), "[", 3)
+                                      split = "_|\\."), "[", 3)
     }
     grl
 }
-
 
 
 #' Add TF binding motif occupancy information to the peak2gene object
@@ -115,7 +196,7 @@ getTFMotifInfo <- function(genome = c("hg38", "hg19", "mm10"),
 #' ranges = IRanges(start = c(1050), width = 100))
 #' )
 #'
-#' # create a mock singleCellExperiment object for peak matrix
+#' # create a mock SingleCellExperiment object for peak matrix
 #' peak_gr <- GRanges(seqnames = 'chr1',
 #'              ranges = IRanges(start = seq(from = 1, to = 10000, by = 1000),
 #'              width = 100))
@@ -201,7 +282,7 @@ getRegulon <- function(p2g, overlap, aggregate = FALSE, FUN = "mean") {
     regulon_df <- S4Vectors::merge(p2g, overlap, by = "idxATAC")
 
     Correlation.rownames <- colnames(regulon_df)[grep("^Correlation\\.",
-        colnames(regulon_df))]
+                                                      colnames(regulon_df))]
     corr_matrix <- regulon_df[, Correlation.rownames, drop = FALSE]
     colnames(corr_matrix) <- gsub("^Correlation\\.", "", Correlation.rownames)
 
@@ -212,7 +293,7 @@ getRegulon <- function(p2g, overlap, aggregate = FALSE, FUN = "mean") {
     if (aggregate) {
         "aggregating regulon ..."
         regulon_df <- aggregateMatrix(regulon_df[, c("tf", "target",
-            "Correlation")], "Correlation", FUN = "mean")
+                                                     "Correlation")], "Correlation", FUN = "mean")
     }
     colnames(regulon_df)[colnames(regulon_df) == "Correlation"] <- "corr"
     return(regulon_df)

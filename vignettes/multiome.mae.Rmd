@@ -1,6 +1,6 @@
 ---
 title: "Epiregulon tutorial with MultiAssayExperiment"
-author: "Xiaosai Yao"
+author: "Xiaosai Yao, Tomasz Włodarczyk"
 email: "yao.xiaosai@gene.com"
 output:
   BiocStyle::html_document:
@@ -50,7 +50,7 @@ devtools::install_github(repo ='xiaosaiyao/epiregulon')
 
 Load package
 
-```{r}
+```{r, echo=TRUE, results='hide', message=FALSE, warning=FALSE}
 library(epiregulon)
 ```
 
@@ -61,12 +61,11 @@ Prior to using `epiregulon`, single cell preprocessing needs to performed by use
 2. Gene expression matrix from either paired or unpaired scRNA-seq. RNA-seq integration needs to be performed for unpaired dataset. <br>
 3. Dimensionality reduction matrix from either single modality dataset or joint scRNA-seq and scATAC-seq <br>
 
-This tutorial demonstrates the basic functions of `epiregulon`, using the reprogram-seq dataset which can be downloaded from the `r Biocpkg("scMultiome")` package. In this example, prostate cancer cells (LNCaP) were infected in separate wells with viruses encoding 4 transcription factors (NKX2-1, GATA6, FOXA1 and FOXA2) and a positive control (mNeonGreen) before pooling. The identity of the infected transcription factors was tracked through cell hashing (available in the field `hash_assignment` of the `colData`) and serves as the ground truth.
+This tutorial demonstrates the basic functions of `epiregulon`, using the reprogram-seq dataset which can be downloaded from the `r BiocStyle::Biocpkg("scMultiome")` package. In this example, prostate cancer cells (LNCaP) were infected in separate wells with viruses encoding 4 transcription factors (NKX2-1, GATA6, FOXA1 and FOXA2) and a positive control (mNeonGreen) before pooling. The identity of the infected transcription factors was tracked through cell hashing (available in the field `hash_assignment` of the `colData`) and serves as the ground truth.
 
-```{r}
+```{r, echo=TRUE, results='hide', message=FALSE, warning=FALSE}
 # load the MAE object
 library(scMultiome)
-
 mae <- scMultiome::reprogramSeq()
 
 # extract peak matrix
@@ -79,8 +78,10 @@ rownames(GeneExpressionMatrix) <- rowData(GeneExpressionMatrix)$name
 # define the order of hash_assigment
 GeneExpressionMatrix$hash_assignment <- 
   factor(as.character(GeneExpressionMatrix$hash_assignment),
-         levels = c("HTO10_GATA6_UTR", "HTO2_GATA6_v2", "HTO8_NKX2.1_UTR", "HTO3_NKX2.1_v2",
-                    "HTO1_FOXA2_v2", "HTO4_mFOXA1_v2", "HTO6_hFOXA1_UTR", "HTO5_NeonG_v2"))
+         levels = c("HTO10_GATA6_UTR", "HTO2_GATA6_v2", 
+                    "HTO8_NKX2.1_UTR", "HTO3_NKX2.1_v2",
+                    "HTO1_FOXA2_v2", "HTO4_mFOXA1_v2", "HTO6_hFOXA1_UTR", 
+                    "HTO5_NeonG_v2"))
 # extract dimensional reduction matrix
 reducedDimMatrix <- reducedDim(mae[['TileMatrix500']], "LSI_ATAC")
 
@@ -118,21 +119,41 @@ grl.motif <- getTFMotifInfo(genome = "hg38",
 ```
 ## Link ATAC-seq peaks to target genes
 
-Next, we try to link ATAC-seq peaks to their putative target genes. We assign a peak to a gene within a size window (default ±250kb) if the chromatin accessibility of the peak and expression of the target genes are highly correlated (default threshold 0.5). To compute correlations, we first create cell aggregates by performing k-means clustering on the reduced dimensionality matrix. Then we aggregate the counts of the gene expression and peak matrix and average across the number of cells. Correlations are computed on the averaged gene expression and chromatin accessibility.
+Next, we try to link ATAC-seq peaks to their putative target genes. We assign a peak to a gene within a size window (default ±250kb) if the chromatin accessibility of the peak and expression of the target genes are highly correlated (default p-vale threshold 0.05). To compute correlations, we first create cell aggregates by performing k-means clustering on the reduced dimensionality matrix. Then we aggregate the counts of the gene expression and peak matrix and average across the number of cells. Correlations are computed on the averaged gene expression and chromatin accessibility.
 
-If cluster labels are provided, peak-to-gene correlations are computed on all the cells and for each cluster. Peak-to-gene links are retained as long as any of the correlations pass the threshold; the longer list of peak-to-gene links capture both inter- and intra-cluster variations.
+### Optimize the number of metacells (Optional)
+The number of metacells used to aggregate cells into meta-cells is a sensitive parameter, as it should strike the correct balance between averaging out biological variation and reducing signal noise caused by sparsity in single cells. Therefore, we provide a separate function, `optimizeMetacellNumber`, to automatically select the optimal value for this parameter. The algorithm samples different possible values and calculates the mean empirical p-value of RE–TG connections for each value. Then, a quadratic regression is fitted to the relationship, and the minimum of the function is determined.
 
-We also provide a second method of target gene assignment based on the nearest expressed genes to each ATAC-seq peak. To use this function, the user can specify `assignment_method = "nearest"`. With this option, we will still calculate the correlation and apply a correlation cutoff. If no correlation filter is needed, the user can set `cor_cutoff` to 0.
+```{r optimizeMetacellNumber}
+cellNum <- optimizeMetacellNumber(peakMatrix = PeakMatrix,
+                                  expMatrix = GeneExpressionMatrix,
+                                  reducedDim = reducedDimMatrix,
+                                  exp_assay = "normalizedCounts",
+                                  peak_assay = "counts",
+                                  BPPARAM = BiocParallel::SerialParam(progressbar = FALSE))
+```
+
+We can plot the results to make sure that the relationship is correctly generalized.
+
+```{r optim_plot}
+plot(cellNum)
+```
+
+### Calculate Peak to Gene Links 
+
+The output of `optimizeMetacellNumber` function is then passed to `calculateP2G` as `cellNum` argument. Alternatively, users may skip `optimizeMetacellNumber` and specify their own cell number in `cellNum`.
+
 ```{r calculateP2G}
 set.seed(1010)
 p2g <- calculateP2G(peakMatrix = PeakMatrix, 
                     expMatrix = GeneExpressionMatrix, 
                     reducedDim = reducedDimMatrix,
                     exp_assay = "normalizedCounts",
-                    peak_assay = "counts")
+                    peak_assay = "counts",
+                    cellNum = cellNum,
+                    BPPARAM = BiocParallel::SerialParam(progressbar = FALSE))
 
 p2g
-
 ```
 
 
@@ -147,7 +168,8 @@ The next step is to add the TF binding information by overlapping regions of the
 
 ```{r addTFMotifInfo}
 
-overlap <- addTFMotifInfo(grl = grl, p2g = p2g, 
+overlap <- addTFMotifInfo(grl = grl, 
+                          p2g = p2g, 
                           peakMatrix = PeakMatrix)
 head(overlap)
 ```
@@ -170,8 +192,8 @@ this field is a matrix with columns names corresponding to correlation across al
 
 ```{r, warning=FALSE, getRegulon}
 
-regulon <- getRegulon(p2g = p2g, overlap = overlap, 
-                      aggregate = FALSE)
+regulon <- getRegulon(p2g = p2g, 
+                      overlap = overlap)
 regulon
 
 ```
@@ -222,7 +244,7 @@ regulon.w
 
 ```
 
-## (Optional) Annotate with TF motifs
+## Annotate with TF motifs (Optional)
 
 So far the gene regulatory network was constructed from TF ChIP-seq exclusively. Some users would prefer to further annotate regulatory elements with the presence of motifs. We provide an option to annotate peaks with motifs from the Cisbp database. If no motifs are present for this particular factor (as in the case of co-factors or chromatin modifiers), we return NA. If motifs are available for a factor and the RE contains a motif, we return 1. If motifs are available and the RE does not contain a motif, we return 0. The users can also provide their own motif annotation through the `pwms` argument.
 
@@ -239,16 +261,20 @@ regulon.w.motif$weight[regulon.w.motif$motif == 0] <- 0
 
 regulon.w.motif
 ```
-## (Optional) Annotate with log fold changes
+## Annotate with log fold changes (Optional)
 
 It is sometimes helpful to filter the regulons based on gene expression changes between two conditions. The `addLogFC` function is a wrapper around `scran::findMarkers` and adds extra columns of log changes to the regulon DataFrame. The users can specify the reference condition in `logFC_ref` and conditions for comparison in
 `logFC_condition`. If these are not provided, log fold changes are calculated for every condition in the cluster labels against the rest of the conditions.
  
 ```{r add logFC}
+# create logcounts
+GeneExpressionMatrix <- scuttle::logNormCounts(GeneExpressionMatrix)
+
+# add log fold changes which are calculated by taking the difference of the log counts
 regulon.w <- addLogFC(regulon = regulon.w,
                       clusters = GeneExpressionMatrix$hash_assignment,
                       expMatrix  = GeneExpressionMatrix,
-                      assay.type  = "normalizedCounts",
+                      assay.type  = "logcounts",
                       pval.type = "any",
                       logFC_condition = c("HTO10_GATA6_UTR", 
                                           "HTO2_GATA6_v2", 

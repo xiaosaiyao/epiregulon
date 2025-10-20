@@ -21,6 +21,20 @@ test_that(".select_consistent_columns works correctly", {
   expect_equal(.select_consistent_columns(df2, rv), df1)
 })
 
+df <- data.frame(a = c('a', 'b', 'c', 'd'),
+                 b = c('a', 'a', 'a', 'b'),
+                 c = c('d', 'd', 'd', 'd'),
+                 d = c('a', 'a', 'a', 'b'),
+                 e = c('b', 'b', 'a', 'a'))
+
+test_that(".select_consistent_columns works correctly for vectors whose factorization has a lower resolution than the cluster factorization",
+          {
+              expect_identical(.select_consistent_columns(df, df$a), df)
+              expect_identical(.select_consistent_columns(df, df$e), df[,c("c", "e")])
+          })
+
+
+
 df1 <- DataFrame(a = y1, b = x2, c = y3)
 df1$d <- DataFrame(g = x2, f = x3, h = y2)
 df2 <- DataFrame(b = x2)
@@ -46,8 +60,17 @@ df1$d <- matrix(c(y2,x1), ncol=2)
 df2 <- DataFrame(b = x2)
 df2$d <- matrix(x1, ncol=1)
 
+df3 <- S4Vectors::DataFrame('a'=c('a','a','a','b'))
+df3$b <- matrix(rep(c(c('c','c','c','a')),3), nrow =4)
+df3[["c"]] <- cbind(df3$b, c('a', 'b', 'c', 'd'))
+df4 <- df3
+df4[[3]] <- df4[[3]][,1:3]
+
 test_that(".select_consistent_columns works correctly with nested matrix", {
-  expect_equal(.select_consistent_columns(df1, rv), df2)
+    expect_equal(.select_consistent_columns(df1, rv), df2)
+    expect_identical(.select_consistent_columns(df3, df3$a), df4)
+    expect_identical(.select_consistent_columns(df3, c('a', 'b', 'c', 'd')), df3)
+    expect_identical(.select_consistent_columns(df3,  rep('a',4)), NULL)
 })
 
 df1 <- DataFrame(a = y1, b = x2, c = y3)

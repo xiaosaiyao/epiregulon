@@ -6,38 +6,49 @@
 \usage{
 getTFMotifInfo(
   genome = c("hg38", "hg19", "mm10"),
-  source = c("atlas", "cistrome", "encode.sample", "atlas.sample", "atlas.tissue"),
+  source = c("atlas", "encode.sample", "atlas.sample", "atlas.tissue"),
   metadata = FALSE,
   mode = c("occupancy", "motif"),
-  peaks = NULL
+  peaks = NULL,
+  version = 2,
+  peak_number = 1000
 )
 }
 \arguments{
 \item{genome}{character string specifying the genomic build}
 
-\item{source}{character string specifying the ChIP-seq data source}
+\item{source}{character string specifying the ChIP-seq data source and data specificity. Source followed by dot and \code{sample}
+indicates sample-specific Chip-seq data. Adding \code{.tissue} to source string result in returning tissue specific data.
+Providing source name without suffix tells the function to return data merged from different tissues and samples.}
 
 \item{metadata}{logical flag specifying whether to return data or metadata only}
 
 \item{mode}{a string indicating whether to download a GRangelist of TF binding sites ('occupancy') or motif matches ('motif').
-TF binding information is retrieved from  \link[scMultiome:tfBinding]{scMultiome::tfBinding}. The
+TF binding information is retrieved from \code{\link[scMultiome:tfBinding]{scMultiome::tfBinding()}}. The
 motif information was obtained from \href{https://github.com/GreenleafLab/chromVARmotifs}{chromVARmotifs} (human_pwms_v2 and mouse_pwms_v2,
 version 0.2 with filtering of cisBP motifs) and is also hosted on scMultiome.}
 
-\item{peaks}{A GRanges object indicating the peaks to perform motif annotation on if ArchR project is not provided.
-The peak indices should match the \code{re} column in the regulon}
+\item{peaks}{A GRanges object indicating the peaks to perform motif annotation on.
+The peak indices should match the \code{idxATAC} column in the regulon.}
+
+\item{version}{numeric indicating data version (for details see \link[scMultiome]{tfBinding})}
+
+\item{peak_number}{numeric indicating threshold to be applied to the number of peaks
+per transcription factor in the combined version of GenomicRanges
+(from all samples and tissues).}
 }
 \value{
 A list of TF binding sites as a \code{GrangesList} object.
 }
 \description{
-Combined transcription factor ChIP-seq data from ChIP-Atlas and ENCODE or
-from CistromeDB and ENCODE.
+Combined transcription factor ChIP-seq data from ChIP-Atlas and ENCODE
 }
 \examples{
 # retrieve TF binding info
 \donttest{
-getTFMotifInfo('mm10', 'atlas')
+getTFMotifInfo('mm10', 'atlas.sample')
+getTFMotifInfo('hg38','atlas.tissue')
+getTFMotifInfo('hg19','atlas')
 }
 
 # retrieve motif info
@@ -60,14 +71,4 @@ Oki S, Ohta T, Shioi G, Hatanaka H, Ogasawara O, Okuda Y, Kawaji H, Nakaki R, Se
 \href{http://dx.doi.org/10.15252/embr.201846255}{doi:10.15252/embr.201846255}
 
 ENCODE: {https://www.encodeproject.org/}
-
-Cistrome Data Browser: expanded datasets and new tools for gene regulatory analysis.
-Zheng R, Wan C, Mei S, Qin Q, Wu Q, Sun H, Chen CH, Brown M, Zhang X, Meyer CA, Liu XS
-\emph{Nucleic Acids Res}, 2018 Nov 20.
-\href{https://academic.oup.com/nar/article/47/D1/D729/5193328}{doi:10.1093/nar/gky1094}
-
-Cistrome data browser: a data portal for ChIP-Seq and chromatin accessibility data in human and mouse.
-Mei S, Qin Q, Wu Q, Sun H, Zheng R, Zang C, Zhu M, Wu J, Shi X, Taing L, Liu T, Brown M, Meyer CA, Liu XS
-\emph{Nucleic Acids Res}, 2017 Jan 4;45(D1):D658-D662.
-\href{https://academic.oup.com/nar/article/45/D1/D658/2333932}{doi:10.1093/nar/gkw983}
 }
