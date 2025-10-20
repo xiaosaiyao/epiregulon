@@ -66,13 +66,13 @@
 #' @importFrom SingleCellExperiment SingleCellExperiment
 #'
 #' @examples
-#' # create a mock singleCellExperiment object for gene expMatrixession matrix
+#' # create a mock SingleCellExperiment object for gene expMatrixession matrix
 #' set.seed(1000)
 #' gene_sce <- scuttle::mockSCE()
 #' gene_sce <- scuttle::logNormCounts(gene_sce)
 #' rownames(gene_sce) <- paste0('Gene_',1:2000)
 #'
-#' # create a mock singleCellExperiment object for peak matrix
+#' # create a mock SingleCellExperiment object for peak matrix
 #' peak_gr <- GRanges(seqnames = 'chr1',
 #'                   ranges = IRanges(start = seq(from = 1, to = 10000, by = 100), width = 100))
 #' peak_counts <- matrix(sample(x = 0:4, size = ncol(gene_sce)*length(peak_gr), replace = TRUE),
@@ -535,11 +535,10 @@ chisqTest <- function(k, size, p) {
 
 #' Add log fold changes of gene expression to regulons
 #'
-
 #' @param expMatrix A SingleCellExperiment object or matrix containing gene expression with
-#' genes in the rows and cells in the columns
+#' genes in the rows and cells in the columns. Gene expression should be in logcounts
 #' @param clusters A character or integer vector of cluster or group labels for single cells
-#' @param regulon A dataframe informing the gene regulatory relationship with the ```tf``` column
+#' @param regulon A data frame informing the gene regulatory relationship with the ```tf``` column
 #' representing transcription factors, ```idxATAC``` corresponding to the index in the peakMatrix and
 #'  ```target``` column representing target genes
 #' @param pval.type String specifying how p-values are to be combined across pairwise comparisons for a given group/cluster.
@@ -554,7 +553,7 @@ chisqTest <- function(k, size, p) {
 #' @export
 #'
 #' @examples
-#' # create a mock singleCellExperiment object for gene expMatrixession matrix
+#' # create a mock SingleCellExperiment object for gene expression matrix
 #' set.seed(1000)
 #' gene_sce <- scuttle::mockSCE()
 #' gene_sce <- scuttle::logNormCounts(gene_sce)
@@ -568,8 +567,8 @@ chisqTest <- function(k, size, p) {
 #'
 #' # filter regulon
 #' pruned.regulon <- addLogFC(expMatrix = gene_sce, clusters = gene_sce$Treatment,
-#'                                regulon = regulon,
-#'                                sig_type = "p.value")
+#'                            regulon = regulon,
+#'                            sig_type = "p.value")
 #'
 #' @author Xiaosai Yao
 
@@ -630,7 +629,7 @@ addLogFC <- function(expMatrix,
       de_genes <- de_genes[,c(paste0("log.", sig_type),"logFC")]
       combined_name <- paste0(sample,".vs.",logFC_ref)
       colnames(de_genes) <- c(paste0(combined_name, ".",sig_type), paste0(combined_name, ".logFC"))
-      de_genes[,1] <- 10^(de_genes[,1])
+      de_genes[,1] <- exp(de_genes[,1])
       de_genes
     })
 

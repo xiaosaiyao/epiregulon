@@ -17,11 +17,11 @@ addLogFC(
 }
 \arguments{
 \item{expMatrix}{A SingleCellExperiment object or matrix containing gene expression with
-genes in the rows and cells in the columns}
+genes in the rows and cells in the columns. Gene expression should be in logcounts}
 
 \item{clusters}{A character or integer vector of cluster or group labels for single cells}
 
-\item{regulon}{A dataframe informing the gene regulatory relationship with the \code{tf} column
+\item{regulon}{A data frame informing the gene regulatory relationship with the \code{tf} column
 representing transcription factors, \code{idxATAC} corresponding to the index in the peakMatrix and
 \code{target} column representing target genes}
 
@@ -43,7 +43,7 @@ A DataFrame of regulons with additional columns of logFC and significance
 Add log fold changes of gene expression to regulons
 }
 \examples{
-# create a mock singleCellExperiment object for gene expMatrixession matrix
+# create a mock SingleCellExperiment object for gene expression matrix
 set.seed(1000)
 gene_sce <- scuttle::mockSCE()
 gene_sce <- scuttle::logNormCounts(gene_sce)
@@ -57,8 +57,8 @@ regulon <- data.frame(tf = c(rep('Gene_1',10), rep('Gene_2',10)),
 
 # filter regulon
 pruned.regulon <- addLogFC(expMatrix = gene_sce, clusters = gene_sce$Treatment,
-                               regulon = regulon,
-                               sig_type = "p.value")
+                           regulon = regulon,
+                           sig_type = "p.value")
 
 }
 \author{
