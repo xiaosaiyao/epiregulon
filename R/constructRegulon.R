@@ -196,7 +196,7 @@ getTFMotifInfo <- function(genome = c("hg38", "hg19", "mm10"),
 #' ranges = IRanges(start = c(1050), width = 100))
 #' )
 #'
-#' # create a mock singleCellExperiment object for peak matrix
+#' # create a mock SingleCellExperiment object for peak matrix
 #' peak_gr <- GRanges(seqnames = 'chr1',
 #'              ranges = IRanges(start = seq(from = 1, to = 10000, by = 1000),
 #'              width = 100))

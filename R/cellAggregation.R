@@ -1,5 +1,5 @@
 #' @importFrom SummarizedExperiment colData<-
-#' @importFrom SingleCellExperiment applySCE
+#' @importFrom SingleCellExperiment applySCE reducedDim
 #' @importFrom scrapper clusterKmeans
 .aggregateCells <- function(cellNum,
                             expMatrix,
@@ -32,7 +32,7 @@
     kclusters <- kclusters[colnames(expMatrix)]
 
   } else {
-    kNum = trunc(ncol(expMatrix)/cellNum)
+    kNum <- trunc(ncol(expMatrix)/cellNum)
     klcusters <- clusterKmeans(t(as.matrix(reducedDim(sce, useDim))),k = kNum)$clusters
   }
 
@@ -83,7 +83,7 @@
 #' @importFrom SingleCellExperiment altExps altExps<- altExpNames
 #' @importFrom scrapper aggregateAcrossCells
 #' @examples
-#' # create a mock singleCellExperiment object for gene expression matrix
+#' # create a mock SingleCellExperiment object for gene expression matrix
 #' set.seed(1000)
 #' example_sce <- scuttle::mockSCE()
 #' ids <- sample(LETTERS[1:5], ncol(example_sce), replace=TRUE)
@@ -123,7 +123,7 @@ aggregateAcrossCellsFast <- function(sce,
     names(altExps_list) <- altExpNames(sce)
   }
 
-  # reassemble the singleCellExperiment object
+  # reassemble the SingleCellExperiment object
   sce.bulk <- SingleCellExperiment(assay_matrices,
                                    rowData = rowData(sce))
   rownames(colData(sce.bulk)) <- colData(sce.bulk)$idx <- aggr.counts[[1]]$combinations[,1]
@@ -137,7 +137,7 @@ aggregateAcrossCellsFast <- function(sce,
     if(!is.null(colData.sce.consistent)){
       duplicated_colnames <- intersect(colnames(colData(sce.bulk)), colnames(colData.sce.consistent))
       if(length(duplicated_colnames)>0){
-        stop(spritnf("The following columns are already present in the colData: %s", paste(duplicated_colnames,collapse=", ")))
+        stop(sprintf("The following columns are already present in the colData: %s", paste(duplicated_colnames,collapse=", ")))
       }
       # one row per cluster
       unique_clusters_idx <- match(aggr.counts[[1]]$combinations[,1], clusters)
@@ -150,19 +150,19 @@ aggregateAcrossCellsFast <- function(sce,
 
 .select_consistent_columns <- function(df, ids){
   if(is(df,"DataFrame")){ # handle DataFrame separately to preserve its hierarchical structure
-    current_col = 0
+    current_col <- 0
     for (i in seq_len(ncol(df))){
-      current_col = current_col+1
+      current_col <- current_col+1
       if(length(dim(df[,current_col]))<2) { # select vectors and 1-dim arrays
         if(!.is_consistent(df[,current_col],ids)) {
           df[[current_col]] <- NULL
-          current_col = current_col-1
+          current_col <- current_col-1
         }
       } else{
         consistent_data <- .select_consistent_columns(df[,current_col], ids)
         df[[current_col]] <- consistent_data
         if(is.null(consistent_data)){
-          current_col = current_col-1
+          current_col <- current_col-1
         }
       }
     }

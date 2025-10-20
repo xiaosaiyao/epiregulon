@@ -103,13 +103,13 @@ the probability otherwise is 1- P(TF, RE) * P(TG). The observed cell count for t
 jointly expressing all three elements, and the cell count for the inactive category is n - n_triple.
 }
 \examples{
-# create a mock singleCellExperiment object for gene expMatrixession matrix
+# create a mock SingleCellExperiment object for gene expMatrixession matrix
 set.seed(1000)
 gene_sce <- scuttle::mockSCE()
 gene_sce <- scuttle::logNormCounts(gene_sce)
 rownames(gene_sce) <- paste0('Gene_',1:2000)
 
-# create a mock singleCellExperiment object for peak matrix
+# create a mock SingleCellExperiment object for peak matrix
 peak_gr <- GRanges(seqnames = 'chr1',
                   ranges = IRanges(start = seq(from = 1, to = 10000, by = 100), width = 100))
 peak_counts <- matrix(sample(x = 0:4, size = ncol(gene_sce)*length(peak_gr), replace = TRUE),

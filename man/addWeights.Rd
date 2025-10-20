@@ -88,12 +88,12 @@ we may correlate the product of TF and RE against TG. When \code{tf_re.merge} is
 the gene expression and chromatin accessibility.
 }
 \examples{
-# create a mock singleCellExperiment object for gene expression matrix
+# create a mock SingleCellExperiment object for gene expression matrix
 expMatrix <- scuttle::mockSCE()
 expMatrix <- scuttle::logNormCounts(expMatrix)
 expMatrix$cluster <- sample(LETTERS[1:5], ncol(expMatrix), replace=TRUE)
 
-# create a mock singleCellExperiment object for peak matrix
+# create a mock SingleCellExperiment object for peak matrix
 peakMatrix <- scuttle::mockSCE()
 rownames(peakMatrix) <- 1:2000
 

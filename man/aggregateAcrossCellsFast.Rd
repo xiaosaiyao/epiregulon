@@ -42,7 +42,7 @@ for each cluster/sample combination. It is wrapped around \code{scrapper::aggreg
 which relies on the C++ code.
 }
 \examples{
-# create a mock singleCellExperiment object for gene expression matrix
+# create a mock SingleCellExperiment object for gene expression matrix
 set.seed(1000)
 example_sce <- scuttle::mockSCE()
 ids <- sample(LETTERS[1:5], ncol(example_sce), replace=TRUE)

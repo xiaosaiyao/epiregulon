@@ -92,18 +92,19 @@ between cell lines or cell types can create artificial or even inverse correlati
 correlation is performed within cell aggregates of each cluster.
 }
 \examples{
-# create a mock singleCellExperiment object for gene expression matrix
+# create a mock SingleCellExperiment object for gene expression matrix
 set.seed(1000)
 gene_sce <- scuttle::mockSCE()
 gene_sce <- scuttle::logNormCounts(gene_sce)
-gene_gr <- GenomicRanges::GRanges(seqnames = Rle(c('chr1', 'chr2', 'chr3','chr4'), nrow(gene_sce)/4),
+gene_gr <- GenomicRanges::GRanges(seqnames = Rle(c('chr1', 'chr2', 'chr3','chr4'), 
+                   nrow(gene_sce)/4),
                    ranges = IRanges(start = seq(from = 1, length.out=nrow(gene_sce), by = 1000),
                    width = 100))
 rownames(gene_sce) <- rownames(gene_sce)
 gene_gr$name <- rownames(gene_sce)
 rowRanges(gene_sce) <- gene_gr
 
-# create a mock singleCellExperiment object for peak matrix
+# create a mock SingleCellExperiment object for peak matrix
 peak_gr <- GenomicRanges::GRanges(seqnames = 'chr1',
                    ranges = IRanges(start = seq(from = 1, to = 10000, by = 1000), width = 100))
 peak_counts <- matrix(sample(x = 0:4, size = ncol(gene_sce)*length(peak_gr), replace = TRUE),

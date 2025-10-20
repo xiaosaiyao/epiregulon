@@ -46,18 +46,19 @@
 #' @export
 #'
 #' @examples
-#' # create a mock singleCellExperiment object for gene expression matrix
+#' # create a mock SingleCellExperiment object for gene expression matrix
 #' set.seed(1000)
 #' gene_sce <- scuttle::mockSCE()
 #' gene_sce <- scuttle::logNormCounts(gene_sce)
-#' gene_gr <- GenomicRanges::GRanges(seqnames = Rle(c('chr1', 'chr2', 'chr3','chr4'), nrow(gene_sce)/4),
+#' gene_gr <- GenomicRanges::GRanges(seqnames = Rle(c('chr1', 'chr2', 'chr3','chr4'), 
+#'                    nrow(gene_sce)/4),
 #'                    ranges = IRanges(start = seq(from = 1, length.out=nrow(gene_sce), by = 1000),
 #'                    width = 100))
 #' rownames(gene_sce) <- rownames(gene_sce)
 #' gene_gr$name <- rownames(gene_sce)
 #' rowRanges(gene_sce) <- gene_gr
 #'
-#' # create a mock singleCellExperiment object for peak matrix
+#' # create a mock SingleCellExperiment object for peak matrix
 #' peak_gr <- GenomicRanges::GRanges(seqnames = 'chr1',
 #'                    ranges = IRanges(start = seq(from = 1, to = 10000, by = 1000), width = 100))
 #' peak_counts <- matrix(sample(x = 0:4, size = ncol(gene_sce)*length(peak_gr), replace = TRUE),
@@ -127,7 +128,7 @@ calculateP2G <- function(peakMatrix = NULL,
     message("Value of the paramater 'cellNum' has not been optimized.
                 Consider running function 'optimizeMetacellNumber' and use output to set 'cellNum'")
   }
-  if(class(cellNum)=="CellNumSol") {
+  if(is(cellNum,"CellNumSol")){
     if (cellNum@args$cor_method != cor_method){
       warning(strwrap(sprintf("%s correlation method has been used for
                                      optimization of metacell number whereas
@@ -143,7 +144,7 @@ calculateP2G <- function(peakMatrix = NULL,
   if(verbose){
     writeLines("Creating metacells...")
   }
-  kNum = round(ncol(expMatrix)/cellNum)
+  kNum <- round(ncol(expMatrix)/cellNum)
   agg_data_list <- .create_metacells(expMatrix,
                                      exp_assay,
                                      peakMatrix,
@@ -291,7 +292,7 @@ calculateP2G <- function(peakMatrix = NULL,
   expMatrix <- t(t(res$sums)/res$counts)
   colnames(expMatrix) <- res$combinations[,1]
 
-  peakSet = rowRanges(peakMatrix)
+  peakSet <- rowRanges(peakMatrix)
   data_to_aggregate <- as(assay(peakMatrix, peak_assay), "CsparseMatrix")
   res <- aggregateAcrossCells(data_to_aggregate, factors = list(kclusters))
   peakMatrix <- t(t(res$sums)/res$counts)
@@ -363,6 +364,7 @@ calculateP2G <- function(peakMatrix = NULL,
   return(o)
 }
 #' @importFrom GenomicRanges seqnames
+#' @importFrom stats ecdf p.adjust
 
 .addFDR <- function(df,
                     geneStart,
@@ -448,6 +450,8 @@ calculateP2G <- function(peakMatrix = NULL,
 #' @param ... Other arguments passed to `calculateP2G` function
 #'
 #' @return An object of the class `CellNumSol` to be passed to `calculateP2G` as `cellNum` paramater.
+#' @importFrom SummarizedExperiment assay<-
+#' @importFrom stats lm optim predict
 #' @export
 
 optimizeMetacellNumber <- function(peakMatrix,
@@ -524,14 +528,14 @@ optimizeMetacellNumber <- function(peakMatrix,
     # calculate area under p-value cumulative distribution curve
     areas <- c(areas, mean(p_val))
   }
-  regr_data = data.frame(areas=areas, sqrt_cellNum=evaluation_points)
+  regr_data <- data.frame(areas=areas, sqrt_cellNum=evaluation_points)
   lin_model <- lm(areas~poly(sqrt_cellNum,2,raw=TRUE), data=regr_data)
   sol <- optim(17, function(x) predict(lin_model,
                                        newdata=data.frame(sqrt_cellNum=x)),
                method="Brent",
                lower=min(regr_data$sqrt_cellNum),
                upper=max(regr_data$sqrt_cellNum))$par
-  last_iteration = 1L
+  last_iteration <- 1L
   if(n_iter>1){
     for(n in 2:n_iter){
       # select three additional evaluation points from the interval
@@ -575,7 +579,7 @@ optimizeMetacellNumber <- function(peakMatrix,
       areas <- c(areas, areas_new)
       areas <- areas[order(evaluation_points)]
       evaluation_points <- sort(evaluation_points)
-      regr_data = data.frame(areas=areas, sqrt_cellNum=evaluation_points)
+      regr_data <- data.frame(areas=areas, sqrt_cellNum=evaluation_points)
       lin_model <- lm(areas~poly(sqrt_cellNum, 2, raw=TRUE), data=regr_data)
       sol <- optim(300, function(x) predict(lin_model,
                                             newdata=data.frame(sqrt_cellNum=x)),
@@ -594,7 +598,7 @@ optimizeMetacellNumber <- function(peakMatrix,
   # add default arguments from the function definition
   args <- c(args, formals(sys.function())[default_args])
   args <- args[arg_names]
-  p2g_args = formals(calculateP2G)[c("nRandConns", "cor_method", "maxDist",
+  p2g_args <- formals(calculateP2G)[c("nRandConns", "cor_method", "maxDist",
                                      "frac_RNA", "frac_ATAC", "assignment_method")]
   p2g_args$cor_method <- eval(p2g_args$cor_method)[1]
   p2g_args$assignment_method <- eval(p2g_args$assignment_method)[1]
@@ -616,13 +620,13 @@ optimizeMetacellNumber <- function(peakMatrix,
   }
   if(estimation_issue){
     # TO DO: reference to the on-line documentation
-    message(paste(c(strwrap("An issue detected during estimation optimal number of metacells.
+    message(c(strwrap("An issue detected during estimation optimal number of metacells.
                         Consider at least one of the following actions:"),
-                    "1. Change of the `cellNumMin` and `cellNumMax` paramaters",
-                    "2. Increasing the number of evaluation points (`n_evaluation_points` argument)",
-                    "3. Increasing the number of iterations (`n_iter` argument)",
-                    strwrap("4. Increasing the number of false connections used to compute
-                        p-value null distribution (`nRandConns` argument)"))))
+              "1. Change of the `cellNumMin` and `cellNumMax` paramaters",
+              "2. Increasing the number of evaluation points (`n_evaluation_points` argument)",
+              "3. Increasing the number of iterations (`n_iter` argument)",
+              strwrap("4. Increasing the number of false connections used to compute
+                        p-value null distribution (`nRandConns` argument)")))
     message("Solution not found using quadratic regression. Using cluster size with the lowest mean p-value.")
     sol <- evaluation_points[which.min(areas)]
   }
@@ -648,6 +652,7 @@ optimizeMetacellNumber <- function(peakMatrix,
          numeric(1)))
 }
 
+#' @importFrom graphics lines points
 setMethod("plot", signature=c(x="CellNumSol"), function(x){
   x_val <- x@evaluation_points
   y_val <- x@AUC
@@ -656,7 +661,7 @@ setMethod("plot", signature=c(x="CellNumSol"), function(x){
   df2$y <- cbind(1, df2$x, df2$x^2) %*% x@regr_coefficients
   plot(y~x, data=df2, type="l", xlab="Square root of the number of cells per cluster",
        ylab="Area under curve", ylim=range(c(df2$y,y_val)))
-  sol=x@solution
+  sol <- x@solution
   points(x_val,y_val,pch=16)
   lines(c(sol, sol), range(c(df2$y,y_val)), lt=2, col="red")
 })

@@ -1,11 +1,17 @@
 # epiregulon 2.0.0
 * New function in the workflow, `optimizeMatacellNumber`, which estimates the optimal value of the `cellNum` parameter
 passed to `calculateP2G`.
-* Using `scrapper::clusterKmeans` implementing deterministic algorithm of determination k-mean cluster.
+* Using `scrapper::clusterKmeans` to implement deterministic algorithm of determination k-mean cluster.
 It is used to create metacells in the `calculateP2G` function.
-* Adding to the output of `calculateP2G` function empirical p-values and FDR. The null distribution
+* Added to the output of `calculateP2G` function empirical p-values and FDR. The null distribution
 is calculated based on random links of peaks to the genes from other chromosomes.
-* Arguments `method` to `calculateActivity` and `clusters` to `calculateP2G` have been deprecated.
+* Default ChIP-seq output from `tfBinding` is changed to version 2 which imposes more stringent cutoffs.
+We have increased the number of unique reads to 20M (previously 10M in version 1) and the number of peaks passing 
+FDR < 1e-5 to 1000 peaks (previously 100 peaks in version 1). For ENCODE data, we now remove any samples with 
+Audit.NOT_COMPLIANT or Audit.ERROR. Flags.
+* The argument `method` to `calculateActivity` has been deprecated.
+* Bug corrected in `addLogFC`. p-values were mistakenly transformed from log10 when it should be transformed from natural log 
+when `logFC_ref` or/and `logFC_condition` was specified 
 
 # epiregulon 1.5.1
 * checking for the duplicated gene names in the input gene expression SingleCellExperiment

@@ -30,6 +30,8 @@ indicating degree of association between tf and target such as 'mor' or 'corr' o
 
 \item{mode}{String indicating the name of column to be used as the weights}
 
+\item{method}{String indicating the method for calculating activity. Available methods are weightedMean or aucell. Deprecated.}
+
 \item{genesets}{A list of genesets. Each list element can be a dataframe with the first column indicating the genes and second column indicating the weights.
 Alternatively, each list element is a character vector corresponding to the genes in the geneset. A feature set collection in the form of CompressedSplitDataFrameList that
 contains genes in the first column and weights in the second column. See details}
@@ -52,13 +54,13 @@ The user has the option of computing signature score by weighted mean of target 
 the relative ranking of the target genes computed by AUCell.
 }
 \examples{
-# create a mock singleCellExperiment object for gene expMatrixession matrix
+# create a mock SingleCellExperiment object for gene expMatrixession matrix
 set.seed(1000)
 gene_sce <- scuttle::mockSCE()
 gene_sce <- scuttle::logNormCounts(gene_sce)
 rownames(gene_sce) <- paste0('Gene_',1:2000)
 
-# create a mock singleCellExperiment object for peak matrix
+# create a mock SingleCellExperiment object for peak matrix
 peak_gr <- GRanges(seqnames = 'chr1',
                    ranges = IRanges(start = seq(from = 1, to = 10000, by = 100), width = 100))
 peak_counts <- matrix(sample(x = 0:4, size = ncol(gene_sce)*length(peak_gr), replace = TRUE),
@@ -72,7 +74,7 @@ regulon <- data.frame(tf = c(rep('Gene_1',10), rep('Gene_2',10)),
                       target = c(paste0('Gene_', sample(3:2000,10)),
                                  paste0('Gene_',sample(3:2000,10))))
 
-#  # prune regulon
+#  prune regulon
 pruned.regulon <- pruneRegulon(expMatrix = gene_sce,
                                exp_assay = 'logcounts',
                                peakMatrix = peak_sce,
