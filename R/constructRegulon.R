@@ -272,32 +272,28 @@ addTFMotifInfo <- function(p2g, grl, peakMatrix = NULL) {
 #' @author Xiaosai Yao, Shang-yang Chen
 
 getRegulon <- function(p2g, overlap, aggregate = FALSE, FUN = "mean") {
+  
+  p2g <- S4Vectors::DataFrame(p2g)
+  p2g_orig_names <- colnames(p2g)
+  p2g$idx <- 1:nrow(p2g)
+  
+  colnames_short <- c("idxATAC","idxRNA","idx")
+  p2g_short <- p2g[, colnames_short]
+  p2g_rest <- p2g[, !colnames(p2g) %in% colnames_short]
 
-    p2g <- S4Vectors::DataFrame(p2g)
-
-    if (identical(colnames(p2g$Correlation), "all")) {
-        colnames(p2g$Correlation) <- "Correlation.all"
-    }
-
-    regulon_df <- S4Vectors::merge(p2g, overlap, by = "idxATAC")
-
-    Correlation.rownames <- colnames(regulon_df)[grep("^Correlation\\.",
-                                                      colnames(regulon_df))]
-    corr_matrix <- regulon_df[, Correlation.rownames, drop = FALSE]
-    colnames(corr_matrix) <- gsub("^Correlation\\.", "", Correlation.rownames)
-
-    regulon_df[, grep("Correlation\\.", colnames(regulon_df))] <- NULL
-    regulon_df$Correlation <- as.matrix(corr_matrix)
-
-
-    if (aggregate) {
-        "aggregating regulon ..."
-        regulon_df <- aggregateMatrix(regulon_df[, c("tf", "target",
-                                                     "Correlation")], "Correlation", FUN = "mean")
-    }
-    colnames(regulon_df)[colnames(regulon_df) == "Correlation"] <- "corr"
-    return(regulon_df)
-
+  regulon_df <- S4Vectors::merge(p2g_short, overlap, by = "idxATAC")
+  regulon_df <- cbind(regulon_df, p2g_rest[match(regulon_df$idx, p2g$idx),])
+  regulon_df$idx <- NULL
+  
+  regulon_df <- regulon_df[,c(p2g_orig_names, "idxTF","tf")]
+  
+  if (aggregate) {
+    "aggregating regulon ..."
+    regulon_df <- epiregulon:::aggregateMatrix(regulon_df[, c("tf", "target",
+                                                              "Correlation")], "Correlation", FUN = "mean")
+  }
+  colnames(regulon_df)[colnames(regulon_df) == "Correlation"] <- "corr"
+  return(regulon_df)
+  
 }
-
 
