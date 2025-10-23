@@ -607,7 +607,7 @@ optimizeMetacellNumber <- function(peakMatrix,
   p2g_args[user_specified_args] <- list(...)[user_specified_args]
   estimation_issue <- FALSE
   if(lin_model$coefficients[3] <= 0){
-    warning("Coefficient of quadratic term in linear regression is not potitive.")
+    warning("Coefficient of quadratic term in linear regression is not positive.")
     estimation_issue <- TRUE
   }
   if(any(abs(sol-range(evaluation_points))<1e-4)){
