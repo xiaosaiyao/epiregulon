@@ -104,6 +104,10 @@ calculateP2G <- function(peakMatrix = NULL,
   cor_method <- match.arg(cor_method)
   assignment_method <- match.arg(assignment_method)
   cutoff_stat <- match.arg(cutoff_stat)
+  
+  assay(expMatrix, exp_assay) <- as(assay(expMatrix, exp_assay), "CsparseMatrix")
+  assay(peakMatrix, peak_assay) <- as(assay(peakMatrix, peak_assay), "CsparseMatrix")
+  
   .validate_input_sce(SCE=expMatrix, assay_name=exp_assay, row.ranges=TRUE)
   .validate_input_sce(SCE=peakMatrix, assay_name=peak_assay, row.ranges=TRUE)
   if (!identical(colnames(expMatrix), colnames(peakMatrix))){
@@ -283,20 +287,21 @@ calculateP2G <- function(peakMatrix = NULL,
                               gene_symbol, frac_RNA, frac_ATAC, kNum){
 
   kclusters <- clusterKmeans(t(as.matrix(reducedDim)),k = kNum)$clusters
-  kclusters <- as.character(kclusters)
   geneStart <- resize(rowRanges(expMatrix), width=1)
   mcols(geneStart)[,gene_symbol] <- rowData(expMatrix)[,gene_symbol]
-  data_to_aggregate <- as(assay(expMatrix, exp_assay), "CsparseMatrix")
+  data_to_aggregate <- assay(expMatrix, exp_assay)
+  
   # aggregate by k-means clusters
   res <- aggregateAcrossCells(data_to_aggregate, factors = list(kclusters))
   expMatrix <- t(t(res$sums)/res$counts)
   colnames(expMatrix) <- res$combinations[,1]
 
   peakSet <- rowRanges(peakMatrix)
-  data_to_aggregate <- as(assay(peakMatrix, peak_assay), "CsparseMatrix")
+  data_to_aggregate <- assay(peakMatrix, peak_assay)
   res <- aggregateAcrossCells(data_to_aggregate, factors = list(kclusters))
   peakMatrix <- t(t(res$sums)/res$counts)
   colnames(peakMatrix) <- res$combinations[,1]
+  
   # keep track of the original ATAC and expression indices
   old.idxRNA <- seq_len(nrow(expMatrix))
   old.idxATAC <- seq_len(nrow(peakMatrix))
@@ -507,6 +512,10 @@ optimizeMetacellNumber <- function(peakMatrix,
                            length.out=n_evaluation_points)
   # drop evaluation points that are duplicates after mapping to cluster numbers
   kNum <- round(n_cells/evaluation_points^2)
+  
+  if (max(kNum) > 2000) {
+    warning("Max number of metacells is ", max(kNum), ". Consider increasing the number of CellNumMin to reduce the number of metacells")
+  }
   evaluation_points <- evaluation_points[!duplicated(kNum)]
   if(length(evaluation_points)<3){
     stop("To few evaluation points to optimize kNum paramater. Consider using more cells or changing cellNumMin or cellNumMax parameters.")
