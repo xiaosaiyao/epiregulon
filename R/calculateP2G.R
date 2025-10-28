@@ -77,6 +77,7 @@
 calculateP2G <- function(peakMatrix = NULL,
                          expMatrix = NULL,
                          reducedDim = NULL,
+                         useDim = deprecated(),
                          cutoff_stat = c("p_val", "FDR", "Correlation"),
                          cutoff_sig = 0.05,
                          cor_cutoff = 0.5,
@@ -95,6 +96,10 @@ calculateP2G <- function(peakMatrix = NULL,
                          BPPARAM = BiocParallel::SerialParam(progressbar = TRUE),
                          verbose = TRUE
 ) {
+
+  if (lifecycle::is_present(useDim)) {
+        warning("Argument 'useDim' to calculateP2G was deprecated as of epiregulon version 2.0.0")
+   }
 
   if(verbose){
     writeLines("Using epiregulon to compute peak to gene links...")

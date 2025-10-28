@@ -8,6 +8,7 @@ calculateP2G(
   peakMatrix = NULL,
   expMatrix = NULL,
   reducedDim = NULL,
+  useDim = deprecated(),
   cutoff_stat = c("p_val", "FDR", "Correlation"),
   cutoff_sig = 0.05,
   cor_cutoff = 0.5,
