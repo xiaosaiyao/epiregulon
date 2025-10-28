@@ -5,6 +5,7 @@
 #' @param expMatrix A SingleCellExperiment object containing gene expression counts from scRNA-seq. `rowRanges` should contain genomic positions of
 #' the genes in the form of `GRanges`. `rowData` should contain a column of gene symbols with column name matching the `gene_symbol` argument.
 #' @param reducedDim A matrix of dimension reduced values
+#' @param useDim String specifying the name of the reduced dimension matrix supplied by the user. Deprecated
 #' @param cutoff_stat A names of a statistic used to determine significant links to assign peak to gene links.
 #' Should be `Correlation`, `p_val` or `FDR`.
 #' @param cor_cutoff A numeric scalar to specify the correlation cutoff between ATAC-seq peaks and RNA-seq genes to assign peak to gene links.
@@ -50,7 +51,7 @@
 #' set.seed(1000)
 #' gene_sce <- scuttle::mockSCE()
 #' gene_sce <- scuttle::logNormCounts(gene_sce)
-#' gene_gr <- GenomicRanges::GRanges(seqnames = Rle(c('chr1', 'chr2', 'chr3','chr4'), 
+#' gene_gr <- GenomicRanges::GRanges(seqnames = Rle(c('chr1', 'chr2', 'chr3','chr4'),
 #'                    nrow(gene_sce)/4),
 #'                    ranges = IRanges(start = seq(from = 1, length.out=nrow(gene_sce), by = 1000),
 #'                    width = 100))
@@ -109,10 +110,10 @@ calculateP2G <- function(peakMatrix = NULL,
   cor_method <- match.arg(cor_method)
   assignment_method <- match.arg(assignment_method)
   cutoff_stat <- match.arg(cutoff_stat)
-  
+
   assay(expMatrix, exp_assay) <- as(assay(expMatrix, exp_assay), "CsparseMatrix")
   assay(peakMatrix, peak_assay) <- as(assay(peakMatrix, peak_assay), "CsparseMatrix")
-  
+
   .validate_input_sce(SCE=expMatrix, assay_name=exp_assay, row.ranges=TRUE)
   .validate_input_sce(SCE=peakMatrix, assay_name=peak_assay, row.ranges=TRUE)
   if (!identical(colnames(expMatrix), colnames(peakMatrix))){
@@ -295,7 +296,7 @@ calculateP2G <- function(peakMatrix = NULL,
   geneStart <- resize(rowRanges(expMatrix), width=1)
   mcols(geneStart)[,gene_symbol] <- rowData(expMatrix)[,gene_symbol]
   data_to_aggregate <- assay(expMatrix, exp_assay)
-  
+
   # aggregate by k-means clusters
   res <- aggregateAcrossCells(data_to_aggregate, factors = list(kclusters))
   expMatrix <- t(t(res$sums)/res$counts)
@@ -306,7 +307,7 @@ calculateP2G <- function(peakMatrix = NULL,
   res <- aggregateAcrossCells(data_to_aggregate, factors = list(kclusters))
   peakMatrix <- t(t(res$sums)/res$counts)
   colnames(peakMatrix) <- res$combinations[,1]
-  
+
   # keep track of the original ATAC and expression indices
   old.idxRNA <- seq_len(nrow(expMatrix))
   old.idxATAC <- seq_len(nrow(peakMatrix))
@@ -517,7 +518,7 @@ optimizeMetacellNumber <- function(peakMatrix,
                            length.out=n_evaluation_points)
   # drop evaluation points that are duplicates after mapping to cluster numbers
   kNum <- round(n_cells/evaluation_points^2)
-  
+
   if (max(kNum) > 2000) {
     warning("Max number of metacells is ", max(kNum), ". Consider increasing the number of CellNumMin to reduce the number of metacells")
   }
