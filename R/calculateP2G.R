@@ -635,13 +635,13 @@ optimizeMetacellNumber <- function(peakMatrix,
   }
   if(estimation_issue){
     # TO DO: reference to the on-line documentation
-    message(c(strwrap("An issue detected during estimation optimal number of metacells.
-                        Consider at least one of the following actions:"),
+    message(paste(c(strwrap(paste(c("An issue detected during estimation optimal number of metacells.",
+                            "Consider at least one of the following actions:"), collapse=" ")),
               "1. Change of the `cellNumMin` and `cellNumMax` paramaters",
               "2. Increasing the number of evaluation points (`n_evaluation_points` argument)",
               "3. Increasing the number of iterations (`n_iter` argument)",
               strwrap("4. Increasing the number of false connections used to compute
-                        p-value null distribution (`nRandConns` argument)")))
+                        p-value null distribution (`nRandConns` argument)")), collapse="\n"))
     message("Solution not found using quadratic regression. Using cluster size with the lowest mean p-value.")
     sol <- evaluation_points[which.min(areas)]
   }
