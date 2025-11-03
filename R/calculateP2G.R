@@ -134,7 +134,7 @@ calculateP2G <- function(peakMatrix = NULL,
   if (!gene_symbol %in% colnames(rowData(expMatrix))) {
     stop("rowData of expMatrix does not contain ", gene_symbol)
   }
-  if(is(cellNum, "CellNumSol") && as.list(sys.call(sys.nframe()-1))[[1]]!="optimizeMetacellNumber"){
+  if(!is(cellNum, "CellNumSol") && as.list(sys.call(sys.nframe()-1))[[1]]!="optimizeMetacellNumber"){
     message("Value of the paramater 'cellNum' has not been optimized.
                 Consider running function 'optimizeMetacellNumber' and use output to set 'cellNum'")
   }
