@@ -33,7 +33,7 @@
 
   } else {
     kNum <- trunc(ncol(expMatrix)/cellNum)
-    klcusters <- clusterKmeans(t(as.matrix(reducedDim(expMatrix, useDim))),k = kNum)$clusters
+    kclusters <- clusterKmeans(t(as.matrix(reducedDim(expMatrix, useDim))),k = kNum)$clusters
   }
 
 
