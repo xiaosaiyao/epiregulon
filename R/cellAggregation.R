@@ -41,11 +41,9 @@
 
   expMatrix <- aggregateAcrossCellsFast(expMatrix,
                                         clusters = kclusters,
-                                        fun_name="sum",
                                         assay.name = exp_assay)
   peakMatrix <- aggregateAcrossCellsFast(peakMatrix,
                                          clusters = kclusters,
-                                         fun_name="sum",
                                          assay.name = peak_assay)
 
   if (!is.null(clusters)) {
