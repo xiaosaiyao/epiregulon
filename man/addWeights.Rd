@@ -56,7 +56,7 @@ overcome data sparsity when using \code{wilcoxon}.}
 
 \item{useDim}{String indicating the name of the dimensionality reduction matrix in expMatrix used for cell aggregation}
 
-\item{cellNum}{An integer specifying the number of cells per cluster for cell aggregation. Default is 10.}
+\item{cellNum}{A numeric specifying the number of cells per cluster for cell aggregation. Default is 10.}
 
 \item{BPPARAM}{A BiocParallelParam object specifying whether summation should be parallelized. Use BiocParallel::SerialParam() for
 serial evaluation and use BiocParallel::MulticoreParam() for parallel evaluation}
