@@ -1,4 +1,5 @@
-addPadding <- function(gr){ # extend regions covered by chip-seq to generate partially overlapping peaks
+addPadding <- function(gr){ # extend regions covered by chip-seq to generate wide peaks that indclude these regions
+    if(is.null(gr)) return(NULL)
     if(length(gr)<2) return(resize(gr, width=width(gr)+1000, fix = "center"))
     gr <- reduce(gr)
     distances_downstream <- c(500, distance(gr[1:((length(gr)-1))], gr[2:length(gr)]))
@@ -33,17 +34,18 @@ select_hits <- function(o){ # choose random region if multiple regions overlap w
 set.seed(3021)
 grl_binding <- getTFMotifInfo()
 grl_binding <- grl_binding[sample(1:length(grl_binding), 30)]
+# select 20% of genomic ranges for each tf
 grl_binding <- GRangesList(lapply(grl_binding, function(x) x[sample(length(x), round(0.2*length(x)))]))
-grl_binding_copy <- grl_binding
 selected_tfs <- sort(sample(length(grl_binding), round(0.8*length(grl_binding)))) # choose TFs to be covered by peaks
+# for each TF determine unoccupied ranges
 grl_binding_negative <- GRangesList(lapply(grl_binding, function(x) gaps(x)))
+# determine sequences which are not bound by any TF
 unoccupied_sequences <- unlist(GRangesList(S4Vectors::Reduce(GenomicRanges::intersect, grl_binding_negative)))
 pairs <- matrix(sample(selected_tfs, 18), ncol=2)
 
 shared_regions <- list()
 
-# look for the regions covered by selected pair of TFs and not covered by any other TF bindinf site
-
+# look for the regions covered by selected pair of TFs and not covered by any other TF binding site
 for(i in 1:nrow(pairs)){
     unoccupied_by_other_tfs <- S4Vectors::Reduce(GenomicRanges::intersect, grl_binding_negative[-pairs[i,]])
     shared_regions[[i]] <- GenomicRanges::intersect(grl_binding[[pairs[i,1]]], GenomicRanges::intersect(grl_binding[[pairs[i,2]]], unoccupied_by_other_tfs))
@@ -60,37 +62,40 @@ for(i in seq_along(shared_regions)){
         regions <- sample(length(shared_regions[[i]]), n_peaks)
         for(region in regions){
             peaks<-c(peaks, create_peak_sequence(shared_regions[[i]][region]))
+            # add region and part of tfs to the overlap df
             overlaps <- rbind(overlaps, data.frame(idxATAC = length(peaks), idxTF = pairs[i,], tf = names(grl_binding)[pairs[i,]]))
         }
     }
 }
 
 # look for regions covered only by selected TFs
-
-grl_binding_unique <- GRangesList()
-unoccupied_by_other_tfs <- vector(mode = "list", length = length(grl_binding))
+unoccupied_by_other_tfs <- grl_binding_unique <- vector(mode = "list", length = length(grl_binding))
 for(i in selected_tfs){
     if(is.null(unoccupied_by_other_tfs[[i]]))  unoccupied_by_other_tfs[[i]] <- S4Vectors::Reduce(GenomicRanges::intersect, grl_binding_negative[-i])
 }
 # clean by subtracting sequences covered by other TFs
-grl_binding_unique <- GRangesList(lapply(selected_tfs, function(i,grl, grl_uo) GenomicRanges::intersect(grl[[i]], grl_uo[[i]]), grl=grl_binding, grl_uo=unoccupied_by_other_tfs))
-grl_binding_extended <- GRangesList(lapply(grl_binding_unique, addPadding))
-grl_binding_extended <- GRangesList(lapply(grl_binding_extended, function(x) GenomicRanges::intersect(x, unoccupied_sequences))) # extension should not overlap with bindings sites of other TFs
-# glue paddings with cleaned TF binding sites
-grl_binding_extended <- GRangesList(lapply(selected_tfs, function(i, grl,grl_ex) reduce(c(grl[[which(selected_tfs==i)]], grl_ex[[which(selected_tfs==i)]])),
-                                      grl = grl_binding_unique, grl_ex = grl_binding_extended))
-grl_binding_extended <- GRangesList(lapply(selected_tfs, function(i, grl,grl_ex) {o <- findOverlaps(grl_ex[[which(selected_tfs==i)]], grl[[i]]);grl_ex[[which(selected_tfs==i)]][select_hits(o)]},
-                                      grl = grl_binding, grl_ex = grl_binding_extended))
+grl_binding_unique[selected_tfs] <- lapply(selected_tfs, function(i,grl, grl_uo) GenomicRanges::intersect(grl[[i]],
+                                                                                                          grl_uo[[i]]),
+                                           grl=grl_binding, grl_uo=unoccupied_by_other_tfs)
+grl_binding_extended <- lapply(grl_binding_unique, addPadding)
 
-# save extended binding sites as peaks and register them in overlaps object
+# subtract from extensions the regions covered by the other TFs
+grl_binding_extended[selected_tfs] <- lapply(selected_tfs, function(i, grl_ex, grl_uo) GenomicRanges::intersect(grl_ex[[i]], grl_uo[[i]]),
+                                           grl_ex = grl_binding_extended, grl_uo=unoccupied_by_other_tfs)
+
+# remove extensions detached from the original regions
+grl_binding_extended[selected_tfs] <- lapply(selected_tfs, function(i, grl,grl_ex) {o <- findOverlaps(grl_ex[[i]], grl[[i]]);grl_ex[[i]][select_hits(o)]},
+                                      grl = grl_binding, grl_ex = grl_binding_extended)
+
+# save extended binding sites as peaks and register them in the overlaps object
 new_peaks <- GRanges()
-for(tf_id in seq_along(grl_binding_extended)){
+for(tf_id in selected_tfs){
     regions_n <- length(grl_binding_extended[[tf_id]])
     new_peaks_n <- min(5, sample(regions_n, 1)) # select number of peaks to overlap with the current TF binding sites
     if(new_peaks_n > 0){
-        original_TF_ID <- selected_tfs[tf_id]
+        #original_TF_ID <- selected_tfs[tf_id] # grl_binding_extended is restricted to only selected tfs
         overlaps <- rbind(overlaps, data.frame(idxATAC = length(peaks)+length(new_peaks)+seq_len(new_peaks_n),
-                                               idxTF = original_TF_ID, tf = names(grl_binding)[original_TF_ID]))
+                                               idxTF = tf_id, tf = names(grl_binding)[tf_id]))
         new_peaks <- c(new_peaks, grl_binding_extended[[tf_id]][sample(regions_n,new_peaks_n)])
     }
 }
