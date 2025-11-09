@@ -520,7 +520,7 @@ optimizeMetacellNumber <- function(peakMatrix,
   kNum <- round(n_cells/evaluation_points^2)
 
   if (max(kNum) > 2000) {
-    warning("Max number of metacells is ", max(kNum), ". Consider increasing the number of CellNumMin to reduce the number of metacells")
+    warning(paste(c("Max number of metacells is ", max(kNum), ". Consider increasing the number of CellNumMin to reduce the number of metacells"), collapse=""))
   }
   evaluation_points <- evaluation_points[!duplicated(kNum)]
   if(length(evaluation_points)<3){
