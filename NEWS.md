@@ -1,3 +1,9 @@
+# epiregulon 2.0.1
+* Fixing bugs which raised error from `addWeights` with `aggregateCells=TRUE` and displayed 
+incorrect warning about class of the `cellNum` argument passed to `calculateP2G`.
+* With `aggregateCell` set to true, cells are aggregated by calculating the mean features of the original cells
+rather than sums. 
+
 # epiregulon 2.0.0
 * New function in the workflow, `optimizeMatacellNumber`, which estimates the optimal value of the `cellNum` parameter
 passed to `calculateP2G`.
