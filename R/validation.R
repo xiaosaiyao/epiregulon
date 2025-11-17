@@ -61,14 +61,15 @@
 
 .validate_regulon <- function(regulon, required_columns = c("tf", "target", "idxATAC")){
     checkmate::assert_multi_class(regulon, c("DataFrame", "data.frame", "DFrame"))
-    if (!all(required_columns %in% colnames(regulon))) {
-        stop("regulon should contain the following columns: ", paste(required_columns, sep = ", "), sep = "")
+    missing_cols <- setdiff(required_columns, colnames(regulon))
+    if (length(missing_cols)>1) {
+        stop("The following column(s) are missing in the regulon object: ", paste(missing_cols, collapse = ", "))
     }
     if (nrow(regulon)==0){
         stop("regulon should not be empty")
     }
     columns_with_NA <- required_columns[unlist(lapply(regulon[,required_columns], function(x) any(is.na(x))))]
     if (length(columns_with_NA)>0){
-        warning("The following regulon column(s) contain NA value(s): ", paste(columns_with_NA, sep = ", "), sep = "")
+        warning("The following regulon column(s) contain NA value(s): ", paste(columns_with_NA, collapse = ", "))
     }
 }

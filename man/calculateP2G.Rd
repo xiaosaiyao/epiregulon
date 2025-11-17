@@ -8,6 +8,7 @@ calculateP2G(
   peakMatrix = NULL,
   expMatrix = NULL,
   reducedDim = NULL,
+  useDim = deprecated(),
   cutoff_stat = c("p_val", "FDR", "Correlation"),
   cutoff_sig = 0.05,
   cor_cutoff = 0.5,
@@ -35,6 +36,8 @@ calculateP2G(
 the genes in the form of \code{GRanges}. \code{rowData} should contain a column of gene symbols with column name matching the \code{gene_symbol} argument.}
 
 \item{reducedDim}{A matrix of dimension reduced values}
+
+\item{useDim}{String specifying the name of the reduced dimension matrix supplied by the user. Deprecated}
 
 \item{cutoff_stat}{A names of a statistic used to determine significant links to assign peak to gene links.
 Should be \code{Correlation}, \code{p_val} or \code{FDR}.}
@@ -96,7 +99,7 @@ correlation is performed within cell aggregates of each cluster.
 set.seed(1000)
 gene_sce <- scuttle::mockSCE()
 gene_sce <- scuttle::logNormCounts(gene_sce)
-gene_gr <- GenomicRanges::GRanges(seqnames = Rle(c('chr1', 'chr2', 'chr3','chr4'), 
+gene_gr <- GenomicRanges::GRanges(seqnames = Rle(c('chr1', 'chr2', 'chr3','chr4'),
                    nrow(gene_sce)/4),
                    ranges = IRanges(start = seq(from = 1, length.out=nrow(gene_sce), by = 1000),
                    width = 100))

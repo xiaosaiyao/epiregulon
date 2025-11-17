@@ -23,7 +23,7 @@ Rcpp::List fast_chisq(
     Rcpp::IntegerVector clusters
     )
 {
-    size_t nrows = peak_ordered.size();
+    auto nrows = peak_ordered.size();
     if (nrows != tf_by_peak.size()) {
         throw std::runtime_error("'peak_ordered' and 'tf_by_peak' should have the same length");
     }
@@ -36,7 +36,7 @@ Rcpp::List fast_chisq(
 
     // Building a reverse index on the peaks and targets.
     std::vector<size_t> peak_start(npeaks), peak_end(npeaks);
-    for (size_t i = 0; i < nrows; ++i) {
+    for (decltype(nrows) i = 0; i < nrows; ++i) {
         auto& current_start = peak_start[peak_ordered[i]];
         auto& current_end = peak_end[peak_ordered[i]];
         if (current_end == 0) {
@@ -52,7 +52,7 @@ Rcpp::List fast_chisq(
     }
 
     std::vector<size_t> target_start(ngenes), target_end(ngenes);
-    for (size_t i = 0; i < nrows; ++i) {
+    for (decltype(nrows) i = 0; i < nrows; ++i) {
         auto& current_start = target_start[target_ordered[i]];
         auto& current_end = target_end[target_ordered[i]];
         if (current_end == 0) {

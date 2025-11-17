@@ -142,20 +142,25 @@ test_that("getTFMotifInfo works for chip-atlas sample specific data", {
 set.seed(4722)
 all_peaks <- 1:1000
 all_genes <- paste0("gene_", 1:3000)
-peak_gene_links <- data.frame(idxATAC = sample(all_peaks, 4000, replace = TRUE), target = sample(all_genes, 4000, replace = TRUE))
+peak_gene_links <- data.frame(idxATAC = sample(all_peaks, 4000, replace = TRUE),
+                              chr = "chr1",
+                              start = sample(1:1000, 4000, replace=TRUE),
+                              end= sample(2:2000, 4000, replace=TRUE),
+                              idxRNA = sample(1:3000, 4000,replace = TRUE),
+                              target = sample(all_genes, 4000, replace = TRUE))
 peak_gene_links <- peak_gene_links[!duplicated(peak_gene_links),]
-peak_gene_links$Correlation.all <- 2*runif(nrow(peak_gene_links))-1
+peak_gene_links$corr <- 2*runif(nrow(peak_gene_links))-1
 peak_gene_links <- S4Vectors::DataFrame(peak_gene_links)
-tf_to_region_links <- data.frame(TF = c(sample(paste0("gene_", 1:10), 60, replace = TRUE),
+tf_to_region_links <- data.frame(idxTF = sample(1:50, 1060, replace =TRUE),
+                                 tf = c(sample(paste0("gene_", 1:10), 60, replace = TRUE),
                                         sample(paste0("tf_", 1:50), 1000, replace = TRUE)),
                                  idxATAC = sample(1:2000, 1060, replace = TRUE))
 res <- S4Vectors::merge(peak_gene_links, tf_to_region_links, by = "idxATAC")
-corr_matrix <- as.matrix(res[,"Correlation.all", drop = FALSE])
-colnames(corr_matrix) <- "all"
-res$corr <-  corr_matrix
-res[["Correlation.all"]] <- NULL
+
 regulon <- getRegulon(peak_gene_links, tf_to_region_links)
 
+res <- res[order(res$idxATAC, res$target,res$idxTF, res$tf),]
+regulon  <- regulon [order(regulon$idxATAC, regulon$target,regulon$idxTF, regulon$tf),]
 test_that("getRegulon works correctly", {
     expect_identical(regulon, res)
 })

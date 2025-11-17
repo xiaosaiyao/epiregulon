@@ -33,7 +33,7 @@
 
   } else {
     kNum <- trunc(ncol(expMatrix)/cellNum)
-    klcusters <- clusterKmeans(t(as.matrix(reducedDim(sce, useDim))),k = kNum)$clusters
+    kclusters <- clusterKmeans(t(as.matrix(reducedDim(expMatrix, useDim))),k = kNum)$clusters
   }
 
 
@@ -41,11 +41,9 @@
 
   expMatrix <- aggregateAcrossCellsFast(expMatrix,
                                         clusters = kclusters,
-                                        fun_name="sum",
                                         assay.name = exp_assay)
   peakMatrix <- aggregateAcrossCellsFast(peakMatrix,
                                          clusters = kclusters,
-                                         fun_name="sum",
                                          assay.name = peak_assay)
 
   if (!is.null(clusters)) {
