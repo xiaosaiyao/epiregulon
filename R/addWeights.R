@@ -6,7 +6,7 @@
 #' peaks in the rows and cells in the columns
 #' @param exp_assay String specifying the name of the assay to be retrieved from the SingleCellExperiment object
 #' @param peak_assay String indicating the name of the assay in peakMatrix for chromatin accessibility
-#' @param method String specifying the method of weights calculation. Four options are available: `corr`,`MI`, `lmfit`,`wilcoxon` and `logFC`.
+#' @param method String specifying the method of weights calculation. Three options are available: `wilcoxon`, `corr`, and `MI`.
 #' @param clusters A vector corresponding to the cluster labels of the cells
 #' @param exp_cutoff A scalar indicating the minimum gene expression for transcription factor above which
 #' cell is considered as having expressed transcription factor.
@@ -114,7 +114,12 @@ addWeights <- function(regulon,
     clusters <- as.vector(clusters)
   }
 
-  .validate_regulon(regulon)
+  if(method=="wilcox" || tf_re.merge){
+      .validate_regulon(regulon)
+  }
+  else{
+      .validate_regulon(regulon, required_columns = c("target", "tf"))
+  }
 
   # pseudobulk
   if (aggregateCells && method != "wilcoxon") {
