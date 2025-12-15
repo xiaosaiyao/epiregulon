@@ -315,7 +315,6 @@ calculateScore <- function(expMatrix, tf_target_mat, clusters = NULL, score.comb
         for (cluster in sort(unique(clusters))) {
             expr_data <- expMatrix[colnames(tf_target_mat[[cluster]]),
                                    clusters == cluster, drop = FALSE]
-            score.combine[rownames(tf_target_mat[[cluster]]), clusters == cluster] <- tf_target_mat[[cluster]] %*% expr_data
             score.combine[rownames(tf_target_mat[[cluster]]), clusters == cluster] <- (tf_target_mat[[cluster]] %*% expr_data)[,]
         }
     }
@@ -341,7 +340,7 @@ normalizeByFrequency <- function(score.combine, freq, clusters = NULL) {
     if (is.null(clusters)) {
         freq <- setNames(as.numeric(freq), names(freq))
         if (is(score.combine, "CsparseMatrix")){
-            score.combine[names(freq), ]@x <- score.combine[names(freq),]@x/freq[score.combine[names(freq),]@i+1]
+            score.combine[names(freq),,drop=FALSE]@x <- score.combine[names(freq),,drop=FALSE]@x/freq[score.combine[names(freq),,drop=FALSE]@i+1]
         }
         else{
             score.combine[names(freq), ] <- score.combine[names(freq),,drop = FALSE]/freq
@@ -351,8 +350,8 @@ normalizeByFrequency <- function(score.combine, freq, clusters = NULL) {
         for (cluster in unique(clusters)) {
             freq_c <- freq[, cluster]
             # find corresponding frequency for each value in the the score.combine
-            freq_x <- freq_c[score.combine[rownames(freq),clusters == cluster]@i+1]
-            score.combine[rownames(freq),clusters == cluster]@x <- score.combine[rownames(freq), clusters == cluster]@x/freq_x
+            freq_x <- freq_c[score.combine[rownames(freq),clusters == cluster,drop=FALSE]@i+1]
+            score.combine[rownames(freq),clusters == cluster,drop=FALSE]@x <- score.combine[rownames(freq), clusters == cluster,drop=FALSE]@x/freq_x
         }
     }
     score.combine

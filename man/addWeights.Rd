@@ -35,7 +35,7 @@ peaks in the rows and cells in the columns}
 
 \item{peak_assay}{String indicating the name of the assay in peakMatrix for chromatin accessibility}
 
-\item{method}{String specifying the method of weights calculation. Four options are available: \code{corr},\code{MI}, \code{lmfit},\code{wilcoxon} and \code{logFC}.}
+\item{method}{String specifying the method of weights calculation. Three options are available: \code{wilcoxon}, \code{corr}, and \code{MI}.}
 
 \item{clusters}{A vector corresponding to the cluster labels of the cells}
 
