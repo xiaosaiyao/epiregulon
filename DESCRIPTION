@@ -29,7 +29,6 @@ Imports:
     scuttle,
     stats,
     utils,
-    scMultiome,
     GenomeInfoDb,
     GenomicRanges,
     AUCell,
