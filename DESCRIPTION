@@ -40,14 +40,14 @@ Imports:
     IRanges,
     beachmat
 Depends:
-    R (>= 4.4),
+    R,
     SingleCellExperiment
 Suggests: 
     knitr,
     rmarkdown,
     parallel,
     BiocStyle,
-    testthat (>= 3.0.0),
+    testthat,
     coin,
     scater
 LinkingTo: 
