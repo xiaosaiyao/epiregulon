@@ -302,7 +302,7 @@ addWeights <- function(regulon,
     )
     
     # average expression across pseudobulk clusters
-    expMatrix <- averages.exp$sums/averages.exp$counts
+    expMatrix <- t(t(averages.exp$sums)/averages.exp$counts)
 
     # remove genes whose expressions are NA for all pseudobulks
     expMatrix <- expMatrix[!Matrix::rowSums(is.na(expMatrix)) == ncol(expMatrix), ]
@@ -312,7 +312,7 @@ addWeights <- function(regulon,
                                                       factors = groupings)
 
       # average accessibility across pseudobulk clusters
-      peakMatrix <- averages.peak$sums/averages.peak$counts
+      peakMatrix <- t(t(averages.peak$sums)/averages.peak$counts)
 
     }
     message("computing weights...")

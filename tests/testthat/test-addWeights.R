@@ -148,7 +148,8 @@ averages <- scrapper::aggregateAcrossCells(
   factors = list(groupings)
 )
 
-expMatrix.av <- averages$sums/averages$counts
+
+expMatrix.av <- t(t(averages$sums)/averages$counts)
 
 regulon$weight <- NA
 for(i in seq_len(nrow(regulon))){
