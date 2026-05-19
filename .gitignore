@@ -10,3 +10,4 @@
 *.so
 R/sysdata.rda
 inst/doc
+.positai

@@ -1,6 +1,6 @@
 set.seed(1000)
 gene_sce <- scuttle::mockSCE()
-gene_sce <- scuttle::logNormCounts(gene_sce)
+gene_sce <- scrapper::normalizeRnaCounts.se(gene_sce)
 rownames(gene_sce) <- paste0('Gene_',1:2000)
 
 # create a mock regulon

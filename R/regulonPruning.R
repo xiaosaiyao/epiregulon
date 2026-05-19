@@ -69,7 +69,7 @@
 #' # create a mock SingleCellExperiment object for gene expMatrixession matrix
 #' set.seed(1000)
 #' gene_sce <- scuttle::mockSCE()
-#' gene_sce <- scuttle::logNormCounts(gene_sce)
+#' gene_sce <- scrapper::normalizeRnaCounts.se(gene_sce)
 #' rownames(gene_sce) <- paste0('Gene_',1:2000)
 #'
 #' # create a mock SingleCellExperiment object for peak matrix
@@ -556,7 +556,7 @@ chisqTest <- function(k, size, p) {
 #' # create a mock SingleCellExperiment object for gene expression matrix
 #' set.seed(1000)
 #' gene_sce <- scuttle::mockSCE()
-#' gene_sce <- scuttle::logNormCounts(gene_sce)
+#' gene_sce <- scrapper::normalizeRnaCounts.se(gene_sce)
 #' rownames(gene_sce) <- paste0('Gene_',1:2000)
 #'
 #' # create a mock regulon

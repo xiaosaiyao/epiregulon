@@ -143,13 +143,12 @@ expMatrix <- as(expMatrix, "sparseMatrix")
 
 groupings <- rep(paste0("C", 1:20), each = 25)
 
-averages.se <- scuttle::sumCountsAcrossCells(
+averages <- scrapper::aggregateAcrossCells(
   expMatrix,
-  ids = groupings,
-  average = TRUE,
+  factors = list(groupings)
 )
 
-expMatrix.av <- assays(averages.se)$average
+expMatrix.av <- averages$sums/averages$counts
 
 regulon$weight <- NA
 for(i in seq_len(nrow(regulon))){

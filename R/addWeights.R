@@ -54,7 +54,7 @@
 #' @examples
 #' # create a mock SingleCellExperiment object for gene expression matrix
 #' expMatrix <- scuttle::mockSCE()
-#' expMatrix <- scuttle::logNormCounts(expMatrix)
+#' expMatrix <- scrapper::normalizeRnaCounts.se(expMatrix)
 #' expMatrix$cluster <- sample(LETTERS[1:5], ncol(expMatrix), replace=TRUE)
 #'
 #' # create a mock SingleCellExperiment object for peak matrix
@@ -116,6 +116,12 @@ addWeights <- function(regulon,
 
   .validate_regulon(regulon)
 
+  # define groupings
+  groupings <- S4Vectors::DataFrame(cluster = clusters)
+  if (!is.null(block_factor)) {
+    groupings$block <- colData(expMatrix)[block_factor]
+  }
+  
   # pseudobulk
   if (aggregateCells && method != "wilcoxon") {
     message("Cell aggregation is possible only with 'wilcoxon' method.")
@@ -289,28 +295,24 @@ addWeights <- function(regulon,
     }
     message("calculating average expression across clusters...")
 
-    # define groupings
-    groupings <- S4Vectors::DataFrame(cluster = clusters)
-    if (!is.null(block_factor)) {
-      groupings$block <- colData(expMatrix)[block_factor]
-    }
-
     # compute average expression across clusters and batches
-    averages.se.exp <- scuttle::sumCountsAcrossCells(expMatrix, ids = groupings,
-                                                     average = TRUE, BPPARAM = BPPARAM)
-
+    averages.exp <- scrapper::aggregateAcrossCells(
+      expMatrix,
+      factors = groupings
+    )
+    
     # average expression across pseudobulk clusters
-    expMatrix <- assays(averages.se.exp)$average
+    expMatrix <- averages.exp$sums/averages.exp$counts
 
     # remove genes whose expressions are NA for all pseudobulks
     expMatrix <- expMatrix[!Matrix::rowSums(is.na(expMatrix)) == ncol(expMatrix), ]
 
     if (tf_re.merge) {
-      averages.se.peak <- scuttle::sumCountsAcrossCells(peakMatrix, ids = groupings,
-                                                        average = TRUE, BPPARAM = BPPARAM)
+      averages.peak <- scrapper::aggregateAcrossCells(peakMatrix,
+                                                      factors = groupings)
 
       # average accessibility across pseudobulk clusters
-      peakMatrix <- assays(averages.se.peak)$average
+      peakMatrix <- averages.peak$sums/averages.peak$counts
 
     }
     message("computing weights...")
