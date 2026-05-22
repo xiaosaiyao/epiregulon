@@ -8,5 +8,5 @@ person(c("M.","Ryan"),"Corces"), person("Robert","Yauch"), person("Shiqi","Xie")
   volume = "7118",
   year     = "2025",
   doi      = "https://doi.org/10.1038/s41467-025-62252-5",
-  url.     = "https://www.nature.com/articles/s41467-025-62252-5"
+  url     = "https://www.nature.com/articles/s41467-025-62252-5"
 )

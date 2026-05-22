@@ -36,6 +36,52 @@ test_that("addWeights works correctly using Wilcoxon test with moving cutoff", {
   expect_identical(as.vector(regulon.w$weight[,1]), regulon$weight, tolerance = 1e-8)
 })
 
+# cell aggregation
+
+kclusters <- clusterKmeans(as.matrix(expMatrix),k = 5)$clusters
+res <- aggregateAcrossCells(expMatrix, factors = list(kclusters))
+expMatrix_agg <- t(t(res$sums)/res$counts)
+colnames(expMatrix_agg) <- res$combinations[,1]
+
+res <- aggregateAcrossCells(peakMatrix, factors = list(kclusters))
+peakMatrix_agg <- t(t(res$sums)/res$counts)
+# mark cells with tf expression above cutoff
+tfMatrix_agg <- expMatrix_agg[regulon$tf,,drop = FALSE] > 1
+targetMatrix_agg <- expMatrix_agg[regulon$target,]
+peakMatrix_agg[peakMatrix_agg>0] <- 1
+
+# label cells with both tf being expressed and re being open
+tf_re_agg <- tfMatrix_agg * peakMatrix_agg
+weights_agg <- numeric(20)
+for(i in 1:20){
+    if(length(unique(tf_re_agg[i,]))==1){
+        weights_agg[i] <- 0
+    }
+    else{
+        weights_agg[i] <- coin::wilcox_test(targetMatrix_agg[i,]~factor(tf_re_agg[i,], levels = c(1,0)))@statistic@teststatistic
+    }
+}
+
+regulon_w_ref <- regulon
+
+# transform z-scores to effect sizes
+regulon_w_ref$weight <- weights_agg/sqrt(5)
+
+expMatrix.sce <- SingleCellExperiment(list(logcounts = expMatrix))
+reducedDims(expMatrix.sce) <- list(gene_expr=Matrix::t(expMatrix))
+test_that("addWeights works correctly with cell aggregation", {
+    regulon.w_agg <- addWeights(regulon = regulon_w_ref,
+                            expMatrix = expMatrix.sce,
+                            method = "wilcoxon",
+                            peakMatrix = SingleCellExperiment(assays= list(PeakMatrix=peakMatrix)),
+                            useDim = "gene_expr",
+                            min_targets = 0,
+                            exp_cutoff = 1,
+                            aggregateCells = TRUE,
+                            cellNum = 4)
+    expect_identical(as.vector(regulon.w_agg$weight[,1]), regulon_w_ref$weight, tolerance = 1e-8)
+})
+
 # adding clusters
 
 clusters <- c(rep("A", 10), rep("B", 10))
