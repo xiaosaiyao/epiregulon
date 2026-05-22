@@ -90,7 +90,7 @@ the gene expression and chromatin accessibility.
 \examples{
 # create a mock SingleCellExperiment object for gene expression matrix
 expMatrix <- scuttle::mockSCE()
-expMatrix <- scuttle::logNormCounts(expMatrix)
+expMatrix <- scrapper::normalizeRnaCounts.se(expMatrix)
 expMatrix$cluster <- sample(LETTERS[1:5], ncol(expMatrix), replace=TRUE)
 
 # create a mock SingleCellExperiment object for peak matrix

@@ -21,6 +21,7 @@ Useful links:
 
 Authors:
 \itemize{
+  \item Xiaosai Yao \email{xiaosai.yao@gmail.com} (\href{https://orcid.org/0000-0001-9729-0726}{ORCID})
   \item Tomasz Włodarczyk \email{tomwlo@gmail.com} (\href{https://orcid.org/0000-0003-1554-9699}{ORCID})
   \item Aaron Lun \email{infinite.monkeys.with.keyboards@gmail.com}
   \item Shang-Yang Chen \email{sychen9584@gmail.com}

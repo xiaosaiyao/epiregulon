@@ -122,7 +122,7 @@ aggregateAcrossCellsFast <- function(sce,
                            clusters=clusters, 
                            assay.name=NULL, 
                            fun_name=fun_name, 
-                           num.threads=1, 
+                           num.threads=num.threads, 
                            aggregateColData= FALSE)
     names(altExps_list) <- altExpNames(sce)
   }
