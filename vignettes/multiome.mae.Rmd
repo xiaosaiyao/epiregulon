@@ -263,7 +263,7 @@ regulon.w.motif
 ```
 ## Annotate with log fold changes (Optional)
 
-It is sometimes helpful to filter the regulons based on gene expression changes between two conditions. The `addLogFC` function is a wrapper around `scran::findMarkers` and adds extra columns of log changes to the regulon DataFrame. The users can specify the reference condition in `logFC_ref` and conditions for comparison in
+It is sometimes helpful to filter the regulons based on gene expression changes between two conditions. The `addLogFC` function is adapted from `scran::findMarkers` and adds extra columns of log changes to the regulon DataFrame. The users can specify the reference condition in `logFC_ref` and conditions for comparison in
 `logFC_condition`. If these are not provided, log fold changes are calculated for every condition in the cluster labels against the rest of the conditions.
  
 ```{r add logFC}

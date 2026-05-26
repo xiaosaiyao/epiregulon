@@ -8,11 +8,13 @@ addLogFC(
   expMatrix,
   clusters,
   regulon,
+  direction = c("any", "up", "down"),
   pval.type = c("any", "some", "all"),
   sig_type = c("FDR", "p.value"),
   logFC_condition = NULL,
   logFC_ref = NULL,
-  ...
+  min.prop = NULL,
+  assay.type = "logcounts"
 )
 }
 \arguments{
@@ -25,6 +27,8 @@ genes in the rows and cells in the columns. Gene expression should be in logcoun
 representing transcription factors, \code{idxATAC} corresponding to the index in the peakMatrix and
 \code{target} column representing target genes}
 
+\item{direction}{tring specifying the direction of log-fold changes to be considered in the alternative hypothesis.}
+
 \item{pval.type}{String specifying how p-values are to be combined across pairwise comparisons for a given group/cluster.}
 
 \item{sig_type}{String specifying whether to use "FDR" or "p.value" for sig_cutoff}
@@ -34,13 +38,25 @@ representing transcription factors, \code{idxATAC} corresponding to the index in
 \item{logFC_ref}{A scalar indicating the reference sample used to compute logFC. Default value is
 \code{rest} which is an average of all pairwise comparisons. Users can also specify a reference sample, for example, \code{DMSO}.}
 
-\item{...}{additional parameters for scran::findMarkers}
+\item{min.prop}{Numeric scalar specifying the minimum proportion of significant comparisons per gene.
+Defaults to 0.5 when pval.type="some", otherwise defaults to zero.}
+
+\item{assay.type}{A string specifying which assay values to use, usually "logcounts".}
 }
 \value{
 A DataFrame of regulons with additional columns of logFC and significance
 }
 \description{
 Add log fold changes of gene expression to regulons
+}
+\details{
+The choice of \code{pval.type} determines whether the highly ranked genes are those that are DE between the current group and:
+\itemize{
+\item any other group (\code{"any"})
+\item all other groups (\code{"all"})
+\item some other groups (\code{"some"})
+}
+Adapted from the deprecated scran::findMarkers function
 }
 \examples{
 # create a mock SingleCellExperiment object for gene expression matrix
@@ -56,7 +72,8 @@ regulon <- data.frame(tf = c(rep('Gene_1',10), rep('Gene_2',10)),
                                 paste0('Gene_',sample(3:2000,10))))
 
 # filter regulon
-pruned.regulon <- addLogFC(expMatrix = gene_sce, clusters = gene_sce$Treatment,
+pruned.regulon <- addLogFC(expMatrix = gene_sce, 
+                           clusters = gene_sce$Treatment,
                            regulon = regulon,
                            sig_type = "p.value")
 

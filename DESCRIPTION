@@ -1,7 +1,7 @@
 Package: epiregulon
 Title: Gene regulatory network inference from single cell epigenomic data
-Version: 2.3.1
-Date: 2026-05-18
+Version: 2.3.2
+Date: 2026-05-25
 Authors@R: 
     c(person(given = "Xiaosai", family = "Yao", role = c("aut", "cre"), email = "xiaosai.yao@gmail.com", comment = c(ORCID = "0000-0001-9729-0726")),
     person(given = "Tomasz", family = "Włodarczyk", role = c("aut"), email = "tomwlo@gmail.com", comment = c(ORCID = "0000-0003-1554-9699")),
@@ -24,8 +24,6 @@ Imports:
     entropy,
     lifecycle,
     methods,
-    scran,
-    scuttle,
     stats,
     utils,
     AnnotationHub,
@@ -36,7 +34,9 @@ Imports:
     BSgenome.Mmusculus.UCSC.mm10,
     motifmatchr,
     IRanges,
-    scrapper
+    scrapper,
+    metapod,
+    matrixStats
 Depends:
     R (>= 4.5.0),
     SingleCellExperiment
@@ -48,7 +48,9 @@ Suggests:
     testthat (>= 3.0.0),
     coin,
     scater,
-    scMultiome
+    scMultiome,
+    scran,
+    scuttle
 LinkingTo: 
     Rcpp
 VignetteBuilder: knitr
@@ -56,3 +58,4 @@ URL: https://github.com/xiaosaiyao/epiregulon/
 biocViews: SingleCell, GeneRegulation,NetworkInference,Network, GeneExpression, Transcription, GeneTarget
 Config/testthat/edition: 3
 BugReports: https://github.com/xiaosaiyao/epiregulon/issues
+Config/roxygen2/version: 8.0.0
