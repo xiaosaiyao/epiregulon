@@ -99,10 +99,13 @@ calculateActivity <- function(expMatrix = NULL,
                               clusters = NULL,
                               FUN = c("mean", "sum")) {
 
-    if (lifecycle::is_present(method)) {
-        warning("Argument 'method' to calculateActivity was deprecated as of epiregulon version 2.0.0")
-    }
+    # if (lifecycle::is_present(method)) {
+    #     warning("Argument 'method' to calculateActivity was deprecated as of epiregulon version 2.0.0")
+    # }
 
+    if (!missing(method)) {
+      .Deprecated(msg = "Argument 'method' to calculateActivity was deprecated as of epiregulon version 2.0.0")
+    }
     .validate_input_sce(SCE=expMatrix, assay_name=exp_assay, unique_features = TRUE)
 
     if(!is.null(clusters)) {

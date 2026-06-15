@@ -44,12 +44,12 @@ for (g1 in my.groups) {
   # compile pvalues from different groups 
   cur.p.all[[g1]] <- as.data.frame(cur.p.all[[g1]])
   rownames(cur.p.all[[g1]]) <- gene_names 
-  colnames(cur.p.all[[g1]]) <- paste0("p.value.", colnames(cur.p.all[[g1]]))
+  colnames(cur.p.all[[g1]]) <- paste0("log.p.value.", colnames(cur.p.all[[g1]]))
   
   # compile FDR values from different groups
   cur.q.all[[g1]] <- as.data.frame(cur.q.all[[g1]])
   rownames(cur.q.all[[g1]]) <- gene_names 
-  colnames(cur.q.all[[g1]]) <- paste0("FDR.", colnames(cur.q.all[[g1]]))
+  colnames(cur.q.all[[g1]]) <- paste0("log.FDR.", colnames(cur.q.all[[g1]]))
   
 }
 
@@ -57,17 +57,17 @@ for (g1 in my.groups) {
 compiled <- pairwiseTTestsSimple(mat, groups, direction="up")
 
 test_that("pvalue in pairwiseTTestsSimple works correctly", {
-  expect_equal(compiled$p.value, expected = cur.p.all)
+  expect_equal(compiled$log.p.value, expected = cur.p.all)
 })
 
 test_that("FDR in pairwiseTTestsSimple works correctly", {
-  expect_equal(compiled$FDR, expected = cur.q.all)
+  expect_equal(compiled$log.FDR, expected = cur.q.all)
 })
 
 
 # calculate combined pvalues and FDR using combineMarkersSimple
 combined <- combineMarkersSimple(compiled, groups, pval.type, min.prop)
-combined.df <- as.data.frame(lapply(combined, function(x) {x[,"p.value"]}))
+combined.df <- as.data.frame(lapply(combined, function(x) {x[,"log.p.value"]}))
 ref.p.df <- as.data.frame(ref.p)
 combined.df <- combined.df[, colnames(ref.p.df)]
 
@@ -76,7 +76,7 @@ test_that("pvalue in combineMarkersSimple works correctly", {
 })
 
 
-combined.FDR.df <- as.data.frame(lapply(combined, function(x) {x[,"FDR"]}))
+combined.FDR.df <- as.data.frame(lapply(combined, function(x) {x[,"log.FDR"]}))
 ref.q.df <- as.data.frame(ref.q)
 combined.FDR.df <- combined.FDR.df[, colnames(ref.q.df)]
 
@@ -92,16 +92,16 @@ scran_output <- scran::findMarkers(x=sce, groups=sce$Treatment, test.type="t",
                                    pval.type="any", full.stats=TRUE, sorted=FALSE, log.p=TRUE, direction="any")
 
 
-scran_pval_A <- data.frame(p.value.B=scran_output$A$stats.B$log.p.value, 
-                           p.value.C=scran_output$A$stats.C$log.p.value,
-                           p.value.D=scran_output$A$stats.D$log.p.value,
-                           p.value.E=scran_output$A$stats.E$log.p.value)
+scran_pval_A <- data.frame(log.p.value.B=scran_output$A$stats.B$log.p.value, 
+                           log.p.value.C=scran_output$A$stats.C$log.p.value,
+                           log.p.value.D=scran_output$A$stats.D$log.p.value,
+                           log.p.value.E=scran_output$A$stats.E$log.p.value)
 rownames(scran_pval_A) <- gene_names
 
-scran_FDR_A <- data.frame(FDR.B=scran_output$A$stats.B$log.FDR, 
-                          FDR.C=scran_output$A$stats.C$log.FDR,
-                          FDR.D=scran_output$A$stats.D$log.FDR,
-                          FDR.E=scran_output$A$stats.E$log.FDR)
+scran_FDR_A <- data.frame(log.FDR.B=scran_output$A$stats.B$log.FDR, 
+                          log.FDR.C=scran_output$A$stats.C$log.FDR,
+                          log.FDR.D=scran_output$A$stats.D$log.FDR,
+                          log.FDR.E=scran_output$A$stats.E$log.FDR)
 rownames(scran_FDR_A) <- gene_names
 
 scran_logFC_A <- data.frame(logFC.B=scran_output$A$stats.B$logFC, 
@@ -113,11 +113,11 @@ rownames(scran_logFC_A) <- gene_names
 
 
 test_that("findMarkersSimple gives the same pvalues as scran::findMarkers", {
-  expect_equal(simple_output$p.value$A, expected=scran_pval_A )
+  expect_equal(simple_output$log.p.value$A, expected=scran_pval_A )
 })
 
 test_that("findMarkersSimple gives the same FDR as scran::findMarkers", {
-  expect_equal(simple_output$FDR$A, expected=scran_FDR_A )
+  expect_equal(simple_output$log.FDR$A, expected=scran_FDR_A )
 })
 
 test_that("findMarkersSimple gives the same logFC as scran::findMarkers", {
@@ -133,11 +133,11 @@ scran_output2 <- scran::findMarkers(x=sce, groups=sce$Treatment, test.type="t",
 
 
 test_that("findMarkersSimple in combined mode gives the same pvalues as scran::findMarkers", {
-  expect_equal(simple_output2$A$p.value, expected=scran_output2$A$log.p.value)
+  expect_equal(simple_output2$A$log.p.value, expected=scran_output2$A$log.p.value)
 })
 
 test_that("findMarkersSimple in combined mode gives the same FDR as scran::findMarkers", {
-  expect_equal(simple_output2$A$FDR, expected=scran_output2$A$log.FDR)
+  expect_equal(simple_output2$A$log.FDR, expected=scran_output2$A$log.FDR)
 })
 
 test_that("findMarkersSimple in combined mode gives the same logFC as scran::findMarkers", {
@@ -161,20 +161,27 @@ regulon <- data.frame(tf = c(rep('Gene_1',10), rep('Gene_2',10)),
 pruned.regulon <- addLogFC(expMatrix = gene_sce, 
                            clusters = gene_sce$Treatment,
                            regulon = regulon,
-                           sig_type = "p.value", 
+                           sig_type = "log.p.value", 
                            direction = "any",
                            pval.type = "any")
 
 # test logFC of all conditions 
-diff_exp <- scran::findMarkers(x=gene_sce, groups=gene_sce$Treatment, test.type = "t", pval.type = "any", full.stats = TRUE, sorted=FALSE)
+diff_exp <- scran::findMarkers(x=gene_sce, 
+                               groups=gene_sce$Treatment, 
+                               test.type = "t", 
+                               pval.type = "any", 
+                               full.stats = TRUE, 
+                               sorted=FALSE,
+                               log.p=TRUE)
 diff_exp_df <- data.frame(matrix(data=NA, nrow=2000, ncol=4))
-colnames(diff_exp_df) <- c("treat1.vs.rest.p.value", "treat1.vs.rest.logFC", "treat2.vs.rest.p.value", "treat2.vs.rest.logFC")
+colnames(diff_exp_df) <- c("treat1.vs.rest.log.p.value", "treat1.vs.rest.logFC", 
+                           "treat2.vs.rest.log.p.value", "treat2.vs.rest.logFC")
 rownames(diff_exp_df) <- paste0("Gene_",1:2000)
 
-diff_exp_df$treat1.vs.rest.p.value <- diff_exp$treat1$p.value
+diff_exp_df$treat1.vs.rest.log.p.value <- diff_exp$treat1$log.p.value
 diff_exp_df$treat1.vs.rest.logFC <- diff_exp$treat1$summary.stats
 
-diff_exp_df$treat2.vs.rest.p.value <- diff_exp$treat2$p.value
+diff_exp_df$treat2.vs.rest.log.p.value <- diff_exp$treat2$log.p.value
 diff_exp_df$treat2.vs.rest.logFC <- diff_exp$treat2$summary.stats
 
 rownames(regulon) <- regulon$target
@@ -190,12 +197,12 @@ test_that("addLogFC works correctly", {
 pruned.regulon2 <- addLogFC(expMatrix = gene_sce, 
                             clusters = gene_sce$Treatment,
                             regulon = regulon,
-                            sig_type = "p.value", 
+                            sig_type = "log.p.value", 
                             pval.type = "any", 
                             logFC_condition = "treat1",
                             logFC_ref = "treat2")
 
-combined_diff_exp_df2 <- combined_diff_exp_df[,c("tf", "idxATAC", "target", "treat1.vs.rest.p.value", "treat1.vs.rest.logFC")]
+combined_diff_exp_df2 <- combined_diff_exp_df[,c("tf", "idxATAC", "target", "treat1.vs.rest.log.p.value", "treat1.vs.rest.logFC")]
 colnames(combined_diff_exp_df2) <- colnames(pruned.regulon2)
 
 test_that("addLogFC works correctly", {

@@ -22,7 +22,6 @@ Imports:
     SummarizedExperiment,
     checkmate,
     entropy,
-    lifecycle,
     methods,
     stats,
     utils,
@@ -47,7 +46,6 @@ Suggests:
     BiocStyle,
     testthat (>= 3.0.0),
     coin,
-    scater,
     scMultiome,
     scran,
     scuttle

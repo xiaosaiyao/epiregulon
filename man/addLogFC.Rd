@@ -10,7 +10,7 @@ addLogFC(
   regulon,
   direction = c("any", "up", "down"),
   pval.type = c("any", "some", "all"),
-  sig_type = c("FDR", "p.value"),
+  sig_type = c("log.FDR", "log.p.value"),
   logFC_condition = NULL,
   logFC_ref = NULL,
   min.prop = NULL,
@@ -75,7 +75,7 @@ regulon <- data.frame(tf = c(rep('Gene_1',10), rep('Gene_2',10)),
 pruned.regulon <- addLogFC(expMatrix = gene_sce, 
                            clusters = gene_sce$Treatment,
                            regulon = regulon,
-                           sig_type = "p.value")
+                           sig_type = "log.p.value")
 
 }
 \author{

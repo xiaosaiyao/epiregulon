@@ -98,10 +98,10 @@ calculateP2G <- function(peakMatrix = NULL,
                          verbose = TRUE
 ) {
 
-  if (lifecycle::is_present(useDim)) {
-        warning("Argument 'useDim' to calculateP2G was deprecated as of epiregulon version 2.0.0")
-   }
-
+  if (!missing(useDim)) {
+    .Deprecated(msg = "Argument 'useDim' to calculateP2G was deprecated as of epiregulon version 2.0.0")
+  }
+  
   if(verbose){
     writeLines("Using epiregulon to compute peak to gene links...")
   }

@@ -92,7 +92,7 @@
 #' regulon = regulon, clusters = gene_sce$Treatment, regulon_cutoff = 0.5)
 #'
 #' # add weights with cell aggregation
-#' gene_sce <- scater::runPCA(gene_sce)
+#' gene_sce <- scrapper::runPca.se(expMatrix, features=NULL)
 #' pruned.regulon <- pruneRegulon(expMatrix = gene_sce, exp_assay = 'logcounts',
 #' peakMatrix = peak_sce, peak_assay = 'counts', regulon = regulon,
 #' clusters = gene_sce$Treatment, regulon_cutoff = 0.5,
@@ -580,7 +580,7 @@ chisqTest <- function(k, size, p) {
 #' pruned.regulon <- addLogFC(expMatrix = gene_sce, 
 #'                            clusters = gene_sce$Treatment,
 #'                            regulon = regulon,
-#'                            sig_type = "p.value")
+#'                            sig_type = "log.p.value")
 #'
 #' @author Xiaosai Yao
 
@@ -589,7 +589,7 @@ addLogFC <- function(expMatrix,
                      regulon,
                      direction=c("any", "up", "down"),
                      pval.type=c("any", "some", "all"),
-                     sig_type=c("FDR","p.value"),
+                     sig_type=c("log.FDR","log.p.value"),
                      logFC_condition=NULL,
                      logFC_ref=NULL,
                      min.prop=NULL,
@@ -637,8 +637,7 @@ addLogFC <- function(expMatrix,
       de_genes <- as.data.frame(de_list[[sample]])
       de_genes <- de_genes[,c(sig_type, "logFC")]
       combined_name <- paste0(sample,".vs.rest")
-      colnames(de_genes) <- c(paste0(combined_name, ".",sig_type), paste0(combined_name, ".logFC"))
-      de_genes[,1] <- exp(de_genes[,1])
+      colnames(de_genes) <- c(paste0(combined_name, ".", sig_type), paste0(combined_name, ".logFC"))
       de_genes
     })
 
@@ -658,7 +657,6 @@ addLogFC <- function(expMatrix,
       de_genes <- cbind(stats,logFC)
       combined_name <- paste0(sample,".vs.",logFC_ref)
       colnames(de_genes) <- c(paste0(combined_name, ".",sig_type), paste0(combined_name, ".logFC"))
-      de_genes[,1] <- exp(de_genes[,1])
       de_genes
     })
 

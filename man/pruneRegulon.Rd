@@ -129,7 +129,7 @@ exp_assay = 'logcounts', peakMatrix = peak_sce, peak_assay = 'counts',
 regulon = regulon, clusters = gene_sce$Treatment, regulon_cutoff = 0.5)
 
 # add weights with cell aggregation
-gene_sce <- scater::runPCA(gene_sce)
+gene_sce <- scrapper::runPca.se(expMatrix, features=NULL)
 pruned.regulon <- pruneRegulon(expMatrix = gene_sce, exp_assay = 'logcounts',
 peakMatrix = peak_sce, peak_assay = 'counts', regulon = regulon,
 clusters = gene_sce$Treatment, regulon_cutoff = 0.5,

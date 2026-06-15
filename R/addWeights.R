@@ -68,14 +68,14 @@
 #'
 #' # add weights to regulon
 #' regulon.w <- addWeights(regulon=regulon, expMatrix=expMatrix, exp_assay='logcounts',
-#' peakMatrix=peakMatrix, peak_assay='counts', clusters=expMatrix$cluster,
-#' min_targets=5, method='wilcox')
+#'     peakMatrix=peakMatrix, peak_assay='counts', clusters=expMatrix$cluster,
+#'     min_targets=5, method='wilcox')
 #'
 #' # add weights with cell aggregation
-#' expMatrix <- scater::runPCA(expMatrix)
+#' expMatrix <- scrapper::runPca.se(expMatrix, features=NULL)
 #' regulon.w <- addWeights(regulon=regulon, expMatrix=expMatrix, exp_assay='logcounts',
-#' peakMatrix=peakMatrix, peak_assay='counts', clusters=expMatrix$cluster,
-#' min_targets=5, method='wilcox', aggregateCells=TRUE, cellNum=3, useDim = 'PCA')
+#'     peakMatrix=peakMatrix, peak_assay='counts', clusters=expMatrix$cluster,
+#'     min_targets=5, method='wilcox', aggregateCells=TRUE, cellNum=3, useDim = 'PCA')
 #'
 #' @author Xiaosai Yao, Shang-yang Chen, Tomasz Wlodarczyk
 
@@ -100,7 +100,9 @@ addWeights <- function(regulon,
   method <- match.arg(method)
   message("adding weights using ", method, "...")
 
-  checkmate::assert_logical(tf_re.merge, len = 1)
+  if (!is.logical(tf_re.merge)) {
+    stop("tf_re.merge must be a logical")
+  }
   .validate_input_sce(SCE=expMatrix, assay_name=exp_assay, unique_features = TRUE)
   if(tf_re.merge){
     .validate_input_sce(SCE=peakMatrix, assay_name=peak_assay)
