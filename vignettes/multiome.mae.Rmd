@@ -89,16 +89,6 @@ reducedDimMatrix <- reducedDim(mae[['TileMatrix500']], "LSI_ATAC")
 reducedDim(GeneExpressionMatrix, "UMAP_Combined") <- 
   reducedDim(mae[['TileMatrix500']], "UMAP_Combined")
 ```
-Visualize singleCellExperiment by UMAP
-
-```{r}
-
-scater::plotReducedDim(GeneExpressionMatrix, 
-                       dimred = "UMAP_Combined", 
-                       text_by = "Clusters", 
-                       colour_by = "Clusters")
-
-```
 
 # Quick start
 
