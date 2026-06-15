@@ -15,12 +15,12 @@ colData <- data.frame(colData)
 colData$cluster <- paste0("celltype", sample(1:3, ncell, replace=TRUE))
 colData$batch[colData$cluster %in% c("celltype1", "celltype2")] <- 1
 colData$batch[colData$cluster %in% c("celltype3")] <- 2
-sce <- SingleCellExperiment(list(counts=counts), colData = colData)
+sce <- SingleCellExperiment(list(counts=counts), colData=colData)
 
-sce_bulk <- aggregateAcrossCellsFast(sce, clusters = colData$cluster, fun_name = "sum", aggregateColData = TRUE)
+sce_bulk <- aggregateAcrossCellsFast(sce, clusters=colData$cluster, fun_name="sum", aggregateColData=TRUE)
 
 # check counts
-aggregated_counts <- matrix(data=NA, nrow=ngene, ncol = length(unique(colData$cluster)))
+aggregated_counts <- matrix(data=NA, nrow=ngene, ncol=length(unique(colData$cluster)))
 rownames(aggregated_counts) <- paste0("gene",1:ngene)
 colnames(aggregated_counts) <- unique(colData$cluster)
 for (cluster in unique(colData$cluster)){
@@ -33,7 +33,7 @@ test_that("count matrix of aggregateAcrossCellsFast works ", {
 })
 
 # test colData
-colData_aggregated <- matrix(data=NA, nrow = length(unique(colData$cluster)), ncol= ncolData+2)
+colData_aggregated <- matrix(data=NA, nrow=length(unique(colData$cluster)), ncol= ncolData+2)
 rownames(colData_aggregated) <- unique(colData$cluster) 
 colnames(colData_aggregated) <- c("idx", "ncells", "cluster","batch")
 colData_aggregated <- DataFrame(colData_aggregated)

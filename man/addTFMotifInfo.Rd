@@ -39,13 +39,13 @@ Here, we demonstrate how to annotate peaks with cisbp motif database
 \if{html}{\out{<div class="sourceCode">}}\preformatted{library(motifmatchr)
 library(chromVARmotifs)
 data("human_pwms_v1")
-peaks <- GRanges(seqnames = c("chr1","chr2","chr2"),
-                               ranges = IRanges(start = c(76585873,42772928, 100183786),
-                                                         width = 500))
+peaks <- GRanges(seqnames=c("chr1","chr2","chr2"),
+                               ranges=IRanges(start=c(76585873,42772928, 100183786),
+                                                         width=500))
 eh <- AnnotationHub::query(ExperimentHub::ExperimentHub(),
-pattern = c("scMultiome", "TF motifs", "human"))
+pattern=c("scMultiome", "TF motifs", "human"))
 pwms <- readRDS(eh[[eh$ah_id]]))
-grl <- matchMotifs(pwms, peaks, genome = "hg38", out = "positions")
+grl <- matchMotifs(pwms, peaks, genome="hg38", out="positions")
 retain only TF symbols. TF symbols need to be consistent with gene names in regulon
 names(grl) <- sapply(strsplit(names(grl), "_"), "[",3)
 }\if{html}{\out{</div>}}
@@ -53,28 +53,28 @@ names(grl) <- sapply(strsplit(names(grl), "_"), "[",3)
 \examples{
 set.seed(1)
 # create a mock peak-to-gene matrix
-p2g <- data.frame(idxATAC = c(rep(1,5), rep(2,5)), Chrom = 'chr1', idxRNA = 1:10,
-Gene = paste0('Gene_',1:10),Correlation = runif(10, 0,1))
+p2g <- data.frame(idxATAC=c(rep(1,5), rep(2,5)), Chrom='chr1', idxRNA=1:10,
+Gene=paste0('Gene_',1:10),Correlation=runif(10, 0,1))
 
 # create mock a GRanges list of TF binding sites
-grl <- GRangesList('TF1' = GRanges(seqnames = 'chr1',
-ranges = IRanges(start = c(50,1050), width = 100)),
-'TF2' = GRanges(seqnames = 'chr1',
-ranges = IRanges(start = c(1050), width = 100))
+grl <- GRangesList('TF1'=GRanges(seqnames='chr1',
+ranges=IRanges(start=c(50,1050), width=100)),
+'TF2'=GRanges(seqnames='chr1',
+ranges=IRanges(start=c(1050), width=100))
 )
 
 # create a mock SingleCellExperiment object for peak matrix
-peak_gr <- GRanges(seqnames = 'chr1',
-             ranges = IRanges(start = seq(from = 1, to = 10000, by = 1000),
-             width = 100))
-peak_counts <- matrix(sample(x = 0:4, size = 100*length(peak_gr), replace = TRUE),
-nrow = length(peak_gr), ncol = 100)
-peak_sce <- SingleCellExperiment(list(counts = peak_counts))
+peak_gr <- GRanges(seqnames='chr1',
+             ranges=IRanges(start=seq(from=1, to=10000, by=1000),
+             width=100))
+peak_counts <- matrix(sample(x=0:4, size=100*length(peak_gr), replace=TRUE),
+nrow=length(peak_gr), ncol=100)
+peak_sce <- SingleCellExperiment(list(counts=peak_counts))
 rowRanges(peak_sce) <- peak_gr
 rownames(peak_sce) <- paste0('peak',1:10)
 
 # create overlaps between p2g matrix, TF binding sites and peak matrix
-overlap <- addTFMotifInfo(p2g, grl, peakMatrix = peak_sce)
+overlap <- addTFMotifInfo(p2g, grl, peakMatrix=peak_sce)
 utils::head(overlap)
 }
 \author{

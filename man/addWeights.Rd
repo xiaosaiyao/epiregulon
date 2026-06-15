@@ -99,8 +99,7 @@ rownames(peakMatrix) <- 1:2000
 
 # create a mock regulon
 regulon <- S4Vectors::DataFrame(tf=c(rep('Gene_0001',5), rep('Gene_0002',10)),
-                      idxATAC=1:15,
-                      target=c(paste0('Gene_000',2:6), paste0('Gene_00',11:20)))
+    idxATAC=1:15, target=c(paste0('Gene_000',2:6), paste0('Gene_00',11:20)))
 
 # add weights to regulon
 regulon.w <- addWeights(regulon=regulon, expMatrix=expMatrix, exp_assay='logcounts',
@@ -111,7 +110,7 @@ regulon.w <- addWeights(regulon=regulon, expMatrix=expMatrix, exp_assay='logcoun
 expMatrix <- scrapper::runPca.se(expMatrix, features=NULL)
 regulon.w <- addWeights(regulon=regulon, expMatrix=expMatrix, exp_assay='logcounts',
     peakMatrix=peakMatrix, peak_assay='counts', clusters=expMatrix$cluster,
-    min_targets=5, method='wilcox', aggregateCells=TRUE, cellNum=3, useDim = 'PCA')
+    min_targets=5, method='wilcox', aggregateCells=TRUE, cellNum=3, useDim='PCA')
 
 }
 \author{

@@ -110,30 +110,30 @@ gene_sce <- scrapper::normalizeRnaCounts.se(gene_sce)
 rownames(gene_sce) <- paste0('Gene_',1:2000)
 
 # create a mock SingleCellExperiment object for peak matrix
-peak_gr <- GRanges(seqnames = 'chr1',
-                  ranges = IRanges(start = seq(from = 1, to = 10000, by = 100), width = 100))
-peak_counts <- matrix(sample(x = 0:4, size = ncol(gene_sce)*length(peak_gr), replace = TRUE),
-                     nrow = length(peak_gr), ncol=ncol(gene_sce))
-peak_sce <- SingleCellExperiment(list(counts = peak_counts), colData = colData(gene_sce))
-rownames(peak_sce) <- paste0('Peak_',1:100)
+peak_gr <- GRanges(seqnames='chr1',
+    ranges=IRanges(start=seq(from=1, to=10000, by=100), width=100))
+peak_counts <- matrix(sample(x=0:4, size=ncol(gene_sce)*length(peak_gr), replace=TRUE),
+    nrow=length(peak_gr), ncol=ncol(gene_sce))
+peak_sce <- SingleCellExperiment(list(counts=peak_counts), colData=colData(gene_sce))
+    rownames(peak_sce) <- paste0('Peak_',1:100)
 
 # create a mock regulon
-regulon <- data.frame(tf = c(rep('Gene_1',10), rep('Gene_2',10)),
-                     idxATAC = sample(1:100, 20),
-                     target = c(paste0('Gene_', sample(3:2000,10)),
-                                paste0('Gene_',sample(3:2000,10))))
+regulon <- data.frame(tf=c(rep('Gene_1',10), rep('Gene_2',10)),
+    idxATAC=sample(1:100, 20),
+    target=c(paste0('Gene_', sample(3:2000,10)),
+    paste0('Gene_',sample(3:2000,10))))
 
 # prune regulon
-pruned.regulon <- pruneRegulon(expMatrix = gene_sce,
-exp_assay = 'logcounts', peakMatrix = peak_sce, peak_assay = 'counts',
-regulon = regulon, clusters = gene_sce$Treatment, regulon_cutoff = 0.5)
+pruned.regulon <- pruneRegulon(expMatrix=gene_sce,
+    exp_assay='logcounts', peakMatrix=peak_sce, peak_assay='counts',
+    regulon=regulon, clusters=gene_sce$Treatment, regulon_cutoff=0.5)
 
 # add weights with cell aggregation
-gene_sce <- scrapper::runPca.se(expMatrix, features=NULL)
-pruned.regulon <- pruneRegulon(expMatrix = gene_sce, exp_assay = 'logcounts',
-peakMatrix = peak_sce, peak_assay = 'counts', regulon = regulon,
-clusters = gene_sce$Treatment, regulon_cutoff = 0.5,
-aggregateCells=TRUE, cellNum=3, useDim = 'PCA')
+gene_sce <- scrapper::runPca.se(gene_sce, features=NULL)
+pruned.regulon <- pruneRegulon(expMatrix=gene_sce, exp_assay='logcounts',
+    peakMatrix=peak_sce, peak_assay='counts', regulon=regulon,
+    clusters=gene_sce$Treatment, regulon_cutoff=0.5,
+    aggregateCells=TRUE, cellNum=3, useDim='PCA')
 
 }
 \author{

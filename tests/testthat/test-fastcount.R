@@ -9,11 +9,11 @@ rownames(expMatrix) <- paste("gene", 1:1000, sep="_")
 colnames(expMatrix) <- paste("cell", 1:1000, sep="_")
 expMatrix <- as(expMatrix, "CsparseMatrix")
 
-clusters <- sample(c("A","B","C"), 1000, replace = TRUE)
+clusters <- sample(c("A","B","C"), 1000, replace=TRUE)
 
-regulon <- data.frame(tf = sample(paste("gene", 1:50, sep = "_"), 1000, replace = TRUE),
-                      idxATAC = sample(1:1000, 1000, replace = TRUE),
-                      target = sample(paste("gene", 1:1000, sep = "_"), 1000, replace = TRUE))
+regulon <- data.frame(tf=sample(paste("gene", 1:50, sep="_"), 1000, replace=TRUE),
+                      idxATAC=sample(1:1000, 1000, replace=TRUE),
+                      target=sample(paste("gene", 1:1000, sep="_"), 1000, replace=TRUE))
 
 
 regulon <- regulon[order(regulon$tf), ]
@@ -31,8 +31,8 @@ stats_fast <- countCells(regulon, expMatrix, peakMatrix, cluster_id, peak_cutoff
 
 
 ######## old R code
-peakMatrix.bi <- binarize_matrix(peakMatrix, cutoff = 0)
-expMatrix.bi <- tfMatrix.bi <- binarize_matrix(expMatrix, cutoff = 1)
+peakMatrix.bi <- binarize_matrix(peakMatrix, cutoff=0)
+expMatrix.bi <- tfMatrix.bi <- binarize_matrix(expMatrix, cutoff=1)
 regulon.split <- split(regulon, regulon$tf)
 
 chisq_bp_test <- function (n,
@@ -54,7 +54,7 @@ chisq_bp_test <- function (n,
 
   emptyMatrix <- matrix(NA, nrow=nrow(regulon.split[[n]]), ncol=length(unique_clusters))
   colnames(emptyMatrix) <- unique_clusters
-  stats <- list(triple = emptyMatrix, peak = emptyMatrix, target = emptyMatrix)
+  stats <- list(triple=emptyMatrix, peak=emptyMatrix, target=emptyMatrix)
 
   for (selected_cluster in unique_clusters){
 
@@ -87,8 +87,8 @@ chisq_bp_test <- function (n,
 }
 
 stats_slow <- lapply(
-  X = seq_len(length(regulon.split)),
-  FUN = chisq_bp_test,
+  X=seq_len(length(regulon.split)),
+  FUN=chisq_bp_test,
   regulon.split,
   expMatrix.bi,
   peakMatrix.bi,

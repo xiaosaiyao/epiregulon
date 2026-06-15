@@ -63,8 +63,7 @@
 #'
 #' # create a mock regulon
 #' regulon <- S4Vectors::DataFrame(tf=c(rep('Gene_0001',5), rep('Gene_0002',10)),
-#'                       idxATAC=1:15,
-#'                       target=c(paste0('Gene_000',2:6), paste0('Gene_00',11:20)))
+#'     idxATAC=1:15, target=c(paste0('Gene_000',2:6), paste0('Gene_00',11:20)))
 #'
 #' # add weights to regulon
 #' regulon.w <- addWeights(regulon=regulon, expMatrix=expMatrix, exp_assay='logcounts',
@@ -75,27 +74,27 @@
 #' expMatrix <- scrapper::runPca.se(expMatrix, features=NULL)
 #' regulon.w <- addWeights(regulon=regulon, expMatrix=expMatrix, exp_assay='logcounts',
 #'     peakMatrix=peakMatrix, peak_assay='counts', clusters=expMatrix$cluster,
-#'     min_targets=5, method='wilcox', aggregateCells=TRUE, cellNum=3, useDim = 'PCA')
+#'     min_targets=5, method='wilcox', aggregateCells=TRUE, cellNum=3, useDim='PCA')
 #'
 #' @author Xiaosai Yao, Shang-yang Chen, Tomasz Wlodarczyk
 
 
 addWeights <- function(regulon,
-                       expMatrix = NULL,
-                       peakMatrix = NULL,
-                       exp_assay = "logcounts",
-                       peak_assay = "PeakMatrix",
-                       method = c("wilcoxon", "corr", "MI"),
-                       clusters = NULL,
-                       exp_cutoff = 1,
-                       peak_cutoff = 0,
-                       block_factor = NULL,
-                       min_targets = 10,
-                       tf_re.merge = FALSE,
-                       aggregateCells = FALSE,
-                       useDim = "IterativeLSI_ATAC",
-                       cellNum = 10,
-                       BPPARAM = BiocParallel::SerialParam(progressbar = TRUE)) {
+                       expMatrix=NULL,
+                       peakMatrix=NULL,
+                       exp_assay="logcounts",
+                       peak_assay="PeakMatrix",
+                       method=c("wilcoxon", "corr", "MI"),
+                       clusters=NULL,
+                       exp_cutoff=1,
+                       peak_cutoff=0,
+                       block_factor=NULL,
+                       min_targets=10,
+                       tf_re.merge=FALSE,
+                       aggregateCells=FALSE,
+                       useDim="IterativeLSI_ATAC",
+                       cellNum=10,
+                       BPPARAM=BiocParallel::SerialParam(progressbar=TRUE)) {
   # validate input
   method <- match.arg(method)
   message("adding weights using ", method, "...")
@@ -103,7 +102,8 @@ addWeights <- function(regulon,
   if (!is.logical(tf_re.merge)) {
     stop("tf_re.merge must be a logical")
   }
-  .validate_input_sce(SCE=expMatrix, assay_name=exp_assay, unique_features = TRUE)
+  .validate_input_sce(SCE=expMatrix, assay_name=exp_assay, unique_features=TRUE)
+  
   if(tf_re.merge){
     .validate_input_sce(SCE=peakMatrix, assay_name=peak_assay)
     if (!identical(colnames(expMatrix), colnames(peakMatrix))){
@@ -118,13 +118,12 @@ addWeights <- function(regulon,
 
   if(method=="wilcox" || tf_re.merge){
       .validate_regulon(regulon)
-  }
-  else{
-      .validate_regulon(regulon, required_columns = c("target", "tf"))
+  } else {
+      .validate_regulon(regulon, required_columns=c("target", "tf"))
   }
 
   # define groupings
-  groupings <- S4Vectors::DataFrame(cluster = clusters)
+  groupings <- S4Vectors::DataFrame(cluster=clusters)
   if (!is.null(block_factor)) {
     groupings$block <- colData(expMatrix)[block_factor]
   }
@@ -184,7 +183,7 @@ addWeights <- function(regulon,
     regulon.split <- split(regulon, regulon$tf)
 
   } else if (method %in% c("logFC", "wilcoxon")) {
-    regulon$weight <- initiateMatCluster(clusters, nrow = nrow(regulon))
+    regulon$weight <- initiateMatCluster(clusters, nrow=nrow(regulon))
     regulon.split <- split(regulon, regulon$tf)
   }
 
@@ -198,7 +197,7 @@ addWeights <- function(regulon,
     .balance_check(peak_cutoff, exp_cutoff, peakMatrix, expMatrix)
     keep <- regulon$idxATAC >= 1 & regulon$idxATAC <= nrow(peakMatrix)
     regulon <- regulon[keep, , drop=FALSE]
-    peakMatrix <- binarize_matrix(peakMatrix, cutoff = peak_cutoff)
+    peakMatrix <- binarize_matrix(peakMatrix, cutoff=peak_cutoff)
     copy <- regulon
     all.targets <- sort(unique(regulon$target))
     all.tfs <- sort(unique(regulon$tf))
@@ -207,19 +206,19 @@ addWeights <- function(regulon,
 
     # binarize expression matrix for each cluster separately
     if (!is.null(clusters)) {
-      expMatrix_tfs_clusters <- expMatrix[all.tfs, , drop = FALSE]
+      expMatrix_tfs_clusters <- expMatrix[all.tfs, , drop=FALSE]
       for (cluster in unique_clusters) {
         cluster_ind <- which(clusters == cluster)
-        expMatrix_tfs_clusters[, cluster_ind, drop = FALSE] <-
-          binarize_matrix(expMatrix_tfs_clusters[,cluster_ind, drop = FALSE], cutoff = exp_cutoff)
+        expMatrix_tfs_clusters[, cluster_ind, drop=FALSE] <-
+          binarize_matrix(expMatrix_tfs_clusters[,cluster_ind, drop=FALSE], cutoff=exp_cutoff)
       }
     }
 
-    expMatrix_tfs <- binarize_matrix(expMatrix[all.tfs, , drop = FALSE], cutoff = exp_cutoff)
-    exprs_trans_target <- Matrix::t(expMatrix[all.targets, , drop = FALSE])
+    expMatrix_tfs <- binarize_matrix(expMatrix[all.tfs, , drop=FALSE], cutoff=exp_cutoff)
+    exprs_trans_target <- Matrix::t(expMatrix[all.targets, , drop=FALSE])
     exprs_trans_tf <- Matrix::t(expMatrix_tfs)
     all.peaks <- sort(unique(copy$idxATAC))
-    peak_trans <- Matrix::t(peakMatrix[all.peaks, , drop = FALSE])
+    peak_trans <- Matrix::t(peakMatrix[all.peaks, , drop=FALSE])
 
     if (!is(peak_trans, "CsparseMatrix")) {
       peak_trans <- as(peak_trans, "CsparseMatrix")
@@ -227,45 +226,45 @@ addWeights <- function(regulon,
 
     copy$idxATAC <- match(copy$idxATAC, all.peaks)
     reg.order <- order(copy$target, copy$tf, copy$idxATAC)
-    copy <- copy[reg.order, , drop = FALSE]
+    copy <- copy[reg.order, , drop=FALSE]
 
     # calculate wilcox stats for all clusters
-    output <- fast_wilcox(exprs_x = exprs_trans_target@x,
-                          exprs_i = exprs_trans_target@i,
-                          exprs_p = exprs_trans_target@p,
-                          exprs_tf_x = as.logical(exprs_trans_tf@x),
-                          exprs_tf_i = exprs_trans_tf@i,
-                          exprs_tf_p = exprs_trans_tf@p,
-                          peak_x = peak_trans@x,
-                          peak_i = peak_trans@i,
-                          peak_p = peak_trans@p,
-                          target_id = copy$target - 1L,
-                          tf_id = copy$tf - 1L,
-                          peak_id = copy$idxATAC - 1L,
-                          clusters = integer(0),
-                          cell_numb = nrow(exprs_trans_target))
+    output <- fast_wilcox(exprs_x=exprs_trans_target@x,
+                          exprs_i=exprs_trans_target@i,
+                          exprs_p=exprs_trans_target@p,
+                          exprs_tf_x=as.logical(exprs_trans_tf@x),
+                          exprs_tf_i=exprs_trans_tf@i,
+                          exprs_tf_p=exprs_trans_tf@p,
+                          peak_x=peak_trans@x,
+                          peak_i=peak_trans@i,
+                          peak_p=peak_trans@p,
+                          target_id=copy$target - 1L,
+                          tf_id=copy$tf - 1L,
+                          peak_id=copy$idxATAC - 1L,
+                          clusters=integer(0),
+                          cell_numb=nrow(exprs_trans_target))
 
     if (!is.null(clusters)) {
       # calculate stats for each cluster separately
       exprs_trans_tf_clusters <- Matrix::t(expMatrix_tfs_clusters)
-      fclusters <- factor(clusters, levels = unique_clusters)
+      fclusters <- factor(clusters, levels=unique_clusters)
       iclusters <- as.integer(fclusters)
-      output_clusters <- fast_wilcox(exprs_x = exprs_trans_target@x,
-                                     exprs_i = exprs_trans_target@i,
-                                     exprs_p = exprs_trans_target@p,
-                                     exprs_tf_x = as.logical(exprs_trans_tf_clusters@x),
-                                     exprs_tf_i = exprs_trans_tf_clusters@i,
-                                     exprs_tf_p = exprs_trans_tf_clusters@p,
-                                     peak_x = peak_trans@x,
-                                     peak_i = peak_trans@i,
-                                     peak_p = peak_trans@p,
-                                     target_id = copy$target - 1L,
-                                     tf_id = copy$tf - 1L,
-                                     peak_id = copy$idxATAC - 1L,
-                                     clusters = iclusters - 1L,
-                                     cell_numb = nrow(exprs_trans_target))
+      output_clusters <- fast_wilcox(exprs_x=exprs_trans_target@x,
+                                     exprs_i=exprs_trans_target@i,
+                                     exprs_p=exprs_trans_target@p,
+                                     exprs_tf_x=as.logical(exprs_trans_tf_clusters@x),
+                                     exprs_tf_i=exprs_trans_tf_clusters@i,
+                                     exprs_tf_p=exprs_trans_tf_clusters@p,
+                                     peak_x=peak_trans@x,
+                                     peak_i=peak_trans@i,
+                                     peak_p=peak_trans@p,
+                                     target_id=copy$target - 1L,
+                                     tf_id=copy$tf - 1L,
+                                     peak_id=copy$idxATAC - 1L,
+                                     clusters=iclusters - 1L,
+                                     cell_numb=nrow(exprs_trans_target))
       output <- mapply(function(x, y) {rbind(x, y)},
-                       output, output_clusters, SIMPLIFY = FALSE)
+                       output, output_clusters, SIMPLIFY=FALSE)
     }
 
     AUC <- output$auc
@@ -305,7 +304,7 @@ addWeights <- function(regulon,
     # compute average expression across clusters and batches
     averages.exp <- scrapper::aggregateAcrossCells(
       expMatrix,
-      factors = groupings
+      factors=groupings
     )
     
     # average expression across pseudobulk clusters
@@ -316,21 +315,21 @@ addWeights <- function(regulon,
 
     if (tf_re.merge) {
       averages.peak <- scrapper::aggregateAcrossCells(peakMatrix,
-                                                      factors = groupings)
+                                                      factors=groupings)
 
       # average accessibility across pseudobulk clusters
       peakMatrix <- t(t(averages.peak$sums)/averages.peak$counts)
 
     }
     message("computing weights...")
-    output_df <- BiocParallel::bplapply(X = seq_len(length(regulon.split)),
-                                        FUN = use_specific_method,
+    output_df <- BiocParallel::bplapply(X=seq_len(length(regulon.split)),
+                                        FUN=use_specific_method,
                                         regulon.split,
                                         expMatrix,
                                         peakMatrix,
                                         tf_re.merge,
-                                        BPPARAM = BPPARAM,
-                                        method = method)
+                                        BPPARAM=BPPARAM,
+                                        method=method)
   }
 
   output_df <- do.call(rbind, output_df)
@@ -347,17 +346,17 @@ use_specific_method <- function(n,
                                 expMatrix,
                                 peakMatrix,
                                 tf_re.merge,
-                                BPPARAM = BPPARAM, method) {
-  association_fun <- switch(method, "corr"=stats::cor, "MI" = MI_per_row)
+                                BPPARAM=BPPARAM, method) {
+  association_fun <- switch(method, "corr"=stats::cor, "MI"=MI_per_row)
   if (tf_re.merge) {
-    tf_re <- expMatrix[regulon.split[[n]]$tf, , drop = FALSE] *
-      peakMatrix[as.character(regulon.split[[n]]$idxATAC), , drop = FALSE]
+    tf_re <- expMatrix[regulon.split[[n]]$tf, , drop=FALSE] *
+      peakMatrix[as.character(regulon.split[[n]]$idxATAC), , drop=FALSE]
   } else {
-    tf_re <- expMatrix[regulon.split[[n]]$tf, , drop = FALSE]
+    tf_re <- expMatrix[regulon.split[[n]]$tf, , drop=FALSE]
   }
-  tg <- expMatrix[regulon.split[[n]]$target, , drop = FALSE]
+  tg <- expMatrix[regulon.split[[n]]$target, , drop=FALSE]
   regulon.split[[n]]$weight <- mapply(association_fun, as.data.frame(t(tf_re)),
-                                      as.data.frame(t(tg)), use = "everything")
+                                      as.data.frame(t(tg)), use="everything")
   regulon.split[[n]]
 }
 
@@ -365,8 +364,8 @@ MI_per_row <- function(tf_re, tg, ...) {
   if (length(unique(tf_re)) == 1 | length(unique(tg)) == 1)
     return(0)
   y2d <- entropy::discretize2d(tf_re, tg,
-                               numBins1 = min(10,length(unique(tf_re))),
-                               numBins2 = min(10, length(unique(tg))))
+                               numBins1=min(10,length(unique(tf_re))),
+                               numBins2=min(10, length(unique(tg))))
   entropy::mi.empirical(y2d)
 }
 

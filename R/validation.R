@@ -1,5 +1,5 @@
 .validate_clusters <- function(clusters, expMatrix){
-  clusters <- tryCatch(as.vector(clusters), error = function(cond) {
+  clusters <- tryCatch(as.vector(clusters), error=function(cond) {
     message("'clusters' argument should be coercible to a vector")
     stop(cond)
   })
@@ -35,8 +35,8 @@
 .validate_input_sce <- function(SCE,
                                 assay_name,
                                 row.ranges=FALSE,
-                                accepted_classes = c("SingleCellExperiment", "RangedSummarizedExperiment"),
-                                unique_features = FALSE){
+                                accepted_classes=c("SingleCellExperiment", "RangedSummarizedExperiment"),
+                                unique_features=FALSE){
     checkmate::assert_multi_class(SCE, accepted_classes)
     stopifnot(assay_name %in% names(assays(SCE)))
     data_object_name <- as.character(substitute(SCE))
@@ -59,17 +59,17 @@
     }
 }
 
-.validate_regulon <- function(regulon, required_columns = c("tf", "target", "idxATAC")){
+.validate_regulon <- function(regulon, required_columns=c("tf", "target", "idxATAC")){
     checkmate::assert_multi_class(regulon, c("DataFrame", "data.frame", "DFrame"))
     missing_cols <- setdiff(required_columns, colnames(regulon))
     if (length(missing_cols)>1) {
-        stop("The following column(s) are missing in the regulon object: ", paste(missing_cols, collapse = ", "))
+        stop("The following column(s) are missing in the regulon object: ", paste(missing_cols, collapse=", "))
     }
     if (nrow(regulon)==0){
         stop("regulon should not be empty")
     }
     columns_with_NA <- required_columns[unlist(lapply(regulon[,required_columns], function(x) any(is.na(x))))]
     if (length(columns_with_NA)>0){
-        warning("The following regulon column(s) contain NA value(s): ", paste(columns_with_NA, collapse = ", "))
+        warning("The following regulon column(s) contain NA value(s): ", paste(columns_with_NA, collapse=", "))
     }
 }

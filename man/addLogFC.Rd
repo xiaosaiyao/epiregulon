@@ -66,16 +66,16 @@ gene_sce <- scrapper::normalizeRnaCounts.se(gene_sce)
 rownames(gene_sce) <- paste0('Gene_',1:2000)
 
 # create a mock regulon
-regulon <- data.frame(tf = c(rep('Gene_1',10), rep('Gene_2',10)),
-                     idxATAC = sample(1:100, 20),
-                     target = c(paste0('Gene_', sample(3:2000,10)),
-                                paste0('Gene_',sample(3:2000,10))))
+regulon <- data.frame(tf=c(rep('Gene_1',10), rep('Gene_2',10)),
+    idxATAC=sample(1:100, 20),
+    target=c(paste0('Gene_', sample(3:2000,10)),
+    paste0('Gene_',sample(3:2000,10))))
 
 # filter regulon
-pruned.regulon <- addLogFC(expMatrix = gene_sce, 
-                           clusters = gene_sce$Treatment,
-                           regulon = regulon,
-                           sig_type = "log.p.value")
+pruned.regulon <- addLogFC(expMatrix=gene_sce, 
+    clusters=gene_sce$Treatment,
+    regulon=regulon,
+    sig_type="log.p.value")
 
 }
 \author{

@@ -15,7 +15,7 @@ peakMatrix <- as(peakMatrix, "CsparseMatrix")
 
 unique_exp_values <- runif(5000)*3
 # make ties
-exp_values <- sample(unique_exp_values,1e6, replace = TRUE)
+exp_values <- sample(unique_exp_values,1e6, replace=TRUE)
 #exp_values <- runif(1e6)
 exp_values[sample(1:1e6, 1e6*0.25)] <- 0
 
@@ -25,28 +25,28 @@ colnames(expMatrix) <- paste("cell", 1:1000, sep="_")
 expMatrix <- as(expMatrix, "CsparseMatrix")
 
 #clusters <- NULL
-clusters <- sample(LETTERS[1:3], 1000, replace = TRUE)
+clusters <- sample(LETTERS[1:3], 1000, replace=TRUE)
 
-regulon <- data.frame(tf = sample(paste("gene", 1:50, sep = "_"), 1000, replace = TRUE),
-                      idxATAC = sample(1:1000, 1000, replace = TRUE),
-                      target = sample(paste("gene", 1:1000, sep = "_"), 1000, replace = TRUE))
+regulon <- data.frame(tf=sample(paste("gene", 1:50, sep="_"), 1000, replace=TRUE),
+                      idxATAC=sample(1:1000, 1000, replace=TRUE),
+                      target=sample(paste("gene", 1:1000, sep="_"), 1000, replace=TRUE))
 
 # prepare regulon to being inputted to fast_wilcox
-peakMatrix <- binarize_matrix(peakMatrix, cutoff = NULL)
+peakMatrix <- binarize_matrix(peakMatrix, cutoff=NULL)
 copy <- regulon
 all.targets <- sort(unique(regulon$target))
 all.tfs <- sort(unique(regulon$tf))
 copy$tf <- match(copy$tf, all.tfs)
 copy$target <- match(copy$target, all.targets)
 if (!is.null(clusters)){
-  expMatrix_tfs_clusters <- expMatrix[all.tfs,,drop = FALSE]
+  expMatrix_tfs_clusters <- expMatrix[all.tfs,,drop=FALSE]
   for(cluster in unique(clusters)){
     cluster_ind <- which(clusters == cluster)
-    expMatrix_tfs_clusters[,cluster_ind, drop = FALSE] <- binarize_matrix(expMatrix_tfs_clusters[,cluster_ind, drop = FALSE],
-                                                                          cutoff = NULL)
+    expMatrix_tfs_clusters[,cluster_ind, drop=FALSE] <- binarize_matrix(expMatrix_tfs_clusters[,cluster_ind, drop=FALSE],
+                                                                          cutoff=NULL)
   }
 }
-expMatrix_tfs <- binarize_matrix(expMatrix[all.tfs,,drop = FALSE], cutoff = NULL)
+expMatrix_tfs <- binarize_matrix(expMatrix[all.tfs,,drop=FALSE], cutoff=NULL)
 exprs_trans_target <- Matrix::t(expMatrix[all.targets,,drop=FALSE])
 exprs_trans_tf <- Matrix::t(expMatrix_tfs)
 all.peaks <- sort(unique(copy$idxATAC))
@@ -59,10 +59,10 @@ if (!is(peak_trans, "CsparseMatrix")) {
 reg.order <- order(copy$target, copy$tf, copy$idxATAC)
 copy <- copy[reg.order,,drop=FALSE]
 
-ties <- matrix(nrow=4, ncol = 1000)
-total0 <- matrix(nrow=4, ncol = 1000)
-total1 <- matrix(nrow=4, ncol = 1000)
-U <- matrix(nrow=4, ncol = 1000)
+ties <- matrix(nrow=4, ncol=1000)
+total0 <- matrix(nrow=4, ncol=1000)
+total1 <- matrix(nrow=4, ncol=1000)
+U <- matrix(nrow=4, ncol=1000)
 
 for (cluster in c("all","A","B","C")){
   res_row_numb <- which(c("all","A","B","C") == cluster)
@@ -73,7 +73,7 @@ for (cluster in c("all","A","B","C")){
     selected_cells <- which(clusters == cluster)
   exprs_trans_cluster <- exprs_trans_target[selected_cells,]
   peak_trans_cluster <- peak_trans[selected_cells,]
-  expMatrix_tfs_cluster <- binarize_matrix(expMatrix[all.tfs,selected_cells,drop = FALSE], cutoff = NULL)
+  expMatrix_tfs_cluster <- binarize_matrix(expMatrix[all.tfs,selected_cells,drop=FALSE], cutoff=NULL)
   exprs_trans_tf_cluster <- Matrix::t(expMatrix_tfs_cluster)
   for(i in seq_len(nrow(copy))){
     target_expr <- exprs_trans_cluster[,copy$target[i]]
@@ -88,7 +88,7 @@ for (cluster in c("all","A","B","C")){
     # index of the first elements in the arrays of tied cells
     tie_pos_first <- which(diff(sort(target_expr))==0)
     tie_pos_last <- rev(length(target_expr)- which(diff(sort(target_expr,
-                                                             decreasing = TRUE))==0) +1)
+                                                             decreasing=TRUE))==0) +1)
     mid_elements_ind <- intersect(tie_pos_first, tie_pos_last)
     tie_pos_first <- tie_pos_first[!tie_pos_first %in% mid_elements_ind]
     tie_pos_last <- tie_pos_last[!tie_pos_last %in% mid_elements_ind]
@@ -105,20 +105,20 @@ iclusters <- as.integer(fclusters)
 
 
 output <- fast_wilcox(
-  exprs_x = exprs_trans_target@x,
-  exprs_i = exprs_trans_target@i,
-  exprs_p = exprs_trans_target@p,
-  exprs_tf_x = as.logical(exprs_trans_tf@x),
-  exprs_tf_i = exprs_trans_tf@i,
-  exprs_tf_p = exprs_trans_tf@p,
-  peak_x = peak_trans@x,
-  peak_i = peak_trans@i,
-  peak_p = peak_trans@p,
-  target_id = copy$target - 1L,
-  tf_id = copy$tf - 1L,
-  peak_id = copy$idxATAC - 1L,
-  clusters = numeric(0),
-  cell_numb = nrow(exprs_trans_target)
+  exprs_x=exprs_trans_target@x,
+  exprs_i=exprs_trans_target@i,
+  exprs_p=exprs_trans_target@p,
+  exprs_tf_x=as.logical(exprs_trans_tf@x),
+  exprs_tf_i=exprs_trans_tf@i,
+  exprs_tf_p=exprs_trans_tf@p,
+  peak_x=peak_trans@x,
+  peak_i=peak_trans@i,
+  peak_p=peak_trans@p,
+  target_id=copy$target - 1L,
+  tf_id=copy$tf - 1L,
+  peak_id=copy$idxATAC - 1L,
+  clusters=numeric(0),
+  cell_numb=nrow(exprs_trans_target)
 )
 
 if(!is.null(clusters)){
@@ -127,22 +127,22 @@ if(!is.null(clusters)){
   fclusters_order <- order(levels(fclusters))
   iclusters <- as.integer(fclusters)
   output_clusters <- fast_wilcox(
-    exprs_x = exprs_trans_target@x,
-    exprs_i = exprs_trans_target@i,
-    exprs_p = exprs_trans_target@p,
-    exprs_tf_x = as.logical(exprs_trans_tf_clusters@x),
-    exprs_tf_i = exprs_trans_tf_clusters@i,
-    exprs_tf_p = exprs_trans_tf_clusters@p,
-    peak_x = peak_trans@x,
-    peak_i = peak_trans@i,
-    peak_p = peak_trans@p,
-    target_id = copy$target - 1L,
-    tf_id = copy$tf - 1L,
-    peak_id = copy$idxATAC - 1L,
-    clusters = iclusters - 1L,
-    cell_numb = nrow(exprs_trans_target)
+    exprs_x=exprs_trans_target@x,
+    exprs_i=exprs_trans_target@i,
+    exprs_p=exprs_trans_target@p,
+    exprs_tf_x=as.logical(exprs_trans_tf_clusters@x),
+    exprs_tf_i=exprs_trans_tf_clusters@i,
+    exprs_tf_p=exprs_trans_tf_clusters@p,
+    peak_x=peak_trans@x,
+    peak_i=peak_trans@i,
+    peak_p=peak_trans@p,
+    target_id=copy$target - 1L,
+    tf_id=copy$tf - 1L,
+    peak_id=copy$idxATAC - 1L,
+    clusters=iclusters - 1L,
+    cell_numb=nrow(exprs_trans_target)
   )
-  output <- mapply(function(x,y) rbind(x,y), output, output_clusters, SIMPLIFY = FALSE)
+  output <- mapply(function(x,y) rbind(x,y), output, output_clusters, SIMPLIFY=FALSE)
 }
 
 test_that("fast_wilcox function calculates ties correctly", {

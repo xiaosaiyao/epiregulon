@@ -1,49 +1,49 @@
 # code copied from scMultiome package
 
-tfBinding <- function(genome = c("hg38", "hg19", "mm10"),
-                      source = c("atlas", "encode.sample", "atlas.sample","atlas.tissue"),
-                      metadata = FALSE,
+tfBinding <- function(genome=c("hg38", "hg19", "mm10"),
+                      source=c("atlas", "encode.sample", "atlas.sample","atlas.tissue"),
+                      metadata=FALSE,
                       version=2,
-                      peak_number = 1000) {
+                      peak_number=1000) {
   checkmate::assertFlag(metadata)
-  genome <- match.arg(genome, several.ok = FALSE)
-  source <- match.arg(source, several.ok = FALSE)
+  genome <- match.arg(genome, several.ok=FALSE)
+  source <- match.arg(source, several.ok=FALSE)
   checkmate::assert_choice(version, c(1,2))
   key <- paste0(c(genome, source), collapse=".")
   if(version==1){
     message("Retrieving chip-seq data, version 1")
     to_file_dict <- c(hg38.atlas="tfBinding_hg38_atlas.rds",
-                      hg19.atlas = "tfBinding_hg19_atlas.rds",
-                      mm10.atlas = "tfBinding_mm10_atlas.rds",
+                      hg19.atlas="tfBinding_hg19_atlas.rds",
+                      mm10.atlas="tfBinding_mm10_atlas.rds",
                       hg38.atlas.sample="tfBinding_hg38_atlas.sample.rds",
-                      hg19.atlas.sample = "tfBinding_hg19_atlas.sample.rds",
-                      mm10.atlas.sample = "tfBinding_mm10_atlas.sample.rds",
-                      hg38.encode.sample = "tfBinding_hg38_encode.sample.rds",
-                      hg19.encode.sample = "tfBinding_hg19_encode.sample.rds",
-                      mm10.encode.sample = "tfBinding_mm10_encode.sample.rds",
-                      hg38.atlas.tissue = "tfBinding_hg38_atlas.tissue.rds",
-                      hg19.atlas.tissue = "tfBinding_hg19_atlas.tissue.rds",
-                      mm10.atlas.tissue = "tfBinding_mm10_atlas.tissue.rds")
+                      hg19.atlas.sample="tfBinding_hg19_atlas.sample.rds",
+                      mm10.atlas.sample="tfBinding_mm10_atlas.sample.rds",
+                      hg38.encode.sample="tfBinding_hg38_encode.sample.rds",
+                      hg19.encode.sample="tfBinding_hg19_encode.sample.rds",
+                      mm10.encode.sample="tfBinding_mm10_encode.sample.rds",
+                      hg38.atlas.tissue="tfBinding_hg38_atlas.tissue.rds",
+                      hg19.atlas.tissue="tfBinding_hg19_atlas.tissue.rds",
+                      mm10.atlas.tissue="tfBinding_mm10_atlas.tissue.rds")
   }
   else{
     message("Retrieving chip-seq data, version 2")
     to_file_dict <- c(hg38.atlas="tfBinding_hg38_atlas.rds",
-                      hg19.atlas = "tfBinding_hg19_atlas.rds",
-                      mm10.atlas = "tfBinding_mm10_atlas.rds",
+                      hg19.atlas="tfBinding_hg19_atlas.rds",
+                      mm10.atlas="tfBinding_mm10_atlas.rds",
                       hg38.atlas.sample="tfBinding_hg38_atlas.sample_v2.rds",
-                      hg19.atlas.sample = "tfBinding_hg19_atlas.sample_v2.rds",
-                      mm10.atlas.sample = "tfBinding_mm10_atlas.sample_v2.rds",
-                      hg38.encode.sample = "tfBinding_hg38_encode.sample_v2.rds",
-                      hg19.encode.sample = "tfBinding_hg19_encode.sample_v2.rds",
-                      mm10.encode.sample = "tfBinding_mm10_encode.sample_v2.rds",
-                      hg38.atlas.tissue = "tfBinding_hg38_atlas.tissue_v2.rds",
-                      hg19.atlas.tissue = "tfBinding_hg19_atlas.tissue_v2.rds",
-                      mm10.atlas.tissue = "tfBinding_mm10_atlas.tissue_v2.rds")
+                      hg19.atlas.sample="tfBinding_hg19_atlas.sample_v2.rds",
+                      mm10.atlas.sample="tfBinding_mm10_atlas.sample_v2.rds",
+                      hg38.encode.sample="tfBinding_hg38_encode.sample_v2.rds",
+                      hg19.encode.sample="tfBinding_hg19_encode.sample_v2.rds",
+                      mm10.encode.sample="tfBinding_mm10_encode.sample_v2.rds",
+                      hg38.atlas.tissue="tfBinding_hg38_atlas.tissue_v2.rds",
+                      hg19.atlas.tissue="tfBinding_hg19_atlas.tissue_v2.rds",
+                      mm10.atlas.tissue="tfBinding_mm10_atlas.tissue_v2.rds")
     
   }
   
   eh <- AnnotationHub::query(ExperimentHub::ExperimentHub(),
-                             pattern = c("scMultiome", "tfBinding", to_file_dict[key]))
+                             pattern=c("scMultiome", "tfBinding", to_file_dict[key]))
   
   if (source %in% c("atlas")) {
     eh_ID <- sort(eh$ah_id)[1]
@@ -95,20 +95,20 @@ tfBinding <- function(genome = c("hg38", "hg19", "mm10"),
 #' }
 #'
 #' # retrieve motif info
-#' peaks <- GRanges(seqnames = c('chr12','chr19','chr19','chr11','chr6'),
-#' ranges = IRanges(start = c(124914563,50850845, 50850844, 101034172, 151616327),
-#' end = c(124914662,50850929, 50850929, 101034277, 151616394)))
-#' grl <- getTFMotifInfo(genome = 'hg38', mode = 'motif', peaks=peaks)
+#' peaks <- GRanges(seqnames=c('chr12','chr19','chr19','chr11','chr6'),
+#' ranges=IRanges(start=c(124914563,50850845, 50850844, 101034172, 151616327),
+#' end=c(124914662,50850929, 50850929, 101034277, 151616394)))
+#' grl <- getTFMotifInfo(genome='hg38', mode='motif', peaks=peaks)
 #'
 #' @export
 #'
-getTFMotifInfo <- function(genome = c("hg38", "hg19", "mm10"),
-                           source = c("atlas", "encode.sample", "atlas.sample","atlas.tissue"),
-                           metadata = FALSE,
-                           mode = c("occupancy", "motif"),
-                           peaks = NULL,
-                           version = 2,
-                           peak_number = 1000) {
+getTFMotifInfo <- function(genome=c("hg38", "hg19", "mm10"),
+                           source=c("atlas", "encode.sample", "atlas.sample","atlas.tissue"),
+                           metadata=FALSE,
+                           mode=c("occupancy", "motif"),
+                           peaks=NULL,
+                           version=2,
+                           peak_number=1000) {
   genome <- match.arg(genome)
   source <- match.arg(source)
   mode <- match.arg(mode)
@@ -117,27 +117,27 @@ getTFMotifInfo <- function(genome = c("hg38", "hg19", "mm10"),
     grl <- tfBinding(genome=genome,
                      source=source,
                      metadata=metadata,
-                     version = version,
-                     peak_number = peak_number)
+                     version=version,
+                     peak_number=peak_number)
     
   } else {
     checkmate::assert_class(peaks, "GRanges")
-    species <- switch(genome, hg38 = "human",
-                      hg19 = "human", mm10 = "mouse")
+    species <- switch(genome, hg38="human",
+                      hg19="human", mm10="mouse")
     BS.genome <- switch(genome,
-                        hg38 = BSgenome.Hsapiens.UCSC.hg38::BSgenome.Hsapiens.UCSC.hg38,
-                        hg19 = BSgenome.Hsapiens.UCSC.hg19::BSgenome.Hsapiens.UCSC.hg19,
-                        mm10 = BSgenome.Mmusculus.UCSC.mm10::BSgenome.Mmusculus.UCSC.mm10)
+                        hg38=BSgenome.Hsapiens.UCSC.hg38::BSgenome.Hsapiens.UCSC.hg38,
+                        hg19=BSgenome.Hsapiens.UCSC.hg19::BSgenome.Hsapiens.UCSC.hg19,
+                        mm10=BSgenome.Mmusculus.UCSC.mm10::BSgenome.Mmusculus.UCSC.mm10)
     
     message("keeping only standard chromosomes..")
     peaks <- GenomeInfoDb::keepStandardChromosomes(peaks,
-                                                   pruning.mode = "coarse")
+                                                   pruning.mode="coarse")
     
     message("annotating peaks with motifs")
     grl <- annotateMotif(species,
-                         peaks, BS.genome, out = "positions")
+                         peaks, BS.genome, out="positions")
     names(grl) <- lapply(strsplit(names(grl),
-                                  split = "_|\\."), "[", 3)
+                                  split="_|\\."), "[", 3)
   }
   grl
 }
@@ -169,13 +169,13 @@ getTFMotifInfo <- function(genome = c("hg38", "hg19", "mm10"),
 #' library(motifmatchr)
 #' library(chromVARmotifs)
 #' data("human_pwms_v1")
-#' peaks <- GRanges(seqnames = c("chr1","chr2","chr2"),
-#'                                ranges = IRanges(start = c(76585873,42772928, 100183786),
-#'                                                          width = 500))
+#' peaks <- GRanges(seqnames=c("chr1","chr2","chr2"),
+#'                                ranges=IRanges(start=c(76585873,42772928, 100183786),
+#'                                                          width=500))
 #' eh <- AnnotationHub::query(ExperimentHub::ExperimentHub(),
-#' pattern = c("scMultiome", "TF motifs", "human"))
+#' pattern=c("scMultiome", "TF motifs", "human"))
 #' pwms <- readRDS(eh[[eh$ah_id]]))
-#' grl <- matchMotifs(pwms, peaks, genome = "hg38", out = "positions")
+#' grl <- matchMotifs(pwms, peaks, genome="hg38", out="positions")
 #' retain only TF symbols. TF symbols need to be consistent with gene names in regulon
 #' names(grl) <- sapply(strsplit(names(grl), "_"), "[",3)
 #' ```
@@ -186,32 +186,32 @@ getTFMotifInfo <- function(genome = c("hg38", "hg19", "mm10"),
 #' @examples
 #' set.seed(1)
 #' # create a mock peak-to-gene matrix
-#' p2g <- data.frame(idxATAC = c(rep(1,5), rep(2,5)), Chrom = 'chr1', idxRNA = 1:10,
-#' Gene = paste0('Gene_',1:10),Correlation = runif(10, 0,1))
+#' p2g <- data.frame(idxATAC=c(rep(1,5), rep(2,5)), Chrom='chr1', idxRNA=1:10,
+#' Gene=paste0('Gene_',1:10),Correlation=runif(10, 0,1))
 #'
 #' # create mock a GRanges list of TF binding sites
-#' grl <- GRangesList('TF1' = GRanges(seqnames = 'chr1',
-#' ranges = IRanges(start = c(50,1050), width = 100)),
-#' 'TF2' = GRanges(seqnames = 'chr1',
-#' ranges = IRanges(start = c(1050), width = 100))
+#' grl <- GRangesList('TF1'=GRanges(seqnames='chr1',
+#' ranges=IRanges(start=c(50,1050), width=100)),
+#' 'TF2'=GRanges(seqnames='chr1',
+#' ranges=IRanges(start=c(1050), width=100))
 #' )
 #'
 #' # create a mock SingleCellExperiment object for peak matrix
-#' peak_gr <- GRanges(seqnames = 'chr1',
-#'              ranges = IRanges(start = seq(from = 1, to = 10000, by = 1000),
-#'              width = 100))
-#' peak_counts <- matrix(sample(x = 0:4, size = 100*length(peak_gr), replace = TRUE),
-#' nrow = length(peak_gr), ncol = 100)
-#' peak_sce <- SingleCellExperiment(list(counts = peak_counts))
+#' peak_gr <- GRanges(seqnames='chr1',
+#'              ranges=IRanges(start=seq(from=1, to=10000, by=1000),
+#'              width=100))
+#' peak_counts <- matrix(sample(x=0:4, size=100*length(peak_gr), replace=TRUE),
+#' nrow=length(peak_gr), ncol=100)
+#' peak_sce <- SingleCellExperiment(list(counts=peak_counts))
 #' rowRanges(peak_sce) <- peak_gr
 #' rownames(peak_sce) <- paste0('peak',1:10)
 #'
 #' # create overlaps between p2g matrix, TF binding sites and peak matrix
-#' overlap <- addTFMotifInfo(p2g, grl, peakMatrix = peak_sce)
+#' overlap <- addTFMotifInfo(p2g, grl, peakMatrix=peak_sce)
 #' utils::head(overlap)
 #' @author Xiaosai Yao, Shang-yang Chen
 
-addTFMotifInfo <- function(p2g, grl, peakMatrix = NULL) {
+addTFMotifInfo <- function(p2g, grl, peakMatrix=NULL) {
   
   
   peakSet <- rowRanges(peakMatrix)
@@ -243,35 +243,35 @@ addTFMotifInfo <- function(p2g, grl, peakMatrix = NULL) {
 #' @examples
 #' set.seed(1)
 #' # create a mock peak-to-gene matrix
-#' p2g <- data.frame(idxATAC = c(rep(1,5), rep(2,5)), Chrom = 'chr1', idxRNA = 1:10,
-#' target = paste0('Gene_', 1:10), Correlation = runif(10, 0, 1))
+#' p2g <- data.frame(idxATAC=c(rep(1,5), rep(2,5)), Chrom='chr1', idxRNA=1:10,
+#' target=paste0('Gene_', 1:10), Correlation=runif(10, 0, 1))
 #'
 #' # create a Granges list of TF binding sites
-#' grl <- GRangesList('TF1' = GRanges(seqnames = 'chr1',
-#' ranges = IRanges(start = c(50,1050), width = 100)),
-#' 'TF2' = GRanges(seqnames = 'chr1',
-#' ranges = IRanges(start = c(1050), width = 100))
+#' grl <- GRangesList('TF1'=GRanges(seqnames='chr1',
+#' ranges=IRanges(start=c(50,1050), width=100)),
+#' 'TF2'=GRanges(seqnames='chr1',
+#' ranges=IRanges(start=c(1050), width=100))
 #' )
 #'
 #' # Create a mock peak matrix
-#' peak_gr <- GRanges(seqnames = 'chr1',
-#'                    ranges = IRanges(start = seq(from = 1, to = 10000, by = 1000), width = 100))
+#' peak_gr <- GRanges(seqnames='chr1',
+#'                    ranges=IRanges(start=seq(from=1, to=10000, by=1000), width=100))
 #'
-#' peak_counts <- matrix(sample(x = 0:4, size = 100*length(peak_gr), replace = TRUE),
-#' nrow = length(peak_gr),ncol = 100)
-#' peak_sce <- SingleCellExperiment(list(counts = peak_counts))
+#' peak_counts <- matrix(sample(x=0:4, size=100*length(peak_gr), replace=TRUE),
+#' nrow=length(peak_gr),ncol=100)
+#' peak_sce <- SingleCellExperiment(list(counts=peak_counts))
 #' rowRanges(peak_sce) <- peak_gr
 #' rownames(peak_sce) <- paste0('peak', 1:10)
 #'
 #' # create overlaps between p2g matrix, TF binding sites and peak matrix
-#' overlap <- addTFMotifInfo(p2g, grl, peakMatrix = peak_sce)
+#' overlap <- addTFMotifInfo(p2g, grl, peakMatrix=peak_sce)
 #' utils::head(overlap)
 #'
 #' # aggregate gene expression if the gene is bound by the same TF at regulatory elements
-#' regulon <- getRegulon(p2g, overlap, aggregate = FALSE)
+#' regulon <- getRegulon(p2g, overlap, aggregate=FALSE)
 #' @author Xiaosai Yao, Shang-yang Chen
 
-getRegulon <- function(p2g, overlap, aggregate = FALSE, FUN = "mean") {
+getRegulon <- function(p2g, overlap, aggregate=FALSE, FUN="mean") {
   
   p2g <- S4Vectors::DataFrame(p2g)
   p2g_orig_names <- colnames(p2g)
@@ -284,7 +284,7 @@ getRegulon <- function(p2g, overlap, aggregate = FALSE, FUN = "mean") {
   overlap_orig_names <- colnames(overlap)
   overlap_orig_names <- setdiff(overlap_orig_names, "idxATAC")
   
-  regulon_df <- S4Vectors::merge(p2g_short, overlap, by = "idxATAC")
+  regulon_df <- S4Vectors::merge(p2g_short, overlap, by="idxATAC")
   regulon_df <- cbind(regulon_df, p2g_rest[match(regulon_df$idx, p2g$idx),])
   regulon_df$idx <- NULL
   
@@ -293,7 +293,7 @@ getRegulon <- function(p2g, overlap, aggregate = FALSE, FUN = "mean") {
   if (aggregate) {
     "aggregating regulon ..."
     regulon_df <- aggregateMatrix(regulon_df[, c("tf", "target","Correlation")], 
-                                  "Correlation", FUN = "mean")
+                                  "Correlation", FUN="mean")
   }
   colnames(regulon_df)[colnames(regulon_df) == "Correlation"] <- "corr"
   return(regulon_df)

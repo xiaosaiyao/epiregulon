@@ -16,18 +16,18 @@
 #' @export
 #'
 #' @examples
-#' regulon <- S4Vectors::DataFrame(tf = c('AR','AR','AR','ESR1','ESR1','NKX2-1'),
-#' idxATAC = 1:6)
-#' peaks <- GenomicRanges::GRanges(seqnames = c('chr12','chr19','chr19','chr11','chr6','chr1'),
-#' ranges = IRanges::IRanges(start = c(124914563,50850845, 50850844, 101034172, 151616327, 1000),
-#' end = c(124914662,50850929, 50850929, 101034277, 151616394,2000)))
+#' regulon <- S4Vectors::DataFrame(tf=c('AR','AR','AR','ESR1','ESR1','NKX2-1'),
+#' idxATAC=1:6)
+#' peaks <- GenomicRanges::GRanges(seqnames=c('chr12','chr19','chr19','chr11','chr6','chr1'),
+#' ranges=IRanges::IRanges(start=c(124914563,50850845, 50850844, 101034172, 151616327, 1000),
+#' end=c(124914662,50850929, 50850929, 101034277, 151616394,2000)))
 #' regulon <- addMotifScore(regulon, peaks=peaks)
 
 addMotifScore <- function(regulon, 
-                          field_name = "motif", peaks = NULL, 
-                          pwms = NULL, 
-                          species = c("human","mouse"), 
-                          genome = c("hg38", "hg19","mm10"), ...) {
+                          field_name="motif", peaks=NULL, 
+                          pwms=NULL, 
+                          species=c("human","mouse"), 
+                          genome=c("hg38", "hg19","mm10"), ...) {
   
   species <- match.arg(species)
   genome <- match.arg(genome)
@@ -37,11 +37,11 @@ addMotifScore <- function(regulon,
       stop("No peaks provided.") 
     }
     message("annotating peaks with motifs")
-    BS.genome <- switch(genome, hg38 = "BSgenome.Hsapiens.UCSC.hg38",
-                        hg19 = "BSgenome.Hsapiens.UCSC.hg19",
-                        mm10 = "BSgenome.Mmusculus.UCSC.mm10")
+    BS.genome <- switch(genome, hg38="BSgenome.Hsapiens.UCSC.hg38",
+                        hg19="BSgenome.Hsapiens.UCSC.hg19",
+                        mm10="BSgenome.Mmusculus.UCSC.mm10")
     
-    peaks.pruned <- GenomeInfoDb::keepStandardChromosomes(peaks, pruning.mode = "coarse")
+    peaks.pruned <- GenomeInfoDb::keepStandardChromosomes(peaks, pruning.mode="coarse")
     
     if (length(peaks.pruned) == 0) {
       warning("No peaks in standard chromosomes. NAs returned.")
@@ -63,7 +63,7 @@ addMotifScore <- function(regulon,
     motifs <- assay(motifs, "motifMatches")
     
     # Convert motifs to gene names
-    motif_names <- unlist(lapply(strsplit(colnames(motifs), split = "_|\\."), "[", 3))
+    motif_names <- unlist(lapply(strsplit(colnames(motifs), split="_|\\."), "[", 3))
     
     colnames(motifs) <- matchNames(motif_names, regulon)
     
@@ -72,7 +72,7 @@ addMotifScore <- function(regulon,
   }
   
   # Remove motifs not found in regulon
-  motifs <- motifs[, colnames(motifs) %in% unique(regulon$tf), drop = FALSE]
+  motifs <- motifs[, colnames(motifs) %in% unique(regulon$tf), drop=FALSE]
   
   # Add motif information
   regulon[, field_name] <- NA
@@ -89,25 +89,25 @@ addMotifScore <- function(regulon,
   regulon
 }
 
-annotateMotif <- function(species, peaks, genome, pwms = NULL, ...) {
+annotateMotif <- function(species, peaks, genome, pwms=NULL, ...) {
   
   if (is.null(pwms)) {
     pwms <- species_motif(species)
   }
-  motifs <- motifmatchr::matchMotifs(pwms = pwms, subject = peaks, genome = genome, ...)
+  motifs <- motifmatchr::matchMotifs(pwms=pwms, subject=peaks, genome=genome, ...)
   
 }
 
 species_motif <- function(species) {
-  species <- c(human = "Homo sapiens", mouse = "Mus musculus")[species]
+  species <- c(human="Homo sapiens", mouse="Mus musculus")[species]
   eh <- AnnotationHub::query(ExperimentHub::ExperimentHub(),
-                             pattern = c("scMultiome", "TF motifs", species))
+                             pattern=c("scMultiome", "TF motifs", species))
   return(readRDS(eh[[eh$ah_id]]))
 }
 
 matchNames <- function(motif_names, regulon) {
-  unique_tf <- data.frame(original = unique(regulon$tf),
-                          after = unique(regulon$tf))
+  unique_tf <- data.frame(original=unique(regulon$tf),
+                          after=unique(regulon$tf))
   # remove underscore
   unique_tf$after <- gsub("\\_", "", unique_tf$original)
   

@@ -73,54 +73,54 @@
 #' rownames(gene_sce) <- paste0('Gene_',1:2000)
 #'
 #' # create a mock SingleCellExperiment object for peak matrix
-#' peak_gr <- GRanges(seqnames = 'chr1',
-#'                   ranges = IRanges(start = seq(from = 1, to = 10000, by = 100), width = 100))
-#' peak_counts <- matrix(sample(x = 0:4, size = ncol(gene_sce)*length(peak_gr), replace = TRUE),
-#'                      nrow = length(peak_gr), ncol=ncol(gene_sce))
-#' peak_sce <- SingleCellExperiment(list(counts = peak_counts), colData = colData(gene_sce))
-#' rownames(peak_sce) <- paste0('Peak_',1:100)
+#' peak_gr <- GRanges(seqnames='chr1',
+#'     ranges=IRanges(start=seq(from=1, to=10000, by=100), width=100))
+#' peak_counts <- matrix(sample(x=0:4, size=ncol(gene_sce)*length(peak_gr), replace=TRUE),
+#'     nrow=length(peak_gr), ncol=ncol(gene_sce))
+#' peak_sce <- SingleCellExperiment(list(counts=peak_counts), colData=colData(gene_sce))
+#'     rownames(peak_sce) <- paste0('Peak_',1:100)
 #'
 #' # create a mock regulon
-#' regulon <- data.frame(tf = c(rep('Gene_1',10), rep('Gene_2',10)),
-#'                      idxATAC = sample(1:100, 20),
-#'                      target = c(paste0('Gene_', sample(3:2000,10)),
-#'                                 paste0('Gene_',sample(3:2000,10))))
+#' regulon <- data.frame(tf=c(rep('Gene_1',10), rep('Gene_2',10)),
+#'     idxATAC=sample(1:100, 20),
+#'     target=c(paste0('Gene_', sample(3:2000,10)),
+#'     paste0('Gene_',sample(3:2000,10))))
 #'
 #' # prune regulon
-#' pruned.regulon <- pruneRegulon(expMatrix = gene_sce,
-#' exp_assay = 'logcounts', peakMatrix = peak_sce, peak_assay = 'counts',
-#' regulon = regulon, clusters = gene_sce$Treatment, regulon_cutoff = 0.5)
+#' pruned.regulon <- pruneRegulon(expMatrix=gene_sce,
+#'     exp_assay='logcounts', peakMatrix=peak_sce, peak_assay='counts',
+#'     regulon=regulon, clusters=gene_sce$Treatment, regulon_cutoff=0.5)
 #'
 #' # add weights with cell aggregation
-#' gene_sce <- scrapper::runPca.se(expMatrix, features=NULL)
-#' pruned.regulon <- pruneRegulon(expMatrix = gene_sce, exp_assay = 'logcounts',
-#' peakMatrix = peak_sce, peak_assay = 'counts', regulon = regulon,
-#' clusters = gene_sce$Treatment, regulon_cutoff = 0.5,
-#' aggregateCells=TRUE, cellNum=3, useDim = 'PCA')
+#' gene_sce <- scrapper::runPca.se(gene_sce, features=NULL)
+#' pruned.regulon <- pruneRegulon(expMatrix=gene_sce, exp_assay='logcounts',
+#'     peakMatrix=peak_sce, peak_assay='counts', regulon=regulon,
+#'     clusters=gene_sce$Treatment, regulon_cutoff=0.5,
+#'     aggregateCells=TRUE, cellNum=3, useDim='PCA')
 #'
 #' @author Xiaosai Yao, Tomasz Wlodarczyk
 
 pruneRegulon <- function(regulon,
-                         expMatrix = NULL,
-                         peakMatrix = NULL,
-                         exp_assay = "logcounts",
-                         peak_assay = "PeakMatrix",
-                         test = c("chi.sq", "binom"),
-                         clusters = NULL, exp_cutoff = 1,
-                         peak_cutoff = 0,
-                         regulon_cutoff = 0.05,
-                         p_adj = TRUE,
-                         prune_value = "pval",
-                         aggregateCells = FALSE,
-                         useDim = "IterativeLSI_ATAC",
-                         cellNum = 10,
-                         BPPARAM = BiocParallel::SerialParam(progressbar = TRUE)) {
+                         expMatrix=NULL,
+                         peakMatrix=NULL,
+                         exp_assay="logcounts",
+                         peak_assay="PeakMatrix",
+                         test=c("chi.sq", "binom"),
+                         clusters=NULL, exp_cutoff=1,
+                         peak_cutoff=0,
+                         regulon_cutoff=0.05,
+                         p_adj=TRUE,
+                         prune_value="pval",
+                         aggregateCells=FALSE,
+                         useDim="IterativeLSI_ATAC",
+                         cellNum=10,
+                         BPPARAM=BiocParallel::SerialParam(progressbar=TRUE)) {
   # valid inputs
   if(is.null(peakMatrix)) {
     stop("peakMatrix should be provided")
   }
 
-  .validate_input_sce(SCE=expMatrix, assay_name=exp_assay, unique_features = TRUE)
+  .validate_input_sce(SCE=expMatrix, assay_name=exp_assay, unique_features=TRUE)
   .validate_input_sce(SCE=peakMatrix, assay_name=peak_assay)
 
   if (!identical(colnames(expMatrix), colnames(peakMatrix))){
@@ -187,15 +187,15 @@ pruneRegulon <- function(regulon,
     regulon.split <- split(regulon, regulon$tf)
 
     # Perform binomial test
-    res <- BiocParallel::bplapply(X = seq_len(length(regulon.split)),
-                                  FUN = binom_bp,
+    res <- BiocParallel::bplapply(X=seq_len(length(regulon.split)),
+                                  FUN=binom_bp,
                                   regulon.split,
                                   expMatrix.bi,
                                   peakMatrix.bi,
                                   tfMatrix.bi,
                                   clusters,
                                   unique_clusters,
-                                  BPPARAM = BPPARAM)
+                                  BPPARAM=BPPARAM)
 
     res <- do.call("rbind", res)
 
@@ -205,7 +205,7 @@ pruneRegulon <- function(regulon,
     if (is.null(clusters)) {
       cluster_id <- factor(integer(ncol(peakMatrix)))
     } else {
-      cluster_id <- factor(clusters, levels = as.character(sort(unique(clusters))))
+      cluster_id <- factor(clusters, levels=as.character(sort(unique(clusters))))
     }
     stats <- countCells(regulon, expMatrix, peakMatrix, cluster_id, peak_cutoff,
                         exp_cutoff, clusters)
@@ -216,17 +216,17 @@ pruneRegulon <- function(regulon,
       cluster_freq <- c(length(cluster_id), as.numeric(table(cluster_id)))
     }
 
-    cluster_freq <- matrix(nrow = nrow(regulon),
-                           ncol = length(cluster_freq),
+    cluster_freq <- matrix(nrow=nrow(regulon),
+                           ncol=length(cluster_freq),
                            cluster_freq,
-                           byrow = TRUE)
+                           byrow=TRUE)
     peak.prop <- stats$peak/cluster_freq
     target.prop <- stats$target/cluster_freq
     null_probability <- peak.prop * target.prop
 
     # if p=0 or 1 chi square test would produce NaN values
     test_unavailable_ind <- null_probability%%1 == 0
-    res <- chisqTest(k = stats$triple, size = cluster_freq, p = null_probability)
+    res <- chisqTest(k=stats$triple, size=cluster_freq, p=null_probability)
     colnames(res$p) <- sprintf("pval_%s", unique_clusters)
     colnames(res$stat) <- sprintf("stats_%s", unique_clusters)
     res$p[test_unavailable_ind] <- 1
@@ -240,13 +240,13 @@ pruneRegulon <- function(regulon,
 
   # append test stats to regulon
 
-  pvalue <- res[, grep("^pval_", colnames(res)), drop = FALSE]
-  stats <- res[, grep("^stats_", colnames(res)), drop = FALSE]
+  pvalue <- res[, grep("^pval_", colnames(res)), drop=FALSE]
+  stats <- res[, grep("^stats_", colnames(res)), drop=FALSE]
 
   colnames(pvalue) <- unique_clusters
   colnames(stats) <- unique_clusters
 
-  regulon.combined <- S4Vectors::DataFrame(regulon, pval = I(pvalue), stats = I(stats))
+  regulon.combined <- S4Vectors::DataFrame(regulon, pval=I(pvalue), stats=I(stats))
 
 
   # add p-value adjustment
@@ -254,19 +254,19 @@ pruneRegulon <- function(regulon,
   if (p_adj) {
     "performing multiple testing correction..."
     qvalue <- as.matrix(apply(regulon.combined$pval, 2, function(x) {
-      stats::p.adjust(x, method = "holm", n = nrow(regulon.combined))
+      stats::p.adjust(x, method="holm", n=nrow(regulon.combined))
     }))
     colnames(qvalue) <- unique_clusters
-    regulon.combined <- S4Vectors::DataFrame(regulon.combined, qval = I(qvalue))
+    regulon.combined <- S4Vectors::DataFrame(regulon.combined, qval=I(qvalue))
   }
 
   # prune by p-value
-  regulon.prune_value <- regulon.combined[, prune_value, drop = FALSE]
+  regulon.prune_value <- regulon.combined[, prune_value, drop=FALSE]
 
   setMin <- function(x) {
     if (sum(is.na(x)) == length(x)) {
       Inf
-    } else {min(x, na.rm = TRUE)}
+    } else {min(x, na.rm=TRUE)}
   }
 
   prune_value_min <- apply(regulon.prune_value, 1, setMin)
@@ -277,7 +277,7 @@ pruneRegulon <- function(regulon,
 }
 
 
-binarize_matrix <- function(matrix_obj, cutoff = NULL) {
+binarize_matrix <- function(matrix_obj, cutoff=NULL) {
   if (is.null(cutoff)) {
     cutoff <- Matrix::rowMeans(matrix_obj)
   } else {
@@ -289,12 +289,12 @@ binarize_matrix <- function(matrix_obj, cutoff = NULL) {
     matrix_obj
   } else {
     cutoff <- rep(cutoff, ncol(matrix_obj))
-    matrix_obj.bi.index <- Matrix::which(matrix_obj > cutoff, arr.ind = TRUE)
-    matrix_obj <- Matrix::sparseMatrix(x = rep(1,nrow(matrix_obj.bi.index)),
-                                       i = matrix_obj.bi.index[, 1],
-                                       j = matrix_obj.bi.index[, 2],
-                                       dims = dim(matrix_obj),
-                                       dimnames = dimnames(matrix_obj))
+    matrix_obj.bi.index <- Matrix::which(matrix_obj > cutoff, arr.ind=TRUE)
+    matrix_obj <- Matrix::sparseMatrix(x=rep(1,nrow(matrix_obj.bi.index)),
+                                       i=matrix_obj.bi.index[, 1],
+                                       j=matrix_obj.bi.index[, 2],
+                                       dims=dim(matrix_obj),
+                                       dimnames=dimnames(matrix_obj))
   }
 }
 
@@ -306,14 +306,14 @@ binom_bp <- function(n,
                      tfMatrix.bi,
                      clusters,
                      unique_clusters,
-                     BPPARAM = BPPARAM) {
+                     BPPARAM=BPPARAM) {
 
   full_ncells <- ncol(peakMatrix.bi)
   has_tf <- tfMatrix.bi[regulon.split[[n]]$tf[1], ] == 1
-  expMatrix.bi <- expMatrix.bi[regulon.split[[n]]$target, , drop = FALSE]
-  expMatrix.tf.bi <- expMatrix.bi[, has_tf, drop = FALSE]
+  expMatrix.bi <- expMatrix.bi[regulon.split[[n]]$target, , drop=FALSE]
+  expMatrix.tf.bi <- expMatrix.bi[, has_tf, drop=FALSE]
   peakMatrix.bi <- peakMatrix.bi[as.character(regulon.split[[n]]$idxATAC),
-                                 has_tf, drop = FALSE]
+                                 has_tf, drop=FALSE]
 
   triple.bi <- peakMatrix.bi * expMatrix.tf.bi
   tf_re.bi <- peakMatrix.bi
@@ -339,7 +339,7 @@ binom_bp <- function(n,
     }
 
     null_probability <- tf_reCurrent * expCurrent/n_cells^2
-    p.value <- binomTest(n_triple, n_cells, p = null_probability)
+    p.value <- binomTest(n_triple, n_cells, p=null_probability)
     z_score <- stats::qnorm(p.value/2) * sign(null_probability - n_triple/n_cells)
 
     res[[selected_cluster]] <- cbind(p.value, z_score)
@@ -360,7 +360,7 @@ binomTest <- function(k, size, p) {
   p.value <- rep_len(1, length(k))
   for (ip in unique(p)) {
     current <- p == ip
-    d <- binom_distribution(n = size, p = ip)
+    d <- binom_distribution(n=size, p=ip)
     o <- order(d)
     cumsump <- cumsum(d[o])[order(o)]
     p.value[current] <- cumsump[k[current] + 1]
@@ -403,8 +403,8 @@ countCells <- function(regulon,
     exp_cutoff <- as.numeric(exp_cutoff)
 
   peak_id <- regulon$idxATAC
-  target_id <- factor(regulon$target, levels = rownames(expMatrix))
-  tf_id <- factor(regulon$tf, levels = rownames(expMatrix))
+  target_id <- factor(regulon$target, levels=rownames(expMatrix))
+  tf_id <- factor(regulon$tf, levels=rownames(expMatrix))
 
   p_o <- order(peak_id, tf_id, target_id)
   p_peak_id <- as.integer(peak_id[p_o]) - 1L
@@ -417,27 +417,27 @@ countCells <- function(regulon,
   cluster_id2 <- as.integer(cluster_id) - 1L
   if (!is.null(exp_cutoff) & !is.null(peak_cutoff)) {
     exp_cutoff_mat <- matrix(exp_cutoff,
-                             nrow = nrow(expMatrix),
-                             ncol = nlevels(cluster_id))
+                             nrow=nrow(expMatrix),
+                             ncol=nlevels(cluster_id))
     peak_cutoff_mat <- matrix(peak_cutoff,
-                              nrow = nrow(peakMatrix),
-                              ncol = nlevels(cluster_id))
-    stats <- fast_chisq(peak_ordered = p_peak_id,
-                        tf_by_peak = p_tf_id,
-                        target_by_peak = p_target_id,
-                        target_ordered = t_target_id,
-                        npeaks = nrow(peakMatrix),
-                        peakmat_x = peakMatrix@x,
-                        peakmat_i = peakMatrix@i,
-                        peakmat_p = peakMatrix@p,
-                        peak_cutoff = peak_cutoff_mat,
-                        ngenes = nrow(expMatrix),
-                        expmat_x = expMatrix@x,
-                        expmat_i = expMatrix@i,
-                        expmat_p = expMatrix@p,
-                        exp_cutoff = exp_cutoff_mat,
-                        nclusters = nlevels(cluster_id),
-                        clusters = cluster_id2)
+                              nrow=nrow(peakMatrix),
+                              ncol=nlevels(cluster_id))
+    stats <- fast_chisq(peak_ordered=p_peak_id,
+                        tf_by_peak=p_tf_id,
+                        target_by_peak=p_target_id,
+                        target_ordered=t_target_id,
+                        npeaks=nrow(peakMatrix),
+                        peakmat_x=peakMatrix@x,
+                        peakmat_i=peakMatrix@i,
+                        peakmat_p=peakMatrix@p,
+                        peak_cutoff=peak_cutoff_mat,
+                        ngenes=nrow(expMatrix),
+                        expmat_x=expMatrix@x,
+                        expmat_i=expMatrix@i,
+                        expmat_p=expMatrix@p,
+                        exp_cutoff=exp_cutoff_mat,
+                        nclusters=nlevels(cluster_id),
+                        clusters=cluster_id2)
     if (!is.null(clusters)) {
       stats$peak <- cbind(rowSums(stats$peak), stats$peak)
       stats$triple <- cbind(rowSums(stats$triple),
@@ -449,70 +449,70 @@ countCells <- function(regulon,
   } else {
     if (is.null(peak_cutoff)) {
       peak_cutoff_mat <- matrix(Matrix::rowMeans(peakMatrix),
-                                nrow = nrow(peakMatrix),
-                                ncol = nlevels(cluster_id))
+                                nrow=nrow(peakMatrix),
+                                ncol=nlevels(cluster_id))
     } else {
       peak_cutoff_mat <- matrix(peak_cutoff,
-                                nrow = nrow(peakMatrix),
-                                ncol = nlevels(cluster_id))
+                                nrow=nrow(peakMatrix),
+                                ncol=nlevels(cluster_id))
     }
     if (is.null(exp_cutoff)) {
       exp_cutoff_mat <- matrix(Matrix::rowMeans(expMatrix),
-                               nrow = nrow(expMatrix),
-                               ncol = nlevels(cluster_id))
+                               nrow=nrow(expMatrix),
+                               ncol=nlevels(cluster_id))
     } else {
       exp_cutoff_mat <- matrix(exp_cutoff,
-                               nrow = nrow(expMatrix),
-                               ncol = nlevels(cluster_id))
+                               nrow=nrow(expMatrix),
+                               ncol=nlevels(cluster_id))
     }
-    stats <- fast_chisq(peak_ordered = p_peak_id,
-                        tf_by_peak = p_tf_id,
-                        target_by_peak = p_target_id,
-                        target_ordered = t_target_id,
-                        npeaks = nrow(peakMatrix),
-                        peakmat_x = peakMatrix@x,
-                        peakmat_i = peakMatrix@i,
-                        peakmat_p = peakMatrix@p,
-                        peak_cutoff = peak_cutoff_mat,
-                        ngenes = nrow(expMatrix),
-                        expmat_x = expMatrix@x,
-                        expmat_i = expMatrix@i,
-                        expmat_p = expMatrix@p,
-                        exp_cutoff = exp_cutoff_mat,
-                        nclusters = 1L,
-                        clusters = rep(0L, ncol(expMatrix)))
+    stats <- fast_chisq(peak_ordered=p_peak_id,
+                        tf_by_peak=p_tf_id,
+                        target_by_peak=p_target_id,
+                        target_ordered=t_target_id,
+                        npeaks=nrow(peakMatrix),
+                        peakmat_x=peakMatrix@x,
+                        peakmat_i=peakMatrix@i,
+                        peakmat_p=peakMatrix@p,
+                        peak_cutoff=peak_cutoff_mat,
+                        ngenes=nrow(expMatrix),
+                        expmat_x=expMatrix@x,
+                        expmat_i=expMatrix@i,
+                        expmat_p=expMatrix@p,
+                        exp_cutoff=exp_cutoff_mat,
+                        nclusters=1L,
+                        clusters=rep(0L, ncol(expMatrix)))
 
     if (!is.null(clusters)) {
       if (is.null(exp_cutoff)) {
         for (cluster in unique(cluster_id2)) {
           cluster_ind <- which(cluster_id2 == cluster)
           exp_cutoff_mat[, as.numeric(cluster) + 1] <-
-            Matrix::rowMeans(expMatrix[, cluster_ind, drop = FALSE])
+            Matrix::rowMeans(expMatrix[, cluster_ind, drop=FALSE])
         }
       }
       if (is.null(peak_cutoff)) {
         for (cluster in unique(cluster_id2)) {
           cluster_ind <- which(cluster_id2 == cluster)
           peak_cutoff_mat[, as.numeric(cluster) +1] <-
-            Matrix::rowMeans(peakMatrix[, cluster_ind, drop = FALSE])
+            Matrix::rowMeans(peakMatrix[, cluster_ind, drop=FALSE])
         }
       }
-      stats_clusters <- fast_chisq(peak_ordered = p_peak_id,
-                                   tf_by_peak = p_tf_id,
-                                   target_by_peak = p_target_id,
-                                   target_ordered = t_target_id,
-                                   npeaks = nrow(peakMatrix),
-                                   peakmat_x = peakMatrix@x,
-                                   peakmat_i = peakMatrix@i,
-                                   peakmat_p = peakMatrix@p,
-                                   peak_cutoff = peak_cutoff_mat,
-                                   ngenes = nrow(expMatrix),
-                                   expmat_x = expMatrix@x,
-                                   expmat_i = expMatrix@i,
-                                   expmat_p = expMatrix@p,
-                                   exp_cutoff = exp_cutoff_mat,
-                                   nclusters = nlevels(cluster_id),
-                                   clusters = cluster_id2)
+      stats_clusters <- fast_chisq(peak_ordered=p_peak_id,
+                                   tf_by_peak=p_tf_id,
+                                   target_by_peak=p_target_id,
+                                   target_ordered=t_target_id,
+                                   npeaks=nrow(peakMatrix),
+                                   peakmat_x=peakMatrix@x,
+                                   peakmat_i=peakMatrix@i,
+                                   peakmat_p=peakMatrix@p,
+                                   peak_cutoff=peak_cutoff_mat,
+                                   ngenes=nrow(expMatrix),
+                                   expmat_x=expMatrix@x,
+                                   expmat_i=expMatrix@i,
+                                   expmat_p=expMatrix@p,
+                                   exp_cutoff=exp_cutoff_mat,
+                                   nclusters=nlevels(cluster_id),
+                                   clusters=cluster_id2)
 
       stats$peak <- cbind(stats$peak, stats_clusters$peak)
       stats$triple <- cbind(stats$triple, stats_clusters$triple)
@@ -530,7 +530,7 @@ chisqTest <- function(k, size, p) {
   e1 <- p * size
   e2 <- size - e1
   chi <- (k - e1)^2/e1 + (size - k - e2)^2/e2
-  list(p = stats::pchisq(chi, df = 1, lower.tail = FALSE), stats = chi)
+  list(p=stats::pchisq(chi, df=1, lower.tail=FALSE), stats=chi)
 }
 
 #' Add log fold changes of gene expression to regulons
@@ -571,16 +571,16 @@ chisqTest <- function(k, size, p) {
 #' rownames(gene_sce) <- paste0('Gene_',1:2000)
 #'
 #' # create a mock regulon
-#' regulon <- data.frame(tf = c(rep('Gene_1',10), rep('Gene_2',10)),
-#'                      idxATAC = sample(1:100, 20),
-#'                      target = c(paste0('Gene_', sample(3:2000,10)),
-#'                                 paste0('Gene_',sample(3:2000,10))))
+#' regulon <- data.frame(tf=c(rep('Gene_1',10), rep('Gene_2',10)),
+#'     idxATAC=sample(1:100, 20),
+#'     target=c(paste0('Gene_', sample(3:2000,10)),
+#'     paste0('Gene_',sample(3:2000,10))))
 #'
 #' # filter regulon
-#' pruned.regulon <- addLogFC(expMatrix = gene_sce, 
-#'                            clusters = gene_sce$Treatment,
-#'                            regulon = regulon,
-#'                            sig_type = "log.p.value")
+#' pruned.regulon <- addLogFC(expMatrix=gene_sce, 
+#'     clusters=gene_sce$Treatment,
+#'     regulon=regulon,
+#'     sig_type="log.p.value")
 #'
 #' @author Xiaosai Yao
 

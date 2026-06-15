@@ -1,17 +1,17 @@
-regulon <- S4Vectors::DataFrame(tf = rep(LETTERS[1:5], times = 1:5),
-                      target = LETTERS [6:20],
-                      weight = seq(0,1,length.out = 15),
+regulon <- S4Vectors::DataFrame(tf=rep(LETTERS[1:5], times=1:5),
+                      target=LETTERS [6:20],
+                      weight=seq(0,1,length.out=15),
                       idxATAC=0)
 
 
 
-geneExpressionMatrix <- matrix(0, nrow = 15, ncol = 100, dimnames = list(LETTERS[6:20], NULL))
+geneExpressionMatrix <- matrix(0, nrow=15, ncol=100, dimnames=list(LETTERS[6:20], NULL))
 geneExpressionMatrix[1:(88*17)] <- rep(c(0, 0, 1, 2, 3, 0, 0, 1, 2, 0, 2, 0, 0, 0, 1, 3, 0), 88)
 geneExpressionMatrix <- as(geneExpressionMatrix, "sparseMatrix")
 
 
 ### test createTfTgMat
-tf_tg_matrix <- matrix(0, nrow = 5, ncol = 15, dimnames = list(LETTERS[1:5], LETTERS[6:20]))
+tf_tg_matrix <- matrix(0, nrow=5, ncol=15, dimnames=list(LETTERS[1:5], LETTERS[6:20]))
 tf_tg_matrix <- as(tf_tg_matrix, "sparseMatrix")
 
 for (i in seq_len(nrow(regulon))){
@@ -52,9 +52,9 @@ test_that("normalizeByFrequency works correctly", {
 })
 
 ### test calculateActivity
-sce <- SingleCellExperiment(assay = list(counts = geneExpressionMatrix))
+sce <- SingleCellExperiment(assay=list(counts=geneExpressionMatrix))
 
-activity_matrix.3 <- calculateActivity(sce, regulon = regulon, exp_assay = "counts")
+activity_matrix.3 <- calculateActivity(sce, regulon=regulon, exp_assay="counts")
 
 test_that("calculateActivity works correctly", {
   expect_equal(activity_matrix.3,
@@ -67,7 +67,7 @@ substituted_weight <- regulon$weight[2]
 regulon$weight[2] <- NA
 
 test_that("calculateActivity warns when NA is present", {
-    expect_warning(calculateActivity(sce, regulon = regulon, exp_assay = "counts"))
+    expect_warning(calculateActivity(sce, regulon=regulon, exp_assay="counts"))
 })
 
 # restore original value
@@ -85,17 +85,17 @@ activity_matrix.center.norm <- as(activity_matrix.center/c(2,3,4,5), "dgeMatrix"
 
 test_that("calculateActivity normalizes correctly (zero-centering)", {
   expect_equal(calculateActivity(sce,
-                                 regulon = regulon,
-                                 exp_assay = "counts",
-                                 normalize = TRUE),
+                                 regulon=regulon,
+                                 exp_assay="counts",
+                                 normalize=TRUE),
                activity_matrix.center.norm, tolerance=1e-4)
 })
 
 ###################################################################################
 # test with cluster information
-clusters <- rep(c("C1", "C2"), each = 50)
-regulon$weight_C1 <- seq(0.9,0,length.out = 15)
-regulon$weight_C2 <- seq(0,0.7,length.out = 15)
+clusters <- rep(c("C1", "C2"), each=50)
+regulon$weight_C1 <- seq(0.9,0,length.out=15)
+regulon$weight_C2 <- seq(0,0.7,length.out=15)
 
 regulon$weight <- cbind(regulon$weight, regulon$weight_C1, regulon$weight_C2)
 colnames(regulon$weight) <- c("all", "C1", "C2")
@@ -106,15 +106,15 @@ geneExpr_C2 <- geneExpressionMatrix[,51:100]
 
 ### test createTfTgMat
 
-tf_tg_matrix_C1 <- matrix(0, nrow = 5, ncol = 15,
-                          dimnames = list(LETTERS[1:5], LETTERS[6:20]))
+tf_tg_matrix_C1 <- matrix(0, nrow=5, ncol=15,
+                          dimnames=list(LETTERS[1:5], LETTERS[6:20]))
 
 for (i in seq_len(nrow(regulon))){
   tf_tg_matrix_C1[regulon[i,"tf"], regulon[i,"target"]] <- regulon[i, "weight_C1"]
 }
 
-tf_tg_matrix_C2 <- matrix(0, nrow = 5, ncol = 15,
-                          dimnames = list(LETTERS[1:5], LETTERS[6:20]))
+tf_tg_matrix_C2 <- matrix(0, nrow=5, ncol=15,
+                          dimnames=list(LETTERS[1:5], LETTERS[6:20]))
 
 for (i in seq_len(nrow(regulon))){
   tf_tg_matrix_C2[regulon[i,"tf"], regulon[i,"target"]] <- regulon[i, "weight_C2"]
@@ -148,7 +148,7 @@ test_that("calculateScore works correctly with clusters", {
 
 
 ### test calculateFrequency
-freq3 <- freq4 <- initiateMatCluster(clusters, nrow = length(unique(regulon$tf)), 1)
+freq3 <- freq4 <- initiateMatCluster(clusters, nrow=length(unique(regulon$tf)), 1)
 rownames(freq3) <- rownames(freq4) <- unique(regulon$tf)
 freq3[,"C1"] <- c(1,2,3,4,4)
 freq3[,"C2"] <- 1:5
@@ -174,10 +174,10 @@ test_that("normalizeByFrequency works correctly with clusters", {
 
 ### test calculateActivity
 activity_matrix.norm5 <- calculateActivity(sce,
-                                           regulon = regulon,
-                                           exp_assay = "counts",
-                                           clusters = clusters,
-                                           FUN = "mean")
+                                           regulon=regulon,
+                                           exp_assay="counts",
+                                           clusters=clusters,
+                                           FUN="mean")
 test_that("calculateActivity works correctly with clusters", {
   expect_equal(activity_matrix.norm5,
                activity_matrix.norm3[Matrix:::rowSums(activity_matrix.norm3)!=0,,drop=FALSE])
