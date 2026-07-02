@@ -105,6 +105,9 @@ pairwiseTTestsSimple <- function(mat, groups, direction) {
       cur.lfc <- left.mean - right.mean
       cur.t <- cur.lfc / sqrt(cur.err)
       
+      cur.t[cur.lfc == 0 & cur.err == 0] <- 0 # both groups have all 0 values or have identical values
+      cur.df[cur.lfc == 0 & cur.err == 0] <- 1 
+      
       if (direction == "up") {
         p <- pt(cur.t, df=cur.df, lower.tail=FALSE, log.p=TRUE)
       } else if (direction == "down") {
